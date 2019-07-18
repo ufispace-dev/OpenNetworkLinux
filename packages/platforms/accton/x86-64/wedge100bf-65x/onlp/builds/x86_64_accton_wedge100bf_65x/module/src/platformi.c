@@ -1,6 +1,9 @@
 
 #include <onlp/platformi/base.h>
 
+// FIXME: this is for testing only, not for production.....
+// TODO: should we keep this part?
+
 const char*
 onlp_platformi_get(void)
 {
@@ -16,11 +19,11 @@ onlp_platformi_sw_init(void)
 int
 onlp_platformi_manage_fans(void)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    return ONLP_STATUS_OK;
 }
 
 int
 onlp_platformi_manage_leds(void)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    return ONLP_STATUS_OK;
 }
