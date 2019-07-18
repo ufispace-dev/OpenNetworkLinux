@@ -28,6 +28,7 @@ LIBONLP := $(shell $(ONLPM) --find-file onlp:$(ARCH) libonlp.so)
 
 GLOBAL_LINK_LIBS += -lpthread $(LIBONLP)
 GLOBAL_LINK_LIBS += -Wl,--unresolved-symbols=ignore-in-shared-libs
+GLOBAL_LINK_LIBS += -lm
 
 .DEFAULT_GOAL := onlp-snmpd
 
