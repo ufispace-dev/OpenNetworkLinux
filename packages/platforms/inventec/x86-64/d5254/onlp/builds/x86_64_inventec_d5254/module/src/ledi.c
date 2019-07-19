@@ -81,18 +81,18 @@ static int _psoc_onlp_ledi_mode_set(onlp_oid_id_t id, onlp_led_mode_t onlp_mode)
 
 static ledi_info_t __info_list[ONLP_LED_COUNT] = {
     {},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_CPLD, "/sys/bus/i2c/devices/0-0055*grn_led"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_CPLD, "/sys/bus/i2c/devices/0-0055*red_led"},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_grn1"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_red1"},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_grn2"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_red2"},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_grn3"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_red3"},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_grn4"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_red4"},
-    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_grn5"},
-    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/bus/i2c/devices/0-0066*fan_led_red5"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_CPLD, "/sys/bus/i2c/devices/0-0055/grn_led"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_CPLD, "/sys/bus/i2c/devices/0-0055/red_led"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_grn1"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_red1"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_grn2"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_red2"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_grn3"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_red3"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_grn4"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_red4"},
+    {PLATFORM_LED_COLOR_GREEN, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_grn5"},
+    {PLATFORM_LED_COLOR_RED, LED_DRIVER_MODE_PSOC,"/sys/class/hwmon/hwmon1/fan_led_red5"},
 };
 
 

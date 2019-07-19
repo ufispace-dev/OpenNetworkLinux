@@ -6,7 +6,7 @@
 #include <linux/slab.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
-#include <linux/i2c/pca954x.h>
+#include <linux/platform_data/pca954x.h>
 //#include <linux/i2c/pca953x.h>
 //#include <linux/i2c/at24.h>
 
