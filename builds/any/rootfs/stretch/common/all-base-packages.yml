@@ -77,3 +77,4 @@
 - tcpdump
 - strace
 - sysstat
+- ipmitool
