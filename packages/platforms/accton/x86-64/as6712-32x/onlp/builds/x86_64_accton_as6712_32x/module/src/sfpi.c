@@ -26,6 +26,7 @@
 #include <onlp/platformi/sfpi.h>
 #include <onlplib/i2c.h>
 #include <onlplib/file.h>
+#include <string.h>
 #include "x86_64_accton_as6712_32x_int.h"
 #include "x86_64_accton_as6712_32x_log.h"
 
@@ -42,7 +43,7 @@
  *
  ***********************************************************/
 int
-onlp_sfpi_init(void)
+onlp_sfpi_sw_init(void)
 {
     /* Called at initialization time */
     return ONLP_STATUS_OK;
@@ -65,7 +66,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 }
 
 int
-onlp_sfpi_is_present(int port)
+onlp_sfpi_is_present(onlp_oid_id_t port)
 {
     /*
      * Return 1 if present.
@@ -134,40 +135,16 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
-{
+int onlp_sfpi_dev_read(onlp_oid_id_t id, int devaddr, int addr,
+                       uint8_t* dst, int len) {
+    memset(dst, 0, len);
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
-{
-    /*
-     * Read the SFP eeprom into data[]
-     *
-     * Return MISSING if SFP is missing.
-     * Return OK if eeprom is read
-     */
-    int size = 0;
-    memset(data, 0, 256);
-
-	if(onlp_file_read(data, 256, &size, PORT_EEPROM_FORMAT, PORT_BUS_INDEX(port)) != ONLP_STATUS_OK) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    if (size != 256) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!\r\n", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
+int onlp_sfpi_dev_readb(onlp_oid_id_t id, int devaddr, int addr) {
+    return 0;
 }
 
-int
-onlp_sfpi_denit(void)
-{
-    return ONLP_STATUS_OK;
+int onlp_sfpi_dev_readw(onlp_oid_id_t id, int devaddr, int addr) {
+    return 0;
 }
-
