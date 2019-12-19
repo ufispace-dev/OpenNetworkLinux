@@ -10,7 +10,7 @@ class OnlPlatform_x86_64_accton_as7716_24xc_r0(OnlPlatformAccton,
     def baseconfig(self):
 
         self.insmod('accton_i2c_cpld')
-        self.insmod('dps850')
+        # self.insmod('dps850')
         self.insmod_platform()
 
         ########### initialize I2C bus 0 ###########
@@ -41,12 +41,12 @@ class OnlPlatform_x86_64_accton_as7716_24xc_r0(OnlPlatformAccton,
                 ('pca9548', 0x71, 2),
 
                 # initiate PSU-1
-                ('as7716_24xc_psu1', 0x50, 18),
-                ('dps850', 0x58, 18),
+                # ('as7716_24xc_psu1', 0x50, 18),
+                # ('dps850', 0x58, 18),
 
                 # initiate PSU-2
-                ('as7716_24xc_psu2', 0x51, 17),
-                ('dps850', 0x59, 17),
+                # ('as7716_24xc_psu2', 0x51, 17),
+                # ('dps850', 0x59, 17),
 
                 # initiate leaf multiplexer (PCA9548)
                 ('pca9548', 0x72, 2),
