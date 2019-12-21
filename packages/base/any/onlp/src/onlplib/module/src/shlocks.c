@@ -120,6 +120,7 @@ onlp_shlock_init__(onlp_shlock_t* l, const char* fmt, va_list vargs)
         char* s = aim_vfstrdup(fmt, vargs);
         aim_strlcpy(l->name, s, sizeof(l->name));
         l->magic = SHLOCK_MAGIC;
+        free(s);
     }
 }
 
