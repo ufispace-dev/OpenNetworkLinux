@@ -194,6 +194,13 @@ onlp_sfpi_dev_writew(onlp_oid_id_t port, int devaddr, int addr, uint16_t value)
 }
 
 int
+onlp_sfpi_dev_read(onlp_oid_id_t port, int devaddr, int addr,
+                       uint8_t* dst, int len) {
+  int bus = QSFP_BUS_INDEX(port);
+  return onlp_i2c_read(bus, devaddr, addr, len, dst, 0);
+}
+
+int
 onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
