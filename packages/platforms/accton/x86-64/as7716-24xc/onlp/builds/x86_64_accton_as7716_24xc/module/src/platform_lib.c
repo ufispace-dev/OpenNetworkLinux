@@ -248,19 +248,21 @@ card_type_t get_card_type(int port)
 	/* Get card slot of this port */
 	slot = (port % 16) / 2;
 	
-    if (onlp_file_read_int(&present, EXPANSION_CARD_FORMAT, i2c_bus[slot], "card_present") < 0) {
-        AIM_LOG_ERROR("Unable to read card present status from bus(%d)\r\n", i2c_bus[slot]);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+  if (onlp_file_read_int(&present, EXPANSION_CARD_FORMAT, i2c_bus[slot], "card_present") < 0) {
+    return CARD_TYPE_NOT_PRESENT;
+    // Disable this error since we are using custom library to read it.
+//      AIM_LOG_ERROR("Unable to read card present status from bus(%d)\r\n", i2c_bus[slot]);
+//      return ONLP_STATUS_E_INTERNAL;
+  }
 
 	if (!present) {
 		return CARD_TYPE_NOT_PRESENT;
 	}
 
-    if (onlp_file_read_int(&type, EXPANSION_CARD_FORMAT, i2c_bus[slot], "card_type") < 0) {
-        AIM_LOG_ERROR("Unable to read card_type from bus(%d)\r\n", i2c_bus[slot]);
-        return CARD_TYPE_UNKNOWN;
-    }
+  if (onlp_file_read_int(&type, EXPANSION_CARD_FORMAT, i2c_bus[slot], "card_type") < 0) {
+      AIM_LOG_ERROR("Unable to read card_type from bus(%d)\r\n", i2c_bus[slot]);
+      return CARD_TYPE_UNKNOWN;
+  }
 
 	if (type != CARD_TYPE_Q28 && type != CARD_TYPE_DCO) {
 		type = CARD_TYPE_ACO; /* workaround */
