@@ -5,6 +5,10 @@
 int
 onlp_attributei_onie_info_get(onlp_oid_t oid, onlp_onie_info_t* rp)
 {
+    if (rp == NULL) {
+        return ONLP_STATUS_OK;
+    }
+
     if(oid != ONLP_OID_CHASSIS) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
