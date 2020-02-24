@@ -75,8 +75,8 @@ onlp_sfpi_is_present(onlp_oid_id_t port)
      */
     int present;
     int addr = (port < 16) ? 62 : 64;
-    
-	if (onlp_file_read_int(&present, MODULE_PRESENT_FORMAT, addr, (port+1)) < 0) {
+
+    if (onlp_file_read_int(&present, MODULE_PRESENT_FORMAT, addr, (port+1)) < 0) {
         AIM_LOG_ERROR("Unable to read present status from port(%d)\r\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -135,16 +135,39 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-int onlp_sfpi_dev_read(onlp_oid_id_t id, int devaddr, int addr,
-                       uint8_t* dst, int len) {
-    memset(dst, 0, len);
+int
+onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+{
+    /*
+     * Read the SFP eeprom into data[]
+     *
+     * Return MISSING if SFP is missing.
+     * Return OK if eeprom is read
+     */
+    int size = 0;
+    memset(data, 0, 256);
+
+    if(onlp_file_read(data, 256, &size, PORT_EEPROM_FORMAT, PORT_BUS_INDEX(port)) != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (size != 256) {
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!\r\n", port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
     return ONLP_STATUS_OK;
 }
 
-int onlp_sfpi_dev_readb(onlp_oid_id_t id, int devaddr, int addr) {
-    return 0;
-}
-
-int onlp_sfpi_dev_readw(onlp_oid_id_t id, int devaddr, int addr) {
-    return 0;
+int
+onlp_sfpi_dev_read(onlp_oid_id_t port, int devaddr, int addr,
+                       uint8_t* dst, int len) {
+    uint8_t data[256];
+    ONLP_IF_ERROR_RETURN(onlp_sfpi_eeprom_read(port, data));
+    if (addr + len > 256) {
+        return ONLP_STATUS_E_PARAM;
+    }
+    memcpy(dst, &data[addr], len);
+    return ONLP_STATUS_OK;
 }

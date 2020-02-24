@@ -208,6 +208,11 @@ onlp_sfpi_denit(void)
 int
 onlp_sfpi_dev_read(onlp_oid_id_t port, int devaddr, int addr,
                        uint8_t* dst, int len) {
-  int bus = QSFP_BUS_INDEX(port);
-  return onlp_i2c_read(bus, devaddr, addr, len, dst, 0);
+  uint8_t data[256];
+  ONLP_IF_ERROR_RETURN(onlp_sfpi_eeprom_read(port, data));
+  if (addr + len > 256) {
+    return ONLP_STATUS_E_PARAM;
+  }
+  memcpy(dst, &data[addr], len);
+  return ONLP_STATUS_OK;
 }
