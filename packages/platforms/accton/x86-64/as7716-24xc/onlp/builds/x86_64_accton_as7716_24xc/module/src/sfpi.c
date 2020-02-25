@@ -55,6 +55,20 @@ onlp_sfpi_sw_init(void)
 }
 
 int
+onlp_sfpi_type_get(onlp_oid_id_t port, onlp_sfp_type_t* rtype)
+{
+    port_type_t type = get_port_type(port);
+    switch (type) {
+    case PORT_TYPE_Q28:
+        *rtype = ONLP_SFP_TYPE_QSFP28;
+        break;
+    default:
+        return ONLP_STATUS_E_PARAM;
+    }
+    return ONLP_STATUS_OK;
+}
+
+int
 onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
