@@ -277,7 +277,7 @@ static void ichx_gpiolib_setup(struct gpio_chip *chip)
 {
 	chip->owner = THIS_MODULE;
 	chip->label = DRV_NAME;
-	chip->parent = &ichx_priv.dev->dev;
+	chip->dev = &ichx_priv.dev->dev;
 
 	/* Allow chip-specific overrides of request()/get() */
 	chip->request = ichx_priv.desc->request ?
@@ -514,7 +514,15 @@ add_err:
 
 static int ichx_gpio_remove(struct platform_device *pdev)
 {
-  gpiochip_remove(&ichx_priv.chip);
+	int err;
+
+	err = gpiochip_remove(&ichx_priv.chip);
+	if (err) {
+		dev_err(&pdev->dev, "%s failed, %d\n",
+				"gpiochip_remove()", err);
+		return err;
+	}
+
 	ichx_gpio_release_regions(ichx_priv.gpio_base, ichx_priv.use_gpio);
 	if (ichx_priv.pm_base)
 		release_region(ichx_priv.pm_base->start,
