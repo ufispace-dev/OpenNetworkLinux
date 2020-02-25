@@ -33,8 +33,8 @@ onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
         *e++ = ONLP_FAN_ID_CREATE(i);
     }
 
-    /* 32 SFPs */
-    for(i = 1; i <= 32; i++) {
+    /* 16 SFPs */
+    for(i = 1; i <= 16; i++) {
         *e++ = ONLP_SFP_ID_CREATE(i);
     }
     return 0;
