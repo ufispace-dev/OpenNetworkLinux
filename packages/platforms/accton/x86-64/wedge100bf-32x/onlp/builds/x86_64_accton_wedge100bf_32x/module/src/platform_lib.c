@@ -31,7 +31,7 @@
 
 #define TTY_DEVICE                      "/dev/ttyACM0"
 #define TTY_PROMPT                      "@bmc:"
-#define TTY_I2C_TIMEOUT                 55000
+#define TTY_I2C_TIMEOUT                 500000
 #define TTY_BMC_LOGIN_TIMEOUT            1000000
 #define TTY_RETRY                       10
 #define MAXIMUM_TTY_BUFFER_LENGTH       1024
