@@ -133,10 +133,6 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
             ]
         )
 
-        # init MGMT SFP+ EEPROM
-        for bus in range(10, 12):
-            self.new_i2c_device('optoe2', 0x50, bus)
-
         # init SFP+ EEPROM
         for bus in range(25, 89):
             self.new_i2c_device('optoe2', 0x50, bus)
@@ -145,7 +141,14 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
             port = port + 1
 
         # init QSFP EEPROM
-        for bus in range(89, 99):
+        for bus in range(89, 93):
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+
+        # init QSFP EEPROM
+        for bus in range(95, 99):
             self.new_i2c_device('optoe1', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
@@ -154,6 +157,13 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
         # init QSFPDD EEPROM
         for bus in range(105, 111):
             self.new_i2c_device('optoe3', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+        
+        # init MGMT SFP+ EEPROM
+        for bus in range(10, 12):
+            self.new_i2c_device('optoe2', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
