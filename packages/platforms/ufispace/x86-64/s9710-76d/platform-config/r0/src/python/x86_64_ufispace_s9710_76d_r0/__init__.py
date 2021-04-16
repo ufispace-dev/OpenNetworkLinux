@@ -81,6 +81,41 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
 
+    def init_eeprom(self):
+        port = 0
+        
+        # init QSFPDD NIF EEPROM
+        for bus in range(73, 109):            
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+            
+        # init QSFPDD FAB EEPROM
+        for bus in range(33, 73):            
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+        
+        # init SFP+ EEPROM
+        for bus in range(109, 111):
+            self.new_i2c_device('sff8436', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+
+    def enable_ipmi_maintenance_mode(self):
+        ipmi_ioctl = IPMI_Ioctl()
+            
+        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
+        msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+            
+        ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
+            
+        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
+        msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+        
     def baseconfig(self):
 
         # lpc driver
@@ -143,23 +178,8 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             ]
         )
 
-        # init QSFPDD FAB EEPROM
-        for bus in range(33, 73):            
-            self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name
-            port = bus - 33
-            subprocess.call("echo QSFPDD_FAB_{} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-        
-        # init QSFPDD NIF EEPROM
-        for bus in range(73, 109):            
-            self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name
-            port = bus - 73
-            subprocess.call("echo QSFPDD_NIF_{} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)            
-        
-        # init SFP+ EEPROM
-        for bus in range(109, 111):
-            self.new_i2c_device('sff8436', 0x50, bus)
+        # init EEPROM
+        self.init_eeprom()
 
         # init GPIO sysfs
         #9555_BEACON_LED
@@ -216,14 +236,3 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         os.system("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/epdm_cli init 10G &")
         
         return True
-
-    def enable_ipmi_maintenance_mode(self):
-        ipmi_ioctl = IPMI_Ioctl()
-            
-        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
-        msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
-        ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
-        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
-        msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )

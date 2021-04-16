@@ -46,10 +46,14 @@ bmc_info_t bmc_cache[] =
     {"TEMP_LM75_U187", 0},
     {"PSU0_TEMP", 0},
     {"PSU1_TEMP", 0},
-    {"FAN0_RPM", 0},
-    {"FAN1_RPM", 0},
-    {"FAN2_RPM", 0},
-    {"FAN3_RPM", 0},
+    {"FAN0_FRONT_RPM", 0},
+    {"FAN0_REAR_RPM", 0},
+    {"FAN1_FRONT_RPM", 0},
+    {"FAN1_REAR_RPM", 0},
+    {"FAN2_FRONT_RPM", 0},
+    {"FAN2_REAR_RPM", 0},
+    {"FAN3_FRONT_RPM", 0},
+    {"FAN3_REAR_RPM", 0},
     {"PSU0_FAN", 0},
     {"PSU1_FAN", 0},
     {"FAN0_PRSNT_H",0},
@@ -210,8 +214,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         for(dev_num = 0; dev_num < dev_size; dev_num++)
         {
             memset(buf, 0, sizeof(buf));
-
-            if( dev_num >= 16 && dev_num <=19 ) {                
+            //search present string
+            if( dev_num >= 20 && dev_num <= 23 ) {                
                 snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)

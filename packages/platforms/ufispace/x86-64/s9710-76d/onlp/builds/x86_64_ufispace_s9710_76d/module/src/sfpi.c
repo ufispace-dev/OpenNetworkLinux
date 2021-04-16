@@ -54,6 +54,7 @@
 #define EEPROM_ADDR (0x50)
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 static int ufi_port_to_cpld_addr(int port)
 {
@@ -429,7 +430,9 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
  */
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    VALIDATE_PORT(port);
+    int bus = ufi_port_to_eeprom_bus(port);
+    return onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE);
 }
 
 /**
@@ -443,7 +446,11 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     FILE* fp;
     int bus = 0;
 
-    VALIDATE_PORT(port);
+    //sfp dom is on 0x51 (2nd 256 bytes)
+    //qsfp dom is on lower page 0x00
+    //qsfpdd 2.0 dom is on lower page 0x00
+    //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
+    VALIDATE_SFP_PORT(port);
     
     memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));

@@ -27,7 +27,8 @@
 
 #define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
 #define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
-#define SYS_FAN_RPM_MAX 11300
+#define SYS_FAN_F_RPM_MAX 11300
+#define SYS_FAN_R_RPM_MAX 12000
 #define PSU_FAN_RPM_MAX 25000
 #define VALIDATE(_id)                           \
     do {                                        \
@@ -36,9 +37,9 @@
         }                                       \
     } while(0)
 
-#define CHASSIS_FAN_INFO(id, idx)                               \
+#define CHASSIS_FAN_INFO(id, idx, fan_loc)                               \
     {                                                           \
-        { ONLP_FAN_ID_CREATE(id), "Chassis Fan - "#idx, POID_0},\
+        { ONLP_FAN_ID_CREATE(id), "Chassis Fan - "#idx" ("#fan_loc")", POID_0},\
         FAN_STATUS,                                             \
         FAN_CAPS,                                               \
         0,                                                      \
@@ -62,10 +63,14 @@
  
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
-    CHASSIS_FAN_INFO(ONLP_FAN_0, 0),
-    CHASSIS_FAN_INFO(ONLP_FAN_1, 1),
-    CHASSIS_FAN_INFO(ONLP_FAN_2, 2),
-    CHASSIS_FAN_INFO(ONLP_FAN_3, 3),
+    CHASSIS_FAN_INFO(ONLP_FAN_F_0, 0, FRONT),
+    CHASSIS_FAN_INFO(ONLP_FAN_R_0, 0, REAR),
+    CHASSIS_FAN_INFO(ONLP_FAN_F_1, 1, FRONT),
+    CHASSIS_FAN_INFO(ONLP_FAN_R_1, 1, REAR),
+    CHASSIS_FAN_INFO(ONLP_FAN_F_2, 2, FRONT),
+    CHASSIS_FAN_INFO(ONLP_FAN_R_2, 2, REAR),
+    CHASSIS_FAN_INFO(ONLP_FAN_F_3, 3, FRONT),
+    CHASSIS_FAN_INFO(ONLP_FAN_R_3, 3, REAR),
     PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
     PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
@@ -80,12 +85,14 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     int rv=0, rpm=0, percentage=0;
     int presence=0;
     float data=0;
-    int sys_max_fan_speed = SYS_FAN_RPM_MAX;
-    int psu_max_fan_speed = PSU_FAN_RPM_MAX;
+    int sys_fan_max = 0;
+    int sys_fan_f_max = SYS_FAN_F_RPM_MAX;
+    int sys_fan_r_max = SYS_FAN_R_RPM_MAX;
+    int psu_fan_max = PSU_FAN_RPM_MAX;
     
     //check presence for fantray 1-4
-    if (id >= ONLP_FAN_0 && id <= ONLP_FAN_3) {
-        rv = bmc_sensor_read(id + CACHE_OFFSET_FAN_PRESENT, FAN_SENSOR, &data);
+    if (id >= ONLP_FAN_F_0 && id <= ONLP_FAN_R_3) {
+        rv = bmc_sensor_read((id-ONLP_FAN_F_0)/2 + CACHE_OFFSET_FAN_PRESENT, FAN_SENSOR, &data);
         if (rv < 0) {
             AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
             return rv;
@@ -111,12 +118,21 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     //set rpm field
     info->rpm = rpm;
 
-    if (id >= ONLP_FAN_0 && id <= ONLP_FAN_3) {
-        percentage = (info->rpm*100)/sys_max_fan_speed; 
+    if (id >= ONLP_FAN_F_0 && id <= ONLP_FAN_R_3) {
+        if (id%2 == 1) {
+            sys_fan_max = sys_fan_f_max;
+        } else {
+            sys_fan_max = sys_fan_r_max;
+        }
+        percentage = (info->rpm*100)/sys_fan_max;
+        if (percentage > 100)
+            percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {            
-        percentage = (info->rpm*100)/psu_max_fan_speed; 
+        percentage = (info->rpm*100)/psu_fan_max;
+        if (percentage > 100)
+            percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
@@ -147,12 +163,8 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
     *rv = fan_info[fan_id];
        
     switch (fan_id) {
-        case ONLP_FAN_0:
-        case ONLP_FAN_1:
-        case ONLP_FAN_2:
-        case ONLP_FAN_3:
-        case ONLP_PSU_0_FAN:
-        case ONLP_PSU_1_FAN:
+        case ONLP_FAN_F_0 ... ONLP_FAN_R_3:
+        case ONLP_PSU_0_FAN ... ONLP_PSU_1_FAN:
             rc = ufi_bmc_fan_info_get(rv, fan_id);
             break;
         default:            
@@ -213,7 +225,6 @@ int onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-
 
 /**
  * @brief Set the fan speed in percentage.

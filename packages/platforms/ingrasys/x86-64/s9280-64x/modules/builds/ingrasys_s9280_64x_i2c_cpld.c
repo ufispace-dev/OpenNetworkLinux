@@ -880,6 +880,11 @@ static ssize_t write_register_value(struct device *dev,
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock, client, reg, reg_val);
 
+    if (unlikely(ret < 0)) {
+        dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+        return ret;
+    }
+
     return count;
 }
 
@@ -1078,6 +1083,10 @@ static ssize_t write_qsfp_port_config(struct device *dev,
             (attr->index - CPLD_QSFP_PORT_CONFIG_1);
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1164,6 +1173,10 @@ static ssize_t write_sfp_port_config(struct device *dev,
         reg = CPLD_SFP_PORT_CONFIG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1208,6 +1221,10 @@ static ssize_t write_10gmux_config(struct device *dev,
         reg = CPLD_10GMUX_CONFIG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1273,6 +1290,10 @@ static ssize_t write_bmc_watchdog(struct device *dev,
         reg = CPLD_BMC_WATCHDOG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }            
     }
     return count;
 }
@@ -1338,6 +1359,10 @@ static ssize_t write_reset_control(struct device *dev,
         reg = CPLD_RESET_CONTROL_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1382,6 +1407,10 @@ static ssize_t write_sfp_led(struct device *dev,
         reg = CPLD_SFP_LED_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1426,6 +1455,10 @@ static ssize_t write_sfp_led_blink(struct device *dev,
         reg = CPLD_SFP_LED_BLINK_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1472,6 +1505,10 @@ static ssize_t write_qsfp_led(struct device *dev,
         reg = CPLD_QSFP_LED_BASE_REG + (attr->index - CPLD_QSFP_LED_1);
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1534,6 +1571,10 @@ static ssize_t write_qsfp_led_blink(struct device *dev,
             reg_val = (u8)((bitmap >> i*8) & 0xFF);
             I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+            if (unlikely(ret < 0)) {
+                dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+                return ret;
+            }
         }
     }
     return count;
@@ -1579,6 +1620,10 @@ static ssize_t write_rtmr_reset(struct device *dev,
         reg = CPLD_RTMR_RESET_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }

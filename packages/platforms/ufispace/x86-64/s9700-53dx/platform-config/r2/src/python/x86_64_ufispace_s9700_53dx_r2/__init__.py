@@ -81,6 +81,42 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
 
+    def init_eeprom(self):
+        port = 0
+
+        # init QSFP28 EEPROM
+        for bus in range(25, 65):
+            self.new_i2c_device('sff8436', 0x50, bus)
+            # update port_name            
+            if port >= 20:
+                if port % 2 == 0:
+                    port_name = port + 1
+                else:
+                    port_name = port -1
+            else:
+                port_name = port
+
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+            port = port + 1
+
+        # init QSFPDD EEPROM
+        for bus in range(65, 78):
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name            
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            port = port + 1
+            
+    def enable_ipmi_maintenance_mode(self):
+        ipmi_ioctl = IPMI_Ioctl()
+            
+        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
+        msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+            
+        ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
+            
+        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
+        msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+        
     def baseconfig(self):
 
         # lpc driver
@@ -128,13 +164,8 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
             ]
         )
 
-        # init QSFP EEPROM
-        for port in range(25, 65):
-            self.new_i2c_device('sff8436', 0x50, port)
-
-        # init QSFPDD EEPROM
-        for port in range(65, 81):
-            self.new_i2c_device('optoe1', 0x50, port)
+        # init EEPROM
+        self.init_eeprom()
 
         # init Temperature
         self.new_i2c_devices(
@@ -239,13 +270,3 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
 
         return True
 
-    def enable_ipmi_maintenance_mode(self):
-        ipmi_ioctl = IPMI_Ioctl()
-            
-        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
-        msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
-        ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
-        mode=ipmi_ioctl.get_ipmi_maintenance_mode()
-        msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )

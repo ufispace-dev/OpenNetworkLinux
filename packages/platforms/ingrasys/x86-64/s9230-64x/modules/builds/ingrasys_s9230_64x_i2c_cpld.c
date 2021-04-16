@@ -672,6 +672,11 @@ static ssize_t write_register_value(struct device *dev,
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock, client, reg, reg_val);
 
+    if (unlikely(ret < 0)) {
+        dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+        return ret;
+    }
+
     return count;
 }
 
@@ -870,6 +875,10 @@ static ssize_t write_qsfp_port_config(struct device *dev,
             (attr->index - CPLD_QSFP_PORT_CONFIG_1);
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -956,6 +965,10 @@ static ssize_t write_sfp_port_config(struct device *dev,
         reg = CPLD_SFP_PORT_CONFIG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1000,6 +1013,10 @@ static ssize_t write_10gmux_config(struct device *dev,
         reg = CPLD_10GMUX_CONFIG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }
@@ -1065,6 +1082,10 @@ static ssize_t write_bmc_watchdog(struct device *dev,
         reg = CPLD_BMC_WATCHDOG_REG;
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
+            return ret;
+        }
     }
     return count;
 }

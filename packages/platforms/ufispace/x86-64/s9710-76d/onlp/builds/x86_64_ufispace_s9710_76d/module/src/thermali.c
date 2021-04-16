@@ -140,26 +140,13 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     
     switch (sensor_id) {        
         case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_CPU_0:
-        case ONLP_THERMAL_CPU_1:
-        case ONLP_THERMAL_CPU_2:
-        case ONLP_THERMAL_CPU_3:
-        case ONLP_THERMAL_CPU_4:
-        case ONLP_THERMAL_CPU_5:
-        case ONLP_THERMAL_CPU_6:
-        case ONLP_THERMAL_CPU_7:        
+        case ONLP_THERMAL_CPU_0 ... ONLP_THERMAL_CPU_7:
             rc = ufi_cpu_thermal_info_get(rv, sensor_id);
             break;        
         case ONLP_THERMAL_ADC_CPU:
         case ONLP_THERMAL_CPU_PECI:
-        case ONLP_THERMAL_LM75_U160:
-        case ONLP_THERMAL_LM75_U161:
-        case ONLP_THERMAL_LM75_U170:
-        case ONLP_THERMAL_LM75_U185:
-        case ONLP_THERMAL_LM75_U186:
-        case ONLP_THERMAL_LM75_U187:
-        case ONLP_THERMAL_PSU_0:
-        case ONLP_THERMAL_PSU_1:
+        case ONLP_THERMAL_LM75_U160 ... ONLP_THERMAL_LM75_U187:
+        case ONLP_THERMAL_PSU_0 ... ONLP_THERMAL_PSU_1:
             rc = ufi_bmc_thermal_info_get(rv, sensor_id);
             break;    
         default:            

@@ -54,6 +54,7 @@ enum cpld_id {
 #define CPLD_NTM_EVT_REG                  0x35
 #define CPLD_THERMAL_EVT_BASE_REG         0x36
 #define CPLD_MISC_EVT_REG                 0x3B
+#define CPLD_EVT_CTRL_REG                 0x3F
 #define CPLD_MAC_RESET_REG                0x40
 #define CPLD_PHY_RESET_REG                0x42
 #define CPLD_BMC_RESET_REG                0x43

@@ -54,10 +54,14 @@
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[19] ONLP_THERMAL_PSU_1
  *            |                  |----[06] ONLP_PSU_1_FAN 
- *            |----[01] ONLP_FAN_0
- *            |----[02] ONLP_FAN_1
- *            |----[03] ONLP_FAN_2
- *            |----[04] ONLP_FAN_3
+ *            |----[01] ONLP_FAN_F_0
+ *            |----[02] ONLP_FAN_R_0
+ *            |----[03] ONLP_FAN_F_1
+ *            |----[04] ONLP_FAN_R_1
+ *            |----[05] ONLP_FAN_F_2
+ *            |----[06] ONLP_FAN_R_2
+ *            |----[07] ONLP_FAN_F_3
+ *            |----[08] ONLP_FAN_R_3
  */
  
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/0-0057/eeprom"
@@ -294,7 +298,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     }
 
     /* FAN */
-    for (i = ONLP_FAN_0; i <= ONLP_FAN_3; i++) {
+    for (i = ONLP_FAN_F_0; i <= ONLP_FAN_R_3; i++) {
         *e++ = ONLP_FAN_ID_CREATE(i);
     }
     

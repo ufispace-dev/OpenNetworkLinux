@@ -62,19 +62,20 @@ enum cpld_sysfs_attributes {
     CPLD_MAC_INTR,
     CPLD_PHY_INTR,
     CPLD_CPLDX_INTR,
-	CPLD_MAC_THERMAL_INTR,
+    CPLD_MAC_THERMAL_INTR,
     CPLD_MISC_INTR,
     CPLD_CPU_INTR,
     CPLD_MAC_MASK,
     CPLD_PHY_MASK,
     CPLD_CPLDX_MASK,
-	CPLD_MAC_THERMAL_MASK,
+    CPLD_MAC_THERMAL_MASK,
     CPLD_MISC_MASK,
     CPLD_MAC_EVT,
     CPLD_PHY_EVT,
     CPLD_CPLDX_EVT,
-	CPLD_MAC_THERMAL_EVT,
+    CPLD_MAC_THERMAL_EVT,
     CPLD_MISC_EVT,
+    CPLD_EVT_CTRL,
     CPLD_MAC_RESET,
     CPLD_PHY_RESET,
     CPLD_BMC_RESET,
@@ -217,6 +218,7 @@ static SENSOR_DEVICE_ATTR(cpld_phy_evt,     S_IRUGO, read_cpld_callback, NULL, C
 static SENSOR_DEVICE_ATTR(cpld_cpldx_evt,   S_IRUGO, read_cpld_callback, NULL, CPLD_CPLDX_EVT);
 static SENSOR_DEVICE_ATTR(cpld_mac_thermal_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_THERMAL_EVT);
 static SENSOR_DEVICE_ATTR(cpld_misc_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_MISC_EVT);
+static SENSOR_DEVICE_ATTR(cpld_evt_ctrl,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_EVT_CTRL);
 
 static SENSOR_DEVICE_ATTR(cpld_mac_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_RESET);
 static SENSOR_DEVICE_ATTR(cpld_phy_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_PHY_RESET);
@@ -342,6 +344,7 @@ static struct attribute *cpld1_attributes[] = {
     &sensor_dev_attr_cpld_cpldx_evt.dev_attr.attr,
 	&sensor_dev_attr_cpld_mac_thermal_evt.dev_attr.attr,
     &sensor_dev_attr_cpld_misc_evt.dev_attr.attr,
+    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
 
     &sensor_dev_attr_cpld_mac_reset.dev_attr.attr,
     &sensor_dev_attr_cpld_phy_reset.dev_attr.attr,
@@ -408,6 +411,8 @@ static struct attribute *cpld2_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
 
     &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
@@ -478,6 +483,8 @@ static struct attribute *cpld3_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
 
+    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+
     &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_reset_2.dev_attr.attr,
@@ -537,6 +544,8 @@ static struct attribute *cpld4_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
 
     &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
@@ -607,6 +616,8 @@ static struct attribute *cpld5_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
 
     &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
@@ -724,6 +735,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_MISC_EVT:
             reg = CPLD_MISC_EVT_REG;
             break;
+        case CPLD_EVT_CTRL:
+            reg = CPLD_EVT_CTRL_REG;
+            break;
         case CPLD_MAC_RESET:
             reg = CPLD_MAC_RESET_REG;
             break;
@@ -763,77 +777,54 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_MUX_CTRL:
             reg = CPLD_MUX_CTRL_REG;
             break;
-        case CPLD_SYSTEM_LED_0:
-        case CPLD_SYSTEM_LED_1:
+        case CPLD_SYSTEM_LED_0 ... CPLD_SYSTEM_LED_1:
             reg = CPLD_SYSTEM_LED_BASE_REG +
                  (attr->index - CPLD_SYSTEM_LED_0);
             break;
         case CPLD_LED_CLEAR:
             reg = CPLD_LED_CLEAR_REG;
             break;
-        case CPLD_QSFPDD_INTR_PORT_0:
-        case CPLD_QSFPDD_INTR_PORT_1:
-        case CPLD_QSFPDD_INTR_PORT_2:
+        case CPLD_QSFPDD_INTR_PORT_0 ... CPLD_QSFPDD_INTR_PORT_2:
             reg = CPLD_QSFPDD_INTR_PORT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_INTR_PORT_0);
             break;
-        case CPLD_QSFPDD_INTR_PRESENT_0:
-        case CPLD_QSFPDD_INTR_PRESENT_1:
-        case CPLD_QSFPDD_INTR_PRESENT_2:
+        case CPLD_QSFPDD_INTR_PRESENT_0 ... CPLD_QSFPDD_INTR_PRESENT_2:
             reg = CPLD_QSFPDD_INTR_PRESENT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_INTR_PRESENT_0);
             break;
-        case CPLD_QSFPDD_INTR_FUSE_0:
-        case CPLD_QSFPDD_INTR_FUSE_1:
-        case CPLD_QSFPDD_INTR_FUSE_2:
+        case CPLD_QSFPDD_INTR_FUSE_0 ... CPLD_QSFPDD_INTR_FUSE_2:
             reg = CPLD_QSFPDD_INTR_FUSE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_INTR_FUSE_0);
             break;
-        case CPLD_QSFPDD_MASK_PORT_0:
-        case CPLD_QSFPDD_MASK_PORT_1:
-        case CPLD_QSFPDD_MASK_PORT_2:
+        case CPLD_QSFPDD_MASK_PORT_0 ... CPLD_QSFPDD_MASK_PORT_2:
             reg = CPLD_QSFPDD_MASK_PORT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_PORT_0);
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_0:
-        case CPLD_QSFPDD_MASK_PRESENT_1:
-        case CPLD_QSFPDD_MASK_PRESENT_2:
+        case CPLD_QSFPDD_MASK_PRESENT_0 ... CPLD_QSFPDD_MASK_PRESENT_2:
             reg = CPLD_QSFPDD_MASK_PRESENT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_PRESENT_0);
             break;
-        case CPLD_QSFPDD_MASK_FUSE_0:
-        case CPLD_QSFPDD_MASK_FUSE_1:
-        case CPLD_QSFPDD_MASK_FUSE_2:
+        case CPLD_QSFPDD_MASK_FUSE_0 ... CPLD_QSFPDD_MASK_FUSE_2:
             reg = CPLD_QSFPDD_MASK_FUSE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_FUSE_0);
             break;
-        case CPLD_QSFPDD_EVT_PORT_0:
-        case CPLD_QSFPDD_EVT_PORT_1:
-        case CPLD_QSFPDD_EVT_PORT_2:
+        case CPLD_QSFPDD_EVT_PORT_0 ... CPLD_QSFPDD_EVT_PORT_2:
             reg = CPLD_QSFPDD_EVT_PORT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_EVT_PORT_0);
             break;
-        case CPLD_QSFPDD_EVT_PRESENT_0:
-        case CPLD_QSFPDD_EVT_PRESENT_1:
-        case CPLD_QSFPDD_EVT_PRESENT_2:
+        case CPLD_QSFPDD_EVT_PRESENT_0 ... CPLD_QSFPDD_EVT_PRESENT_2:
             reg = CPLD_QSFPDD_EVT_PRESENT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_EVT_PRESENT_0);
             break;
-        case CPLD_QSFPDD_EVT_FUSE_0:
-        case CPLD_QSFPDD_EVT_FUSE_1:
-        case CPLD_QSFPDD_EVT_FUSE_2:
+        case CPLD_QSFPDD_EVT_FUSE_0 ... CPLD_QSFPDD_EVT_FUSE_2:
             reg = CPLD_QSFPDD_EVT_FUSE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_EVT_FUSE_0);
             break;
-        case CPLD_QSFPDD_RESET_0:
-        case CPLD_QSFPDD_RESET_1:
-        case CPLD_QSFPDD_RESET_2:
+        case CPLD_QSFPDD_RESET_0 ... CPLD_QSFPDD_RESET_2:
             reg = CPLD_QSFPDD_RESET_BASE_REG +
                  (attr->index - CPLD_QSFPDD_RESET_0);
             break;
-        case CPLD_QSFPDD_LPMODE_0:
-        case CPLD_QSFPDD_LPMODE_1:
-        case CPLD_QSFPDD_LPMODE_2:
+        case CPLD_QSFPDD_LPMODE_0 ... CPLD_QSFPDD_LPMODE_2:
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
@@ -874,16 +865,7 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_I2C_MUX_FAB_RESET_REG;
             break;
         //CPLD 4/5
-        case CPLD_QSFPDD_FAB_LED_0:
-        case CPLD_QSFPDD_FAB_LED_1:
-        case CPLD_QSFPDD_FAB_LED_2:
-        case CPLD_QSFPDD_FAB_LED_3:
-        case CPLD_QSFPDD_FAB_LED_4:
-        case CPLD_QSFPDD_FAB_LED_5:
-        case CPLD_QSFPDD_FAB_LED_6:
-        case CPLD_QSFPDD_FAB_LED_7:
-        case CPLD_QSFPDD_FAB_LED_8:
-        case CPLD_QSFPDD_FAB_LED_9:
+        case CPLD_QSFPDD_FAB_LED_0 ... CPLD_QSFPDD_FAB_LED_9:
             reg = CPLD_QSFPDD_FAB_LED_BASE_REG +
                  (attr->index - CPLD_QSFPDD_FAB_LED_0);
             break;
@@ -916,6 +898,9 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_MISC_MASK:
             reg = CPLD_MISC_MASK_REG;
             break;
+        case CPLD_EVT_CTRL:
+            reg = CPLD_EVT_CTRL_REG;
+            break;
         case CPLD_MAC_RESET:
             reg = CPLD_MAC_RESET_REG;
             break;
@@ -940,41 +925,30 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_MUX_CTRL:
             reg = CPLD_MUX_CTRL_REG;
             break;
-        case CPLD_SYSTEM_LED_0:
-        case CPLD_SYSTEM_LED_1:
+        case CPLD_SYSTEM_LED_0 ... CPLD_SYSTEM_LED_1:
             reg = CPLD_SYSTEM_LED_BASE_REG +
                  (attr->index - CPLD_SYSTEM_LED_0);
             break;
         case CPLD_LED_CLEAR:
             reg = CPLD_LED_CLEAR_REG;
             break;
-        case CPLD_QSFPDD_MASK_PORT_0:
-        case CPLD_QSFPDD_MASK_PORT_1:
-        case CPLD_QSFPDD_MASK_PORT_2:
+        case CPLD_QSFPDD_MASK_PORT_0 ... CPLD_QSFPDD_MASK_PORT_2:
             reg = CPLD_QSFPDD_MASK_PORT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_PORT_0);
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_0:
-        case CPLD_QSFPDD_MASK_PRESENT_1:
-        case CPLD_QSFPDD_MASK_PRESENT_2:
+        case CPLD_QSFPDD_MASK_PRESENT_0 ... CPLD_QSFPDD_MASK_PRESENT_2:
             reg = CPLD_QSFPDD_MASK_PRESENT_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_PRESENT_0);
             break;
-        case CPLD_QSFPDD_MASK_FUSE_0:
-        case CPLD_QSFPDD_MASK_FUSE_1:
-        case CPLD_QSFPDD_MASK_FUSE_2:
+        case CPLD_QSFPDD_MASK_FUSE_0 ... CPLD_QSFPDD_MASK_FUSE_2:
             reg = CPLD_QSFPDD_MASK_FUSE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_MASK_FUSE_0);
             break;
-        case CPLD_QSFPDD_RESET_0:
-        case CPLD_QSFPDD_RESET_1:
-        case CPLD_QSFPDD_RESET_2:
+        case CPLD_QSFPDD_RESET_0 ... CPLD_QSFPDD_RESET_2:
             reg = CPLD_QSFPDD_RESET_BASE_REG +
                  (attr->index - CPLD_QSFPDD_RESET_0);
             break;
-        case CPLD_QSFPDD_LPMODE_0:
-        case CPLD_QSFPDD_LPMODE_1:
-        case CPLD_QSFPDD_LPMODE_2:
+        case CPLD_QSFPDD_LPMODE_0 ... CPLD_QSFPDD_LPMODE_2:
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
@@ -997,16 +971,7 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = CPLD_I2C_MUX_FAB_RESET_REG;
             break;
         //CPLD 4/5
-        case CPLD_QSFPDD_FAB_LED_0:
-        case CPLD_QSFPDD_FAB_LED_1:
-        case CPLD_QSFPDD_FAB_LED_2:
-        case CPLD_QSFPDD_FAB_LED_3:
-        case CPLD_QSFPDD_FAB_LED_4:
-        case CPLD_QSFPDD_FAB_LED_5:
-        case CPLD_QSFPDD_FAB_LED_6:
-        case CPLD_QSFPDD_FAB_LED_7:
-        case CPLD_QSFPDD_FAB_LED_8:
-        case CPLD_QSFPDD_FAB_LED_9:
+        case CPLD_QSFPDD_FAB_LED_0 ... CPLD_QSFPDD_FAB_LED_9:
             reg = CPLD_QSFPDD_FAB_LED_BASE_REG +
                  (attr->index - CPLD_QSFPDD_FAB_LED_0);
             break;
@@ -1048,6 +1013,11 @@ static ssize_t write_cpld_reg(struct device *dev,
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                client, reg, reg_val);
+
+    if (unlikely(ret < 0)) {
+        dev_err(dev, "write_cpld_reg() error, return=%d\n", ret);
+        return ret;
+    }
 
     return count;
 }
