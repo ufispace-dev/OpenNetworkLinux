@@ -1033,7 +1033,7 @@ int
 qsfp_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
-    int cpld_num = (port/PORT_PER_CPLD) + 1;
+    int cpld_num = ((port % PORT_PER_CPLD) / 8) + 1;
 
     cpld_addr = CPLD_BASE_ADDR[cpld_num];
 
@@ -1045,7 +1045,7 @@ qsfp_port_to_sysfs_attr_offset(int port)
 {
     int sysfs_attr_offset = 0;
 
-    sysfs_attr_offset = (port % PORT_PER_CPLD) / 8;
+    sysfs_attr_offset = port / PORT_PER_CPLD;
 
     return sysfs_attr_offset;
 }
