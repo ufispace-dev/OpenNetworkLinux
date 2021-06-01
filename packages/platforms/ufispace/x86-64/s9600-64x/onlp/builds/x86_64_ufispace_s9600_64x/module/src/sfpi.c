@@ -129,27 +129,32 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", real_port+29);
     } else if (port < PORT_NUM) { //SFP
         real_port = port - QSFP_NUM - QSFPDD_NUM;
-        switch(real_port) {
-            case 0:
-            case 1:
-                sprintf(ethtool_cmd, "ethtool -m enp182s0f%d raw on length 256 > /tmp/.sfp.enp182s0f%d.eeprom",
-                real_port,
-                real_port);
-                ret = system(ethtool_cmd);
-                if (ret == 0) {
-                    snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.enp182s0f%d.eeprom", real_port);
-                } else {
-                    AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
-                    return ONLP_STATUS_E_INTERNAL;
-                }
-                break;
-            case 2:
-            case 3:
-                snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", real_port + 23);
-                break;
-            default:
-                AIM_LOG_ERROR("unknown ports, port=%d\n", port);
-                return ONLP_STATUS_E_UNSUPPORTED;
+        if (get_board_id() == 1) {
+            switch(real_port) {
+                case 0:
+                case 1:
+                    sprintf(ethtool_cmd, "ethtool -m enp182s0f%d raw on length 256 > /tmp/.sfp.enp182s0f%d.eeprom",
+                    real_port,
+                    real_port);
+                    ret = system(ethtool_cmd);
+                    if (ret == 0) {
+                        snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.enp182s0f%d.eeprom", real_port);
+                    } else {
+                        AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
+                        return ONLP_STATUS_E_INTERNAL;
+                    }
+                    break;
+                case 2:
+                case 3:
+                    snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", real_port + 23);
+                    break;
+                default:
+                    AIM_LOG_ERROR("unknown ports, port=%d\n", port);
+                    return ONLP_STATUS_E_UNSUPPORTED;
+            }
+        }
+        else {
+            snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", real_port + 25);
         }
     }
 

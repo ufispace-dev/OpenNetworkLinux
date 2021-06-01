@@ -97,6 +97,8 @@ enum LED_GREEN {
 //CPLD 2-5
 #define CPLD_LED_MASK_REG                 0x10
 #define CPLDX_INTR_MASK_REG               0x11
+#define CPLD2_SFP_TX_RX_EVT_MASK_REG      0x12
+#define CPLD2_SFP_TX_RX_EVT_REG           0x13
 #define CPLD_SFP_PLUG_EVT_INBAND_REG      0x16
 #define CPLDX_PLUG_EVT_BASE_REG           0x17
 #define CPLDX_EVT_SUMMARY_REG             0x19
@@ -108,6 +110,10 @@ enum LED_GREEN {
 #define CPLD_QSFP_LED_CTRL_BASE_REG       0x50
 #define CPLD_SFP_STATUS_INBAND_REG        0x60
 #define CPLD_SFP_CONFIG_INBAND_REG        0x61
+#define CPLD_SFP_STATUS_P0_P1_INBAND_REG  0x60
+#define CPLD_SFP_STATUS_P2_P3_INBAND_REG  0x61
+#define CPLD_SFP_CONFIG_P0_P1_INBAND_REG  0x62
+#define CPLD_SFP_CONFIG_P2_P3_INBAND_REG  0x63
 
 #if 0
 /* bit definition for register value */

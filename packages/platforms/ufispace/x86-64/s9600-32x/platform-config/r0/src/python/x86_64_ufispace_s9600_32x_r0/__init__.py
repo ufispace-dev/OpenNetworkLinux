@@ -178,10 +178,10 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
             return
 
         board_id = int(output, 10)
-        # hw_rev = (board_id & 0b00000011)
+        hw_rev = (board_id & 0b00000011)
         deph_id = (board_id & 0b00000100) >> 2
-        build_rev = (board_id & 0b00111000) >> 3
-        hw_build_id = (deph_id << 2) | (build_rev)
+        # build_rev = (board_id & 0b00111000) >> 3
+        hw_build_id = (deph_id << 2) + hw_rev
 
         return hw_build_id
 

@@ -59,9 +59,9 @@ class IPMI_Ioctl(object):
 class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
     PLATFORM = 'x86-64-ufispace-s9701-78dc-r0'
     MODEL = "s9701-78dc"
-    SYS_OBJECT_ID = ".9310.32"
-    PORT_COUNT = 32
-    PORT_CONFIG = "32x400"
+    SYS_OBJECT_ID = ".9701.78"
+    PORT_COUNT = 78
+    PORT_CONFIG = "64x25 8x100 6x400"
     ROV_STAMP_SYSFS = "/sys/bus/i2c/devices/1-0030/cpld_mac_status_3"
     CPLD_MAC_ROV_MASK = 0b11100000
     ROV_CONFIG = [0x73, 0x73, 0x83, 0x6B, 0x6F, 0x77, 0x7B, 0x7F]

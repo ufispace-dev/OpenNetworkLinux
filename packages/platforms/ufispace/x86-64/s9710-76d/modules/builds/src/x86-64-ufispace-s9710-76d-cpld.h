@@ -35,6 +35,7 @@ enum cpld_id {
 #define CPLD_BOARD_ID_1_REG               0x01
 #define CPLD_VERSION_REG                  0x02
 #define CPLD_ID_REG                       0x03
+#define CPLD_BUILD_REG                    0x04
 #define CPLD_MAC_INTR_REG                 0x10
 #define CPLD_PHY_INTR_REG                 0x13
 #define CPLD_CPLDX_INTR_REG               0x14
@@ -48,6 +49,7 @@ enum cpld_id {
 #define CPLD_NTM_MASK_REG                 0x25
 #define CPLD_THERMAL_MASK_BASE_REG        0x26
 #define CPLD_MISC_MASK_REG                0x2B
+#define CPLD_CPU_MASK_REG                 0x2C
 #define CPLD_MAC_EVT_REG                  0x30
 #define CPLD_PHY_EVT_REG                  0x33
 #define CPLD_CPLDX_EVT_REG                0x34

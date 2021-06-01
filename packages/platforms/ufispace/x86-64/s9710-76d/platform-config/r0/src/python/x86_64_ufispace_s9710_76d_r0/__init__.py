@@ -7,6 +7,7 @@ import sys
 import subprocess
 import time
 import fcntl
+import yaml
 
 def msg(s, fatal=False):
     sys.stderr.write(s)
@@ -83,27 +84,37 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
     def init_eeprom(self):
         port = 0
+        data = None
+
+        with open("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/port_config.yml", 'r') as yaml_file:
+            data = yaml.safe_load(yaml_file)
         
         # init QSFPDD NIF EEPROM
-        for bus in range(73, 109):            
+        for bus in range(73, 109):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-            port = port + 1
-            
+            # update port_name
+            if data is not None:
+                port = bus - 73
+                port_name = data["QSFPDD_NIF"][port]["port_name"]
+                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+
         # init QSFPDD FAB EEPROM
-        for bus in range(33, 73):            
+        for bus in range(33, 73):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-            port = port + 1
-        
+            # update port_name
+            if data is not None:
+                port = bus - 33
+                port_name = data["QSFPDD_FAB"][port]["port_name"]
+                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+
         # init SFP+ EEPROM
         for bus in range(109, 111):
             self.new_i2c_device('sff8436', 0x50, bus)
             # update port_name            
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-            port = port + 1
+            if data is not None:
+                port = bus - 109
+                port_name = data["SFP"][port]["port_name"]
+                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -183,7 +194,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         #9555_BEACON_LED
-        self.new_i2c_device('pca9555', 0x20, 4)        
+        self.new_i2c_device('pca9555', 0x20, 4)
         #9539_CPU_I2C
         self.new_i2c_device('pca9539', 0x77, 0)
 
@@ -212,7 +223,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         os.system("echo low > /sys/class/gpio/gpio497/direction")
         os.system("echo low > /sys/class/gpio/gpio496/direction")
 
-        # init GPIO direction        
+        # init GPIO direction
         # 9539_CPU_I2C 0x77
         for i in range(480, 496):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
@@ -233,6 +244,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         # init i40e (need to have i40e before bcm82752 init to avoid failure)        
         self.insmod("i40e")
         # init bcm82752
-        os.system("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/epdm_cli init 10G &")
+        os.system("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/epdm_cli init mdio 10G optics &")
         
         return True
+

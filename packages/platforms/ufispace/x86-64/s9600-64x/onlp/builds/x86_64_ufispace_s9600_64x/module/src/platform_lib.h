@@ -373,6 +373,8 @@ int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 
+int get_board_id(void);
+
 int qsfp_present_get(int port, int *pres_val);
 
 int sfp_present_get(int port, int *pres_val);

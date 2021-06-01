@@ -192,6 +192,7 @@ static int ufi_qsfp_present_get(int port, int *pres_val)
     if ((rc = file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFPDD_PRESENT, attr_offset)) < 0) {
         AIM_LOG_ERROR("Unable to read %s", SYSFS_QSFPDD_PRESENT);
         AIM_LOG_ERROR(SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFPDD_PRESENT, attr_offset);
+        check_and_do_i2c_mux_reset(port);
         return rc;
     }
    
@@ -213,6 +214,7 @@ static int ufi_sfp_present_get(int port, int *pres_val)
     if ((rc = file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_STATUS)) < 0) {
         AIM_LOG_ERROR("Unable to read %s", SYSFS_SFP_STATUS);
         AIM_LOG_ERROR(SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_STATUS);
+        check_and_do_i2c_mux_reset(port);
         return rc;
     }
    
@@ -331,7 +333,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     bus = ufi_port_to_eeprom_bus(port);
     
     if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
         
         check_and_do_i2c_mux_reset(port);
@@ -339,7 +341,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     }
 
     if (size != 256) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!\r\n", port);
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -355,8 +357,14 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE);
+
+    if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;    
 }
 
 /**
@@ -365,8 +373,14 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);    
-    return onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE);
+
+    if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }   
+    
+    return rc;
 }
 
 /**
@@ -379,8 +393,14 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE);
+
+    if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }  
+    
+    return rc;    
 }
 
 /**
@@ -389,8 +409,14 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE);
+
+    if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;      
 }
 
 /**
@@ -415,7 +441,8 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     bus = ufi_port_to_eeprom_bus(port);
     
     if (port < PORT_NUM) {        
-        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0 ) {
+        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
+            check_and_do_i2c_mux_reset(port);
             return ONLP_STATUS_E_INTERNAL;
         }
     } else {
@@ -431,8 +458,14 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE);
+
+    if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;
 }
 
 /**
@@ -463,12 +496,14 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     fp = fopen(eeprom_path, "r");
     if(fp == NULL) {
         AIM_LOG_ERROR("Unable to open the eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
     if (fseek(fp, 256, SEEK_CUR) != 0) {
         fclose(fp);
         AIM_LOG_ERROR("Unable to set the file position indicator of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -476,6 +511,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     fclose(fp);
     if (ret != 256) {
         AIM_LOG_ERROR("Unable to read the module_eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -560,6 +596,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);                    
                     if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET, attr_offset) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -572,6 +609,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     if ((rc=onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET, attr_offset)) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_RESET,  rc, reg_val);
                         AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET);
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
@@ -585,6 +623,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 if (IS_SFP(port)) {
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_CONFIG) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -601,6 +640,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     if (onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_CONFIG) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_SFP_CONFIG, rc, reg_val);
                         AIM_LOG_ERROR(SYS_FMT, bus, cpld_addr, SYSFS_SFP_CONFIG);
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
@@ -615,6 +655,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);                    
                     if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE, attr_offset) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -627,6 +668,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     if (onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE, attr_offset) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_LPMODE,  rc, reg_val);
                         AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE);
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
@@ -669,6 +711,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);                    
                     if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET, attr_offset) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -689,6 +732,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 if (IS_SFP(port)) {
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_STATUS) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -708,6 +752,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 if (IS_SFP(port)) {
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_STATUS) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -727,6 +772,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 if (IS_SFP(port)) {
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_CONFIG) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 
@@ -747,6 +793,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);                    
                     if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE, attr_offset) < 0) {
+                        check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
 

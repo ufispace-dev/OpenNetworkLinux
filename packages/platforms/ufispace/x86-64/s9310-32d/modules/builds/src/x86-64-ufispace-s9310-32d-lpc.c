@@ -21,25 +21,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <linux/interrupt.h>
 #include <linux/module.h>
-#include <linux/pci.h>
-#include <linux/kernel.h>
-#include <linux/stddef.h>
 #include <linux/delay.h>
-#include <linux/ioport.h>
-#include <linux/init.h>
-#include <linux/i2c.h>
-#include <linux/acpi.h>
 #include <linux/io.h>
-#include <linux/dmi.h>
-#include <linux/slab.h>
-#include <linux/wait.h>
-#include <linux/err.h>
 #include <linux/platform_device.h>
-#include <linux/types.h>
-#include <uapi/linux/stat.h>
-#include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 
 #define DRIVER_NAME "x86_64_ufispace_s9310_32d_lpc"

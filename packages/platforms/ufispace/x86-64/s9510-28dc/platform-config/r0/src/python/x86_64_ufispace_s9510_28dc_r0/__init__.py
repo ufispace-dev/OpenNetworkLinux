@@ -63,19 +63,38 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     def check_bmc_enable(self):
         return 1
 
+    def check_i2c_status(self): 
+        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
+
+        # Check I2C status
+        retcode = os.system("i2cget -f -y 0 0x75 > /dev/null 2>&1")
+        if retcode != 0:
+
+            #read mux failed, i2c bus may be stuck
+            msg("Warning: Read I2C Mux Failed!! (ret=%d)\n" % (retcode) )
+
+            #Recovery I2C
+            if os.path.exists(sysfs_mux_reset):
+                with open(sysfs_mux_reset, "w") as f:
+                    #write 0 to sysfs
+                    f.write("{}".format(0))
+                    msg("I2C bus recovery done.\n")
+            else:
+                msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
+
     def init_eeprom(self, bus_ismt):    
         port = 0
         
         # init QSFPDD EEPROM
         for bus in range(bus_ismt+11, bus_ismt+13):
-            self.new_i2c_device('optoe1', 0x50, bus)
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
             
         # init QSFP28 EEPROM
         for bus in range(bus_ismt+9, bus_ismt+11):        
-            self.new_i2c_device('sff8436', 0x50, bus)
+            self.new_i2c_device('optoe1', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
@@ -144,7 +163,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             msg("GPIO init failed, unknown board_hw_id=\n".format(board_hw_id))
             
         # export GPIO and configure direction
-        for i in range(352, 512):
+        for i in range(320, 512):
             os.system("echo {} > /sys/class/gpio/export".format(i))
             os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i], i))
 

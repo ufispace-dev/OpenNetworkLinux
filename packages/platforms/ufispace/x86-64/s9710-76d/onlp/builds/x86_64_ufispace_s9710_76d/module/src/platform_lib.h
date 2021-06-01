@@ -53,7 +53,7 @@
 #define CACHE_OFFSET_PSU         (21)
 
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define CPU_MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/mux_reset"
+#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
 
 /* SYS */
 #define CPLD_MAX      5

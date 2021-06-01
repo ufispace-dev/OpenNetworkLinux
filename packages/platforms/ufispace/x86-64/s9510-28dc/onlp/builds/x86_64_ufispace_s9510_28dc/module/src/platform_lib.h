@@ -36,23 +36,20 @@
 
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
+#define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/"
-#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
+#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_MAC PSU0_TEMP PSU1_TEMP FAN0_RPM FAN1_RPM FAN2_RPM FAN3_RPM FAN4_RPM PSU0_FAN PSU1_FAN FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H FAN4_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_MAC PSU0_TEMP PSU1_TEMP FAN_0 FAN_1 FAN_2 FAN_3 FAN_4 PSU0_FAN PSU1_FAN  PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 
-#define CACHE_OFFSET_THERMAL     (-10)
-#define CACHE_OFFSET_FAN_RPM     (2)
-#define CACHE_OFFSET_PSU         (14)
+#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x75 > /dev/null 2>&1"
+#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
 
-#define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define CPU_MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/cpu_cpld/mux_reset"
 
 /* BMC CMD */
 #define FAN_CACHE_TIME          5
@@ -65,6 +62,49 @@ enum sensor
     PSU_SENSOR,
     THERMAL_SENSOR,
 };
+
+enum bmc_attr_id {
+    BMC_ATTR_ID_TEMP_MAC,
+    BMC_ATTR_ID_PSU0_TEMP,
+    BMC_ATTR_ID_PSU1_TEMP,
+    BMC_ATTR_ID_FAN_0,
+    BMC_ATTR_ID_FAN_1,
+    BMC_ATTR_ID_FAN_2,
+    BMC_ATTR_ID_FAN_3,
+    BMC_ATTR_ID_FAN_4,
+    BMC_ATTR_ID_PSU0_FAN,
+    BMC_ATTR_ID_PSU1_FAN,
+    BMC_ATTR_ID_PSU0_VIN,
+    BMC_ATTR_ID_PSU0_VOUT,
+    BMC_ATTR_ID_PSU0_IIN,
+    BMC_ATTR_ID_PSU0_IOUT,
+    BMC_ATTR_ID_PSU0_STBVOUT,
+    BMC_ATTR_ID_PSU0_STBIOUT,
+    BMC_ATTR_ID_PSU1_VIN,
+    BMC_ATTR_ID_PSU1_VOUT,
+    BMC_ATTR_ID_PSU1_IIN,
+    BMC_ATTR_ID_PSU1_IOUT,
+    BMC_ATTR_ID_PSU1_STBVOUT,
+    BMC_ATTR_ID_PSU1_STBIOUT,
+    BMC_ATTR_ID_MAX
+};
+
+enum psu_attr_id {
+    PSU_ATTR_VIN_0,
+    PSU_ATTR_VOUT_0,
+    PSU_ATTR_IIN_0,
+    PSU_ATTR_IOUT_0,
+    PSU_ATTR_STBVOUT_0,
+    PSU_ATTR_STBIOUT_0,
+    PSU_ATTR_VIN_1,
+    PSU_ATTR_VOUT_1,
+    PSU_ATTR_IIN_1,
+    PSU_ATTR_IOUT_1,
+    PSU_ATTR_STBVOUT_1,
+    PSU_ATTR_STBIOUT_1,
+    PSU_ATTR_ID_MAX
+};
+
 
 /* fan_id */
 enum onlp_fan_id {
@@ -80,48 +120,38 @@ enum onlp_fan_id {
 
 /* led_id */
 enum onlp_led_id {
-    ONLP_LED_SYS_GNSS = 1,    
-    ONLP_LED_SYS_SYNC,    
-    ONLP_LED_SYS_SYS,    
+    ONLP_LED_SYS_GNSS = 1,
+    ONLP_LED_SYS_SYNC,
+    ONLP_LED_SYS_SYS,
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PWR,
+    ONLP_LED_FLEXE_0,
+    ONLP_LED_FLEXE_1,
     ONLP_LED_MAX
 };
 
 /* psu_id */
 enum onlp_psu_id {
-    ONLP_PSU_0      = 1,
-    ONLP_PSU_1      = 2,
-    ONLP_PSU_0_VIN  = 3,
-    ONLP_PSU_0_VOUT = 4,
-    ONLP_PSU_0_IIN  = 5,
-    ONLP_PSU_0_IOUT = 6,
-    ONLP_PSU_0_STBVOUT = 7,
-    ONLP_PSU_0_STBIOUT = 8,
-    ONLP_PSU_1_VIN  = 9,
-    ONLP_PSU_1_VOUT = 10,
-    ONLP_PSU_1_IIN  = 11,
-    ONLP_PSU_1_IOUT = 12,
-    ONLP_PSU_1_STBVOUT = 13,
-    ONLP_PSU_1_STBIOUT = 14,
-    ONLP_PSU_MAX = 15,
+    ONLP_PSU_0 = 1,
+    ONLP_PSU_1,
+    ONLP_PSU_MAX,
 };
 
 /* thermal_id */
 enum onlp_thermal_id {
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_MAC    = 10,
-    ONLP_THERMAL_PSU_0 = 11, 
-    ONLP_THERMAL_PSU_1 = 12,    
-    ONLP_THERMAL_MAX = 13,
+    ONLP_THERMAL_CPU_0,
+    ONLP_THERMAL_CPU_1,
+    ONLP_THERMAL_CPU_2,
+    ONLP_THERMAL_CPU_3,
+    ONLP_THERMAL_CPU_4,
+    ONLP_THERMAL_CPU_5,
+    ONLP_THERMAL_CPU_6,
+    ONLP_THERMAL_CPU_7,
+    ONLP_THERMAL_MAC,
+    ONLP_THERMAL_PSU_0,
+    ONLP_THERMAL_PSU_1,
+    ONLP_THERMAL_MAX,
 };
 
 typedef struct bmc_info_s
@@ -150,4 +180,5 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
+int ufi_oid_to_bmc_attr_id(int type, int sensor_id, int sub_devid);
 #endif  /* __PLATFORM_LIB_H__ */

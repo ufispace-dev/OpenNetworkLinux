@@ -21,25 +21,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <linux/interrupt.h>
 #include <linux/module.h>
-#include <linux/pci.h>
-#include <linux/kernel.h>
-#include <linux/stddef.h>
 #include <linux/delay.h>
-#include <linux/ioport.h>
-#include <linux/init.h>
-#include <linux/i2c.h>
-#include <linux/acpi.h>
 #include <linux/io.h>
-#include <linux/dmi.h>
-#include <linux/slab.h>
-#include <linux/wait.h>
-#include <linux/err.h>
 #include <linux/platform_device.h>
-#include <linux/types.h>
-#include <uapi/linux/stat.h>
-#include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 
 #define DRIVER_NAME "x86_64_ufispace_s9701_78dc_lpc"
@@ -67,7 +52,6 @@
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
 
 //MB CPLD
-//TBD, need to change after CPLD spec release
 #define REG_MB_BRD_ID_0                   (REG_BASE_MB + 0x00)
 #define REG_MB_BRD_ID_1                   (REG_BASE_MB + 0x01)
 #define REG_MB_CPLD_VERSION               (REG_BASE_MB + 0x02)
@@ -291,7 +275,7 @@ static ssize_t write_mux_reset_callback(struct device *dev,
 {
     u8 val = 0;
     u16 reg1 = REG_MB_MUX_RESET1;
-    u16 reg2 = REG_MB_MUX_RESET1;
+    u16 reg2 = REG_MB_MUX_RESET2;
     u8 reg_val1 = 0;
     u8 reg_val2 = 0;
     u8 mask = 0b11111111;

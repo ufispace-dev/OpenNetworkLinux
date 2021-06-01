@@ -58,6 +58,7 @@ enum cpld_sysfs_attributes {
     CPLD_BOARD_ID_0,
     CPLD_BOARD_ID_1,
     CPLD_VERSION,
+    CPLD_BUILD,
     CPLD_ID,
     CPLD_MAC_INTR,
     CPLD_PHY_INTR,
@@ -70,6 +71,7 @@ enum cpld_sysfs_attributes {
     CPLD_CPLDX_MASK,
     CPLD_MAC_THERMAL_MASK,
     CPLD_MISC_MASK,
+    CPLD_CPU_MASK,
     CPLD_MAC_EVT,
     CPLD_PHY_EVT,
     CPLD_CPLDX_EVT,
@@ -198,6 +200,7 @@ static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, 0x32, 0x33, 0x34, I2
 static SENSOR_DEVICE_ATTR(cpld_board_id_0,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_0);
 static SENSOR_DEVICE_ATTR(cpld_board_id_1,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_1);
 static SENSOR_DEVICE_ATTR(cpld_version,     S_IRUGO, read_cpld_callback, NULL, CPLD_VERSION);
+static SENSOR_DEVICE_ATTR(cpld_build,     S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD);
 static SENSOR_DEVICE_ATTR(cpld_id,          S_IRUGO, read_cpld_callback, NULL, CPLD_ID);
 
 static SENSOR_DEVICE_ATTR(cpld_mac_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_INTR);
@@ -212,6 +215,7 @@ static SENSOR_DEVICE_ATTR(cpld_phy_mask,    S_IWUSR | S_IRUGO, read_cpld_callbac
 static SENSOR_DEVICE_ATTR(cpld_cpldx_mask,  S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_CPLDX_MASK);
 static SENSOR_DEVICE_ATTR(cpld_mac_thermal_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_THERMAL_MASK);
 static SENSOR_DEVICE_ATTR(cpld_misc_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MISC_MASK);
+static SENSOR_DEVICE_ATTR(cpld_cpu_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_CPU_MASK);
 
 static SENSOR_DEVICE_ATTR(cpld_mac_evt,     S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_EVT);
 static SENSOR_DEVICE_ATTR(cpld_phy_evt,     S_IRUGO, read_cpld_callback, NULL, CPLD_PHY_EVT);
@@ -324,6 +328,7 @@ static struct attribute *cpld1_attributes[] = {
     &sensor_dev_attr_cpld_board_id_0.dev_attr.attr,
     &sensor_dev_attr_cpld_board_id_1.dev_attr.attr,
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
     &sensor_dev_attr_cpld_mac_intr.dev_attr.attr,
@@ -338,6 +343,7 @@ static struct attribute *cpld1_attributes[] = {
     &sensor_dev_attr_cpld_cpldx_mask.dev_attr.attr,
 	&sensor_dev_attr_cpld_mac_thermal_mask.dev_attr.attr,
     &sensor_dev_attr_cpld_misc_mask.dev_attr.attr,
+    &sensor_dev_attr_cpld_cpu_mask.dev_attr.attr,
 
     &sensor_dev_attr_cpld_mac_evt.dev_attr.attr,
     &sensor_dev_attr_cpld_phy_evt.dev_attr.attr,
@@ -372,6 +378,7 @@ static struct attribute *cpld1_attributes[] = {
 /* cpld 2 */
 static struct attribute *cpld2_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
     //CPLD 2-5
@@ -443,6 +450,7 @@ static struct attribute *cpld2_attributes[] = {
 /* cpld 3 */
 static struct attribute *cpld3_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
     //CPLD 2-5
@@ -505,6 +513,7 @@ static struct attribute *cpld3_attributes[] = {
 /* cpld 4 */
 static struct attribute *cpld4_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
     //CPLD 2-5
@@ -577,6 +586,7 @@ static struct attribute *cpld4_attributes[] = {
 /* cpld 5 */
 static struct attribute *cpld5_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
     //CPLD 2-5
@@ -687,6 +697,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_ID:
             reg = CPLD_ID_REG;
             break;
+        case CPLD_BUILD:
+            reg = CPLD_BUILD_REG;
+            break;
         case CPLD_MAC_INTR:
             reg = CPLD_MAC_INTR_REG;
             break;
@@ -719,6 +732,9 @@ static ssize_t read_cpld_callback(struct device *dev,
             break;
         case CPLD_MISC_MASK:
             reg = CPLD_MISC_MASK_REG;
+            break;
+        case CPLD_CPU_MASK:
+            reg = CPLD_CPU_MASK_REG;
             break;
         case CPLD_MAC_EVT:
             reg = CPLD_MAC_EVT_REG;
@@ -897,6 +913,9 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case CPLD_MISC_MASK:
             reg = CPLD_MISC_MASK_REG;
+            break;
+        case CPLD_CPU_MASK:
+            reg = CPLD_CPU_MASK_REG;
             break;
         case CPLD_EVT_CTRL:
             reg = CPLD_EVT_CTRL_REG;

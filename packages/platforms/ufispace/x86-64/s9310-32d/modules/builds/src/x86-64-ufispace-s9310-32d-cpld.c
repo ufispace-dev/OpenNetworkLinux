@@ -1,5 +1,5 @@
 /*
- * A i2c cpld driver for the ufispace_s9310
+ * A i2c cpld driver for the ufispace_s9310_32d
  *
  * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>

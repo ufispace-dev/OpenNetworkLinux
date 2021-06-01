@@ -198,6 +198,32 @@ int check_file_exist(char *file_path, long *file_time)
     }
 }
 
+int get_board_id(void)
+{
+    int board_id, hw_rev, deph_id, hw_build_id;
+    char board_id_cmd[128];
+    char buffer[128];
+    FILE *fp;
+
+    snprintf(board_id_cmd, sizeof(board_id_cmd), "cat /sys/devices/platform/x86_64_ufispace_s9600_64x_lpc/mb_cpld/board_id_1");
+    fp = popen(board_id_cmd, "r");
+    if (fp == NULL) {
+        AIM_LOG_ERROR("Unable to popen cmd(%s)\r\n", board_id_cmd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    /* Read the output a line at a time - output it. */
+    fgets(buffer, sizeof(buffer), fp);
+    board_id = atoi(buffer);
+
+    hw_rev = (board_id & 0b00000011);
+    deph_id = (board_id & 0b00000100) >> 2;
+    hw_build_id = (deph_id << 2) + hw_rev;
+
+    pclose(fp);
+
+    return hw_build_id;
+}
+
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 {
     int bmc_cache_expired = 0;
@@ -797,6 +823,7 @@ qsfp_present_get(int port, int *pres_val)
     status = (int) strtol((char *)data, NULL, 0);
 
     *pres_val = !((status >> (port % 8))  & 0x1);
+    //*pres_val = !(status >> (0x1 << port % 8));
 
     return ONLP_STATUS_OK;
 }
@@ -814,32 +841,63 @@ int sfp_present_get(int port, int *pres_val)
     memset(sysfs_path, 0, sizeof(sysfs_path));
 
     real_port = port - QSFP_NUM - QSFPDD_NUM;
-    switch(real_port) {
-        case 0:
-            cpld_addr = 0x30;
-            data_mask = 0x01;
-            snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_cpu", I2C_BUS_1, cpld_addr);
-            break;
-        case 1:
-            cpld_addr = 0x30;
-            data_mask = 0x10;
-            snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_cpu", I2C_BUS_1, cpld_addr);
-            break;
-        case 2:
-            cpld_addr = 0x31;
-            data_mask = 0x01;
-            snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_inband", I2C_BUS_1, cpld_addr);
-            break;
+    if (get_board_id() == 1) { //alpha
+        switch(real_port) {
+            case 0:
+                cpld_addr = 0x30;
+                data_mask = 0x01;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_cpu", I2C_BUS_1, cpld_addr);
+                break;
+            case 1:
+                cpld_addr = 0x30;
+                data_mask = 0x10;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_cpu", I2C_BUS_1, cpld_addr);
+                break;
+            case 2:
+                cpld_addr = 0x31;
+                data_mask = 0x01;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_inband", I2C_BUS_1, cpld_addr);
+                break;
 
-        case 3:
-            cpld_addr = 0x31;
-            data_mask = 0x10;
-            snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_inband", I2C_BUS_1, cpld_addr);
-            break;
-        default:
-            AIM_LOG_ERROR("unknown sfp port, port=%d\n", port);
-            return ONLP_STATUS_E_INTERNAL;
+            case 3:
+                cpld_addr = 0x31;
+                data_mask = 0x10;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_inband", I2C_BUS_1, cpld_addr);
+                break;
+            default:
+                AIM_LOG_ERROR("unknown sfp port, port=%d\n", port);
+                return ONLP_STATUS_E_INTERNAL;
+        }
     }
+    else {
+        switch(real_port) {
+            case 0:
+                cpld_addr = 0x31;
+                data_mask = 0x01;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p0_p1_inband", I2C_BUS_1, cpld_addr);
+                break;
+            case 1:
+                cpld_addr = 0x31;
+                data_mask = 0x10;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p0_p1_inband", I2C_BUS_1, cpld_addr);
+                break;
+            case 2:
+                cpld_addr = 0x31;
+                data_mask = 0x01;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p2_p3_inband", I2C_BUS_1, cpld_addr);
+                break;
+
+            case 3:
+                cpld_addr = 0x31;
+                data_mask = 0x10;
+                snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p2_p3_inband", I2C_BUS_1, cpld_addr);
+                break;
+            default:
+                AIM_LOG_ERROR("unknown sfp port, port=%d\n", port);
+                return ONLP_STATUS_E_INTERNAL;
+        }
+    }
+
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len, sysfs_path)) != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("onlp_file_read failed, error=%d, sysfs=%s", rc, sysfs_path);
@@ -1037,7 +1095,7 @@ int
 qsfp_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
-    int cpld_num = (port/PORT_PER_CPLD) + 1;
+    int cpld_num = ((port%32) / 8) + 1;
 
     cpld_addr = CPLD_BASE_ADDR[cpld_num];
 
@@ -1049,7 +1107,7 @@ qsfp_port_to_sysfs_attr_offset(int port)
 {
     int sysfs_attr_offset = 0;
 
-    sysfs_attr_offset = (port % PORT_PER_CPLD) / 8;
+    sysfs_attr_offset = port / 32;
 
     return sysfs_attr_offset;
 }

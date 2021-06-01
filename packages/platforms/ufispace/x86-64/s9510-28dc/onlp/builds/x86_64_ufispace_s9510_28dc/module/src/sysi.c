@@ -44,6 +44,8 @@
  *            |----[03] ONLP_LED_SYS_SYS
  *            |----[04] ONLP_LED_SYS_FAN
  *            |----[05] ONLP_LED_SYS_PWR
+ *            |----[06] ONLP_LED_FLEXE_0
+ *            |----[07] ONLP_LED_FLEXE_1
  *            |----[01] ONLP_PSU_0----[11] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[12] ONLP_THERMAL_PSU_1
@@ -57,7 +59,7 @@
  
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
-#define SYSFS_CPLD_VER_H  LPC_FMT "mb_cpld_version_h"
+#define SYSFS_CPLD_VER_H  LPC_FMT "cpld_version_h"
 #define SYSFS_HW_ID  LPC_FMT "board_hw_id"
 #define SYSFS_BUILD_ID  LPC_FMT "board_build_id"
 
@@ -68,17 +70,12 @@
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    uint8_t mb_cpld_ver_h[32];
+    uint8_t mb_cpld_ver_h[32] = {0};
     int mb_cpld_hw_rev, mb_cpld_build_rev;
     int rc, size=0;
-    char bios_out[32];
-    char bmc_out1[8], bmc_out2[8], bmc_out3[8];
+    char bios_out[32] = {0};
+    char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
 
-    memset(bios_out, 0, sizeof(bios_out));
-    memset(bmc_out1, 0, sizeof(bmc_out1));
-    memset(bmc_out2, 0, sizeof(bmc_out2));
-    memset(bmc_out3, 0, sizeof(bmc_out3));
-    
     //get MB CPLD version
 
     if((rc = onlp_file_read(mb_cpld_ver_h, sizeof(mb_cpld_ver_h), &size, SYSFS_CPLD_VER_H)) < 0) {
@@ -265,7 +262,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     }
 
     /* PSU */
-    for (i = ONLP_PSU_0; i <= ONLP_PSU_1; i++) {
+    for (i = ONLP_PSU_0; i < ONLP_PSU_MAX; i++) {
         *e++ = ONLP_PSU_ID_CREATE(i);
     }
 

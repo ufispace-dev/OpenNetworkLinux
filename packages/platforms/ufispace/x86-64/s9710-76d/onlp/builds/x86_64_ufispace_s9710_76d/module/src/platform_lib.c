@@ -329,21 +329,18 @@ void check_and_do_i2c_mux_reset(int port)
 {
     char cmd_buf[256] = {0};
     int ret = 0;
-
-    //FIXME
-    if(1) return;
-    
+        
     if(access(MB_CPLD1_ID_PATH, F_OK) != -1 ) {
 
         snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", MB_CPLD1_ID_PATH);
         ret = system(cmd_buf);
-
-        if (ret != 0) {
-            if(access(CPU_MUX_RESET_PATH, F_OK) != -1 ) {
-                //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
-                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", CPU_MUX_RESET_PATH);
+        
+        if (ret != 0) {            
+            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+                //AIM_LOG_ERROR("I2C bus is stuck!! (port=%d)", port);
+                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
                 ret = system(cmd_buf);
-                //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
+                //AIM_LOG_ERROR("Do I2C mux reset!! (ret=%d)", ret);
             }
         }
     }

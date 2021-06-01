@@ -118,7 +118,7 @@
 #define PORT_NUM                    SFP_NUM + QSFP_NUM + QSFPDD_NUM + MGMT_SFP_NUM
 #define THERMAL_NUM             18
 #define LED_NUM                     4
-#define FAN_NUM                     8
+#define FAN_NUM                     6
 /* IO BASE */
 #define CPU_CPLD_BASEADDR  0x600
 #define MB_CPLD_BASEADDR  0xe00

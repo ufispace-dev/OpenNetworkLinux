@@ -20,14 +20,14 @@
  ************************************************************
  *
  * SFP Platform Implementation Interface.
- * 
+ *
  ***********************************************************/
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
 #define SFP_NUM               24
 #define QSFP_NUM              2
-#define QSFPDD_NUM        2
+#define QSFPDD_NUM            2
 #define QSFPX_NUM             (QSFP_NUM+QSFPDD_NUM)
 #define PORT_NUM              (SFP_NUM+QSFPX_NUM)
 
@@ -39,7 +39,6 @@
 #define IS_QSFPDD(_port)  (_port >= 0 && _port < QSFPDD_NUM)
 
 #define SYSFS_EEPROM         "eeprom"
-#define SYSFS_GPIO_VAL                "/sys/class/gpio/gpio%d/value"
 
 #define EEPROM_ADDR (0x50)
 
@@ -53,8 +52,8 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
         {
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                if (IS_QSFPX(port)) {                    
-                    gpio_base = 495;                    
+                if (IS_QSFPX(port)) {
+                    gpio_base = 495;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
@@ -72,12 +71,12 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
                 if (IS_SFP(port)) {
-                    gpio_base = 447;                
+                    gpio_base = 447;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
                 break;
-            }        
+            }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
                 if (IS_SFP(port)) {
@@ -90,34 +89,34 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
         case ONLP_SFP_CONTROL_LP_MODE:
             {
                 if (IS_QSFPX(port)) {
-                    gpio_base = 491;                    
+                    gpio_base = 491;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
                 break;
-            }                
+            }
         default:
             return ONLP_STATUS_E_UNSUPPORTED;
         }
-     
+
     //set gpio_num by port
     if (IS_QSFPX(port)) {
         gpio_num = gpio_base - port;
     } else if (port>=4 && port<=11) {
-        gpio_num = gpio_base - (port-4);
+        gpio_num = gpio_base - (port+4);
     } else if (port>=12 && port<=19) {
         gpio_num = gpio_base - (port-12);
     } else if (port>=20 && port<=27) {
-        gpio_num = gpio_base - (port-20);
+        gpio_num = gpio_base - (port+4);
     }
- 
-    return gpio_num;    
+
+    return gpio_num;
 }
 
 static int ufi_port_to_eeprom_bus(int port)
 {
     int bus = -1;
-    
+
     if (IS_QSFPDD(port) || IS_QSFP(port)) { //QSFPDD or QSFP
         bus =  13 - port;
     } else if (IS_SFP(port)) { //SFP
@@ -127,7 +126,7 @@ static int ufi_port_to_eeprom_bus(int port)
         check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
-    
+
     return bus;
 }
 
@@ -135,7 +134,7 @@ static int ufi_port_to_eeprom_bus(int port)
  * @brief Initialize the SFPI subsystem.
  */
 int onlp_sfpi_init(void)
-{  
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -164,7 +163,7 @@ int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
     int value = 0;
-    
+
     VALIDATE_PORT(port);
 
     //set gpio_num by port
@@ -178,15 +177,15 @@ int onlp_sfpi_is_present(int port)
         gpio_num = 359 - (port-20);
     }
 
-    if ((status = onlp_file_read_int(&value, SYSFS_GPIO_VAL, gpio_num)) < 0) {
-        AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d", 
-            status, SYSFS_GPIO_VAL, gpio_num);
+    if ((status = file_read_hex(&value, SYS_GPIO_FMT, gpio_num)) < 0) {
+        AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",
+            status, SYS_GPIO_FMT, gpio_num);
         return status;
     }
 
     value = !value;
 
-    return value;    
+    return value;
 }
 
 /**
@@ -201,8 +200,8 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     for (p = 0; p < PORT_NUM; p++) {
         if ((rc = onlp_sfpi_is_present(p)) < 0) {
             return rc;
-        } 
-        AIM_BITMAP_MOD(dst, p, rc);        
+        }
+        AIM_BITMAP_MOD(dst, p, rc);
     }
 
     return ONLP_STATUS_OK;
@@ -223,7 +222,7 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 
     /* Populate bitmap - SFP+ ports */
     for(i = QSFPX_NUM; i < PORT_NUM; i++) {
-	if (onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)< 0) {
+        if (onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)< 0) {
             return ONLP_STATUS_E_INTERNAL;
         } else {
             AIM_BITMAP_MOD(dst, i, value);
@@ -239,18 +238,18 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
  * @param data Receives the SFP data.
  */
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
-{   
+{
     int size = 0, bus = 0, rc = 0;
 
     VALIDATE_PORT(port);
-    
+
     memset(data, 0, 256);
     bus = ufi_port_to_eeprom_bus(port);
-    
+
     if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
-        
+
         check_and_do_i2c_mux_reset(port);
         return rc;
     }
@@ -282,7 +281,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 {
     VALIDATE_PORT(port);
-    int bus = ufi_port_to_eeprom_bus(port);    
+    int bus = ufi_port_to_eeprom_bus(port);
     return onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE);
 }
 
@@ -322,7 +321,7 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     int bus = -1;
 
     VALIDATE_PORT(port);
-    
+
     if (onlp_sfpi_is_present(port) < 0) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
@@ -330,8 +329,8 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
 
     devaddr = EEPROM_ADDR;
     bus = ufi_port_to_eeprom_bus(port);
-    
-    if (port < PORT_NUM) {        
+
+    if (port < PORT_NUM) {
         if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0 ) {
             return ONLP_STATUS_E_INTERNAL;
         }
@@ -350,6 +349,7 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
+
 /**
  * @brief Read the SFP DOM EEPROM.
  * @param port The port number.
@@ -362,7 +362,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     int bus = 0;
 
     VALIDATE_PORT(port);
-    
+
     memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));
 
@@ -416,25 +416,25 @@ int onlp_sfpi_post_insert(int port, sff_info_t* info)
 int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
 {
     VALIDATE_PORT(port);
-    
+
     //set unsupported as default value
     *rv=0;
-    
+
     switch (control) {
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
-        case ONLP_SFP_CONTROL_LP_MODE:            
+        case ONLP_SFP_CONTROL_LP_MODE:
             if (IS_QSFPX(port)) {
                 *rv = 1;
             }
-            break;        
+            break;
         case ONLP_SFP_CONTROL_RX_LOS:
-        case ONLP_SFP_CONTROL_TX_FAULT:    
-        case ONLP_SFP_CONTROL_TX_DISABLE:        
+        case ONLP_SFP_CONTROL_TX_FAULT:
+        case ONLP_SFP_CONTROL_TX_DISABLE:
             if (IS_SFP(port)) {
                 *rv = 1;
             }
-            break;        
+            break;
         default:
             *rv = 0;
             break;
@@ -461,33 +461,35 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         {
         case ONLP_SFP_CONTROL_RESET:
             {
-                if (!IS_QSFPX(port)) {                    
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                } else {
-                     //reverse bit                    
+                if (IS_QSFPX(port)) {
+                     //reverse bit
                     value = !value;
-                }
-                break;
-            }        
-        case ONLP_SFP_CONTROL_TX_DISABLE:
-            {
-                if (!IS_SFP(port)) {
+                } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
                 break;
             }
-        case ONLP_SFP_CONTROL_LP_MODE:
+        case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                if (!IS_QSFPX(port)) {
+                if (IS_SFP(port)) {
+                    break;
+                } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
-                break;
-            }                
+            }
+        case ONLP_SFP_CONTROL_LP_MODE:
+            {
+                if (IS_QSFPX(port)) {
+                    break;
+                } else {
+                    return ONLP_STATUS_E_UNSUPPORTED;
+                }
+            }
         default:
             rc = ONLP_STATUS_E_UNSUPPORTED;
         }
 
-    //get gpio_num    
+    //get gpio_num
     if ((rc = ufi_port_to_gpio_num(port, control)) < 0) {
         AIM_LOG_ERROR("ufi_port_to_gpio_num() failed, error=%d, port=%d, control=%d", rc, port, control);
         return rc;
@@ -496,8 +498,8 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     }
 
     //write gpio value
-    if ((rc = onlp_file_write_int(value, SYSFS_GPIO_VAL, gpio_num)) < 0) {
-        AIM_LOG_ERROR("onlp_sfpi_control_set() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYSFS_GPIO_VAL, gpio_num);
+    if ((rc = onlp_file_write_int(value, SYS_GPIO_FMT, gpio_num)) < 0) {
+        AIM_LOG_ERROR("onlp_sfpi_control_set() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYS_GPIO_FMT, gpio_num);
         return rc;
     }
 
@@ -517,7 +519,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 
     VALIDATE_PORT(port);
 
-    //get gpio_num    
+    //get gpio_num
     if ((rc = ufi_port_to_gpio_num(port, control)) < 0) {
         AIM_LOG_ERROR("ufi_port_to_gpio_num() failed, error=%d, port=%d, control=%d", rc, port, control);
         return rc;
@@ -526,8 +528,8 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     }
 
     //read gpio value
-    if ((rc = onlp_file_read_int(value, SYSFS_GPIO_VAL, gpio_num)) < 0) {
-        AIM_LOG_ERROR("onlp_sfpi_control_get() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYSFS_GPIO_VAL, gpio_num);
+    if ((rc = file_read_hex(value, SYS_GPIO_FMT, gpio_num)) < 0) {
+        AIM_LOG_ERROR("onlp_sfpi_control_get() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYS_GPIO_FMT, gpio_num);
         return rc;
     }
 

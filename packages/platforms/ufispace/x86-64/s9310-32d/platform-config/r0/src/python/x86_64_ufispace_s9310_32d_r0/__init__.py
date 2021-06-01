@@ -96,15 +96,15 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         )
 
         # init QSFPDD EEPROM
-        for port in range(17, 49):
-            self.new_i2c_device('optoe3', 0x50, port)
+        for bus in range(17, 49):
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
         # init SFP EEPROM
-        for port in range(13, 17):
-            self.new_i2c_device('sff8436', 0x50, port)
+        for bus in range(13, 17):
+            self.new_i2c_device('sff8436', 0x50, bus)
             # update port_name            
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1

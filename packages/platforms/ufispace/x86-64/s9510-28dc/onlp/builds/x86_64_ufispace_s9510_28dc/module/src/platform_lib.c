@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <sys/io.h>
 #include <onlplib/shlocks.h>
+#include <onlp/oids.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -33,33 +34,28 @@
 
 bmc_info_t bmc_cache[] =
 {
-    {"TEMP_MAC", 0},
-    {"PSU0_TEMP", 0},
-    {"PSU1_TEMP", 0},
-    {"FAN0_RPM", 0},
-    {"FAN1_RPM", 0},
-    {"FAN2_RPM", 0},
-    {"FAN3_RPM", 0},
-    {"FAN4_RPM", 0},
-    {"PSU0_FAN", 0},
-    {"PSU1_FAN", 0},
-    {"FAN0_PRSNT_H",0},
-    {"FAN1_PRSNT_H",0},
-    {"FAN2_PRSNT_H", 0},
-    {"FAN3_PRSNT_H", 0},
-    {"FAN4_PRSNT_H", 0},
-    {"PSU0_VIN", 0},
-    {"PSU0_VOUT", 0},
-    {"PSU0_IIN",0},
-    {"PSU0_IOUT",0},
-    {"PSU0_STBVOUT", 0},
-    {"PSU0_STBIOUT", 0},
-    {"PSU1_VIN", 0},
-    {"PSU1_VOUT", 0},
-    {"PSU1_IIN", 0},
-    {"PSU1_IOUT", 0},
-    {"PSU1_STBVOUT", 0},
-    {"PSU1_STBIOUT", 0}
+    [BMC_ATTR_ID_TEMP_MAC]     = {"TEMP_MAC"     , 0},
+    [BMC_ATTR_ID_PSU0_TEMP]    = {"PSU0_TEMP"    , 0},
+    [BMC_ATTR_ID_PSU1_TEMP]    = {"PSU1_TEMP"    , 0},
+    [BMC_ATTR_ID_FAN_0]        = {"FAN_0"        , 0},
+    [BMC_ATTR_ID_FAN_1]        = {"FAN_1"        , 0},
+    [BMC_ATTR_ID_FAN_2]        = {"FAN_2"        , 0},
+    [BMC_ATTR_ID_FAN_3]        = {"FAN_3"        , 0},
+    [BMC_ATTR_ID_FAN_4]        = {"FAN_4"        , 0},
+    [BMC_ATTR_ID_PSU0_FAN]     = {"PSU0_FAN"     , 0},
+    [BMC_ATTR_ID_PSU1_FAN]     = {"PSU1_FAN"     , 0},
+    [BMC_ATTR_ID_PSU0_VIN]     = {"PSU0_VIN"     , 0},
+    [BMC_ATTR_ID_PSU0_VOUT]    = {"PSU0_VOUT"    , 0},
+    [BMC_ATTR_ID_PSU0_IIN]     = {"PSU0_IIN"     , 0},
+    [BMC_ATTR_ID_PSU0_IOUT]    = {"PSU0_IOUT"    , 0},
+    [BMC_ATTR_ID_PSU0_STBVOUT] = {"PSU0_STBVOUT" , 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT] = {"PSU0_STBIOUT" , 0},
+    [BMC_ATTR_ID_PSU1_VIN]     = {"PSU1_VIN"     , 0},
+    [BMC_ATTR_ID_PSU1_VOUT]    = {"PSU1_VOUT"    , 0},
+    [BMC_ATTR_ID_PSU1_IIN]     = {"PSU1_IIN"     , 0},
+    [BMC_ATTR_ID_PSU1_IOUT]    = {"PSU1_IOUT"    , 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT] = {"PSU1_STBVOUT" , 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT] = {"PSU1_STBIOUT" , 0}
 };
 
 static onlp_shlock_t* onlp_lock = NULL;
@@ -87,7 +83,7 @@ void lock_init()
     }
 }
 
-int check_file_exist(char *file_path, long *file_time) 
+int check_file_exist(char *file_path, long *file_time)
 {
     struct stat file_info;
 
@@ -139,15 +135,13 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     char buf[20];
     int rv = ONLP_STATUS_OK;
     int dev_num = 0;
-    int dev_size = sizeof(bmc_cache)/sizeof(bmc_cache[0]);
     int cache_time = 0;
     int bmc_cache_expired = 0;
     float f_rv = 0;
     long file_last_time = 0;
-    static long bmc_cache_time = 0;    
-    char* presence_str = "Present";
+    static long bmc_cache_time = 0;
     int retry = 0, retry_max = 3;
-    
+
     switch(sensor_type) {
         case FAN_SENSOR:
             cache_time = FAN_CACHE_TIME;
@@ -186,8 +180,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) < 0) {
-                    if (retry == retry_max-1) {                        
-                        AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d", 
+                    if (retry == retry_max-1) {
+                        AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d",
                             __func__, retry, ipmi_cmd, rv);
                         return ONLP_STATUS_E_INTERNAL;
                     } else {
@@ -199,41 +193,20 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             }
         }
 
-        for(dev_num = 0; dev_num < dev_size; dev_num++)
+        for(dev_num = 0; dev_num < BMC_ATTR_ID_MAX; dev_num++)
         {
             memset(buf, 0, sizeof(buf));
+            snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
 
-            //search present string
-            if( dev_num >= 10 && dev_num <=14 ) {                
-                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
-                fp = popen(get_data_cmd, "r");
-                if(fp != NULL)
-                {
-                    if(fgets(buf, sizeof(buf), fp) != NULL)
-                    {
-                        if( strstr(buf, presence_str) != NULL ) {
-                            f_rv = 1;
-                        } else {
-                            f_rv = 0;
-                        }                        
-                        bmc_cache[dev_num].data = f_rv;
-                    }
+            fp = popen(get_data_cmd, "r");
+            if(fp != NULL)
+            {
+                if(fgets(buf, sizeof(buf), fp) != NULL) {
+                    f_rv = atof(buf);
+                    bmc_cache[dev_num].data = f_rv;
                 }
-                pclose(fp);
-            } else {                
-                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
-                
-                fp = popen(get_data_cmd, "r");
-                if(fp != NULL)
-                {
-                    if(fgets(buf, sizeof(buf), fp) != NULL) {
-                        f_rv = atof(buf);
-                        bmc_cache[dev_num].data = f_rv;
-                    }
-                }
-                pclose(fp);
             }
-            
+            pclose(fp);
         }
         gettimeofday(&new_tv,NULL);
         bmc_cache_time = new_tv.tv_sec;
@@ -241,8 +214,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     }
 
     //read from cache
-    *data = bmc_cache[bmc_cache_index].data;    
-    
+    *data = bmc_cache[bmc_cache_index].data;
+
     return rv;
 }
 
@@ -319,21 +292,15 @@ void check_and_do_i2c_mux_reset(int port)
     char cmd_buf[256] = {0};
     int ret = 0;
 
-    //FIXME
-    if(1) return;
-    
-    if(access(MB_CPLD1_ID_PATH, F_OK) != -1 ) {
-
-        snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", MB_CPLD1_ID_PATH);
-        ret = system(cmd_buf);
-
-        if (ret != 0) {
-            if(access(CPU_MUX_RESET_PATH, F_OK) != -1 ) {
-                //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
-                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", CPU_MUX_RESET_PATH);
-                ret = system(cmd_buf);
-                //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
-            }
+    snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
+    ret = system(cmd_buf);
+    if (ret != 0) {
+        if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+            //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
+            memset(cmd_buf, 0, sizeof(cmd_buf));
+            snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
+            ret = system(cmd_buf);
+            //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
         }
     }
 }
@@ -372,3 +339,87 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     return reg_val;
 }
 
+int ufi_oid_to_bmc_attr_id(int type, int sensor_id, int sub_devid)
+{
+    switch(type)
+    {
+        case ONLP_OID_TYPE_FAN:
+            switch(sensor_id)
+            {
+                case ONLP_FAN_0:
+                    return BMC_ATTR_ID_FAN_0;
+                case ONLP_FAN_1:
+                    return BMC_ATTR_ID_FAN_1;
+                case ONLP_FAN_2:
+                    return BMC_ATTR_ID_FAN_2;
+                case ONLP_FAN_3:
+                    return BMC_ATTR_ID_FAN_3;
+                case ONLP_FAN_4:
+                    return BMC_ATTR_ID_FAN_4;
+                case ONLP_PSU_0_FAN:
+                    return BMC_ATTR_ID_PSU0_FAN;
+                case ONLP_PSU_1_FAN:
+                    return BMC_ATTR_ID_PSU1_FAN;
+                default:
+                    return BMC_ATTR_ID_MAX;
+            }
+        case ONLP_OID_TYPE_PSU:
+            switch(sensor_id)
+            {
+
+                case ONLP_PSU_0:
+                    switch(sub_devid)
+                    {
+                        case PSU_ATTR_VIN_0:
+                            return BMC_ATTR_ID_PSU0_VIN;
+                        case PSU_ATTR_VOUT_0:
+                            return BMC_ATTR_ID_PSU0_VOUT;
+                        case PSU_ATTR_IIN_0:
+                            return BMC_ATTR_ID_PSU0_IIN;
+                        case PSU_ATTR_IOUT_0:
+                            return BMC_ATTR_ID_PSU0_IOUT;
+                        case PSU_ATTR_STBVOUT_0:
+                            return BMC_ATTR_ID_PSU0_STBVOUT;
+                        case PSU_ATTR_STBIOUT_0:
+                            return BMC_ATTR_ID_PSU0_STBIOUT;
+                        default:
+                            return BMC_ATTR_ID_MAX;
+                    }
+                case ONLP_PSU_1:
+                    switch(sub_devid)
+                    {
+                        case PSU_ATTR_VIN_1:
+                            return BMC_ATTR_ID_PSU1_VIN;
+                        case PSU_ATTR_VOUT_1:
+                            return BMC_ATTR_ID_PSU1_VOUT;
+                        case PSU_ATTR_IIN_1:
+                            return BMC_ATTR_ID_PSU1_IIN;
+                        case PSU_ATTR_IOUT_1:
+                            return BMC_ATTR_ID_PSU1_IOUT;
+                        case PSU_ATTR_STBVOUT_1:
+                            return BMC_ATTR_ID_PSU1_STBVOUT;
+                        case PSU_ATTR_STBIOUT_1:
+                            return BMC_ATTR_ID_PSU1_STBIOUT;
+                        default:
+                            return BMC_ATTR_ID_MAX;
+                    }
+                default:
+                    return BMC_ATTR_ID_MAX;
+            }
+        case ONLP_OID_TYPE_THERMAL:
+            switch(sensor_id)
+            {
+                case ONLP_THERMAL_MAC:
+                    return BMC_ATTR_ID_TEMP_MAC;
+                case ONLP_THERMAL_PSU_0:
+                    return BMC_ATTR_ID_PSU0_TEMP;
+                case ONLP_THERMAL_PSU_1:
+                    return BMC_ATTR_ID_PSU1_TEMP;
+                default:
+                    return BMC_ATTR_ID_MAX;
+            }
+
+        default:
+            return BMC_ATTR_ID_MAX;
+    }
+}

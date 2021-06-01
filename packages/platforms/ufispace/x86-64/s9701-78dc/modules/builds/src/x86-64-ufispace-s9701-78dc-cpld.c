@@ -1,5 +1,5 @@
 /*
- * A i2c cpld driver for the ufispace_s9701
+ * A i2c cpld driver for the ufispace_s9701_78dc
  *
  * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>

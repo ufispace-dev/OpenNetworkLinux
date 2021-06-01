@@ -1,5 +1,5 @@
 /*
- * A i2c cpld driver for the ufispace_s9600
+ * A i2c cpld driver for the ufispace_s9600_72xc
  *
  * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>
@@ -661,7 +661,6 @@ static ssize_t write_register_value(struct device *dev,
         return -EINVAL;
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock, client, reg, reg_val);
-
 
     if (unlikely(ret < 0)) {
         dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);

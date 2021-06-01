@@ -350,7 +350,7 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
 {
     struct timeval new_tv;
     char cache_cmd[512] = {0};
-    char get_data_cmd[128] = {0};
+    char get_data_cmd[256] = {0};
     char cmd_out[128] = {0};
     char cache_file[128] = {0};
     int rv = ONLP_STATUS_OK;
@@ -444,9 +444,9 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
 
     //read from cache
     cache_idx = (fru_id - 1)*2;
-    snprintf(info->model, sizeof(info->model), "%s", bmc_fru_cache[cache_idx].data);
+    snprintf(info->model, sizeof(info->model), "%s", bmc_fru_cache[cache_idx].data) < 0 ? abort() : (void)0;
     cache_idx = (fru_id - 1)*2 + 1;
-    snprintf(info->serial, sizeof(info->serial), "%s", bmc_fru_cache[cache_idx].data);
+    snprintf(info->serial, sizeof(info->serial), "%s", bmc_fru_cache[cache_idx].data) < 0 ? abort() : (void)0;
     
     return rv;
 }

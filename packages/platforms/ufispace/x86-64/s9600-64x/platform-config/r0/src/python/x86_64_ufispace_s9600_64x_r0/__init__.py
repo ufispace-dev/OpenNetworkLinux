@@ -110,12 +110,6 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
             ]
         )
 
-        # init SFP EEPROM
-        for port in range(25, 27):
-            self.new_i2c_device('optoe2', 0x50, port)
-        # init QSFP EEPROM
-        for port in range(29, 93):
-            self.new_i2c_device('sff8436', 0x50, port)
 
         #CPLD
         self.insmod("x86-64-ufispace-s9600-64x-cpld")
@@ -124,6 +118,9 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
 
         # Get board ID
         hw_build_rev = self.get_board_id()
+
+        # init SFP/QSFP EEPROM
+        self.init_eeprom(hw_build_rev)
 
         # init GPIO sysfs
         self.init_gpio(hw_build_rev)
@@ -186,10 +183,10 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
             return
 
         board_id = int(output, 10)
-        # hw_rev = (board_id & 0b00000011)
+        hw_rev = (board_id & 0b00000011)
         deph_id = (board_id & 0b00000100) >> 2
-        build_rev = (board_id & 0b00111000) >> 3
-        hw_build_id = (deph_id << 2) | (build_rev)
+        #build_rev = (board_id & 0b00111000) >> 3
+        hw_build_id = (deph_id << 2) + hw_rev
 
         return hw_build_id
 

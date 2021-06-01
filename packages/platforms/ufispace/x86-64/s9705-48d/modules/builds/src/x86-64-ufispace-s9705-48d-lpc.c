@@ -23,7 +23,7 @@
  */
 #include <linux/module.h>
 #include <linux/delay.h>
-#include <linux/ioport.h>
+#include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 

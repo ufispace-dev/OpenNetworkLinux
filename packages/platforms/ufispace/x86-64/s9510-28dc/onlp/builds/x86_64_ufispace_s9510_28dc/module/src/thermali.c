@@ -25,9 +25,11 @@
 #include <onlp/platformi/thermali.h>
 #include "platform_lib.h"
 
+
+// FIXME look up the value
 #define THERMAL_SHUTDOWN_DEFAULT  105000
-#define THERMAL_ERROR_DEFAULT         95000
-#define THERMAL_WARNING_DEFAULT     77000
+#define THERMAL_ERROR_DEFAULT     95000
+#define THERMAL_WARNING_DEFAULT   77000
 
 /* Shortcut for CPU thermal threshold value. */
 #define THERMAL_THRESHOLD_INIT_DEFAULTS  \
@@ -51,10 +53,10 @@
         0,\
         threshold\
     }\
-    
-static onlp_thermal_info_t thermal_info[] = {    
+
+static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
-    THERMAL_INFO(ONLP_THERMAL_CPU_PKG, "CPU Package", THERMAL_THRESHOLD_INIT_DEFAULTS),	
+    THERMAL_INFO(ONLP_THERMAL_CPU_PKG, "CPU Package", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_0, "CPU Thermal 0", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_1, "CPU Thermal 1", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_2, "CPU Thermal 2", THERMAL_THRESHOLD_INIT_DEFAULTS),
@@ -71,23 +73,17 @@ static onlp_thermal_info_t thermal_info[] = {
 static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
-    
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);    
-    
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);
+
     if(rv < 0) {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1); 
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);
         if(rv < 0) {
             return rv;
         }
     }
 
-    if(rv == ONLP_STATUS_E_MISSING) {
-        info->status &= ~1;
-        return 0;
-    }
-    
     return ONLP_STATUS_OK;
 }
 
@@ -95,22 +91,29 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rc=0;
     float data=0;
-    
-    rc = bmc_sensor_read(id + CACHE_OFFSET_THERMAL, THERMAL_SENSOR, &data);
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
+
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_THERMAL, id, 0);
+
+    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    rc = bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data);
     if ( rc < 0) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rc;
-    }        
+    }
     info->mcelsius = (int) (data*1000);
-        
-    return rc;    
+
+    return rc;
 }
 
 /**
  * @brief Initialize the thermal subsystem.
  */
 int onlp_thermali_init(void)
-{   
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -121,15 +124,15 @@ int onlp_thermali_init(void)
  * @param rv [out] Receives the thermal information.
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
-{   
+{
     int sensor_id, rc;
     VALIDATE(id);
-	
+
     sensor_id = ONLP_OID_ID_GET(id);
-    
+
     *rv = thermal_info[sensor_id];
-    
-    switch (sensor_id) {        
+
+    switch (sensor_id) {
         case ONLP_THERMAL_CPU_PKG:
         case ONLP_THERMAL_CPU_0:
         case ONLP_THERMAL_CPU_1:
@@ -138,15 +141,15 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
         case ONLP_THERMAL_CPU_4:
         case ONLP_THERMAL_CPU_5:
         case ONLP_THERMAL_CPU_6:
-        case ONLP_THERMAL_CPU_7:        
+        case ONLP_THERMAL_CPU_7:
             rc = ufi_cpu_thermal_info_get(rv, sensor_id);
-            break;        
+            break;
         case ONLP_THERMAL_MAC:
         case ONLP_THERMAL_PSU_0:
         case ONLP_THERMAL_PSU_1:
             rc = ufi_bmc_thermal_info_get(rv, sensor_id);
-            break;    
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
@@ -164,7 +167,7 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
     int result = ONLP_STATUS_OK;
     onlp_thermal_info_t info;
     VALIDATE(id);
-	
+
     result = onlp_thermali_info_get(id, &info);
     *rv = info.status;
 

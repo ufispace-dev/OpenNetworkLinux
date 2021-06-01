@@ -28,7 +28,7 @@
 #define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
 #define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
 #define SYS_FAN_RPM_MAX 25000
- //FIXME
+ //FIXME Tune the FAN RPM
 #define PSU_FAN_RPM_MAX 18000
 #define VALIDATE(_id)                           \
     do {                                        \
@@ -60,7 +60,7 @@
 /*
  * Get the fan information.
  */
- 
+
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
     CHASSIS_FAN_INFO(ONLP_FAN_0, 0),
@@ -71,6 +71,7 @@ onlp_fan_info_t fan_info[] = {
     PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
     PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
+
 
 /**
  * @brief Get the fan information from BMC
@@ -84,44 +85,51 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     float data=0;
     int sys_max_fan_speed = SYS_FAN_RPM_MAX;
     int psu_max_fan_speed = PSU_FAN_RPM_MAX;
-    
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
+
     //check presence for fantray 1-5
-    if (id >= ONLP_FAN_0 && id < ONLP_PSU_0_FAN) {        
+    if (id >= ONLP_FAN_0 && id <= ONLP_FAN_4) {
         rv = file_read_hex(&presence, LPC_FMT "fan_present_%d", id - 1);
         if (rv < 0) {
             AIM_LOG_ERROR("unable to read sensor info from LPC, sensor=%d\n", id);
             return rv;
-        }    
-        
-        if( presence == 0 ) {                
+        }
+
+        if( presence == 0 ) {
             info->status |= ONLP_FAN_STATUS_PRESENT;
         } else {
             info->status &= ~ONLP_FAN_STATUS_PRESENT;
-            return ONLP_STATUS_OK;                
-        }                                
-    } 
+            return ONLP_STATUS_OK;
+        }
+    }
+
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_FAN, id, 0);
+
+    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }
 
     //get fan rpm
-    rv = bmc_sensor_read(id + CACHE_OFFSET_FAN_RPM, FAN_SENSOR, &data);
+    rv = bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data);
     if (rv < 0) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rv;
     }
     rpm = (int) data;
-        
+
     //set rpm field
     info->rpm = rpm;
 
     if (id >= ONLP_FAN_0 && id < ONLP_PSU_0_FAN) {
-        percentage = (info->rpm*100)/sys_max_fan_speed; 
+        percentage = (info->rpm*100)/sys_max_fan_speed;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-    } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {            
-        percentage = (info->rpm*100)/psu_max_fan_speed; 
+    } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
+        percentage = (info->rpm*100)/psu_max_fan_speed;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -143,10 +151,10 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id ,rc;
     VALIDATE(id);
-    
+
     fan_id = ONLP_OID_ID_GET(id);
     *rv = fan_info[fan_id];
-       
+
     switch (fan_id) {
         case ONLP_FAN_0:
         case ONLP_FAN_1:
@@ -157,7 +165,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         case ONLP_PSU_1_FAN:
             rc = ufi_bmc_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

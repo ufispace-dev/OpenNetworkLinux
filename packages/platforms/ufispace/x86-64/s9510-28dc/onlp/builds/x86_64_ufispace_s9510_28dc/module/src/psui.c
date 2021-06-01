@@ -67,49 +67,49 @@ static int ufi_psu_fru_get(onlp_psu_info_t* info, int id)
     char fru_serial[] = "Product Serial";
 
     //FRU (model)
-    
+
     memset(cmd, 0, sizeof(cmd));
     memset(cmd_out, 0, sizeof(cmd_out));
     memset(info->model, 0, sizeof(info->model));
-    
+
     snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_model);
-    
-    //Get psu fru info (model) from BMC 
+
+    //Get psu fru info (model) from BMC
     if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
         AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }
-
-    //Check output is correct    
-    if (strnlen(cmd_out, sizeof(cmd_out))==0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }
-    
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
-
-    //FRU (serial)
-    
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    memset(info->serial, 0, sizeof(info->serial));
-    
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_serial);
-    
-    //Get psu fru info (model) from BMC 
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
 
     //Check output is correct
     if (strnlen(cmd_out, sizeof(cmd_out))==0){
         AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
+    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
+
+    //FRU (serial)
+
+    memset(cmd, 0, sizeof(cmd));
+    memset(cmd_out, 0, sizeof(cmd_out));
+    memset(info->serial, 0, sizeof(info->serial));
+
+    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_serial);
+
+    //Get psu fru info (model) from BMC
+    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
+        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    //Check output is correct
+    if (strnlen(cmd_out, sizeof(cmd_out))==0){
+        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
     snprintf(info->serial, sizeof(info->serial), "%s", cmd_out);
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -118,26 +118,26 @@ static int ufi_psu_present_get(int *pw_present, int id)
     int status;
     int mask;
 
-    if (id == ONLP_PSU_0) {        
+    if (id == ONLP_PSU_0) {
         mask = PSU0_PRESENT_MASK;
     } else if (id == ONLP_PSU_1) {
         mask = PSU1_PRESENT_MASK;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (file_read_hex(&status, SYSFS_PSU_STATUS) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
     *pw_present = ((status & mask)? 0 : 1);
-    
+
     return ONLP_STATUS_OK;
 }
 
 static int ufi_psu_pwgood_get(int *pw_good, int id)
 {
-    int status;   
+    int status;
     int mask;
 
     if (id == ONLP_PSU_0) {
@@ -147,29 +147,40 @@ static int ufi_psu_pwgood_get(int *pw_good, int id)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (file_read_hex(&status, SYSFS_PSU_STATUS)) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
     *pw_good = ((status & mask)? 1 : 0);
-    
+
     return ONLP_STATUS_OK;
 }
 
 static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
-    int rc, pw_present, pw_good;    
+{
+    int rc, pw_present, pw_good;
     int stbmvout, stbmiout;
     float data;
-    int id_offset = 0;
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
+    int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
 
     if (id == ONLP_PSU_0) {
-        id_offset = ONLP_PSU_0_VIN - id;
+        attr_vin = PSU_ATTR_VIN_0;
+        attr_vout = PSU_ATTR_VOUT_0;
+        attr_iin = PSU_ATTR_IIN_0;
+        attr_iout = PSU_ATTR_IOUT_0;
+        attr_stbvout = PSU_ATTR_STBVOUT_0;
+        attr_stbiout = PSU_ATTR_STBIOUT_0;
     } else {
-        id_offset = ONLP_PSU_1_VIN - id;
+        attr_vin = PSU_ATTR_VIN_1;
+        attr_vout = PSU_ATTR_VOUT_1;
+        attr_iin = PSU_ATTR_IIN_1;
+        attr_iout = PSU_ATTR_IOUT_1;
+        attr_stbvout = PSU_ATTR_STBVOUT_1;
+        attr_stbiout = PSU_ATTR_STBIOUT_1;
     }
-    
+
      /* Get power present status */
     if ((rc = ufi_psu_present_get(&pw_present, id)) < 0) {
         return ONLP_STATUS_E_INTERNAL;
@@ -195,61 +206,67 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power vin status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 0 , PSU_SENSOR, &data) < 0) {
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_vin);
+    if (bmc_sensor_read(bmc_attr_id , PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->mvin = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_VIN;
     }
-    
+
     /* Get power vout status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 1, PSU_SENSOR, &data) < 0) {
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_vout);
+    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->mvout = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_VOUT;
     }
-            
+
     /* Get power iin status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 2, PSU_SENSOR, &data) < 0) {
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_iin);
+    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->miin = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_IIN;
     }
-    
-    /* Get power iout status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 3, PSU_SENSOR, &data) < 0) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {        
-        info->miout = (int) (data*1000);        
-        info->caps |= ONLP_PSU_CAPS_IOUT;
-    }    
 
-    /* Get standby power vout */    
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 4, PSU_SENSOR, &data) < 0) {
+    /* Get power iout status */
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_iout);
+    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
-        stbmvout = (int) (data*1000);        
+        info->miout = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_IOUT;
     }
-    
+
+    /* Get standby power vout */
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_stbvout);
+    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    } else {
+        stbmvout = (int) (data*1000);
+    }
+
     /* Get standby power iout */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 5, PSU_SENSOR, &data) < 0) {
+    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_stbiout);
+    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
-        stbmiout = (int) (data*1000);        
+        stbmiout = (int) (data*1000);
     }
-    
+
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;        
+    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
-    
+
     /* Get FRU (model/serial) */
-    if (ufi_psu_fru_get(info, id) < 0) {        
+    if (ufi_psu_fru_get(info, id) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -257,7 +274,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
  * @brief Initialize the PSU subsystem.
  */
 int onlp_psui_init(void)
-{   
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -268,10 +285,10 @@ int onlp_psui_init(void)
  * @param rv [out] Receives the PSU information.
  */
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
-{        
+{
     int pid;
     VALIDATE(id);
-    
+
     pid = ONLP_OID_ID_GET(id);
     memset(rv, 0, sizeof(onlp_psu_info_t));
 

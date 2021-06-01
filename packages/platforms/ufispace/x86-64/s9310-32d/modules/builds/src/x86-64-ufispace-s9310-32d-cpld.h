@@ -1,4 +1,4 @@
-/* header file for i2c cpld driver of ufispace_s9310
+/* header file for i2c cpld driver of ufispace_s9310_32d
  *
  * Copyright (C) 2017 UfiSpace Technology Corporation.
  * Leo Lin <leo.yt.lin@ufispace.com>

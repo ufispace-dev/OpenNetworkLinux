@@ -124,7 +124,13 @@ enum cpld_sysfs_attributes {
     CPLD_QSFP_LED_CTRL_15,
     CPLD_SFP_STATUS_INBAND,
     CPLD_SFP_CONFIG_INBAND,
+    CPLD_SFP_STATUS_P0_P1_INBAND,
+    CPLD_SFP_STATUS_P2_P3_INBAND,
+    CPLD_SFP_CONFIG_P0_P1_INBAND,
+    CPLD_SFP_CONFIG_P2_P3_INBAND,
     CPLD_SFP_PLUG_EVT_INBAND,
+    CPLD_SFP_TX_RX_EVT_MASK,
+    CPLD_SFP_TX_RX_EVT,
     CPLD_MAC_PG,
     CPLD_P5V_P3V3_PG,
     CPLD_PHY_PG,
@@ -310,8 +316,20 @@ static SENSOR_DEVICE_ATTR(cpld_sfp_status_inband, S_IRUGO,
         read_cpld_callback, NULL, CPLD_SFP_STATUS_INBAND);
 static SENSOR_DEVICE_ATTR(cpld_sfp_config_inband, S_IWUSR | S_IRUGO,
         read_cpld_callback, write_cpld_callback, CPLD_SFP_CONFIG_INBAND);
+static SENSOR_DEVICE_ATTR(cpld_sfp_status_p0_p1_inband, S_IRUGO,
+        read_cpld_callback, NULL, CPLD_SFP_STATUS_P0_P1_INBAND);
+static SENSOR_DEVICE_ATTR(cpld_sfp_status_p2_p3_inband, S_IRUGO,
+        read_cpld_callback, NULL, CPLD_SFP_STATUS_P2_P3_INBAND);
+static SENSOR_DEVICE_ATTR(cpld_sfp_config_p0_p1_inband, S_IWUSR | S_IRUGO,
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_CONFIG_P0_P1_INBAND);
+static SENSOR_DEVICE_ATTR(cpld_sfp_config_p2_p3_inband, S_IWUSR | S_IRUGO,
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_CONFIG_P2_P3_INBAND);
 static SENSOR_DEVICE_ATTR(cpld_sfp_plug_evt_inband, S_IRUGO,
         read_cpld_callback, NULL, CPLD_SFP_PLUG_EVT_INBAND);
+static SENSOR_DEVICE_ATTR(cpld_sfp_tx_rx_evt_mask, S_IWUSR | S_IRUGO,
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_TX_RX_EVT_MASK);
+static SENSOR_DEVICE_ATTR(cpld_sfp_tx_rx_evt, S_IRUGO,
+        read_cpld_callback, NULL, CPLD_SFP_TX_RX_EVT);
 static SENSOR_DEVICE_ATTR(cpld_mac_pg, S_IRUGO,
         read_cpld_callback, NULL, CPLD_MAC_PG);
 static SENSOR_DEVICE_ATTR(cpld_p5v_p3v3_pg, S_IRUGO,
@@ -404,7 +422,13 @@ static struct attribute *cpld2_attributes[] = {
     &sensor_dev_attr_cpld_qsfp_led_ctrl_15.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_status_inband.dev_attr.attr, //cpld2 only
     &sensor_dev_attr_cpld_sfp_config_inband.dev_attr.attr, //cpld2 only
+    &sensor_dev_attr_cpld_sfp_status_p0_p1_inband.dev_attr.attr, //cpld2 only
+    &sensor_dev_attr_cpld_sfp_status_p2_p3_inband.dev_attr.attr, //cpld2 only
+    &sensor_dev_attr_cpld_sfp_config_p0_p1_inband.dev_attr.attr, //cpld2 only
+    &sensor_dev_attr_cpld_sfp_config_p2_p3_inband.dev_attr.attr, //cpld2 only
 	&sensor_dev_attr_cpld_sfp_plug_evt_inband.dev_attr.attr, //cpld2 only
+	&sensor_dev_attr_cpld_sfp_tx_rx_evt_mask.dev_attr.attr, //cpld2 only
+	&sensor_dev_attr_cpld_sfp_tx_rx_evt.dev_attr.attr, //cpld2 only
     NULL
 };
 
@@ -617,8 +641,26 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_SFP_CONFIG_INBAND:
             reg = CPLD_SFP_CONFIG_INBAND_REG;
             break;
+        case CPLD_SFP_STATUS_P0_P1_INBAND:
+            reg = CPLD_SFP_STATUS_P0_P1_INBAND_REG;
+            break;
+        case CPLD_SFP_STATUS_P2_P3_INBAND:
+            reg = CPLD_SFP_STATUS_P2_P3_INBAND_REG;
+            break;
+        case CPLD_SFP_CONFIG_P0_P1_INBAND:
+            reg = CPLD_SFP_CONFIG_P0_P1_INBAND_REG;
+            break;
+        case CPLD_SFP_CONFIG_P2_P3_INBAND:
+            reg = CPLD_SFP_CONFIG_P2_P3_INBAND_REG;
+            break;
 		case CPLD_SFP_PLUG_EVT_INBAND:
             reg = CPLD_SFP_PLUG_EVT_INBAND_REG;
+            break;
+		case CPLD_SFP_TX_RX_EVT_MASK:
+            reg = CPLD2_SFP_TX_RX_EVT_MASK_REG;
+            break;
+		case CPLD_SFP_TX_RX_EVT:
+            reg = CPLD2_SFP_TX_RX_EVT_REG;
             break;
         case CPLD_MAC_PG:
             reg = CPLD_MAC_PG_REG;
@@ -728,6 +770,15 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_SFP_CONFIG_INBAND:
             reg = CPLD_SFP_CONFIG_INBAND_REG;
             break;
+        case CPLD_SFP_CONFIG_P0_P1_INBAND:
+            reg = CPLD_SFP_CONFIG_P0_P1_INBAND_REG;
+            break;
+        case CPLD_SFP_CONFIG_P2_P3_INBAND:
+            reg = CPLD_SFP_CONFIG_P2_P3_INBAND_REG;
+            break;
+        case CPLD_SFP_TX_RX_EVT_MASK:
+            reg = CPLD2_SFP_TX_RX_EVT_MASK_REG;
+            break;
         case CPLD_HBM_PWR_EN:
             reg = CPLD_HBM_PWR_EN_REG;
             break;
@@ -769,6 +820,11 @@ static ssize_t write_cpld_reg(struct device *dev,
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                client, reg, reg_val);
+
+    if (unlikely(ret < 0)) {
+        dev_err(dev, "write_cpld_reg() error, return=%d\n", ret);
+        return ret;
+    }
 
     return count;
 }
