@@ -7,9 +7,6 @@
 [submodule "sm/infra"]
 	path = sm/infra
 	url = http://github.com/floodlight/infra
-[submodule "sm/bigcode"]
-	path = sm/bigcode
-	url = http://github.com/floodlight/bigcode
 [submodule "packages/base/any/kernels/legacy/linux-3.8.13"]
 	path = packages/base/any/kernels/legacy/linux-3.8.13
 	url = http://github.com/opennetworklinux/linux-3.8.13
@@ -19,3 +16,6 @@
 [submodule "sm/build-artifacts"]
 	path = sm/build-artifacts
         url = http://github.com/opennetworklinux/build-artifacts
+[submodule "sm/bigcode"]
+	path = sm/bigcode
+	url = http://github.com/floodlight/bigcode
