@@ -216,7 +216,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         {
             memset(buf, 0, sizeof(buf));
             //search present string
-            if( dev_num >= 20 && dev_num <= 23 ) {                
+            if( dev_num >= 22 && dev_num <= 25 ) {                
                 snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)
