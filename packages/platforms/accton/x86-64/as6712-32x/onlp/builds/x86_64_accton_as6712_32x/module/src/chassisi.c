@@ -8,4 +8,35 @@ onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 
     ONLP_OID_STATUS_FLAG_SET(hdr, PRESENT);
     ONLP_OID_STATUS_FLAG_SET(hdr, OPERATIONAL);
+
+    /* 5 Thermal sensors on the chassis */
+    for (i = 1; i <= 5; i++)
+    {
+        *e++ = ONLP_THERMAL_ID_CREATE(i);
+    }
+
+    /* 10 LEDs on the chassis */
+    for (i = 1; i <= 10; i++)
+    {
+        *e++ = ONLP_LED_ID_CREATE(i);
+    }
+
+    /* 5 Fans on the chassis */
+    for (i = 1; i <= 5; i++)
+    {
+        *e++ = ONLP_FAN_ID_CREATE(i);
+    }
+
+    /* 2 PSUs on the chassis */
+    for (i = 1; i <= 2; i++)
+    {
+        *e++ = ONLP_PSU_ID_CREATE(i);
+    }
+
+    /* 32 SFPs */
+    for(i = 1; i <= 32; i++) {
+        *e++ = ONLP_SFP_ID_CREATE(i);
+    }
+
+    return 0;
 }

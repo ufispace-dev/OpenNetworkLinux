@@ -24,7 +24,7 @@ Multistrap:
     noauth: true
     explicitsuite: false
     unpack: true
-    debootstrap: Debian-Local Local-All Local-Arch ONL-Local
+    debootstrap: Debian-Local Local-All Local-Arch ONL-Local Docker
     aptsources: Debian ONL
 
   Debian:
@@ -61,9 +61,19 @@ Multistrap:
     source: ${ONLPM_OPTION_REPO}/${ONL_DEBIAN_SUITE}/packages/binary-${ARCH}
     omitdebsrc: true
 
+  Docker:
+    packages: *Packages
+    source: http://${APT_CACHE}apt.opennetlinux.org/debian
+    source: https://download.docker.com/linux/debian/
+    suite: stretch
+    omitdebsrc: true
+    components: stable
+
+
 Configure:
   overlays:
     - ${ONL}/builds/any/rootfs/${ONL_DEBIAN_SUITE}/common/overlay
+    - ${ONL}/builds/any/rootfs/${ONL_DEBIAN_SUITE}/${INIT}/overlay
 
   update-rc.d:
     - 'faultd defaults'

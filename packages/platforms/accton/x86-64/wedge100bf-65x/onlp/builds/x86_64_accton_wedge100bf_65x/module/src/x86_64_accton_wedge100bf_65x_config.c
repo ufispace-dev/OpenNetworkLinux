@@ -1,8 +1,4 @@
-/**************************************************************************//**
- *
- *
- *
- *****************************************************************************/
+// TODO: should we modify this part for ONLPv2?
 #include <x86_64_accton_wedge100bf_65x/x86_64_accton_wedge100bf_65x_config.h>
 
 /* <auto.start.cdefs(x86_64_accton_wedge100bf_65x_CONFIG_HEADER).source> */

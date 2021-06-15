@@ -77,3 +77,14 @@
 - tcpdump
 - strace
 - sysstat
+- ipmitool
+- apt-transport-https
+- ca-certificates
+- curl
+- gnupg2
+- software-properties-common
+- libseccomp2
+- iptables
+- dmsetup
+- libdevmapper1.02.1
+- dbus
