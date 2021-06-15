@@ -6,7 +6,7 @@
 #
 ############################################################
 installer:
-  menu_name: "\"Open Network Linux\""
+  menu_name: "\"Open Network Linux (ONLPv2)\""
   os_name: Open Network Linux
   grub:
     - $PLATFORM.cpio.gz
