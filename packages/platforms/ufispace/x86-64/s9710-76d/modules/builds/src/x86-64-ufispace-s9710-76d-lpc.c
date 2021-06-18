@@ -51,7 +51,7 @@
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
 //FIXME
-#define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0x09)
+#define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
 #define REG_MB_BRD_ID_0                   (REG_BASE_MB + 0x00)

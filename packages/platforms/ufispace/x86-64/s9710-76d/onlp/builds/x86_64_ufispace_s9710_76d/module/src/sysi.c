@@ -40,19 +40,21 @@
  *            |----[09] ONLP_THERMAL_CPU_7
  *            |----[10] ONLP_THERMAL_ADC_CPU
  *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_LM75_U160
- *            |----[13] ONLP_THERMAL_LM75_U161
- *            |----[14] ONLP_THERMAL_LM75_U170
- *            |----[15] ONLP_THERMAL_LM75_U185
- *            |----[16] ONLP_THERMAL_LM75_U186
- *            |----[17] ONLP_THERMAL_LM75_U187
+ *            |----[12] ONLP_THERMAL_MAC_ENV_1
+ *            |----[13] ONLP_THERMAL_MAC_ENV_2
+ *            |----[14] ONLP_THERMAL_FRONT_ENV_1
+ *            |----[15] ONLP_THERMAL_FRONT_ENV_2
+ *            |----[16] ONLP_THERMAL_ENV_1
+ *            |----[17] ONLP_THERMAL_ENV_2
+ *            |----[18] ONLP_THERMAL_EXT_ENV_1
+ *            |----[19] ONLP_THERMAL_EXT_ENV_2 
  *            |----[01] ONLP_LED_SYS_SYS
  *            |----[02] ONLP_LED_SYS_FAN
  *            |----[03] ONLP_LED_SYS_PSU_0
  *            |----[04] ONLP_LED_SYS_PSU_1
- *            |----[01] ONLP_PSU_0----[18] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[19] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
  *            |                  |----[06] ONLP_PSU_1_FAN 
  *            |----[01] ONLP_FAN_F_0
  *            |----[02] ONLP_FAN_R_0
@@ -292,7 +294,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     memset(table, 0, max*sizeof(onlp_oid_t));
 
     /* Thermal */
-    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_LM75_U187; i++) {
+    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_EXT_ENV_2; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
     }    
 

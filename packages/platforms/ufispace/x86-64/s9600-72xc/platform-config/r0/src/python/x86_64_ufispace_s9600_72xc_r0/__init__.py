@@ -173,6 +173,17 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def init_i2c_mux_idle_state(self, muxs):        
+        IDLE_STATE_DISCONNECT = -2
+        
+        for mux in muxs:
+            i2c_addr = mux[1]
+            i2c_bus = mux[2]
+            sysfs_idle_state = "/sys/bus/i2c/devices/%d-%s/idle_state" % (i2c_bus, hex(i2c_addr)[2:].zfill(4))
+            if os.path.exists(sysfs_idle_state):
+                with open(sysfs_idle_state, 'w') as f:
+                    f.write(str(IDLE_STATE_DISCONNECT))
+
     def baseconfig(self):
 
         # lpc driver
@@ -189,23 +200,26 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
 
         # initialize I210 I2C bus 0 #
         # init PCA9548
-        self.new_i2c_devices(
-            [
-                ('pca9548', 0x75, 0),
-                ('pca9548', 0x73, 0),
-                ('pca9548', 0x72, 0),
-                ('pca9548', 0x76, 17),
-                ('pca9548', 0x76, 18),
-                ('pca9548', 0x76, 19),
-                ('pca9548', 0x76, 20),
-                ('pca9548', 0x76, 21),
-                ('pca9548', 0x76, 22),
-                ('pca9548', 0x76, 23),
-                ('pca9548', 0x76, 24),
-                ('pca9548', 0x76, 6),
-                ('pca9548', 0x76, 7),
-            ]
-        )
+        i2c_muxs = [
+            ('pca9548', 0x75, 0),
+            ('pca9548', 0x73, 0),
+            ('pca9548', 0x72, 0),
+            ('pca9548', 0x76, 17),
+            ('pca9548', 0x76, 18),
+            ('pca9548', 0x76, 19),
+            ('pca9548', 0x76, 20),
+            ('pca9548', 0x76, 21),
+            ('pca9548', 0x76, 22),
+            ('pca9548', 0x76, 23),
+            ('pca9548', 0x76, 24),
+            ('pca9548', 0x76, 6),
+            ('pca9548', 0x76, 7),
+        ]
+
+        self.new_i2c_devices(i2c_muxs)
+        
+        #init idle state on mux
+        self.init_i2c_mux_idle_state(i2c_muxs)
 
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")

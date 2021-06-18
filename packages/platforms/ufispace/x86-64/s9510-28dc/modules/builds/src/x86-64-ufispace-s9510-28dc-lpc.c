@@ -488,9 +488,9 @@ static ssize_t read_mux_rest_all_callback(struct device *dev,
     reg_val = _read_lpc_reg(REG_MUX_RESET, MASK_ALL);
     
     if(reg_val > 0){
-        len = scnprintf(buf,1,"%u\n", 1);
+        len = scnprintf(buf,3,"%u\n", 1);
     }else{
-        len = scnprintf(buf,1,"%u\n", 0);
+        len = scnprintf(buf,3,"%u\n", 0);
     }
     return len;
 }

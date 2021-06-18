@@ -64,10 +64,10 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         return 1
 
     def check_i2c_status(self): 
-        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/mux_reset"
-
+        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
+                           
         # Check I2C status
-        retcode = os.system("i2cget -f -y 0 0x75 > /dev/null 2>&1")
+        retcode = os.system("i2cget -f -y 0 0x71 > /dev/null 2>&1")
         if retcode != 0:
 
             #read mux failed, i2c bus may be stuck
@@ -126,15 +126,25 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+
+    def init_i2c_mux_idle_state(self, muxs):        
+        IDLE_STATE_DISCONNECT = -2
         
+        for mux in muxs:
+            i2c_addr = mux[1]
+            i2c_bus = mux[2]
+            sysfs_idle_state = "/sys/bus/i2c/devices/%d-%s/idle_state" % (i2c_bus, hex(i2c_addr)[2:].zfill(4))
+            if os.path.exists(sysfs_idle_state):
+                with open(sysfs_idle_state, 'w') as f:
+                    f.write(str(IDLE_STATE_DISCONNECT))
+
     def baseconfig(self):
 
         # lpc driver
         self.insmod("x86-64-ufispace-s9710-76d-lpc")
 
         # check i2c bus status
-        # FIXME: not ready
-        #self.check_i2c_status()
+        self.check_i2c_status()
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
@@ -158,26 +168,30 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         
         ########### initialize I2C bus 0 ###########
         # init PCA9548
-        self.new_i2c_devices(
-            [
-                ('pca9548', 0x71, 0),  # 9548_CPLD
-                ('pca9548', 0x72, 0),  # 9548_NIF_ROOT
-                ('pca9548', 0x73, 0),  # 9548_DC
-                ('pca9548', 0x76, 9),  # 9548_FAB_ROOT                
-                ('pca9548', 0x75, 25), # 9548_FAB_1
-                ('pca9548', 0x75, 26), # 9548_FAB_2
-                ('pca9548', 0x75, 27), # 9548_FAB_3
-                ('pca9548', 0x75, 28), # 9548_FAB_4
-                ('pca9548', 0x75, 29), # 9548_FAB_5
-                ('pca9548', 0x76, 10), # 9548_NIF_1
-                ('pca9548', 0x76, 11), # 9548_NIF_2
-                ('pca9548', 0x76, 12), # 9548_NIF_3
-                ('pca9548', 0x76, 13), # 9548_NIF_4
-                ('pca9548', 0x76, 14), # 9548_NIF_5
-                ('pca9548', 0x76, 18), # 9548_EXT                
-            ]
-        )
-
+        
+        i2c_muxs = [
+            ('pca9548', 0x71, 0),  # 9548_CPLD
+            ('pca9548', 0x72, 0),  # 9548_NIF_ROOT
+            ('pca9548', 0x73, 0),  # 9548_DC
+            ('pca9548', 0x76, 9),  # 9548_FAB_ROOT                
+            ('pca9548', 0x75, 25), # 9548_FAB_1
+            ('pca9548', 0x75, 26), # 9548_FAB_2
+            ('pca9548', 0x75, 27), # 9548_FAB_3
+            ('pca9548', 0x75, 28), # 9548_FAB_4
+            ('pca9548', 0x75, 29), # 9548_FAB_5
+            ('pca9548', 0x76, 10), # 9548_NIF_1
+            ('pca9548', 0x76, 11), # 9548_NIF_2
+            ('pca9548', 0x76, 12), # 9548_NIF_3
+            ('pca9548', 0x76, 13), # 9548_NIF_4
+            ('pca9548', 0x76, 14), # 9548_NIF_5
+            ('pca9548', 0x76, 18), # 9548_EXT                
+        ]
+            
+        self.new_i2c_devices(i2c_muxs)
+        
+        #init idle state on mux
+        self.init_i2c_mux_idle_state(i2c_muxs)
+        
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 

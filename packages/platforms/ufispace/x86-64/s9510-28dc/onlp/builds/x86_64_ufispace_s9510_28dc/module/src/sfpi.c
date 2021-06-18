@@ -35,8 +35,8 @@
 
 #define IS_SFP(_port)         (_port >= QSFPX_NUM && _port < PORT_NUM)
 #define IS_QSFPX(_port)       (_port >= 0 && _port < QSFPX_NUM)
-#define IS_QSFP(_port)  (_port >= QSFPDD_NUM && _port < QSFPX_NUM)
-#define IS_QSFPDD(_port)  (_port >= 0 && _port < QSFPDD_NUM)
+#define IS_QSFP(_port)        (_port >= QSFPDD_NUM && _port < QSFPX_NUM)
+#define IS_QSFPDD(_port)      (_port >= 0 && _port < QSFPDD_NUM)
 
 #define SYSFS_EEPROM         "eeprom"
 
@@ -180,6 +180,7 @@ int onlp_sfpi_is_present(int port)
     if ((status = file_read_hex(&value, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",
             status, SYS_GPIO_FMT, gpio_num);
+        check_and_do_i2c_mux_reset(port);
         return status;
     }
 
@@ -247,7 +248,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     bus = ufi_port_to_eeprom_bus(port);
 
     if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
 
         check_and_do_i2c_mux_reset(port);
@@ -255,7 +256,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     }
 
     if (size != 256) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!\r\n", port);
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -271,8 +272,12 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE);
+    if ((rc = onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    return rc;
 }
 
 /**
@@ -281,8 +286,12 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE);
+    if ((rc = onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
+         check_and_do_i2c_mux_reset(port);
+    }
+    return rc;
 }
 
 /**
@@ -295,8 +304,12 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE);
+    if((rc = onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
+         check_and_do_i2c_mux_reset(port);
+    }
+    return rc;
 }
 
 /**
@@ -305,8 +318,12 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
 {
     VALIDATE_PORT(port);
+    int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
-    return onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE);
+    if((rc = onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    return rc;
 }
 
 /**
@@ -331,7 +348,8 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     bus = ufi_port_to_eeprom_bus(port);
 
     if (port < PORT_NUM) {
-        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0 ) {
+        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
+            check_and_do_i2c_mux_reset(port);
             return ONLP_STATUS_E_INTERNAL;
         }
     } else {
@@ -346,7 +364,15 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
  */
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = ufi_port_to_eeprom_bus(port);
+
+    if ((rc = onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE)) < 0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+
+    return rc;
 }
 
 
@@ -374,12 +400,14 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     fp = fopen(eeprom_path, "r");
     if(fp == NULL) {
         AIM_LOG_ERROR("Unable to open the eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
     if (fseek(fp, 256, SEEK_CUR) != 0) {
         fclose(fp);
         AIM_LOG_ERROR("Unable to set the file position indicator of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -387,6 +415,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     fclose(fp);
     if (ret != 256) {
         AIM_LOG_ERROR("Unable to read the module_eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -500,6 +529,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     //write gpio value
     if ((rc = onlp_file_write_int(value, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_control_set() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYS_GPIO_FMT, gpio_num);
+        check_and_do_i2c_mux_reset(port);
         return rc;
     }
 
@@ -530,6 +560,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     //read gpio value
     if ((rc = file_read_hex(value, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_control_get() failed, error=%d, sysfs=%s, gpio_num=%d", rc, SYS_GPIO_FMT, gpio_num);
+        check_and_do_i2c_mux_reset(port);
         return rc;
     }
 

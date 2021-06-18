@@ -5,6 +5,8 @@
 #include <linux/types.h>
 #define strtoul simple_strtoul
 
+#undef FALSE
+#undef TRUE
 #define FALSE   0
 #define TRUE    (!FALSE)
 #define MAX_STRING_SIZE	128

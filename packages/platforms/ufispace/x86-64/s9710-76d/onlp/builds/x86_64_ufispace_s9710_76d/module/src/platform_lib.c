@@ -38,12 +38,14 @@ bmc_info_t bmc_cache[] =
 {
     {"ADC_CPU_TEMP", 0},
     {"TEMP_CPU_PECI", 0},
-    {"TEMP_LM75_U160", 0},
-    {"TEMP_LM75_U161", 0},
-    {"TEMP_LM75_U170", 0},
-    {"TEMP_LM75_U185", 0},
-    {"TEMP_LM75_U186", 0},
-    {"TEMP_LM75_U187", 0},
+    {"TEMP_MAC_ENV_1", 0},
+    {"TEMP_MAC_ENV_2", 0},
+    {"TEMP_FRONT_ENV_1", 0},
+    {"TEMP_FRONT_ENV_2", 0},
+    {"TEMP_ENV_1", 0},
+    {"TEMP_ENV_2", 0},
+    {"TEMP_EXT_ENV_1", 0},
+    {"TEMP_EXT_ENV_2", 0},
     {"PSU0_TEMP", 0},
     {"PSU1_TEMP", 0},
     {"FAN0_FRONT_RPM", 0},
@@ -215,7 +217,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         {
             memset(buf, 0, sizeof(buf));
             //search present string
-            if( dev_num >= 20 && dev_num <= 23 ) {                
+            if( dev_num >= 22 && dev_num <= 25 ) {                
                 snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)

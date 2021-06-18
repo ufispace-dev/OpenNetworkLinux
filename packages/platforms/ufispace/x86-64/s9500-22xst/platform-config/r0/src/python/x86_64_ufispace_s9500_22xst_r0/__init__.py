@@ -94,6 +94,20 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
             ]
         )
 
+        # Config MUX as MUX_IDLE_DISCONNECT mode
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/0-0075/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/0-0075/idle_state")
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/0-0076/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/0-0076/idle_state")
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0070/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0070/idle_state")
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0072/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0072/idle_state")
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0073/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0073/idle_state")
+        os.system("ls /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0074/idle_state > /dev/null 2>&1 &&"
+                  "echo -2 > /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/i2c-8/8-0074/idle_state")
+        
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
