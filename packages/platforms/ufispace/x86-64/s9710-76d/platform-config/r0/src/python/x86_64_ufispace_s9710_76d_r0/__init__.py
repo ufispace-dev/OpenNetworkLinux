@@ -249,9 +249,6 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         for i, addr in enumerate((0x33, 0x34)):
             self.new_i2c_device("s9710_76d_cpld" + str(i+4), addr, 30)    
 
-        # onie syseeprom
-        self.insmod("x86-64-ufispace-s9710-76d-onie-syseeprom.ko")
-
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 

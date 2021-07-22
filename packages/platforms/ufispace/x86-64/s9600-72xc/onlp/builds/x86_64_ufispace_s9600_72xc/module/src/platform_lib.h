@@ -68,6 +68,7 @@
 #define MB_CPLD_ID_ATTR                 "cpld_id"
 #define MB_CPLD_MAJOR_VER_ATTR                 "cpld_major_ver"
 #define MB_CPLD_MINOR_VER_ATTR                 "cpld_minor_ver"
+#define MB_CPLD_BUILD_VER_ATTR                 "cpld_build_ver"
 #define MB_CPLD_SFP_GROUP_PRES_ATTR  "cpld_sfp_port_%s_pres"
 #define MB_CPLD_SFP_GROUP_TXFLT_ATTR  "cpld_sfp_port_%s_tx_fault"
 #define MB_CPLD_SFP_GROUP_TXDIS_ATTR  "cpld_sfp_port_%s_tx_disable"
@@ -117,6 +118,7 @@
 #define THERMAL_NUM             18
 #define LED_NUM                     4
 #define FAN_NUM                     6
+#define PSU_NUM                     2
 /* IO BASE */
 #define CPU_CPLD_BASEADDR  0x600
 #define MB_CPLD_BASEADDR  0xe00
@@ -172,7 +174,7 @@ typedef enum led_oid_e {
     LED_OID_FAN = ONLP_LED_ID_CREATE(2),
     LED_OID_PSU0 = ONLP_LED_ID_CREATE(3),
     LED_OID_PSU1 = ONLP_LED_ID_CREATE(4),
-    
+    LED_OID_SYNC = ONLP_LED_ID_CREATE(5),
 } led_oid_t;
 
 /** led_id */
@@ -181,7 +183,7 @@ typedef enum led_id_e {
     LED_ID_SYS_FAN = 2,
     LED_ID_SYS_PSU0 = 3,
     LED_ID_SYS_PSU1 = 4,
-    
+    LED_ID_SYS_SYNC = 5,
 } led_id_t;
 
 /** Thermal_oid */

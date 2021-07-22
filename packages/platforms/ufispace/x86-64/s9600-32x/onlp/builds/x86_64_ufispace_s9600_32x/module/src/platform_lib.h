@@ -35,6 +35,8 @@
 #include "x86_64_ufispace_s9600_32x_log.h"
 
 #include <x86_64_ufispace_s9600_32x/x86_64_ufispace_s9600_32x_config.h>
+#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
+#define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
 #define SYS_CPU_CORETEMP_PREFIX         "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2      "/sys/devices/platform/coretemp.0/"

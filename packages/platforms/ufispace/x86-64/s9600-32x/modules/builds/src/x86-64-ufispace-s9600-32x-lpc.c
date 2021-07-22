@@ -605,17 +605,20 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    err = platform_device_register(&lpc_dev);
-    if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
-                __func__, __LINE__, err);
-    	return err;
-    }
+    
     err = platform_driver_register(&lpc_drv);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	platform_device_unregister(&lpc_dev);
+    	
+    	return err;
+    }
+        
+    err = platform_device_register(&lpc_dev);
+    if (err) {
+    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
+                __func__, __LINE__, err);
+    	platform_driver_unregister(&lpc_drv);
     	return err;
     }
 

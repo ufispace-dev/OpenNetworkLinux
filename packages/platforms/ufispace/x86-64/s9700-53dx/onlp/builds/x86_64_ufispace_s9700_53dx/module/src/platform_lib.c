@@ -43,51 +43,6 @@
 
 const int CPLD_BASE_ADDR[] = {0x30, 0x39, 0x3a, 0x3b, 0x3c};
 
-const char * thermal_id_str[] = {
-    "",
-    "TEMP_CPU_PECI",    
-    "TEMP_OP2_ENV",
-    "TEMP_J2_ENV_1",
-    "TEMP_J2_DIE_1",
-    "TEMP_J2_ENV_2",
-    "TEMP_J2_DIE_2",
-    "PSU0_TEMP",
-    "PSU1_TEMP",    
-    "CPU_PACKAGE",
-    "CPU1",
-    "CPU2",
-    "CPU3",
-    "CPU4",
-    "CPU5",
-    "CPU6",
-    "CPU7",
-    "CPU8",
-    "CPU_BOARD",    
-    "TEMP_BMC_ENV",
-    "TEMP_ENV",
-    "TEMP_ENV_FRONT",
-};
-
-const char * fan_id_str[] = {
-    "",
-    "FAN0_RPM",
-    "FAN1_RPM",
-    "FAN2_RPM",
-    "FAN3_RPM",
-    "PSU0_FAN1",
-    "PSU0_FAN2",
-    "PSU1_FAN1",
-    "PSU1_FAN2",    
-};
-
-const char * fan_id_presence_str[] = {
-    "",
-    "FAN0_PRSNT_H",
-    "FAN1_PRSNT_H",
-    "FAN2_PRSNT_H",
-    "FAN3_PRSNT_H",    
-};
-
 const char * psu_id_str[] = {
     "",
     "PSU0",

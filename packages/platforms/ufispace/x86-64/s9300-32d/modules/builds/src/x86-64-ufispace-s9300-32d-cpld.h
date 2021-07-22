@@ -80,7 +80,7 @@ enum LED_GREEN {
 #define CPLD_MAC_INTR_MASK_REG              0x20
 #define CPLD_10G_PHY_INTR_MASK_REG          0x23
 #define CPLD_CPLD_FRU_INTR_MASK_REG         0x24
-#define CPLD_THERMAL_ALERT_INTR_MASK_REG    0x66
+#define CPLD_THERMAL_ALERT_INTR_MASK_REG    0x26
 #define CPLD_MISC_INTR_MASK_REG             0x2B
 // Interrupt event
 #define CPLD_MAC_INTR_EVENT_REG             0x30

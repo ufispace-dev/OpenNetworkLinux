@@ -41,42 +41,6 @@
 
 #include "platform_lib.h"
 
-const char * thermal_id_str[] = {
-    "",
-    "TEMP_CPU_PECI",    
-    "TEMP_RAMON_ENV_T",
-    "TEMP_RAMON_DIE_T",
-    "TEMP_RAMON_ENV_B",
-    "TEMP_RAMON_DIE_B",
-    "PSU0_TEMP",
-    "PSU1_TEMP",    
-    "CPU_PACKAGE",
-    "CPU1",
-    "CPU2",
-    "CPU3",
-    "CPU4",
-    "CPU5",
-    "CPU6",
-    "CPU7",
-    "CPU8",
-    "CPU_BOARD",    
-    "TEMP_BMC_ENV",
-    "TEMP_ENV_FRONT_T",
-    "TEMP_ENV_FRONT_B",
-};
-
-const char * fan_id_str[] = {
-    "",
-    "FAN0_RPM",
-    "FAN1_RPM",
-    "FAN2_RPM",
-    "FAN3_RPM",
-    "PSU0_FAN1",
-    "PSU0_FAN2",
-    "PSU1_FAN1",
-    "PSU1_FAN2",    
-};
-
 const char * fan_id_presence_str[] = {
     "",
     "FAN0_PRSNT_H",

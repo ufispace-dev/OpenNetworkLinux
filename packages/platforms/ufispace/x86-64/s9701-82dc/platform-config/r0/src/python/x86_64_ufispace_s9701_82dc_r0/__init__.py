@@ -246,9 +246,6 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         if not self.set_mac_rov_config(stamp):
             msg("Warning: fail to set mac rov\n")
 
-        # onie syseeprom
-        self.insmod("x86-64-ufispace-s9701-82dc-onie-syseeprom.ko")
-
         self.enable_ipmi_maintenance_mode()
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)

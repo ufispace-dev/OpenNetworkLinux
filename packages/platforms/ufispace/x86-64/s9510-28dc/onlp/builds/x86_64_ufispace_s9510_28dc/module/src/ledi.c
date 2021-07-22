@@ -20,7 +20,7 @@
  ************************************************************
  *
  * LED Platform Implementation.
- * 
+ *
  ***********************************************************/
 #include <onlp/platformi/ledi.h>
 #include "platform_lib.h"
@@ -82,7 +82,7 @@ static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
     int gpio_g , gpio_y;
     char *sysfs = NULL;
 
-    if (id <= ONLP_LED_SYS_GNSS && id >= ONLP_LED_SYS_PWR) {
+    if (id >= ONLP_LED_SYS_GNSS && id <= ONLP_LED_SYS_PWR) {
 
         switch(id) {
             case ONLP_LED_SYS_GNSS:
@@ -130,7 +130,7 @@ static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
                 info->mode = (led_val_blink == 1) ? ONLP_LED_MODE_GREEN_BLINKING : ONLP_LED_MODE_GREEN;
             }
         }
-    } else if (id <= ONLP_LED_FLEXE_0 && id >= ONLP_LED_FLEXE_1) {
+    } else if (id >= ONLP_LED_FLEXE_0 && id <= ONLP_LED_FLEXE_1) {
         switch(id) {
             case ONLP_LED_FLEXE_0:
                 gpio_g = FLEXE0_G_PIN;
@@ -185,11 +185,11 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int led_id, rc=ONLP_STATUS_OK;
     VALIDATE(id);
-    
+
     led_id = ONLP_OID_ID_GET(id);
     *rv = led_info[led_id];
 
-    switch (led_id) {        
+    switch (led_id) {
         case ONLP_LED_SYS_GNSS:
         case ONLP_LED_SYS_SYNC:
         case ONLP_LED_SYS_SYS:
@@ -198,8 +198,8 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
         case ONLP_LED_FLEXE_0:
         case ONLP_LED_FLEXE_1:
             rc = ufi_sys_led_info_get(rv, led_id);
-            break;        
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

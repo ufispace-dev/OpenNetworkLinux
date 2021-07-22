@@ -329,36 +329,36 @@ static SENSOR_DEVICE_ATTR(cpld_sfp_abs, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_SFP_ABS);
 static SENSOR_DEVICE_ATTR(cpld_sfp_rxlos, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_SFP_RXLOS);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g0, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_MASK_G0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g1, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_MASK_G1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g2, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_MASK_G2);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g3, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_MASK_G3);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g0, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_PRES_MASK_G0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g1, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_PRES_MASK_G1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g2, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_PRES_MASK_G2);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g3, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_PRES_MASK_G3);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g0, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_FUSE_INT_MASK_G0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g1, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_FUSE_INT_MASK_G1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g2, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_FUSE_INT_MASK_G2);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g3, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_QSFPDD_FUSE_INT_MASK_G3);
-static SENSOR_DEVICE_ATTR(cpld_sfp_txfault_mask, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_SFP_TXFAULT_MASK);
-static SENSOR_DEVICE_ATTR(cpld_sfp_abs_mask, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_SFP_ABS_MASK);
-static SENSOR_DEVICE_ATTR(cpld_sfp_rxlos_mask, S_IRUGO, \
-        read_cpld_callback, NULL, CPLD_SFP_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g0, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MOD_INT_MASK_G0);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g1, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MOD_INT_MASK_G1);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g2, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MOD_INT_MASK_G2);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_mask_g3, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MOD_INT_MASK_G3);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g0, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_PRES_MASK_G0);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g1, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_PRES_MASK_G1);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g2, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_PRES_MASK_G2);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_pres_mask_g3, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_PRES_MASK_G3);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g0, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FUSE_INT_MASK_G0);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g1, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FUSE_INT_MASK_G1);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g2, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FUSE_INT_MASK_G2);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fuse_int_mask_g3, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FUSE_INT_MASK_G3);
+static SENSOR_DEVICE_ATTR(cpld_sfp_txfault_mask, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_TXFAULT_MASK);
+static SENSOR_DEVICE_ATTR(cpld_sfp_abs_mask, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_ABS_MASK);
+static SENSOR_DEVICE_ATTR(cpld_sfp_rxlos_mask, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_SFP_RXLOS_MASK);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_event_g0, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_EVENT_G0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_event_g1, S_IRUGO, \
@@ -796,8 +796,8 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_BEACON_LED_CTRL:
              reg = CPLD_BEACON_LED_CTRL_REG;
              break;
-        case CPLD_PORT_LED_CLR_CTRL_REG:
-             reg = CPLD_PORT_LED_CLR_CTRL;
+        case CPLD_PORT_LED_CLR_CTRL:
+             reg = CPLD_PORT_LED_CLR_CTRL_REG;
              break;
         case CPLD_QSFPDD_MOD_INT_G0:
              reg = CPLD_QSFPDD_MOD_INT_G0_REG;
@@ -1040,6 +1040,9 @@ static ssize_t write_cpld_callback(struct device *dev,
     u8 reg = 0;
 
     switch (attr->index) {
+        case CPLD_MAC_INTR_MASK:
+             reg = CPLD_MAC_INTR_MASK_REG;
+             break;
         case CPLD_10G_PHY_INTR_MASK:
              reg = CPLD_10G_PHY_INTR_MASK_REG;
              break;

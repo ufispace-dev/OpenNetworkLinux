@@ -36,44 +36,44 @@ const int CPLD_I2C_BUS[] = {1, 1, 1, 30, 30};
 
 bmc_info_t bmc_cache[] =
 {
-    {"ADC_CPU_TEMP", 0},
-    {"TEMP_CPU_PECI", 0},
-    {"TEMP_MAC_ENV_1", 0},
-    {"TEMP_MAC_ENV_2", 0},
-    {"TEMP_FRONT_ENV_1", 0},
-    {"TEMP_FRONT_ENV_2", 0},
-    {"TEMP_ENV_1", 0},
-    {"TEMP_ENV_2", 0},
-    {"TEMP_EXT_ENV_1", 0},
-    {"TEMP_EXT_ENV_2", 0},
-    {"PSU0_TEMP", 0},
-    {"PSU1_TEMP", 0},
-    {"FAN0_FRONT_RPM", 0},
-    {"FAN0_REAR_RPM", 0},
-    {"FAN1_FRONT_RPM", 0},
-    {"FAN1_REAR_RPM", 0},
-    {"FAN2_FRONT_RPM", 0},
-    {"FAN2_REAR_RPM", 0},
-    {"FAN3_FRONT_RPM", 0},
-    {"FAN3_REAR_RPM", 0},
-    {"PSU0_FAN", 0},
-    {"PSU1_FAN", 0},
-    {"FAN0_PRSNT_H",0},
-    {"FAN1_PRSNT_H",0},
-    {"FAN2_PRSNT_H", 0},
-    {"FAN3_PRSNT_H", 0},
-    {"PSU0_VIN", 0},
-    {"PSU0_VOUT", 0},
-    {"PSU0_IIN",0},
-    {"PSU0_IOUT",0},
-    {"PSU0_STBVOUT", 0},
-    {"PSU0_STBIOUT", 0},
-    {"PSU1_VIN", 0},
-    {"PSU1_VOUT", 0},
-    {"PSU1_IIN", 0},
-    {"PSU1_IOUT", 0},
-    {"PSU1_STBVOUT", 0},
-    {"PSU1_STBIOUT", 0}
+    [BMC_ATTR_ID_ADC_CPU_TEMP] = {"ADC_CPU_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_MAC_ENV_1] = {"TEMP_MAC_ENV_1", 0},
+    [BMC_ATTR_ID_TEMP_MAC_ENV_2] = {"TEMP_MAC_ENV_2", 0},
+    [BMC_ATTR_ID_TEMP_FRONT_ENV_1] = {"TEMP_FRONT_ENV_1", 0},
+    [BMC_ATTR_ID_TEMP_FRONT_ENV_2] = {"TEMP_FRONT_ENV_2", 0},
+    [BMC_ATTR_ID_TEMP_ENV_1] = {"TEMP_ENV_1", 0},
+    [BMC_ATTR_ID_TEMP_ENV_2] = {"TEMP_ENV_2", 0},
+    [BMC_ATTR_ID_TEMP_EXT_ENV_1] = {"TEMP_EXT_ENV_1", 0},
+    [BMC_ATTR_ID_TEMP_EXT_ENV_2] = {"TEMP_EXT_ENV_2", 0},
+    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
+    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_FAN0_FRONT_RPM] = {"FAN0_FRONT_RPM", 0},
+    [BMC_ATTR_ID_FAN0_REAR_RPM] = {"FAN0_REAR_RPM", 0},
+    [BMC_ATTR_ID_FAN1_FRONT_RPM] = {"FAN1_FRONT_RPM", 0},
+    [BMC_ATTR_ID_FAN1_REAR_RPM] = {"FAN1_REAR_RPM", 0},
+    [BMC_ATTR_ID_FAN2_FRONT_RPM] = {"FAN2_FRONT_RPM", 0},
+    [BMC_ATTR_ID_FAN2_REAR_RPM] = {"FAN2_REAR_RPM", 0},
+    [BMC_ATTR_ID_FAN3_FRONT_RPM] = {"FAN3_FRONT_RPM", 0},
+    [BMC_ATTR_ID_FAN3_REAR_RPM] = {"FAN3_REAR_RPM", 0},
+    [BMC_ATTR_ID_PSU0_FAN] = {"PSU0_FAN", 0},
+    [BMC_ATTR_ID_PSU1_FAN] = {"PSU1_FAN", 0},
+    [BMC_ATTR_ID_FAN0_PRSNT_H] = {"FAN0_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN1_PRSNT_H] = {"FAN1_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN2_PRSNT_H] = {"FAN2_PRSNT_H", 0},
+    [BMC_ATTR_ID_FAN3_PRSNT_H] = {"FAN3_PRSNT_H", 0},
+    [BMC_ATTR_ID_PSU0_VIN] = {"PSU0_VIN", 0},
+    [BMC_ATTR_ID_PSU0_VOUT] = {"PSU0_VOUT", 0},
+    [BMC_ATTR_ID_PSU0_IIN] = {"PSU0_IIN",0},
+    [BMC_ATTR_ID_PSU0_IOUT] = {"PSU0_IOUT",0},
+    [BMC_ATTR_ID_PSU0_STBVOUT] = {"PSU0_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT] = {"PSU0_STBIOUT", 0},
+    [BMC_ATTR_ID_PSU1_VIN] = {"PSU1_VIN", 0},
+    [BMC_ATTR_ID_PSU1_VOUT] = {"PSU1_VOUT", 0},
+    [BMC_ATTR_ID_PSU1_IIN] = {"PSU1_IIN", 0},
+    [BMC_ATTR_ID_PSU1_IOUT] = {"PSU1_IOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT] = {"PSU1_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT] = {"PSU1_STBIOUT", 0}
 };
 
 static onlp_shlock_t* onlp_lock = NULL;
@@ -217,7 +217,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         {
             memset(buf, 0, sizeof(buf));
             //search present string
-            if( dev_num >= 22 && dev_num <= 25 ) {                
+            if( dev_num >= BMC_ATTR_ID_FAN0_PRSNT_H && dev_num <= BMC_ATTR_ID_FAN3_PRSNT_H ) {                
                 snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)

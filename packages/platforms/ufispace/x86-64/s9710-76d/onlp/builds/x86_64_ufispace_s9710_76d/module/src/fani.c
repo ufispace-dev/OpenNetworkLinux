@@ -89,10 +89,64 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     int sys_fan_f_max = SYS_FAN_F_RPM_MAX;
     int sys_fan_r_max = SYS_FAN_R_RPM_MAX;
     int psu_fan_max = PSU_FAN_RPM_MAX;
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
+    int fan_present_id = BMC_ATTR_ID_MAX;
+
+    switch(id)
+    {
+        case ONLP_FAN_F_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_FRONT_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN0_PRSNT_H;
+            break;
+        case ONLP_FAN_R_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_REAR_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN0_PRSNT_H;
+            break;
+        case ONLP_FAN_F_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_FRONT_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN1_PRSNT_H;
+            break;
+        case ONLP_FAN_R_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_REAR_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN1_PRSNT_H;
+            break;
+        case ONLP_FAN_F_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_FRONT_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN2_PRSNT_H;
+            break;
+        case ONLP_FAN_R_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_REAR_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN2_PRSNT_H;
+            break;
+        case ONLP_FAN_F_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_FRONT_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN3_PRSNT_H;
+            break;
+        case ONLP_FAN_R_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_REAR_RPM;
+            fan_present_id = BMC_ATTR_ID_FAN3_PRSNT_H;
+            break;            
+        case ONLP_PSU_0_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            break;
+        case ONLP_PSU_1_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            break;
+        default:
+            bmc_attr_id = BMC_ATTR_ID_MAX;
+    }
+
+    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }
     
     //check presence for fantray 1-4
     if (id >= ONLP_FAN_F_0 && id <= ONLP_FAN_R_3) {
-        rv = bmc_sensor_read((id-ONLP_FAN_F_0)/2 + CACHE_OFFSET_FAN_PRESENT, FAN_SENSOR, &data);
+        if(fan_present_id == BMC_ATTR_ID_MAX) {
+            return ONLP_STATUS_E_PARAM;
+        }
+        
+        rv = bmc_sensor_read(fan_present_id, FAN_SENSOR, &data);
         if (rv < 0) {
             AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
             return rv;
@@ -108,7 +162,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     } 
 
     //get fan rpm
-    rv = bmc_sensor_read(id + CACHE_OFFSET_FAN_RPM, FAN_SENSOR, &data);
+    rv = bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data);
     if (rv < 0) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rv;

@@ -54,31 +54,55 @@
         threshold\
     }\
 
+ //FIXME threshold
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
-    THERMAL_INFO(ONLP_THERMAL_CPU_PKG, "CPU Package", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_0, "CPU Thermal 0", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_1, "CPU Thermal 1", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_2, "CPU Thermal 2", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_3, "CPU Thermal 3", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_4, "CPU Thermal 4", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_5, "CPU Thermal 5", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_6, "CPU Thermal 6", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_7, "CPU Thermal 7", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_MAC, "MAC Thermal", THERMAL_THRESHOLD_INIT_DEFAULTS), //FIXME
-    THERMAL_INFO(ONLP_THERMAL_PSU_0, "PSU-0-Thermal", THERMAL_THRESHOLD_PSU),
-    THERMAL_INFO(ONLP_THERMAL_PSU_1, "PSU-1-Thermal", THERMAL_THRESHOLD_PSU),
+    THERMAL_INFO(ONLP_THERMAL_CPU_PKG    , "CPU Package"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_0      , "CPU Thermal 0"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_1      , "CPU Thermal 1"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_2      , "CPU Thermal 2"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_3      , "CPU Thermal 3"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_4      , "CPU Thermal 4"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_5      , "CPU Thermal 5"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_6      , "CPU Thermal 6"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_CPU_7      , "CPU Thermal 7"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_MAC        , "MAC Thermal"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_DDR4       , "DDR4 Thermal"     , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_BMC        , "BMC Thermal"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_FANCARD1   , "FANCARD1 Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_FANCARD2   , "FANCARD2 Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_FPGA_R     , "FPGA_R Thermal"   , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_FPGA_L     , "FPGA_L Thermal"   , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_HWM_GDDR   , "HWM GDDR Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_HWM_MAC    , "HWM MAC Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_HWM_AMB    , "HWM AMB Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_HWM_NTMCARD, "NTMCARD Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
+    THERMAL_INFO(ONLP_THERMAL_PSU_0      , "PSU-0-Thermal"    , THERMAL_THRESHOLD_PSU),
+    THERMAL_INFO(ONLP_THERMAL_PSU_1      , "PSU-1-Thermal"    , THERMAL_THRESHOLD_PSU),
+};
+
+int cpu_thermal_sysfs_id [] =
+{
+    [ONLP_THERMAL_CPU_PKG] = 1,
+    [ONLP_THERMAL_CPU_0]   = 2,
+    [ONLP_THERMAL_CPU_1]   = 4,
+    [ONLP_THERMAL_CPU_2]   = 6,
+    [ONLP_THERMAL_CPU_3]   = 8,
+    [ONLP_THERMAL_CPU_4]   = 10,
+    [ONLP_THERMAL_CPU_5]   = 12,
+    [ONLP_THERMAL_CPU_6]   = 14,
+    [ONLP_THERMAL_CPU_7]   = 16
 };
 
 static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", cpu_thermal_sysfs_id[id]);
 
     if(rv < 0) {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", cpu_thermal_sysfs_id[id]);
         if(rv < 0) {
             return rv;
         }
@@ -93,7 +117,50 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     float data=0;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
 
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_THERMAL, id, 0);
+    switch(id)
+    {
+        case ONLP_THERMAL_MAC:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC;
+            break;
+        case ONLP_THERMAL_DDR4:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_DDR4;
+            break;
+        case ONLP_THERMAL_BMC:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_BMC;
+            break;
+        case ONLP_THERMAL_FANCARD1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_FANCARD1;
+            break;
+        case ONLP_THERMAL_FANCARD2:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_FANCARD2;
+            break;
+        case ONLP_THERMAL_FPGA_R:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_FPGA_R;
+            break;
+        case ONLP_THERMAL_FPGA_L:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_FPGA_L;
+            break;
+        case ONLP_THERMAL_HWM_GDDR:
+            bmc_attr_id = BMC_ATTR_ID_HWM_TEMP_GDDR;
+            break;
+        case ONLP_THERMAL_HWM_MAC:
+            bmc_attr_id = BMC_ATTR_ID_HWM_TEMP_MAC;
+            break;
+        case ONLP_THERMAL_HWM_AMB:
+            bmc_attr_id = BMC_ATTR_ID_HWM_TEMP_AMB;
+            break;
+        case ONLP_THERMAL_HWM_NTMCARD:
+            bmc_attr_id = BMC_ATTR_ID_HWM_TEMP_NTMCARD;
+            break;
+        case ONLP_THERMAL_PSU_0:
+            bmc_attr_id = BMC_ATTR_ID_PSU0_TEMP;
+            break;
+        case ONLP_THERMAL_PSU_1:
+            bmc_attr_id = BMC_ATTR_ID_PSU1_TEMP;
+            break;
+        default:
+            bmc_attr_id = BMC_ATTR_ID_MAX;
+    }
 
     if(bmc_attr_id == BMC_ATTR_ID_MAX) {
         return ONLP_STATUS_E_PARAM;
@@ -145,6 +212,16 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
             rc = ufi_cpu_thermal_info_get(rv, sensor_id);
             break;
         case ONLP_THERMAL_MAC:
+        case ONLP_THERMAL_DDR4:
+        case ONLP_THERMAL_BMC:
+        case ONLP_THERMAL_FANCARD1:
+        case ONLP_THERMAL_FANCARD2:
+        case ONLP_THERMAL_FPGA_R:
+        case ONLP_THERMAL_FPGA_L:
+        case ONLP_THERMAL_HWM_GDDR:
+        case ONLP_THERMAL_HWM_MAC:
+        case ONLP_THERMAL_HWM_AMB:
+        case ONLP_THERMAL_HWM_NTMCARD:
         case ONLP_THERMAL_PSU_0:
         case ONLP_THERMAL_PSU_1:
             rc = ufi_bmc_thermal_info_get(rv, sensor_id);

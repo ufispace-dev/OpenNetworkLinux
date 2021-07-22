@@ -31,6 +31,7 @@
 #include <onlp/platformi/thermali.h>
 #include <onlp/platformi/ledi.h>
 #include <onlp/platformi/sysi.h>
+#include <onlp/platformi/sfpi.h>
 #include "x86_64_ufispace_s9300_32d_int.h"
 #include "x86_64_ufispace_s9300_32d_log.h"
 #include <x86_64_ufispace_s9300_32d/x86_64_ufispace_s9300_32d_config.h>
@@ -95,6 +96,8 @@
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 #define CMD_BMC_FRU_CACHE        "ipmitool fru print %d > %s"
 #define CMD_CACHE_FRU_GET        "cat %s | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\\n'"
+#define CMD_BMC_FAN_TRAY_DIR        "ipmitool raw 0x3c 0x31 0x0 | xargs | cut -d' ' -f%d"
+#define CMD_BMC_PSU_FAN_DIR        "ipmitool raw 0x3c 0x30 0x0 | xargs | cut -d' ' -f%d"
 
 /* MAC PORT */
 #define QSFPDD_NUM                32
@@ -150,11 +153,11 @@
 #define THERMAL_NUM             18
 #define LED_NUM                     4
 #define FAN_NUM                     14
-
+#define PSU_NUM                     2
 
 /* FAN */
-#define FAN_DIR_B2F               0
-#define FAN_DIR_F2B               1
+#define FAN_DIR_B2F               1
+#define FAN_DIR_F2B               2
 
 enum sensor
 {
@@ -270,6 +273,8 @@ typedef enum bmc_cache_idx_e {
     ID_FAN3_DIR,
     ID_FAN4_DIR,
     ID_FAN5_DIR,
+    ID_PSU0_FAN1_DIR,
+    ID_PSU1_FAN1_DIR,
     ID_PSU0_VIN,
     ID_PSU0_VOUT,
     ID_PSU0_IIN,
@@ -360,13 +365,7 @@ int psu_pwgood_get(int *pw_good, int id);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 
-int qsfpdd_present_get(int port, int *pres_val);
-
-int sfp_present_get(int port, int *pres_val);
-
 bool onlp_sysi_bmc_en_get(void);
-
-int qsfpdd_port_to_group(int port, int *port_group, int *port_index, int *port_mask);
 
 int bmc_thermal_info_get(onlp_thermal_info_t* info, int id);
 

@@ -562,9 +562,8 @@ static SENSOR_DEVICE_ATTR(uart_ctrl,         S_IRUGO | S_IWUSR, read_lpc_callbac
 static SENSOR_DEVICE_ATTR(usb_ctrl,          S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_USB_CTRL);
 static SENSOR_DEVICE_ATTR(mux_ctrl,          S_IRUGO, read_lpc_callback, NULL, ATT_MUX_CTRL);
 static SENSOR_DEVICE_ATTR(led_clr,           S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_LED_CLR);
-//FIXME: remove write operation, remove write after validation
-static SENSOR_DEVICE_ATTR(led_ctrl_1,   S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_LED_CTRL_1);
-static SENSOR_DEVICE_ATTR(led_ctrl_2,   S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_LED_CTRL_2);
+static SENSOR_DEVICE_ATTR(led_ctrl_1,   S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_CTRL_1);
+static SENSOR_DEVICE_ATTR(led_ctrl_2,   S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_CTRL_2);
 static SENSOR_DEVICE_ATTR(led_status_1, S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_STATUS_1);
 //SENSOR_DEVICE_ATTR - BSP
 static SENSOR_DEVICE_ATTR(bsp_version, S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
@@ -736,18 +735,21 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    err = platform_device_register(&lpc_dev);
-    if (err) {
-        printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
-                __func__, __LINE__, err);
-        return err;
-    }
+    
     err = platform_driver_register(&lpc_drv);
     if (err) {
-        printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
+    	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-        platform_device_unregister(&lpc_dev);
-        return err;
+    	
+    	return err;
+    }
+        
+    err = platform_device_register(&lpc_dev);
+    if (err) {
+    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
+                __func__, __LINE__, err);
+    	platform_driver_unregister(&lpc_drv);
+    	return err;
     }
 
     return err;

@@ -65,6 +65,7 @@ enum s9600_cpld_sysfs_attributes {
     CPLD_ID_TYPE,
     CPLD_MAJOR_VER,
     CPLD_MINOR_VER,
+    CPLD_BUILD_VER,
     CPLD_ID,
     CPLD_MAC_OP2_INTR,
     CPLD_10GPHY_INTR,
@@ -85,6 +86,7 @@ enum s9600_cpld_sysfs_attributes {
     CPLD_MISC_INTR_EVENT,
     CPLD_SYSTEM_INTR_EVENT,
     CPLD_MAC_OP2_RST,
+    CPLD_PHY_RST,
     CPLD_BMC_NTM_RST,
     CPLD_USB_RST,
     CPLD_CPLD_RST,
@@ -103,7 +105,7 @@ enum s9600_cpld_sysfs_attributes {
     CPLD_MUX_CTRL,
     CPLD_SYS_LED_CTRL_1,
     CPLD_SYS_LED_CTRL_2,
-    CPLD_OOB_LED_CTRL,
+    CPLD_SYS_LED_CTRL_3,
     CPLD_MAC_PG,
     CPLD_OP2_PG,
     CPLD_MISC_PG,
@@ -235,6 +237,8 @@ static SENSOR_DEVICE_ATTR(cpld_major_ver, S_IRUGO, \
         read_cpld_version_cb, NULL, CPLD_MAJOR_VER);
 static SENSOR_DEVICE_ATTR(cpld_minor_ver, S_IRUGO, \
         read_cpld_version_cb, NULL, CPLD_MINOR_VER);
+static SENSOR_DEVICE_ATTR(cpld_build_ver, S_IRUGO, \
+        read_cpld_cb, NULL, CPLD_BUILD_VER);
 static SENSOR_DEVICE_ATTR(cpld_id, S_IRUGO, \
         read_cpld_cb, NULL, CPLD_ID);
 static SENSOR_DEVICE_ATTR(cpld_mac_op2_intr, S_IRUGO, \
@@ -275,6 +279,8 @@ static SENSOR_DEVICE_ATTR(cpld_system_intr_event, S_IRUGO, \
         read_cpld_cb, NULL, CPLD_SYSTEM_INTR_EVENT);
 static SENSOR_DEVICE_ATTR(cpld_mac_op2_rst, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_MAC_OP2_RST);
+static SENSOR_DEVICE_ATTR(cpld_phy_rst, S_IWUSR | S_IRUGO, \
+        read_cpld_cb, write_cpld_cb, CPLD_PHY_RST);
 static SENSOR_DEVICE_ATTR(cpld_bmc_ntm_rst, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_BMC_NTM_RST);
 static SENSOR_DEVICE_ATTR(cpld_usb_rst, S_IWUSR | S_IRUGO, \
@@ -311,8 +317,8 @@ static SENSOR_DEVICE_ATTR(cpld_sys_led_ctrl_1, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_SYS_LED_CTRL_1);
 static SENSOR_DEVICE_ATTR(cpld_sys_led_ctrl_2, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_SYS_LED_CTRL_2);
-static SENSOR_DEVICE_ATTR(cpld_oob_led_ctrl, S_IWUSR | S_IRUGO, \
-        read_cpld_cb, write_cpld_cb, CPLD_OOB_LED_CTRL);
+static SENSOR_DEVICE_ATTR(cpld_sys_led_ctrl_3, S_IWUSR | S_IRUGO, \
+        read_cpld_cb, write_cpld_cb, CPLD_SYS_LED_CTRL_3);
 static SENSOR_DEVICE_ATTR(cpld_mac_pg, S_IRUGO, \
         read_cpld_cb, NULL, CPLD_MAC_PG);
 static SENSOR_DEVICE_ATTR(cpld_op2_pg, S_IRUGO, \
@@ -448,6 +454,7 @@ static struct attribute *s9600_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_id_type.dev_attr.attr,
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_mac_op2_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_10gphy_intr.dev_attr.attr,
@@ -468,6 +475,7 @@ static struct attribute *s9600_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_misc_intr_event.dev_attr.attr,
     &sensor_dev_attr_cpld_system_intr_event.dev_attr.attr,
     &sensor_dev_attr_cpld_mac_op2_rst.dev_attr.attr,
+    &sensor_dev_attr_cpld_phy_rst.dev_attr.attr,
     &sensor_dev_attr_cpld_bmc_ntm_rst.dev_attr.attr,
     &sensor_dev_attr_cpld_usb_rst.dev_attr.attr,
     &sensor_dev_attr_cpld_cpld_rst.dev_attr.attr,
@@ -486,7 +494,7 @@ static struct attribute *s9600_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_mux_ctrl.dev_attr.attr,
     &sensor_dev_attr_cpld_sys_led_ctrl_1.dev_attr.attr,
     &sensor_dev_attr_cpld_sys_led_ctrl_2.dev_attr.attr,
-    &sensor_dev_attr_cpld_oob_led_ctrl.dev_attr.attr,
+    &sensor_dev_attr_cpld_sys_led_ctrl_3.dev_attr.attr,
     &sensor_dev_attr_cpld_mac_pg.dev_attr.attr,
     &sensor_dev_attr_cpld_op2_pg.dev_attr.attr,
     &sensor_dev_attr_cpld_misc_pg.dev_attr.attr,
@@ -500,6 +508,7 @@ static struct attribute *s9600_cpld2_attributes[] = {
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_0_7_pres.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_8_15_pres.dev_attr.attr,
@@ -534,6 +543,7 @@ static struct attribute *s9600_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_16_23_pres.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_24_31_pres.dev_attr.attr,
@@ -568,6 +578,7 @@ static struct attribute *s9600_cpld4_attributes[] = {
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_64_71_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_64_71_pres.dev_attr.attr,
@@ -723,6 +734,9 @@ static ssize_t read_cpld_cb(struct device *dev,
         case CPLD_ID:
              reg = CPLD_ID_REG;
              break;
+        case CPLD_BUILD_VER:
+             reg = CPLD_SUB_VERSION_REG;
+             break;
         case CPLD_MAC_OP2_INTR:
              reg = CPLD_MAC_OP2_INTR_REG;
              break;
@@ -780,6 +794,9 @@ static ssize_t read_cpld_cb(struct device *dev,
         case CPLD_MAC_OP2_RST:
              reg = CPLD_MAC_OP2_RST_REG;
              break;
+        case CPLD_PHY_RST:
+             reg = CPLD_PHY_RST_REG;
+             break;
         case CPLD_BMC_NTM_RST:
              reg = CPLD_BMC_NTM_RST_REG;
              break;
@@ -834,8 +851,8 @@ static ssize_t read_cpld_cb(struct device *dev,
         case CPLD_SYS_LED_CTRL_2:
              reg = CPLD_SYS_LED_CTRL_2_REG;
              break;
-        case CPLD_OOB_LED_CTRL:
-             reg = CPLD_OOB_LED_CTRL_REG;
+        case CPLD_SYS_LED_CTRL_3:
+             reg = CPLD_SYS_LED_CTRL_3_REG;
              break;
         case CPLD_MAC_PG:
              reg = CPLD_MAC_PG_REG;
@@ -1111,6 +1128,9 @@ static ssize_t write_cpld_cb(struct device *dev,
         case CPLD_MAC_OP2_RST:
              reg = CPLD_MAC_OP2_RST_REG;
              break;
+        case CPLD_PHY_RST:
+             reg = CPLD_PHY_RST_REG;
+             break;
         case CPLD_BMC_NTM_RST:
              reg = CPLD_BMC_NTM_RST_REG;
              break;
@@ -1147,8 +1167,8 @@ static ssize_t write_cpld_cb(struct device *dev,
         case CPLD_SYS_LED_CTRL_2:
              reg = CPLD_SYS_LED_CTRL_2_REG;
              break;
-        case CPLD_OOB_LED_CTRL:
-             reg = CPLD_OOB_LED_CTRL_REG;
+        case CPLD_SYS_LED_CTRL_3:
+             reg = CPLD_SYS_LED_CTRL_3_REG;
              break;
         case CPLD_HBM_PW_EN:
              reg = CPLD_HBM_PW_EN_REG;

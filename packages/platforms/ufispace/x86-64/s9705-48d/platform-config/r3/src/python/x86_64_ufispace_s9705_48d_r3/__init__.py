@@ -245,9 +245,6 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r3(OnlPlatformUfiSpace):
             msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg_val) )
             os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], 0x70, 0x21, rov_reg_val))            
 
-        # onie syseeprom
-        self.insmod("x86-64-ufispace-s9705-48d-onie-syseeprom.ko")
-
         self.enable_ipmi_maintenance_mode()
 
         return True        

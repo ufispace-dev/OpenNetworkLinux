@@ -61,7 +61,13 @@ static onlp_led_info_t led_info[] =
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING ,
     },
-    
+    {
+        { LED_OID_PSU1, "Chassis LED 5 (SYNC LED)", 0 },
+        ONLP_LED_STATUS_PRESENT,
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
+        ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING ,
+    },
+
 };
 
 /*
@@ -87,6 +93,7 @@ onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
         case LED_ID_SYS_PSU0:
         case LED_ID_SYS_PSU1:
         case LED_ID_SYS_FAN:
+        case LED_ID_SYS_SYNC:
             rc = sys_led_info_get(info, led_id);
             break;        
         default:            

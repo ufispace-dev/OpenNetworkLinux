@@ -44,10 +44,10 @@
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_MAC PSU0_TEMP PSU1_TEMP FAN_0 FAN_1 FAN_2 FAN_3 FAN_4 PSU0_FAN PSU1_FAN  PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_MAC TEMP_DDR4 TEMP_BMC TEMP_FANCARD1 TEMP_FANCARD2 TEMP_FPGA_R TEMP_FPGA_L HWM_TEMP_GDDR HWM_TEMP_MAC HWM_TEMP_AMB HWM_TEMP_NTMCARD PSU0_TEMP1 PSU1_TEMP1 FAN_0 FAN_1 FAN_2 FAN_3 FAN_4 PSU0_FAN PSU1_FAN  PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 
-#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x75 > /dev/null 2>&1"
+#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 1 0x75 > /dev/null 2>&1"
 #define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
 
 
@@ -65,6 +65,16 @@ enum sensor
 
 enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_MAC,
+    BMC_ATTR_ID_TEMP_DDR4,
+    BMC_ATTR_ID_TEMP_BMC,
+    BMC_ATTR_ID_TEMP_FANCARD1,
+    BMC_ATTR_ID_TEMP_FANCARD2,
+    BMC_ATTR_ID_TEMP_FPGA_R,
+    BMC_ATTR_ID_TEMP_FPGA_L,
+    BMC_ATTR_ID_HWM_TEMP_GDDR,
+    BMC_ATTR_ID_HWM_TEMP_MAC,
+    BMC_ATTR_ID_HWM_TEMP_AMB,
+    BMC_ATTR_ID_HWM_TEMP_NTMCARD,
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
     BMC_ATTR_ID_FAN_0,
@@ -88,23 +98,6 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_STBIOUT,
     BMC_ATTR_ID_MAX
 };
-
-enum psu_attr_id {
-    PSU_ATTR_VIN_0,
-    PSU_ATTR_VOUT_0,
-    PSU_ATTR_IIN_0,
-    PSU_ATTR_IOUT_0,
-    PSU_ATTR_STBVOUT_0,
-    PSU_ATTR_STBIOUT_0,
-    PSU_ATTR_VIN_1,
-    PSU_ATTR_VOUT_1,
-    PSU_ATTR_IIN_1,
-    PSU_ATTR_IOUT_1,
-    PSU_ATTR_STBVOUT_1,
-    PSU_ATTR_STBIOUT_1,
-    PSU_ATTR_ID_MAX
-};
-
 
 /* fan_id */
 enum onlp_fan_id {
@@ -149,6 +142,16 @@ enum onlp_thermal_id {
     ONLP_THERMAL_CPU_6,
     ONLP_THERMAL_CPU_7,
     ONLP_THERMAL_MAC,
+    ONLP_THERMAL_DDR4,
+    ONLP_THERMAL_BMC,
+    ONLP_THERMAL_FANCARD1,
+    ONLP_THERMAL_FANCARD2,
+    ONLP_THERMAL_FPGA_R,
+    ONLP_THERMAL_FPGA_L,
+    ONLP_THERMAL_HWM_GDDR,
+    ONLP_THERMAL_HWM_MAC,
+    ONLP_THERMAL_HWM_AMB,
+    ONLP_THERMAL_HWM_NTMCARD,
     ONLP_THERMAL_PSU_0,
     ONLP_THERMAL_PSU_1,
     ONLP_THERMAL_MAX,
@@ -180,5 +183,4 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
-int ufi_oid_to_bmc_attr_id(int type, int sensor_id, int sub_devid);
 #endif  /* __PLATFORM_LIB_H__ */

@@ -47,11 +47,6 @@
 #define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 
-#define CACHE_OFFSET_THERMAL     (-10)
-#define CACHE_OFFSET_FAN_RPM     (11)
-#define CACHE_OFFSET_FAN_PRESENT (22)
-#define CACHE_OFFSET_PSU         (23)
-
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
 #define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
 
@@ -70,6 +65,48 @@ enum sensor
     FAN_SENSOR = 0,
     PSU_SENSOR,
     THERMAL_SENSOR,
+};
+
+enum bmc_attr_id {
+    BMC_ATTR_ID_ADC_CPU_TEMP,
+    BMC_ATTR_ID_TEMP_CPU_PECI,
+    BMC_ATTR_ID_TEMP_MAC_ENV_1,
+    BMC_ATTR_ID_TEMP_MAC_ENV_2,
+    BMC_ATTR_ID_TEMP_FRONT_ENV_1,
+    BMC_ATTR_ID_TEMP_FRONT_ENV_2,
+    BMC_ATTR_ID_TEMP_ENV_1,
+    BMC_ATTR_ID_TEMP_ENV_2,
+    BMC_ATTR_ID_TEMP_EXT_ENV_1,
+    BMC_ATTR_ID_TEMP_EXT_ENV_2,
+    BMC_ATTR_ID_PSU0_TEMP,
+    BMC_ATTR_ID_PSU1_TEMP,
+    BMC_ATTR_ID_FAN0_FRONT_RPM,
+    BMC_ATTR_ID_FAN0_REAR_RPM,
+    BMC_ATTR_ID_FAN1_FRONT_RPM,
+    BMC_ATTR_ID_FAN1_REAR_RPM,
+    BMC_ATTR_ID_FAN2_FRONT_RPM,
+    BMC_ATTR_ID_FAN2_REAR_RPM,
+    BMC_ATTR_ID_FAN3_FRONT_RPM,
+    BMC_ATTR_ID_FAN3_REAR_RPM,
+    BMC_ATTR_ID_PSU0_FAN,
+    BMC_ATTR_ID_PSU1_FAN,
+    BMC_ATTR_ID_FAN0_PRSNT_H,
+    BMC_ATTR_ID_FAN1_PRSNT_H,
+    BMC_ATTR_ID_FAN2_PRSNT_H,
+    BMC_ATTR_ID_FAN3_PRSNT_H,
+    BMC_ATTR_ID_PSU0_VIN,
+    BMC_ATTR_ID_PSU0_VOUT,
+    BMC_ATTR_ID_PSU0_IIN,
+    BMC_ATTR_ID_PSU0_IOUT,
+    BMC_ATTR_ID_PSU0_STBVOUT,
+    BMC_ATTR_ID_PSU0_STBIOUT,
+    BMC_ATTR_ID_PSU1_VIN,
+    BMC_ATTR_ID_PSU1_VOUT,
+    BMC_ATTR_ID_PSU1_IIN,
+    BMC_ATTR_ID_PSU1_IOUT,
+    BMC_ATTR_ID_PSU1_STBVOUT,
+    BMC_ATTR_ID_PSU1_STBIOUT,
+    BMC_ATTR_ID_MAX
 };
 
 /* fan_id */

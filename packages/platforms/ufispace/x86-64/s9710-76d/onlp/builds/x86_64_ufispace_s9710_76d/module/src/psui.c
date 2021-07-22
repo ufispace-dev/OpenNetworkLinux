@@ -161,12 +161,22 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     int rc, pw_present, pw_good;    
     int stbmvout, stbmiout;
     float data;
-    int id_offset = 0;
+    int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
 
     if (id == ONLP_PSU_0) {
-        id_offset = ONLP_PSU_0_VIN - id;
+        attr_vin = BMC_ATTR_ID_PSU0_VIN;
+        attr_vout = BMC_ATTR_ID_PSU0_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU0_IIN;
+        attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
     } else {
-        id_offset = ONLP_PSU_1_VIN - id;
+        attr_vin = BMC_ATTR_ID_PSU1_VIN;
+        attr_vout = BMC_ATTR_ID_PSU1_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU1_IIN;
+        attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
     
      /* Get power present status */
@@ -194,7 +204,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power vin status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 0 , PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_vin, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {        
         info->mvin = (int) (data*1000);
@@ -202,7 +212,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
     
     /* Get power vout status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 1, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_vout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {        
         info->mvout = (int) (data*1000);
@@ -210,7 +220,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
             
     /* Get power iin status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 2, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_iin, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {        
         info->miin = (int) (data*1000);
@@ -218,7 +228,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
     
     /* Get power iout status */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 3, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_iout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {        
         info->miout = (int) (data*1000);        
@@ -226,14 +236,14 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }    
 
     /* Get standby power vout */    
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 4, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         stbmvout = (int) (data*1000);        
     }
     
     /* Get standby power iout */
-    if (bmc_sensor_read(id + CACHE_OFFSET_PSU + id_offset + 5, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         stbmiout = (int) (data*1000);        

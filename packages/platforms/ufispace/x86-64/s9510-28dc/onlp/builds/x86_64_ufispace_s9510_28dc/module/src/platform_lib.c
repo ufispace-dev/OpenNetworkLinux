@@ -34,28 +34,38 @@
 
 bmc_info_t bmc_cache[] =
 {
-    [BMC_ATTR_ID_TEMP_MAC]     = {"TEMP_MAC"     , 0},
-    [BMC_ATTR_ID_PSU0_TEMP]    = {"PSU0_TEMP"    , 0},
-    [BMC_ATTR_ID_PSU1_TEMP]    = {"PSU1_TEMP"    , 0},
-    [BMC_ATTR_ID_FAN_0]        = {"FAN_0"        , 0},
-    [BMC_ATTR_ID_FAN_1]        = {"FAN_1"        , 0},
-    [BMC_ATTR_ID_FAN_2]        = {"FAN_2"        , 0},
-    [BMC_ATTR_ID_FAN_3]        = {"FAN_3"        , 0},
-    [BMC_ATTR_ID_FAN_4]        = {"FAN_4"        , 0},
-    [BMC_ATTR_ID_PSU0_FAN]     = {"PSU0_FAN"     , 0},
-    [BMC_ATTR_ID_PSU1_FAN]     = {"PSU1_FAN"     , 0},
-    [BMC_ATTR_ID_PSU0_VIN]     = {"PSU0_VIN"     , 0},
-    [BMC_ATTR_ID_PSU0_VOUT]    = {"PSU0_VOUT"    , 0},
-    [BMC_ATTR_ID_PSU0_IIN]     = {"PSU0_IIN"     , 0},
-    [BMC_ATTR_ID_PSU0_IOUT]    = {"PSU0_IOUT"    , 0},
-    [BMC_ATTR_ID_PSU0_STBVOUT] = {"PSU0_STBVOUT" , 0},
-    [BMC_ATTR_ID_PSU0_STBIOUT] = {"PSU0_STBIOUT" , 0},
-    [BMC_ATTR_ID_PSU1_VIN]     = {"PSU1_VIN"     , 0},
-    [BMC_ATTR_ID_PSU1_VOUT]    = {"PSU1_VOUT"    , 0},
-    [BMC_ATTR_ID_PSU1_IIN]     = {"PSU1_IIN"     , 0},
-    [BMC_ATTR_ID_PSU1_IOUT]    = {"PSU1_IOUT"    , 0},
-    [BMC_ATTR_ID_PSU1_STBVOUT] = {"PSU1_STBVOUT" , 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT] = {"PSU1_STBIOUT" , 0}
+    [BMC_ATTR_ID_TEMP_MAC]        = {"TEMP_MAC"        , 0},
+    [BMC_ATTR_ID_TEMP_DDR4]       = {"TEMP_DDR4"       , 0},
+    [BMC_ATTR_ID_TEMP_BMC]        = {"TEMP_BMC"        , 0},
+    [BMC_ATTR_ID_TEMP_FANCARD1]   = {"TEMP_FANCARD1"   , 0},
+    [BMC_ATTR_ID_TEMP_FANCARD2]   = {"TEMP_FANCARD2"   , 0},
+    [BMC_ATTR_ID_TEMP_FPGA_R]     = {"TEMP_FPGA_R"     , 0},
+    [BMC_ATTR_ID_TEMP_FPGA_L]     = {"TEMP_FPGA_L"     , 0},
+    [BMC_ATTR_ID_HWM_TEMP_GDDR]   = {"HWM_TEMP_GDDR"   , 0},
+    [BMC_ATTR_ID_HWM_TEMP_MAC]    = {"HWM_TEMP_MAC"    , 0},
+    [BMC_ATTR_ID_HWM_TEMP_AMB]    = {"HWM_TEMP_AMB"    , 0},
+    [BMC_ATTR_ID_HWM_TEMP_NTMCARD]= {"HWM_TEMP_NTMCARD", 0},
+    [BMC_ATTR_ID_PSU0_TEMP]       = {"PSU0_TEMP1"      , 0},
+    [BMC_ATTR_ID_PSU1_TEMP]       = {"PSU1_TEMP1"      , 0},
+    [BMC_ATTR_ID_FAN_0]           = {"FAN_0"           , 0},
+    [BMC_ATTR_ID_FAN_1]           = {"FAN_1"           , 0},
+    [BMC_ATTR_ID_FAN_2]           = {"FAN_2"           , 0},
+    [BMC_ATTR_ID_FAN_3]           = {"FAN_3"           , 0},
+    [BMC_ATTR_ID_FAN_4]           = {"FAN_4"           , 0},
+    [BMC_ATTR_ID_PSU0_FAN]        = {"PSU0_FAN"        , 0},
+    [BMC_ATTR_ID_PSU1_FAN]        = {"PSU1_FAN"        , 0},
+    [BMC_ATTR_ID_PSU0_VIN]        = {"PSU0_VIN"        , 0},
+    [BMC_ATTR_ID_PSU0_VOUT]       = {"PSU0_VOUT"       , 0},
+    [BMC_ATTR_ID_PSU0_IIN]        = {"PSU0_IIN"        , 0},
+    [BMC_ATTR_ID_PSU0_IOUT]       = {"PSU0_IOUT"       , 0},
+    [BMC_ATTR_ID_PSU0_STBVOUT]    = {"PSU0_STBVOUT"    , 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT]    = {"PSU0_STBIOUT"    , 0},
+    [BMC_ATTR_ID_PSU1_VIN]        = {"PSU1_VIN"        , 0},
+    [BMC_ATTR_ID_PSU1_VOUT]       = {"PSU1_VOUT"       , 0},
+    [BMC_ATTR_ID_PSU1_IIN]        = {"PSU1_IIN"        , 0},
+    [BMC_ATTR_ID_PSU1_IOUT]       = {"PSU1_IOUT"       , 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT]    = {"PSU1_STBVOUT"    , 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT]    = {"PSU1_STBIOUT"    , 0}
 };
 
 static onlp_shlock_t* onlp_lock = NULL;
@@ -289,6 +299,7 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs)
  */
 void check_and_do_i2c_mux_reset(int port)
 {
+#if 0 // FIXME
     char cmd_buf[256] = {0};
     int ret = 0;
 
@@ -303,6 +314,7 @@ void check_and_do_i2c_mux_reset(int port)
             //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
         }
     }
+#endif
 }
 
 /* reg shift */
@@ -337,89 +349,4 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     else
         reg_val = reg_val | (1 << bit);
     return reg_val;
-}
-
-int ufi_oid_to_bmc_attr_id(int type, int sensor_id, int sub_devid)
-{
-    switch(type)
-    {
-        case ONLP_OID_TYPE_FAN:
-            switch(sensor_id)
-            {
-                case ONLP_FAN_0:
-                    return BMC_ATTR_ID_FAN_0;
-                case ONLP_FAN_1:
-                    return BMC_ATTR_ID_FAN_1;
-                case ONLP_FAN_2:
-                    return BMC_ATTR_ID_FAN_2;
-                case ONLP_FAN_3:
-                    return BMC_ATTR_ID_FAN_3;
-                case ONLP_FAN_4:
-                    return BMC_ATTR_ID_FAN_4;
-                case ONLP_PSU_0_FAN:
-                    return BMC_ATTR_ID_PSU0_FAN;
-                case ONLP_PSU_1_FAN:
-                    return BMC_ATTR_ID_PSU1_FAN;
-                default:
-                    return BMC_ATTR_ID_MAX;
-            }
-        case ONLP_OID_TYPE_PSU:
-            switch(sensor_id)
-            {
-
-                case ONLP_PSU_0:
-                    switch(sub_devid)
-                    {
-                        case PSU_ATTR_VIN_0:
-                            return BMC_ATTR_ID_PSU0_VIN;
-                        case PSU_ATTR_VOUT_0:
-                            return BMC_ATTR_ID_PSU0_VOUT;
-                        case PSU_ATTR_IIN_0:
-                            return BMC_ATTR_ID_PSU0_IIN;
-                        case PSU_ATTR_IOUT_0:
-                            return BMC_ATTR_ID_PSU0_IOUT;
-                        case PSU_ATTR_STBVOUT_0:
-                            return BMC_ATTR_ID_PSU0_STBVOUT;
-                        case PSU_ATTR_STBIOUT_0:
-                            return BMC_ATTR_ID_PSU0_STBIOUT;
-                        default:
-                            return BMC_ATTR_ID_MAX;
-                    }
-                case ONLP_PSU_1:
-                    switch(sub_devid)
-                    {
-                        case PSU_ATTR_VIN_1:
-                            return BMC_ATTR_ID_PSU1_VIN;
-                        case PSU_ATTR_VOUT_1:
-                            return BMC_ATTR_ID_PSU1_VOUT;
-                        case PSU_ATTR_IIN_1:
-                            return BMC_ATTR_ID_PSU1_IIN;
-                        case PSU_ATTR_IOUT_1:
-                            return BMC_ATTR_ID_PSU1_IOUT;
-                        case PSU_ATTR_STBVOUT_1:
-                            return BMC_ATTR_ID_PSU1_STBVOUT;
-                        case PSU_ATTR_STBIOUT_1:
-                            return BMC_ATTR_ID_PSU1_STBIOUT;
-                        default:
-                            return BMC_ATTR_ID_MAX;
-                    }
-                default:
-                    return BMC_ATTR_ID_MAX;
-            }
-        case ONLP_OID_TYPE_THERMAL:
-            switch(sensor_id)
-            {
-                case ONLP_THERMAL_MAC:
-                    return BMC_ATTR_ID_TEMP_MAC;
-                case ONLP_THERMAL_PSU_0:
-                    return BMC_ATTR_ID_PSU0_TEMP;
-                case ONLP_THERMAL_PSU_1:
-                    return BMC_ATTR_ID_PSU1_TEMP;
-                default:
-                    return BMC_ATTR_ID_MAX;
-            }
-
-        default:
-            return BMC_ATTR_ID_MAX;
-    }
 }

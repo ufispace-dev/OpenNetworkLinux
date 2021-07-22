@@ -220,9 +220,6 @@ class OnlPlatform_x86_64_ufispace_s9600_48x_r0(OnlPlatformUfiSpace):
         for i, addr in enumerate((0x30, 0x31, 0x32, 0x33)):
             self.new_i2c_device("s9600_48x_cpld" + str(i+1), addr, 1)
 
-        # onie syseeprom
-        self.insmod("x86-64-ufispace-s9600-48x-onie-syseeprom.ko")
-
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 

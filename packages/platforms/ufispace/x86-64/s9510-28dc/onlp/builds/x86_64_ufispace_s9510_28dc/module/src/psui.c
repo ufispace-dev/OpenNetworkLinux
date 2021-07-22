@@ -71,7 +71,7 @@ static int ufi_psu_fru_get(onlp_psu_info_t* info, int id)
     memset(cmd, 0, sizeof(cmd));
     memset(cmd_out, 0, sizeof(cmd_out));
     memset(info->model, 0, sizeof(info->model));
-
+    // FIXME correct fru id
     snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_model);
 
     //Get psu fru info (model) from BMC
@@ -162,23 +162,22 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     int rc, pw_present, pw_good;
     int stbmvout, stbmiout;
     float data;
-    int bmc_attr_id = BMC_ATTR_ID_MAX;
     int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
 
     if (id == ONLP_PSU_0) {
-        attr_vin = PSU_ATTR_VIN_0;
-        attr_vout = PSU_ATTR_VOUT_0;
-        attr_iin = PSU_ATTR_IIN_0;
-        attr_iout = PSU_ATTR_IOUT_0;
-        attr_stbvout = PSU_ATTR_STBVOUT_0;
-        attr_stbiout = PSU_ATTR_STBIOUT_0;
+        attr_vin = BMC_ATTR_ID_PSU0_VIN;
+        attr_vout = BMC_ATTR_ID_PSU0_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU0_IIN;
+        attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
     } else {
-        attr_vin = PSU_ATTR_VIN_1;
-        attr_vout = PSU_ATTR_VOUT_1;
-        attr_iin = PSU_ATTR_IIN_1;
-        attr_iout = PSU_ATTR_IOUT_1;
-        attr_stbvout = PSU_ATTR_STBVOUT_1;
-        attr_stbiout = PSU_ATTR_STBIOUT_1;
+        attr_vin = BMC_ATTR_ID_PSU1_VIN;
+        attr_vout = BMC_ATTR_ID_PSU1_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU1_IIN;
+        attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
 
      /* Get power present status */
@@ -206,8 +205,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power vin status */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_vin);
-    if (bmc_sensor_read(bmc_attr_id , PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_vin , PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         info->mvin = (int) (data*1000);
@@ -215,8 +213,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power vout status */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_vout);
-    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_vout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         info->mvout = (int) (data*1000);
@@ -224,8 +221,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power iin status */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_iin);
-    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_iin, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         info->miin = (int) (data*1000);
@@ -233,8 +229,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power iout status */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_iout);
-    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_iout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         info->miout = (int) (data*1000);
@@ -242,16 +237,14 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get standby power vout */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_stbvout);
-    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         stbmvout = (int) (data*1000);
     }
 
     /* Get standby power iout */
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_PSU, id, attr_stbiout);
-    if (bmc_sensor_read(bmc_attr_id, PSU_SENSOR, &data) < 0) {
+    if (bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
         stbmiout = (int) (data*1000);

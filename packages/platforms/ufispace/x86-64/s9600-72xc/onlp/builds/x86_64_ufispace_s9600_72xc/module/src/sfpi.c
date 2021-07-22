@@ -21,16 +21,12 @@
  *
  *
  ***********************************************************/
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <onlplib/sfp.h>
+#include <onlp/onlp.h>
 #include <onlplib/file.h>
-#include <onlp/platformi/sfpi.h>
-#include <x86_64_ufispace_s9600_72xc/x86_64_ufispace_s9600_72xc_config.h>
-#include "x86_64_ufispace_s9600_72xc_log.h"
+#include <onlplib/i2c.h>
 #include "platform_lib.h"
+
+#define EEPROM_SYS_FMT "/sys/bus/i2c/devices/%d-0050/eeprom" 
 
 static char* port_type_str[] = {
     "sfp+",
@@ -55,15 +51,13 @@ static char* port_group_str[] = {
     "56_63",
 };
 
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {  
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 0; p < PORT_NUM; p++) {
@@ -72,8 +66,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-port_type_info_t
-port_num_to_type(int port) 
+port_type_info_t port_num_to_type(int port) 
 {
     port_type_info_t port_type_info;
     
@@ -103,8 +96,7 @@ port_num_to_type(int port)
     return port_type_info;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status=1;
     port_type_info_t port_type_info;
@@ -136,8 +128,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 0;
     int rc = 0;
@@ -150,12 +141,12 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-/*
- * This function reads the SFPs idrom and returns in
- * in the data buffer provided.
- */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+/**
+ * @brief Read the SFP EEPROM.
+ * @param port The port number.
+ * @param data Receives the SFP data. 
+ */ 
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     char eeprom_path[128];
     int size = 0;
@@ -171,8 +162,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
-    snprintf(eeprom_path, sizeof(eeprom_path), 
-                "/sys/bus/i2c/devices/%d-0050/eeprom", 
+    snprintf(eeprom_path, sizeof(eeprom_path), EEPROM_SYS_FMT, 
                 port_eeprom_bus_base[port_type_info.type]+port_type_info.eeprom_bus_index);
 
     if(onlp_file_read(data, 256, &size, eeprom_path) != ONLP_STATUS_OK) {
@@ -185,8 +175,222 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
+
+/**
+ * @brief Read a byte from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ */
+int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+
+    if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;    
+}
+
+/**
+ * @brief Write a byte to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+
+    if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }   
+    
+    return rc;
+}
+
+/**
+ * @brief Read a word from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ * @returns The word if successful, error otherwise.
+ */
+int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+
+    if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }  
+    
+    return rc;    
+}
+
+/**
+ * @brief Write a word to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+
+    if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;      
+}
+
+/**
+ * @brief Read from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ * @returns The data if successful, error otherwise.
+ */
+int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+   
+    if ((rc=onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE)) < 0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+
+    return rc;
+}
+
+/**
+ * @brief Write to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
+{
+    int rc = 0;
+    port_type_info_t port_type_info;
+    int bus;
+
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+
+    if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;
+}
+
+/**
+ * @brief Read the SFP DOM EEPROM.
+ * @param port The port number.
+ * @param data Receives the SFP data.
+ */
+int onlp_sfpi_dom_read(int port, uint8_t data[256])
+{
+    char eeprom_path[512];
+    FILE* fp;
+    port_type_info_t port_type_info;
+    int bus = 0;
+
+    //sfp dom is on 0x51 (2nd 256 bytes)
+    //qsfp dom is on lower page 0x00
+    //qsfpdd 2.0 dom is on lower page 0x00
+    //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
+    port_type_info = port_num_to_type(port);
+
+    if( port_type_info.type == TYPE_UNNKOW) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    memset(data, 0, 256);
+    memset(eeprom_path, 0, sizeof(eeprom_path));
+
+    //set eeprom_path
+    bus = port_eeprom_bus_base[port_type_info.type] + port_type_info.eeprom_bus_index;
+    snprintf(eeprom_path, sizeof(eeprom_path), EEPROM_SYS_FMT, bus);
+
+    //read eeprom
+    fp = fopen(eeprom_path, "r");
+    if(fp == NULL) {
+        AIM_LOG_ERROR("Unable to open the eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (fseek(fp, 256, SEEK_CUR) != 0) {
+        fclose(fp);
+        AIM_LOG_ERROR("Unable to set the file position indicator of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    int ret = fread(data, 1, 256, fp);
+    fclose(fp);
+    if (ret != 256) {
+        AIM_LOG_ERROR("Unable to read the module_eeprom device file of port(%d)", port);
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Return the RX_LOS bitmap for all SFP ports.
+ * @param dst Receives the RX_LOS bitmap.
+ */
+int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int i=0, value=0, rc=0;
 
@@ -202,8 +406,7 @@ onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-int
-sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
+int sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
 {
     uint8_t data[8];
     int data_len = 0, data_value = 0;
@@ -270,8 +473,7 @@ sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
     return ONLP_STATUS_OK;
 }
   
-int
-mgmt_sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
+int mgmt_sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
 {
     uint8_t data[8];
     int data_len = 0, data_value = 0;
@@ -312,9 +514,13 @@ mgmt_sfp_control_get(int port_index, onlp_sfp_control_t control, int* value)
     return ONLP_STATUS_OK;
 }
 
-
-int
-onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
+/**
+ * @brief Get an SFP control.
+ * @param port The port.
+ * @param control The control
+ * @param [out] value Receives the current value.
+ */
+int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     port_type_info_t port_type_info;
     int rc;
@@ -335,8 +541,7 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     return rc;
 }
 
-int
-sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
+int sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
 {
     uint8_t data[8];
     int data_len = 0, data_value = 0;
@@ -410,8 +615,7 @@ sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
     return ONLP_STATUS_OK;
 }
 
-int
-mgmt_sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
+int mgmt_sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
 {
     uint8_t data[8];
     int data_len = 0, data_value = 0;
@@ -459,8 +663,13 @@ mgmt_sfp_control_set(int port_index, onlp_sfp_control_t control, int value)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
+/**
+ * @brief Set an SFP control.
+ * @param port The port.
+ * @param control The control.
+ * @param value The value.
+ */
+int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
     port_type_info_t port_type_info;
     int rc;

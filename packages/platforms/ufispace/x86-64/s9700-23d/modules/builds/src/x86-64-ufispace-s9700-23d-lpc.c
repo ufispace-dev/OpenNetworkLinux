@@ -311,16 +311,16 @@ int lpc_init(void)
 {
     int ret = 0;
 
-    ret = platform_device_register(&lpc_dev);
-    if (ret) {
-        printk(KERN_ERR "Platform device register failed (ret=%d)\n", ret);
-        return ret;
-    }
-
     ret = platform_driver_register(&lpc_drv);
     if (ret) {
         printk(KERN_ERR "Platform driver register failed (ret=%d)\n", ret);
-        platform_device_unregister(&lpc_dev);
+        return ret;
+    }
+
+    ret = platform_device_register(&lpc_dev);
+    if (ret) {
+        printk(KERN_ERR "Platform device register failed (ret=%d)\n", ret);
+        platform_driver_unregister(&lpc_drv);
         return ret;
     }
 

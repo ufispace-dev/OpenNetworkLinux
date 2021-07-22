@@ -28,8 +28,7 @@
 #define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
 #define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
 #define SYS_FAN_RPM_MAX 25000
- //FIXME Tune the FAN RPM
-#define PSU_FAN_RPM_MAX 18000
+#define PSU_FAN_RPM_MAX 20000
 #define VALIDATE(_id)                           \
     do {                                        \
         if(!ONLP_OID_IS_FAN(_id)) {             \
@@ -103,7 +102,32 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
         }
     }
 
-    bmc_attr_id = ufi_oid_to_bmc_attr_id(ONLP_OID_TYPE_FAN, id, 0);
+    switch(id)
+    {
+        case ONLP_FAN_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN_0;
+            break;
+        case ONLP_FAN_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN_1;
+            break;
+        case ONLP_FAN_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN_2;
+            break;
+        case ONLP_FAN_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN_3;
+            break;
+        case ONLP_FAN_4:
+            bmc_attr_id = BMC_ATTR_ID_FAN_4;
+            break;
+        case ONLP_PSU_0_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            break;
+        case ONLP_PSU_1_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            break;
+        default:
+            bmc_attr_id = BMC_ATTR_ID_MAX;
+    }
 
     if(bmc_attr_id == BMC_ATTR_ID_MAX) {
         return ONLP_STATUS_E_PARAM;

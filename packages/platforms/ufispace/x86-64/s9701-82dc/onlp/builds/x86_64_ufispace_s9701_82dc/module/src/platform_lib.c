@@ -357,11 +357,16 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
     int cache_time = 0;
     int bmc_cache_expired = 0;
     long file_last_time = 0;
-    static long bmc_fru_cache_time = 0;
+    static long bmc_fru_cache_time[PSU_NUM+1] = {0,0,0};  // index 0 for dummy
     char fru_model[] = "Product Name";  //only Product Name can identify AC/DC
     char fru_serial[] = "Product Serial";
     int cache_idx;
 
+    // check fru id
+    if(fru_id > PSU_NUM) {
+        AIM_LOG_ERROR("invalid fru_id %d\n", fru_id);
+        return ONLP_STATUS_E_INTERNAL;
+    }
 
     cache_time = FRU_CACHE_TIME;
     snprintf(cache_file, sizeof(cache_file), BMC_FRU_CACHE, fru_id);
@@ -380,17 +385,18 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
         bmc_cache_expired = 1;
     }
 
-    if(bmc_fru_cache_time == 0 && check_file_exist(cache_file, &file_last_time)) {
+    if(bmc_fru_cache_time[fru_id] == 0 && 
+        check_file_exist(cache_file, &file_last_time)) {
         bmc_cache_expired = 1;
         gettimeofday(&new_tv,NULL);
-        bmc_fru_cache_time = new_tv.tv_sec;
+        bmc_fru_cache_time[fru_id] = new_tv.tv_sec;
     }
 
     //update cache
     if(bmc_cache_expired == 1)
     {
         ONLP_LOCK();
-        if(bmc_cache_expired_check(file_last_time, bmc_fru_cache_time, cache_time)) {
+        if(bmc_cache_expired_check(file_last_time, bmc_fru_cache_time[fru_id], cache_time)) {
             // cache expired, update cache file 
             snprintf(cache_cmd, sizeof(cache_cmd), CMD_BMC_FRU_CACHE, fru_id, cache_file);
             system(cache_cmd);
@@ -402,14 +408,14 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
         if (exec_cmd(get_data_cmd, cmd_out, sizeof(cmd_out)) < 0) {
             AIM_LOG_ERROR("unable to read psu model from BMC, fru id=%d, cmd=%s, out=%s\n", 
                 fru_id, get_data_cmd, cmd_out);
-            return ONLP_STATUS_E_INTERNAL; 
+            goto exit;
         }
 
         //Check output is correct    
         if (strnlen(cmd_out, sizeof(cmd_out))==0){
             AIM_LOG_ERROR("unable to read psu model from BMC, fru id=%d, cmd=%s, out=%s\n", 
                 fru_id, get_data_cmd, cmd_out);
-            return ONLP_STATUS_E_INTERNAL; 
+            goto exit;
         }
 
         // save to cache
@@ -422,14 +428,14 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
         if (exec_cmd(get_data_cmd, cmd_out, sizeof(cmd_out)) < 0) {
             AIM_LOG_ERROR("unable to read psu serial from BMC, fru id=%d, cmd=%s, out=%s\n", 
                 fru_id, get_data_cmd, cmd_out);
-            return ONLP_STATUS_E_INTERNAL; 
+            goto exit;
         }
 
         //Check output is correct    
         if (strnlen(cmd_out, sizeof(cmd_out))==0){
             AIM_LOG_ERROR("unable to read psu serial from BMC, fru id=%d, cmd=%s, out=%s\n", 
                 fru_id, get_data_cmd, cmd_out);
-            return ONLP_STATUS_E_INTERNAL; 
+            goto exit;
         }
 
         // save to cache
@@ -438,7 +444,7 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
 
 
         gettimeofday(&new_tv,NULL);
-        bmc_fru_cache_time = new_tv.tv_sec;
+        bmc_fru_cache_time[fru_id] = new_tv.tv_sec;
         ONLP_UNLOCK();
     }
 
@@ -449,6 +455,10 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
     snprintf(info->serial, sizeof(info->serial), "%s", bmc_fru_cache[cache_idx].data);
     
     return rv;
+
+exit:
+    ONLP_UNLOCK();
+    return ONLP_STATUS_E_INTERNAL;
 }
 
 int
@@ -571,12 +581,28 @@ qsfp_present_get(int port_index, int *pres_val)
     int port_mask;
     int group_pres;
     int port_pres;
+    int port_group;
     char sysfs[128];
-    
+    char *sysfs_attr;
+
+    port_group = port_index / 8;
+    port_index = port_index % 8;
     port_mask = 0b00000001 << port_index;
 
+    switch(port_group) {
+        case 0:
+            sysfs_attr = MB_CPLD_QSFP_G1_PRES_ATTR;
+            break;
+        case 1:
+            sysfs_attr = MB_CPLD_QSFP_G2_PRES_ATTR;
+            break;
+        default:
+            AIM_LOG_ERROR("invalid port=%d, group=%d", port_index, port_group);
+    }
+
+        
     snprintf(sysfs, sizeof(sysfs), "%s/%s", 
-            MB_CPLD4_SYSFS_PATH, MB_CPLD_QSFP_PRES_ATTR);
+            MB_CPLD4_SYSFS_PATH, sysfs_attr);
     if ((rc = onlp_file_read(data, sizeof(data), &data_len, sysfs))
             != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("onlp_file_read failed, error=%d, %s", rc, sysfs);
@@ -686,7 +712,7 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     char sysfs[128];
     uint8_t cpu_cpld_ver_h[32];
-    int cpld_major_ver, cpld_minor_ver;
+    int cpld_major_ver, cpld_minor_ver, cpld_build_ver;
     char mb_cpld_ver_h[CPLD_MAX][16];
     char bios_ver_h[32];
     char bmc_ver[3][16];
@@ -726,8 +752,15 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
             AIM_LOG_ERROR("file_read_hex failed, error=%d, %s", rc, sysfs);
             return ONLP_STATUS_E_INTERNAL;
         }
-        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d", 
-                    cpld_major_ver, cpld_minor_ver);
+        snprintf(sysfs, sizeof(sysfs), 
+                    MB_CPLDX_SYSFS_PATH"/"MB_CPLD_BUILD_VER_ATTR, CPLD_BASE_ADDR+i);
+        if ((rc = file_read_hex(&cpld_build_ver, sysfs)) != ONLP_STATUS_OK) {
+            AIM_LOG_ERROR("file_read_hex failed, error=%d, %s", rc, sysfs);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d.%03d", 
+                    cpld_major_ver, cpld_minor_ver, cpld_build_ver);
     }
 
     pi->cpld_versions = aim_fstrdup(            
@@ -964,6 +997,9 @@ sys_led_info_get(onlp_led_info_t* info, int id)
     } else if (id == LED_ID_SYS_PSU1) {
         sysfs_index=2;
         shift = 4;
+    } else if (id == LED_ID_SYS_SYNC) {
+        sysfs_index=3;
+        shift = 0;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }

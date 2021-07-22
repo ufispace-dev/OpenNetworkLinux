@@ -175,9 +175,6 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         # config mac rov
         # done bye CPLD at power on          
 
-        # onie syseeprom
-        self.insmod("x86-64-ufispace-s9300-32d-onie-syseeprom.ko")
-
         self.enable_ipmi_maintenance_mode()
 
         return True

@@ -119,6 +119,7 @@
 #define THERMAL_NUM             18
 #define LED_NUM                     4
 #define FAN_NUM                     6
+#define PSU_NUM                     2
 /* IO BASE */
 #define CPU_CPLD_BASEADDR  0x600
 #define MB_CPLD_BASEADDR  0xe00

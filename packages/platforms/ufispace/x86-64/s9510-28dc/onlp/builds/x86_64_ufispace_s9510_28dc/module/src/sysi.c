@@ -29,16 +29,27 @@
 /* OID map*/
 /*
  * [01] CHASSIS
- *            |----[01] ONLP_THERMAL_CPU_PKG
- *            |----[02] ONLP_THERMAL_CPU_0
- *            |----[03] ONLP_THERMAL_CPU_1
- *            |----[04] ONLP_THERMAL_CPU_2
- *            |----[05] ONLP_THERMAL_CPU_3
- *            |----[06] ONLP_THERMAL_CPU_4
- *            |----[07] ONLP_THERMAL_CPU_5
- *            |----[08] ONLP_THERMAL_CPU_6
- *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_MAC
+ *            |----[01]ONLP_THERMAL_CPU_PKG
+ *            |----[02]ONLP_THERMAL_CPU_0
+ *            |----[03]ONLP_THERMAL_CPU_1
+ *            |----[04]ONLP_THERMAL_CPU_2
+ *            |----[05]ONLP_THERMAL_CPU_3
+ *            |----[06]ONLP_THERMAL_CPU_4
+ *            |----[07]ONLP_THERMAL_CPU_5
+ *            |----[08]ONLP_THERMAL_CPU_6
+ *            |----[09]ONLP_THERMAL_CPU_7
+ *            |----[10]ONLP_THERMAL_MAC
+ *            |----[11]ONLP_THERMAL_DDR4
+ *            |----[12]ONLP_THERMAL_BMC
+ *            |----[13]ONLP_THERMAL_FANCARD1
+ *            |----[14]ONLP_THERMAL_FANCARD2
+ *            |----[15]ONLP_THERMAL_FPGA_R
+ *            |----[16]ONLP_THERMAL_FPGA_L
+ *            |----[17]ONLP_THERMAL_HWM_GDDR
+ *            |----[18]ONLP_THERMAL_HWM_MAC
+ *            |----[19]ONLP_THERMAL_HWM_AMB
+ *            |----[20]ONLP_THERMAL_HWM_NTMCARD
+ *            |
  *            |----[01] ONLP_LED_SYS_GNSS
  *            |----[02] ONLP_LED_SYS_SYNC
  *            |----[03] ONLP_LED_SYS_SYS
@@ -46,10 +57,12 @@
  *            |----[05] ONLP_LED_SYS_PWR
  *            |----[06] ONLP_LED_FLEXE_0
  *            |----[07] ONLP_LED_FLEXE_1
+ *            |
  *            |----[01] ONLP_PSU_0----[11] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[12] ONLP_THERMAL_PSU_1
- *            |                  |----[07] ONLP_PSU_1_FAN 
+ *            |                  |----[07] ONLP_PSU_1_FAN
+ *            |
  *            |----[01] ONLP_FAN_0
  *            |----[02] ONLP_FAN_1
  *            |----[03] ONLP_FAN_2
@@ -252,12 +265,12 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     memset(table, 0, max*sizeof(onlp_oid_t));
 
     /* Thermal */
-    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_MAC; i++) {
+    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_HWM_NTMCARD; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
     }    
 
     /* LED */
-    for (i = ONLP_LED_SYS_SYS; i < ONLP_LED_MAX; i++) {
+    for (i = ONLP_LED_SYS_GNSS; i < ONLP_LED_MAX; i++) {
         *e++ = ONLP_LED_ID_CREATE(i);
     }
 

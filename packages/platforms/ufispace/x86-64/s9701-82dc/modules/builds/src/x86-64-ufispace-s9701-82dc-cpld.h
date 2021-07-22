@@ -47,6 +47,7 @@ enum cpld_id {
 #define CPLD_HW_REV_REG                     0x01
 #define CPLD_VERSION_REG                    0x02
 #define CPLD_ID_REG                         0x03
+#define CPLD_SUB_VERSION_REG                0x04
 // Interrupt status
 #define CPLD_MAC_OP2_INTR_REG               0x10
 #define CPLD_10GPHY_INTR_REG                0x13
@@ -70,6 +71,7 @@ enum cpld_id {
 #define CPLD_SYSTEM_INTR_EVENT_REG          0x3D
 // Reset ctrl
 #define CPLD_MAC_OP2_RST_REG                0x40
+#define CPLD_PHY_RST_REG                    0x42
 #define CPLD_BMC_NTM_RST_REG                0x43
 #define CPLD_USB_RST_REG                    0x44
 #define CPLD_CPLD_RST_REG                   0x45
@@ -84,14 +86,14 @@ enum cpld_id {
 #define CPLD_MAC_STATUS_1_REG               0x53
 #define CPLD_MAC_STATUS_2_REG               0x54
 #define CPLD_MAC_STATUS_3_REG               0x55
-#define CPLD_MGMT_SFP_PORT_CONF_REG              0x56
+#define CPLD_MGMT_SFP_PORT_CONF_REG         0x56
 #define CPLD_MISC_REG                       0x56
 // Mux ctrl
 #define CPLD_MUX_CTRL_REG                   0x5C
 // Led ctrl
 #define CPLD_SYS_LED_CTRL_1_REG             0x80
 #define CPLD_SYS_LED_CTRL_2_REG             0x81
-#define CPLD_OOB_LED_CTRL_REG               0x82
+#define CPLD_SYS_LED_CTRL_3_REG             0x82
 // Power good status
 #define CPLD_MAC_PG_REG                     0x90
 #define CPLD_OP2_PG_REG                     0x91

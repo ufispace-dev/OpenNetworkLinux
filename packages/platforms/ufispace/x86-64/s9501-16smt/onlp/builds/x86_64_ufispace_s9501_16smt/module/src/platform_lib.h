@@ -35,6 +35,8 @@
 #include "x86_64_ufispace_s9501_16smt_log.h"
 #include <x86_64_ufispace_s9501_16smt/x86_64_ufispace_s9501_16smt_config.h>
 
+#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
+#define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
 #define SYS_HWMON_PREFIX            "/sys/class/hwmon/hwmon%d/"
 #define SYS_DEV_BUS_ADDR_PREFIX     "/sys/bus/i2c/devices/%d-%04x/"
