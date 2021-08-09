@@ -51,10 +51,10 @@
 #define SYSFS_QSFPDD_PRESENT "cpld_qsfpdd_intr_present"
 #define SYSFS_EEPROM         "eeprom"
 
-#define EEPROM_ADDR (0x50)
-
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
+
+#define EEPROM_ADDR (0x50)
 
 static int ufi_port_to_cpld_addr(int port)
 {
@@ -360,6 +360,11 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -375,6 +380,11 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);    
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
 
     if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
@@ -396,6 +406,11 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }  
@@ -412,6 +427,11 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -428,26 +448,18 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
  */
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
-    int bus = -1;
-
     VALIDATE_PORT(port);
+    int bus = ufi_port_to_eeprom_bus(port);   
     
-    if (onlp_sfpi_is_present(port) < 0) {
+    if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
-    }
-
-    devaddr = EEPROM_ADDR;
-    bus = ufi_port_to_eeprom_bus(port);
+    }    
     
-    if (port < PORT_NUM) {        
-        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
-            check_and_do_i2c_mux_reset(port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-    } else {
-        return ONLP_STATUS_E_PARAM;
-    }
+    if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }    
 
     return ONLP_STATUS_OK;
 }
@@ -461,6 +473,11 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -484,6 +501,11 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     //qsfpdd 2.0 dom is on lower page 0x00
     //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
     VALIDATE_SFP_PORT(port);
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
     
     memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));

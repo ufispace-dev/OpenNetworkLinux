@@ -20,7 +20,7 @@ variables:
   install_r7: /lib/platform-config/${PLATFORM}-r7/onl
   install_r8: /lib/platform-config/${PLATFORM}-r8/onl
   install_r9: /lib/platform-config/${PLATFORM}-r9/onl
-  install_r10: /lib/platform-config/${PLATFORM}-r9/onl
+  install_r10: /lib/platform-config/${PLATFORM}-r10/onl
 
 common:
   version: 1.0.0

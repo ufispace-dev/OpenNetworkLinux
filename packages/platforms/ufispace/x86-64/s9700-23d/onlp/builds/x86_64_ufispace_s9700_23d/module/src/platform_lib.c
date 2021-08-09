@@ -726,55 +726,6 @@ psu_pwgood_get(int *pw_good, int id)
 }
 
 int
-qsfp_present_get(int port, int *pres_val)
-{     
-    int status, rc;
-    int cpld_addr, sysfs_attr_offset;
-    uint8_t data[8];
-    int data_len;
-    char *qsfpdd_type = NULL;
-   
-    memset(data, 0, sizeof(data));
-
-    //get cpld addr
-    cpld_addr = qsfp_port_to_cpld_addr(port);
-    //get sysfs_attr_offset
-    sysfs_attr_offset = qsfp_port_to_sysfs_attr_offset(port);
-    qsfpdd_type = (port < QSFPDD_NIF_NUM) ? "nif" : "fab";
-
-    if ((rc = onlp_file_read(data, sizeof(data), &data_len, "/sys/bus/i2c/devices/%d-%04x/cpld_qsfpdd_%s_port_status_%d",
-                                 I2C_BUS_1, cpld_addr, qsfpdd_type, sysfs_attr_offset)) != ONLP_STATUS_OK) {
-	AIM_LOG_ERROR("onlp_file_read failed, error=%d, /sys/bus/i2c/devices/%d-%04x/cpld_qsfpdd_%s_port_status_%d", 
-			rc, I2C_BUS_1, cpld_addr, qsfpdd_type, sysfs_attr_offset);
-        return ONLP_STATUS_E_INTERNAL;
-    }    
-    status = (int) strtol((char *)data, NULL, 0);
-   
-    *pres_val = !((status & 0x2) >> 1);
-    
-    return ONLP_STATUS_OK;
-}
-
-int sfp_present_get(int port, int *pres_val)
-{
-    int ret;
-
-    port = port - QSFPDD_NIF_NUM - QSFPDD_FAB_NUM;
-    if (port == 0) {
-        ret = system("ethtool -m eth1 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else if (port == 1) {
-        ret = system("ethtool -m eth2 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else {
-        AIM_LOG_ERROR("unknow sfp port, port=%d\n", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }   
-    
-    return ONLP_STATUS_OK;
-}
-
-int
 system_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
@@ -987,36 +938,6 @@ onlp_sysi_bmc_en_get(void)
 {
     //enable bmc by default
     return true;
-}
-
-int
-qsfp_port_to_cpld_addr(int port)
-{
-    int cpld_addr = 0;
-
-    if (port >=0 && port <=9) {
-        cpld_addr = 0x30;
-    } else if (port >=10 && port <=12) { 
-        cpld_addr = 0x31;    
-    } else if (port >= 13 && port <=22) { 
-        cpld_addr = 0x32;    
-    }    
-    return cpld_addr;
-}
-
-int
-qsfp_port_to_sysfs_attr_offset(int port)
-{
-    int sysfs_attr_offset = 0;
-
-    if (port >=0 && port <=9) {
-        sysfs_attr_offset = port-0;    
-    } else if (port >=10 && port <=12) { 
-        sysfs_attr_offset = port-10;    
-    } else if (port >= 13 && port <=22) { 
-        sysfs_attr_offset = port-13;    
-    }    
-    return sysfs_attr_offset;
 }
 
 int

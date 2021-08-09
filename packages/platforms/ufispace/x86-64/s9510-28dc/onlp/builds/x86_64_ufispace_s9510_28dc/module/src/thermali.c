@@ -25,19 +25,6 @@
 #include <onlp/platformi/thermali.h>
 #include "platform_lib.h"
 
-
-// FIXME look up the value
-#define THERMAL_SHUTDOWN_DEFAULT  105000
-#define THERMAL_ERROR_DEFAULT     95000
-#define THERMAL_WARNING_DEFAULT   77000
-
-/* Shortcut for CPU thermal threshold value. */
-#define THERMAL_THRESHOLD_INIT_DEFAULTS  \
-    { THERMAL_WARNING_DEFAULT, \
-      THERMAL_ERROR_DEFAULT,   \
-      THERMAL_SHUTDOWN_DEFAULT }
-#define THERMAL_THRESHOLD_PSU          {65000, 70000, 75000}
-
 #define VALIDATE(_id)                           \
     do {                                        \
         if(!ONLP_OID_IS_THERMAL(_id)) {             \
@@ -45,40 +32,293 @@
         }                                       \
     } while(0)
 
-#define THERMAL_INFO(id, desc, threshold) \
-    { \
-        { ONLP_THERMAL_ID_CREATE(id), #desc, POID_0 },\
-        ONLP_THERMAL_STATUS_PRESENT,\
-        ONLP_THERMAL_CAPS_ALL,\
-        0,\
-        threshold\
-    }\
+#define MILLI(cel) (cel * 1000)
 
  //FIXME threshold
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
-    THERMAL_INFO(ONLP_THERMAL_CPU_PKG    , "CPU Package"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_0      , "CPU Thermal 0"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_1      , "CPU Thermal 1"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_2      , "CPU Thermal 2"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_3      , "CPU Thermal 3"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_4      , "CPU Thermal 4"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_5      , "CPU Thermal 5"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_6      , "CPU Thermal 6"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_7      , "CPU Thermal 7"    , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_MAC        , "MAC Thermal"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_DDR4       , "DDR4 Thermal"     , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_BMC        , "BMC Thermal"      , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_FANCARD1   , "FANCARD1 Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_FANCARD2   , "FANCARD2 Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_FPGA_R     , "FPGA_R Thermal"   , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_FPGA_L     , "FPGA_L Thermal"   , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_HWM_GDDR   , "HWM GDDR Thermal" , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_HWM_MAC    , "HWM MAC Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_HWM_AMB    , "HWM AMB Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_HWM_NTMCARD, "NTMCARD Thermal"  , THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_PSU_0      , "PSU-0-Thermal"    , THERMAL_THRESHOLD_PSU),
-    THERMAL_INFO(ONLP_THERMAL_PSU_1      , "PSU-1-Thermal"    , THERMAL_THRESHOLD_PSU),
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+            .description = "CPU Package",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
+            .description = "CPU Thermal 0",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
+            .description = "CPU Thermal 1",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
+            .description = "CPU Thermal 2",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
+            .description = "CPU Thermal 3",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_4),
+            .description = "CPU Thermal 4",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_5),
+            .description = "CPU Thermal 5",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_6),
+            .description = "CPU Thermal 6",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_7),
+            .description = "CPU Thermal 7",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+            .description = "MAC Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
+            .description = "DDR4 Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(101), MILLI(106)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),
+            .description = "BMC Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(90), MILLI(100)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD1),
+            .description = "FANCARD1 Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(85), MILLI(89)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD2),
+            .description = "FANCARD2 Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(85), MILLI(89)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FPGA_R),
+            .description = "FPGA_R Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FPGA_L),
+            .description = "FPGA_L Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(101), MILLI(106)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_GDDR),
+            .description = "HWM GDDR Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_MAC),
+            .description = "HWM MAC Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(78), MILLI(80)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_AMB),
+            .description = "HWM AMB Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_NTMCARD),
+            .description = "NTMCARD Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
+                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
+                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .mcelsius = 0,
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_0),
+            .description = "PSU-0-Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_ALL),
+        .mcelsius = 0,
+        .thresholds = {MILLI(80), MILLI(85), MILLI(90)}
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_1),
+            .description = "PSU-1-Thermal",
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_ALL),
+        .mcelsius = 0,
+        .thresholds = {MILLI(80), MILLI(85), MILLI(90)}
+    }
 };
 
 int cpu_thermal_sysfs_id [] =

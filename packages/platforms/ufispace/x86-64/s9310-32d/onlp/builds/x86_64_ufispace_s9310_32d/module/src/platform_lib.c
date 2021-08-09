@@ -282,7 +282,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             memset(buf, 0, sizeof(buf));
 
             if( dev_num >= ID_FAN0_PSNT_L && dev_num <=ID_FAN3_PSNT_L ) {                
-                sprintf(get_data_cmd, CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)
                 {
@@ -298,7 +298,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 }
                 pclose(fp);
             } else {                
-                sprintf(get_data_cmd, CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL)
                 {

@@ -652,7 +652,7 @@ static ssize_t read_cpld_reg(struct device *dev,
     int reg_val;
 
     if (!read_cpld_reg_raw_int(dev, reg, &reg_val))
-        return false;
+        return -1;
     else
         return sprintf(buf, "0x%02x\n", reg_val);
 }

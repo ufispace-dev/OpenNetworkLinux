@@ -121,15 +121,23 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
         )
 
         # init SFP+ EEPROM
-        msg("Insert SFP EEPROM\n")
-        for port in range(9, 33):
+        msg("Insert SFP+ EEPROM\n")
+        for port in range(9, 17):
             self.new_i2c_device('optoe2', 0x50, port)
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port-5, port), shell=True)
+
+        # init SFP28 EEPROM
+        msg("Insert SFP28 EEPROM\n")
+        for port in range(21, 29):
+            self.new_i2c_device('optoe2', 0x50, port)
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port-9, port), shell=True)
 
         # init QSFP28 EEPROM
         msg("Insert QSFP EEPROM\n")
         for port in range(35, 37):
             self.new_i2c_device('optoe1', 0x50, port)
             #self.new_i2c_device('sff8436', 0x50, port)
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(56-port, port), shell=True)
            
         # init Temperature
         msg("Insert CPU TMP75\n")

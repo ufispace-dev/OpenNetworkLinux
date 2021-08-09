@@ -41,6 +41,7 @@
 #define REG_BRD_ID_1                   (REG_BASE_MB + 0x01)
 #define REG_CPLD_VERSION               (REG_BASE_MB + 0x02)
 #define REG_CPLD_ID                    (REG_BASE_MB + 0x03)
+#define REG_CPLD_BUILD                 (REG_BASE_MB + 0x04)
 #define REG_PSU_INTR                   (REG_BASE_MB + 0x12)
 #define REG_FAN_INTR                   (REG_BASE_MB + 0x16)
 #define REG_PORT_INTR                  (REG_BASE_MB + 0x18)
@@ -77,6 +78,7 @@ enum lpc_sysfs_attributes {
     ATT_CPLD_VERSION,
     ATT_CPLD_VERSION_H,
     ATT_CPLD_ID,
+    ATT_CPLD_BUILD,
     ATT_PSU_INTR,
     ATT_FAN_INTR,
     ATT_PORT_INTR,
@@ -277,6 +279,9 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_CPLD_ID:
             reg = REG_CPLD_ID;
+            break;
+        case ATT_CPLD_BUILD:
+            reg = REG_CPLD_BUILD;
             break;
         case ATT_PSU_INTR:
             reg = REG_PSU_INTR;
@@ -486,7 +491,7 @@ static ssize_t read_mux_rest_all_callback(struct device *dev,
     u8 reg_val = 0;
 
     reg_val = _read_lpc_reg(REG_MUX_RESET, MASK_ALL);
-    
+
     if(reg_val > 0){
         len = scnprintf(buf,3,"%u\n", 1);
     }else{
@@ -530,45 +535,47 @@ static ssize_t write_mux_reset_all_callback(struct device *dev,
 }
 
 //SENSOR_DEVICE_ATTR - MB
-static SENSOR_DEVICE_ATTR(board_id_0,        S_IRUGO, read_lpc_callback, NULL, ATT_BRD_ID_0);
-static SENSOR_DEVICE_ATTR(board_id_1,        S_IRUGO, read_lpc_callback, NULL, ATT_BRD_ID_1);
-static SENSOR_DEVICE_ATTR(board_sku_id,      S_IRUGO, read_lpc_callback, NULL, ATT_BRD_SKU_ID);
-static SENSOR_DEVICE_ATTR(board_hw_id,       S_IRUGO, read_lpc_callback, NULL, ATT_BRD_HW_ID);
-static SENSOR_DEVICE_ATTR(board_build_id,    S_IRUGO, read_lpc_callback, NULL, ATT_BRD_BUILD_ID);
-static SENSOR_DEVICE_ATTR(board_deph_id,     S_IRUGO, read_lpc_callback, NULL, ATT_BRD_DEPH_ID);
-static SENSOR_DEVICE_ATTR(cpld_version,   S_IRUGO, read_lpc_callback, NULL, ATT_CPLD_VERSION);
-static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO, read_mb_cpld_version_h, NULL, ATT_CPLD_VERSION_H);
-static SENSOR_DEVICE_ATTR(cpld_id,        S_IRUGO, read_lpc_callback, NULL, ATT_CPLD_ID);
-static SENSOR_DEVICE_ATTR(psu_intr,       S_IRUGO, read_lpc_callback, NULL, ATT_PSU_INTR);
-static SENSOR_DEVICE_ATTR(fan_intr,       S_IRUGO, read_lpc_callback, NULL, ATT_FAN_INTR);
-static SENSOR_DEVICE_ATTR(port_intr,      S_IRUGO, read_lpc_callback, NULL, ATT_PORT_INTR);
-static SENSOR_DEVICE_ATTR(output_intr,    S_IRUGO, read_lpc_callback, NULL, ATT_OUTPUT_INTR);
-static SENSOR_DEVICE_ATTR(psu_mask,       S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_PSU_MASK);
-static SENSOR_DEVICE_ATTR(fan_mask,       S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_FAN_MASK);
-static SENSOR_DEVICE_ATTR(port_mask,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_PORT_MASK);
-static SENSOR_DEVICE_ATTR(output_mask,    S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_OUTPUT_MASK);
-static SENSOR_DEVICE_ATTR(mux_reset,         S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_MUX_RESET);
-static SENSOR_DEVICE_ATTR(mux_reset_all,     S_IRUGO | S_IWUSR, read_mux_rest_all_callback, write_mux_reset_all_callback, ATT_MUX_RESET_ALL);
-static SENSOR_DEVICE_ATTR(mac_rov,           S_IRUGO, read_lpc_callback, NULL, ATT_MAC_ROV);
-static SENSOR_DEVICE_ATTR(fan_present,       S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT);
-static SENSOR_DEVICE_ATTR(fan_present_0,     S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT_0);
-static SENSOR_DEVICE_ATTR(fan_present_1,     S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT_1);
-static SENSOR_DEVICE_ATTR(fan_present_2,     S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT_2);
-static SENSOR_DEVICE_ATTR(fan_present_3,     S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT_3);
-static SENSOR_DEVICE_ATTR(fan_present_4,     S_IRUGO, read_lpc_callback, NULL, ATT_FAN_PRESENT_4);
-static SENSOR_DEVICE_ATTR(psu_status,        S_IRUGO, read_lpc_callback, NULL, ATT_PSU_STATUS);
-static SENSOR_DEVICE_ATTR(bios_boot_sel,     S_IRUGO, read_lpc_callback, NULL, ATT_BIOS_BOOT_SEL);
-static SENSOR_DEVICE_ATTR(uart_ctrl,         S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_UART_CTRL);
-static SENSOR_DEVICE_ATTR(usb_ctrl,          S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_USB_CTRL);
-static SENSOR_DEVICE_ATTR(mux_ctrl,          S_IRUGO, read_lpc_callback, NULL, ATT_MUX_CTRL);
-static SENSOR_DEVICE_ATTR(led_clr,           S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_LED_CLR);
-static SENSOR_DEVICE_ATTR(led_ctrl_1,   S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_CTRL_1);
-static SENSOR_DEVICE_ATTR(led_ctrl_2,   S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_CTRL_2);
-static SENSOR_DEVICE_ATTR(led_status_1, S_IRUGO | S_IWUSR, read_lpc_callback, NULL, ATT_LED_STATUS_1);
+static SENSOR_DEVICE_ATTR(board_id_0    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_ID_0);
+static SENSOR_DEVICE_ATTR(board_id_1    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_ID_1);
+static SENSOR_DEVICE_ATTR(board_sku_id  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_SKU_ID);
+static SENSOR_DEVICE_ATTR(board_hw_id   , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_HW_ID);
+static SENSOR_DEVICE_ATTR(board_build_id, S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_BUILD_ID);
+static SENSOR_DEVICE_ATTR(board_deph_id , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_DEPH_ID);
+static SENSOR_DEVICE_ATTR(cpld_version  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_VERSION);
+static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO          , read_mb_cpld_version_h    , NULL                        , ATT_CPLD_VERSION_H);
+static SENSOR_DEVICE_ATTR(cpld_id       , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_ID);
+static SENSOR_DEVICE_ATTR(cpld_build    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_BUILD);
+static SENSOR_DEVICE_ATTR(psu_intr      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PSU_INTR);
+static SENSOR_DEVICE_ATTR(fan_intr      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_FAN_INTR);
+static SENSOR_DEVICE_ATTR(port_intr     , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PORT_INTR);
+static SENSOR_DEVICE_ATTR(output_intr   , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_OUTPUT_INTR);
+static SENSOR_DEVICE_ATTR(psu_mask      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_PSU_MASK);
+static SENSOR_DEVICE_ATTR(fan_mask      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_FAN_MASK);
+static SENSOR_DEVICE_ATTR(port_mask     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_PORT_MASK);
+static SENSOR_DEVICE_ATTR(output_mask   , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_OUTPUT_MASK);
+static SENSOR_DEVICE_ATTR(mux_reset     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_MUX_RESET);
+static SENSOR_DEVICE_ATTR(mux_reset_all , S_IRUGO | S_IWUSR, read_mux_rest_all_callback, write_mux_reset_all_callback, ATT_MUX_RESET_ALL);
+static SENSOR_DEVICE_ATTR(mac_rov       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_MAC_ROV);
+static SENSOR_DEVICE_ATTR(fan_present   , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT);
+static SENSOR_DEVICE_ATTR(fan_present_0 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_0);
+static SENSOR_DEVICE_ATTR(fan_present_1 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_1);
+static SENSOR_DEVICE_ATTR(fan_present_2 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_2);
+static SENSOR_DEVICE_ATTR(fan_present_3 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_3);
+static SENSOR_DEVICE_ATTR(fan_present_4 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_4);
+static SENSOR_DEVICE_ATTR(psu_status    , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_STATUS);
+static SENSOR_DEVICE_ATTR(bios_boot_sel , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BIOS_BOOT_SEL);
+static SENSOR_DEVICE_ATTR(uart_ctrl     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_UART_CTRL);
+static SENSOR_DEVICE_ATTR(usb_ctrl      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_USB_CTRL);
+static SENSOR_DEVICE_ATTR(mux_ctrl      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_MUX_CTRL);
+static SENSOR_DEVICE_ATTR(led_clr       , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_LED_CLR);
+static SENSOR_DEVICE_ATTR(led_ctrl_1    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_CTRL_1);
+static SENSOR_DEVICE_ATTR(led_ctrl_2    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_CTRL_2);
+static SENSOR_DEVICE_ATTR(led_status_1  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_STATUS_1);
+
 //SENSOR_DEVICE_ATTR - BSP
-static SENSOR_DEVICE_ATTR(bsp_version, S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
-static SENSOR_DEVICE_ATTR(bsp_debug,   S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
-static SENSOR_DEVICE_ATTR(bsp_reg,     S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
 
 static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_id_0.dev_attr.attr,
@@ -580,6 +587,7 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
+    &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_psu_intr.dev_attr.attr,
     &sensor_dev_attr_fan_intr.dev_attr.attr,
     &sensor_dev_attr_port_intr.dev_attr.attr,
@@ -735,15 +743,15 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    
+
     err = platform_driver_register(&lpc_drv);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	
+
     	return err;
     }
-        
+
     err = platform_device_register(&lpc_dev);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",

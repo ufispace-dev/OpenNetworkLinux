@@ -229,7 +229,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     {
         ONLP_LOCK();
         if(bmc_cache_expired_check(file_last_time, bmc_cache_time, cache_time)) {
-            sprintf(ipmi_cmd, CMD_BMC_SENSOR_CACHE);
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
                     if (retry == retry_max-1) {
@@ -248,7 +248,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         for(dev_num = 0; dev_num < dev_size; dev_num++)
         {
             memset(buf, 0, sizeof(buf));
-            sprintf(get_data_cmd, CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
+            snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
 
             fp = popen(get_data_cmd, "r");
             if(fp != NULL)
@@ -318,7 +318,7 @@ int bmc_fru_read(onlp_psu_info_t* info, int id)
         ONLP_LOCK();
         //get fru from ipmitool and save to cache file
         if(bmc_cache_expired_check(file_last_time, bmc_cache_time[id], cache_time)) {
-            sprintf(ipmi_cmd, CMD_FRU_CACHE_SET, id, fields, cache_files[id]);
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, id, fields, cache_files[id]);
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
                     if (retry == retry_max-1) {
@@ -339,7 +339,7 @@ int bmc_fru_read(onlp_psu_info_t* info, int id)
         {
             index = (id-1)*2 + dev_num;
             memset(buf, 0, sizeof(buf));
-            sprintf(get_data_cmd, CMD_FRU_CACHE_GET, cache_files[id], dev_num+1);
+            snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_FRU_CACHE_GET, cache_files[id], dev_num+1);
 
             fp = popen(get_data_cmd, "r");
             if(fp != NULL)

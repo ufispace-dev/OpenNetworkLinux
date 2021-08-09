@@ -22,26 +22,103 @@
  * SFP Platform Implementation Interface.
  *
  ***********************************************************/
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <onlplib/sfp.h>
+#include <onlp/onlp.h>
+#include <onlplib/i2c.h>
 #include <onlplib/file.h>
 #include <onlp/platformi/sfpi.h>
-#include <x86_64_ufispace_s9705_48d/x86_64_ufispace_s9705_48d_config.h>
-#include "x86_64_ufispace_s9705_48d_log.h"
 #include "platform_lib.h"
 
-int
-onlp_sfpi_init(void)
+#define SFP_NUM                     2
+#define QSFPDD_NUM                  48
+#define PORT_NUM                    (SFP_NUM+QSFPDD_NUM)
+
+#define IS_SFP(_port)         (_port >= QSFPDD_NUM && _port < PORT_NUM)
+#define IS_QSFPDD(_port)  (_port >= 0 && _port < QSFPDD_NUM)
+
+#define SYSFS_EEPROM         "eeprom"
+
+#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
+
+#define EEPROM_ADDR (0x50)
+
+static int qsfp_port_to_cpld_addr(int port)
+{
+    int cpld_addr = 0;
+
+    if (port >=0 && port <=11) {
+        cpld_addr = 0x32;
+    } else if (port >=12 && port <=23) { 
+        cpld_addr = 0x33;
+    } else if (port >=24 && port <=35) { 
+        cpld_addr = 0x30;
+    } else if (port >=36 && port <=47) { 
+        cpld_addr = 0x31;    
+    }    
+    return cpld_addr;
+}
+
+static int ufi_port_to_eeprom_bus(int port)
+{
+    int bus = -1;
+
+    if (IS_QSFPDD(port)) { //QSFPDD        
+        bus =  port + 21;
+    } else { //unknown ports
+        AIM_LOG_ERROR("unknown ports, port=%d\n", port);
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    return bus;
+}
+
+static int qsfp_present_get(int port, int *pres_val)
+{     
+    int status, rc;
+    int cpld_addr;
+    uint8_t data[8];
+    int data_len;
+   
+    memset(data, 0, sizeof(data));
+
+    cpld_addr = qsfp_port_to_cpld_addr(port);
+    if ((rc = onlp_file_read(data, sizeof(data), &data_len, "/sys/bus/i2c/devices/%d-%04x/cpld_qsfpdd_port_status_%d",
+                                 I2C_BUS_2, cpld_addr, port%12)) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_INTERNAL;
+    }    
+    status = (int) strtol((char *)data, NULL, 0);
+   
+    *pres_val = !((status & 0x2) >> 1);
+    
+    return ONLP_STATUS_OK;
+}
+
+static int sfp_present_get(int port, int *pres_val)
+{
+    int ret;
+
+    port = port - QSFPDD_NUM;
+    if (port == 0) {
+        ret = system("ethtool -m eth1 raw on length 1 > /dev/null 2>&1");
+        *pres_val = (ret==0) ? 1 : 0;
+    } else if (port == 1) {
+        ret = system("ethtool -m eth2 raw on length 1 > /dev/null 2>&1");
+        *pres_val = (ret==0) ? 1 : 0;
+    } else {
+        AIM_LOG_ERROR("unknow sfp port, port=%d\n", port);
+        return ONLP_STATUS_E_INTERNAL;
+    }   
+    
+    return ONLP_STATUS_OK;
+}
+
+int onlp_sfpi_init(void)
 {  
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 0; p < PORT_NUM; p++) {
@@ -50,18 +127,17 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status=1;
 
     //QSFPDD, SFP Ports
-    if (port >= 0 && port < QSFPDD_NUM) { //QSFPDD
+    if (IS_QSFPDD(port)) { //QSFPDD
         if (qsfp_present_get(port, &status) != ONLP_STATUS_OK) {
             AIM_LOG_ERROR("qsfp_presnet_get() failed, port=%d\n", port);
             return ONLP_STATUS_E_INTERNAL;
         }
-    } else if (port >= QSFPDD_NUM && port < PORT_NUM) { //SFP
+    } else if (IS_SFP(port)) { //SFP
         if (sfp_present_get(port, &status) != ONLP_STATUS_OK) {
             AIM_LOG_ERROR("sfp_presnet_get() failed, port=%d\n", port);
             return ONLP_STATUS_E_INTERNAL;
@@ -74,8 +150,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 0;
     int rc = 0;
@@ -92,21 +167,22 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {   
     char eeprom_path[512];
     int size = 0;
-    int ret, sfp_port_num;
+    int bus = 0;
+    int sfp_port_num = 0;
+    int ret;
 
-    memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));    
+    memset(data, 0, 256); 
 
- 
     //QSFPDD, SFP Ports
-    if (port >= 0 && port < QSFPDD_NUM) { //QSFPDD
-        snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", port+21);
-    } else if (port >= QSFPDD_NUM && port < (QSFPDD_NUM + SFP_NUM)) { //SFP
+    if (IS_QSFPDD(port)) { //QSFPDD
+        bus = ufi_port_to_eeprom_bus(port); 
+        snprintf(eeprom_path, sizeof(eeprom_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    } else if (IS_SFP(port)) { //SFP
         sfp_port_num = port - QSFPDD_NUM;
         if (sfp_port_num == 0) {
             ret = system("ethtool -m eth1 raw on length 256 > /tmp/.sfp.eth1.eeprom");
@@ -145,8 +221,183 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
+/**
+ * @brief Read a byte from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ */
+int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
+{
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = -1;
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+    if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;    
+}
+
+/**
+ * @brief Write a byte to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
+{
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = -1;    
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);    
+    if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }   
+    
+    return rc;
+}
+
+/**
+ * @brief Read a word from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ * @returns The word if successful, error otherwise.
+ */
+int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
+{
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = -1;    
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+    if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }  
+    
+    return rc;    
+}
+
+/**
+ * @brief Write a word to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
+{
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = -1;    
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+    if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;      
+}
+
+/**
+ * @brief Read from an address on the given SFP port's bus.
+ * @param port The port number.
+ * @param devaddr The device address.
+ * @param addr The address.
+ * @returns The data if successful, error otherwise.
+ */
+int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
+{
+    VALIDATE_PORT(port);
+    int bus = -1;    
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+    if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Write to an address on the given SFP port's bus.
+ */
+int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
+{
+    VALIDATE_PORT(port);
+    int rc = 0;
+    int bus = -1;    
+
+    if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+    if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE))<0) {
+        check_and_do_i2c_mux_reset(port);
+    }
+    
+    return rc;
+}
+
+/**
+ * @brief Read the SFP DOM EEPROM.
+ * @param port The port number.
+ * @param data Receives the SFP data.
+ */
+int onlp_sfpi_dom_read(int port, uint8_t data[256])
+{
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
+int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int i=0, value=0, rc=0;
 
@@ -167,8 +418,7 @@ onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
+int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     int rc;
     uint8_t data[8];
@@ -180,7 +430,7 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     memset(sysfs_path, 0, sizeof(sysfs_path));
 
     //QSFPDD ports are not supported
-    if (port < QSFPDD_NUM || port >= PORT_NUM) {
+    if (!IS_SFP(port)) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
@@ -249,8 +499,7 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     return rc;
 }
 
-int
-onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
+int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
     int rc;
     uint8_t data[8];
@@ -263,7 +512,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     memset(sysfs_path, 0, sizeof(sysfs_path));
 
     //QSFPDD ports are not supported
-    if (port < QSFPDD_NUM || port >= PORT_NUM) {
+    if (!IS_SFP(port)) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
@@ -317,8 +566,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

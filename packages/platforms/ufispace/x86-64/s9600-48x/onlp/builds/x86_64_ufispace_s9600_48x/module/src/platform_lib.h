@@ -20,7 +20,7 @@
  * </bsn.cl>
  ************************************************************
  *
- *
+ * Platform Library
  *
  ***********************************************************/
 #ifndef __PLATFORM_LIB_H__
@@ -36,6 +36,7 @@
 
 #include <x86_64_ufispace_s9600_48x/x86_64_ufispace_s9600_48x_config.h>
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
+#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_CPU_CORETEMP_PREFIX         "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2      "/sys/devices/platform/coretemp.0/"
 #define SYS_CORE_TEMP_PREFIX        "/sys/class/hwmon/hwmon2/"
@@ -66,11 +67,6 @@
 #define MAX_SYS_FAN_NUM             8
 #define BOARD_THERMAL_NUM           6
 #define SYS_FAN_NUM                 8
-#define QSFP_NUM                    48
-#define QSFPX_NUM                   (QSFP_NUM+QSFPDD_NUM)
-#define QSFPDD_NUM                  0
-#define SFP_NUM                     2
-#define PORT_NUM                    (QSFP_NUM+QSFPDD_NUM+SFP_NUM)
 
 #define NAME_ETH_1                 "enp2s0f0"
 #define NAME_ETH_2                 "enp2s0f1"
@@ -370,15 +366,7 @@ int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 
-int qsfp_present_get(int port, int *pres_val);
-
-int sfp_present_get(int port, int *pres_val);
-
 bool onlp_sysi_bmc_en_get(void);
-
-int qsfp_port_to_cpld_addr(int port);
-
-int qsfp_port_to_sysfs_attr_offset(int port);
 
 int read_ioport(int addr, int *reg_val);
 

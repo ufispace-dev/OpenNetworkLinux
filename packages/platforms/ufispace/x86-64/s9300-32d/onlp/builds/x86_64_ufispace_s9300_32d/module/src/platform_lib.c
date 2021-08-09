@@ -314,7 +314,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             memset(buf, 0, sizeof(buf));
 
             if( dev_num >= ID_FAN0_PSNT_L && dev_num <=ID_FAN5_PSNT_L ) {                
-                sprintf(get_data_cmd, CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL) {
                     if(fgets(buf, sizeof(buf), fp) != NULL) {
@@ -328,7 +328,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 }
                 pclose(fp);
             } else if( dev_num >= ID_FAN0_DIR&& dev_num <=ID_FAN5_DIR ) {                
-                sprintf(get_data_cmd, CMD_BMC_FAN_TRAY_DIR, dev_num-ID_FAN0_DIR+1);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_FAN_TRAY_DIR, dev_num-ID_FAN0_DIR+1);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL) {
                     if(fgets(buf, sizeof(buf), fp) != NULL) {
@@ -342,7 +342,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 }
                 pclose(fp);
             } else if( dev_num >= ID_PSU0_FAN1_DIR && dev_num <=ID_PSU1_FAN1_DIR ) {                
-                sprintf(get_data_cmd, CMD_BMC_PSU_FAN_DIR, dev_num-ID_PSU0_FAN1_DIR+1);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_PSU_FAN_DIR, dev_num-ID_PSU0_FAN1_DIR+1);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL) {
                     if(fgets(buf, sizeof(buf), fp) != NULL) {
@@ -356,7 +356,7 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 }
                 pclose(fp);
             } else {                
-                sprintf(get_data_cmd, CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
+                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
                 fp = popen(get_data_cmd, "r");
                 if(fp != NULL) {
                     if(fgets(buf, sizeof(buf), fp) != NULL) {

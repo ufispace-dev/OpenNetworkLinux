@@ -59,11 +59,11 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9510.28"
     PORT_COUNT=28
     PORT_CONFIG="24x25 + 2x100 + 2x400"
-     
+
     def check_bmc_enable(self):
         return 1
 
-    def check_i2c_status(self): 
+    def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
 
         # Check I2C status,assume i2c-ismt in bus 1
@@ -82,9 +82,58 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
 
-    def init_eeprom(self, bus_ismt):    
+    def init_i2c_mux_idle_state(self, muxs):
+        IDLE_STATE_DISCONNECT = -2
+
+        for mux in muxs:
+            i2c_addr = mux[1]
+            i2c_bus = mux[2]
+            sysfs_idle_state = "/sys/bus/i2c/devices/%d-%s/idle_state" % (i2c_bus, hex(i2c_addr)[2:].zfill(4))
+            if os.path.exists(sysfs_idle_state):
+                with open(sysfs_idle_state, 'w') as f:
+                    f.write(str(IDLE_STATE_DISCONNECT))
+
+    def init_mux(self, bus_i801, bus_ismt):
+
+        # get hardware revision
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            msg("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n", status, output, cmd)
+            return
+
+        hw_rev_id = int(output, 10)
+
+        # Alpha
+        if hw_rev_id == 1:
+            i2c_muxs = [
+                ('pca9546', 0x75, bus_ismt),   #9546_ROOT_TIMING
+                ('pca9546', 0x76, bus_ismt),   #9546_ROOT_SFP
+                ('pca9546', 0x70, bus_ismt+8), #9548_CHILD_QSFPX_0_3
+                ('pca9548', 0x71, bus_ismt+8), #9548_CHILD_SFP_4_11
+                ('pca9548', 0x72, bus_ismt+8), #9548_CHILD_SFP_12_19
+                ('pca9548', 0x73, bus_ismt+8), #9548_CHILD_SFP_20_27
+            ]
+
+        # Beta and later
+        else:
+            i2c_muxs = [
+                ('pca9546', 0x75, bus_ismt),   #9546_ROOT_TIMING
+                ('pca9546', 0x76, bus_i801),   #9546_ROOT_SFP
+                ('pca9546', 0x70, bus_ismt+8), #9548_CHILD_QSFPX_0_3
+                ('pca9548', 0x71, bus_ismt+8), #9548_CHILD_SFP_4_11
+                ('pca9548', 0x72, bus_ismt+8), #9548_CHILD_SFP_12_19
+                ('pca9548', 0x73, bus_ismt+8), #9548_CHILD_SFP_20_27
+            ]
+
+        self.new_i2c_devices(i2c_muxs)
+
+        #init idle state on mux
+        self.init_i2c_mux_idle_state(i2c_muxs)
+
+    def init_eeprom(self, bus_ismt):
         port = 0
-        
+
         # init QSFPDD EEPROM
         bus = bus_ismt+12
         self.new_i2c_device('optoe3', 0x50, bus)
@@ -107,12 +156,12 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         # init SFP28 EEPROM
         for bus in range(bus_ismt+13, bus_ismt+37):
             self.new_i2c_device('optoe2', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
-            
+
     def init_gpio(self):
-        
+
         # init GPIO sysfs
         self.new_i2c_devices(
             [
@@ -130,43 +179,25 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
                 ('pca9535', 0x24, 8)  #9535_IO_EXP_10 (9535_RX_LOS_20_27)
             ]
         )
-        
-        # init all GPIO direction to "in"
-        gpio_dir = ["in"] * 512 
 
-        # get board id
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            msg("Get board id from LPC failed, status={}, output={}, cmd={}\n", status, output, cmd)
-            return
-            
-        #board_id = int(output, 10)
-        #model_id = board_id & 0b00001111
-        #hw_rev = (board_id & 0b00110000) >> 4
-        #build_rev = (board_id & 0b11000000) >> 6
-        #hw_build_rev = (hw_rev << 2) | (build_rev)
-        board_hw_id = int(output, 10)
-        
-        #Alpha 1
-        if board_hw_id >= 0:        
-            # init GPIO direction to output low
-            for i in range(491, 487, -1) + \
-                     range(479, 463, -1) + \
-                     range(455, 447, -1) + \
-                     range(395, 391, -1):
-                gpio_dir[i] = "low"
-            
-            # init GPIO direction to output high
-            for i in range(495, 491, -1) + \
-                     range(415, 399, -1) + \
-                     range(391, 383, -1):
-                gpio_dir[i] = "high"
-                
-            msg("GPIO init\n")                
-        else:
-            msg("GPIO init failed, unknown board_hw_id=\n".format(board_hw_id))
-            
+        # init all GPIO direction to "in"
+        gpio_dir = ["in"] * 512
+
+        # init GPIO direction to output low
+        for i in range(491, 487, -1) + \
+                 range(479, 463, -1) + \
+                 range(455, 447, -1) + \
+                 range(395, 391, -1):
+            gpio_dir[i] = "low"
+
+        # init GPIO direction to output high
+        for i in range(495, 491, -1) + \
+                 range(415, 399, -1) + \
+                 range(391, 383, -1):
+            gpio_dir[i] = "high"
+
+        msg("GPIO init\n")
+
         # export GPIO and configure direction
         for i in range(320, 512):
             os.system("echo {} > /sys/class/gpio/export".format(i))
@@ -174,25 +205,14 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-
-    def init_i2c_mux_idle_state(self, muxs):
-        IDLE_STATE_DISCONNECT = -2
-        
-        for mux in muxs:
-            i2c_addr = mux[1]
-            i2c_bus = mux[2]
-            sysfs_idle_state = "/sys/bus/i2c/devices/%d-%s/idle_state" % (i2c_bus, hex(i2c_addr)[2:].zfill(4))
-            if os.path.exists(sysfs_idle_state):
-                with open(sysfs_idle_state, 'w') as f:
-                    f.write(str(IDLE_STATE_DISCONNECT))
 
     def baseconfig(self):
 
@@ -204,33 +224,21 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         ########### initialize I2C bus 0 ###########
         # i2c_i801 is built-in
-
         # add i2c_ismt
         #self.insmod("i2c-ismt") #module not found
         os.system("modprobe i2c-ismt")
 
-        # init PCA9548
         bus_i801=0
         bus_ismt=1
 
-        i2c_muxs = [
-            ('pca9546', 0x75, bus_ismt),   #9546_ROOT_TIMING
-            ('pca9546', 0x76, bus_ismt),   #9546_ROOT_SFP
-            ('pca9546', 0x70, bus_ismt+8), #9548_CHILD_QSFPX_0_3
-            ('pca9548', 0x71, bus_ismt+8), #9548_CHILD_SFP_4_11
-            ('pca9548', 0x72, bus_ismt+8), #9548_CHILD_SFP_12_19
-            ('pca9548', 0x73, bus_ismt+8), #9548_CHILD_SFP_20_27
-        ]
-        self.new_i2c_devices(i2c_muxs)
-
-        #init idle state on mux
-        self.init_i2c_mux_idle_state(i2c_muxs)
+        # init MUX sysfs
+        self.init_mux(bus_i801, bus_ismt)
 
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
@@ -242,7 +250,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
                 ('mb_eeprom', 0x57, bus_ismt),
             ]
         )
-        
+
         # init EEPROM
         self.init_eeprom(bus_ismt)
 
@@ -252,5 +260,5 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 
-        return True        
+        return True
 

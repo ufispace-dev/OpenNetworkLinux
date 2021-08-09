@@ -36,6 +36,7 @@
 
 #include <x86_64_ufispace_s9700_23d/x86_64_ufispace_s9700_23d_config.h>
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
+#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_CPU_CORETEMP_PREFIX         "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2      "/sys/devices/platform/coretemp.0/"
 #define SYS_CORE_TEMP_PREFIX        "/sys/class/hwmon/hwmon2/"
@@ -68,11 +69,6 @@
 #define MAX_SYS_FAN_NUM             8
 #define BOARD_THERMAL_NUM           6
 #define SYS_FAN_NUM                 8
-#define QSFP_NUM                    40
-#define QSFPDD_NIF_NUM              10
-#define QSFPDD_FAB_NUM              13
-#define SFP_NUM                     2
-#define PORT_NUM                    25
 
 #define THERMAL_NUM                 21
 #define LED_NUM                     4
@@ -369,15 +365,7 @@ int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 
-int qsfp_present_get(int port, int *pres_val);
-
-int sfp_present_get(int port, int *pres_val);
-
 bool onlp_sysi_bmc_en_get(void);
-
-int qsfp_port_to_cpld_addr(int port);
-
-int qsfp_port_to_sysfs_attr_offset(int port);
 
 int read_ioport(int addr, int *reg_val);
 

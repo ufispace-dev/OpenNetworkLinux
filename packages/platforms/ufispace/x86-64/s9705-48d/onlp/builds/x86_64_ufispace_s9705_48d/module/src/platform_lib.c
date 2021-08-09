@@ -723,47 +723,6 @@ psu_pwgood_get(int *pw_good, int id)
 }
 
 int
-qsfp_present_get(int port, int *pres_val)
-{     
-    int status, rc;
-    int cpld_addr;
-    uint8_t data[8];
-    int data_len;
-   
-    memset(data, 0, sizeof(data));
-
-    cpld_addr = qsfp_port_to_cpld_addr(port);
-    if ((rc = onlp_file_read(data, sizeof(data), &data_len, "/sys/bus/i2c/devices/%d-%04x/cpld_qsfpdd_port_status_%d",
-                                 I2C_BUS_2, cpld_addr, port%12)) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    }    
-    status = (int) strtol((char *)data, NULL, 0);
-   
-    *pres_val = !((status & 0x2) >> 1);
-    
-    return ONLP_STATUS_OK;
-}
-
-int sfp_present_get(int port, int *pres_val)
-{
-    int ret;
-
-    port = port - QSFPDD_NUM;
-    if (port == 0) {
-        ret = system("ethtool -m eth1 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else if (port == 1) {
-        ret = system("ethtool -m eth2 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else {
-        AIM_LOG_ERROR("unknow sfp port, port=%d\n", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }   
-    
-    return ONLP_STATUS_OK;
-}
-
-int
 system_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
@@ -991,23 +950,6 @@ onlp_sysi_bmc_en_get(void)
 {
     //enable bmc by default
     return true;
-}
-
-int
-qsfp_port_to_cpld_addr(int port)
-{
-    int cpld_addr = 0;
-
-    if (port >=0 && port <=11) {
-        cpld_addr = 0x32;
-    } else if (port >=12 && port <=23) { 
-        cpld_addr = 0x33;
-    } else if (port >=24 && port <=35) { 
-        cpld_addr = 0x30;
-    } else if (port >=36 && port <=47) { 
-        cpld_addr = 0x31;    
-    }    
-    return cpld_addr;
 }
 
 int

@@ -718,60 +718,6 @@ psu_pwgood_get(int *pw_good, int id)
 }
 
 int
-qsfp_present_get(int port, int *pres_val)
-{     
-    int status, rc;
-    int cpld_addr, sysfs_attr_offset;
-    uint8_t data[8];
-    int data_len;
-    char *is_dd = NULL;
-   
-    memset(data, 0, sizeof(data));
-
-    //for qsfp port 20-39
-    if (port >= 20 && port <= 39) {
-        port = (port%2) == 0 ? port +1 : port -1;
-    }
-    //get cpld addr
-    cpld_addr = qsfp_port_to_cpld_addr(port);
-    //get sysfs_attr_offset
-    sysfs_attr_offset = qsfp_port_to_sysfs_attr_offset(port);
-    //is_dd
-    is_dd = (port <= 39) ? "" : "dd";
-
-    if ((rc = onlp_file_read(data, sizeof(data), &data_len, "/sys/bus/i2c/devices/%d-%04x/cpld_qsfp%s_port_status_%d",
-                                 I2C_BUS_1, cpld_addr, is_dd, sysfs_attr_offset)) != ONLP_STATUS_OK) {
-	AIM_LOG_ERROR("onlp_file_read failed, error=%d, /sys/bus/i2c/devices/%d-%04x/cpld_qsfp%s_port_status_%d", 
-			rc, I2C_BUS_1, cpld_addr, is_dd, sysfs_attr_offset);
-        return ONLP_STATUS_E_INTERNAL;
-    }    
-    status = (int) strtol((char *)data, NULL, 0);
-   
-    *pres_val = !((status & 0x2) >> 1);
-    
-    return ONLP_STATUS_OK;
-}
-
-int sfp_present_get(int port, int *pres_val)
-{
-    int ret;
-
-    port = port - QSFP_NUM - QSFPDD_NUM;
-    if (port == 0) {
-        ret = system("ethtool -m eth1 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else if (port == 1) {
-        ret = system("ethtool -m eth2 raw on length 1 > /dev/null 2>&1");
-        *pres_val = (ret==0) ? 1 : 0;
-    } else {
-        AIM_LOG_ERROR("unknow sfp port, port=%d\n", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }   
-    
-    return ONLP_STATUS_OK;
-}
-
-int
 system_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
@@ -988,46 +934,6 @@ onlp_sysi_bmc_en_get(void)
 {
     //enable bmc by default
     return true;
-}
-
-int
-qsfp_port_to_cpld_addr(int port)
-{
-    int cpld_addr = 0;
-
-    if (port >=0 && port <=11) {
-        cpld_addr = 0x30;
-    } else if (port >=12 && port <=24) { 
-        cpld_addr = 0x39;    
-    } else if (port >= 25 && port <=37) { 
-        cpld_addr = 0x3a;    
-    } else if (port >=38 && port <=42) { 
-        cpld_addr = 0x3b;    
-    } else if (port >=43 && port <=52) { 
-        cpld_addr = 0x3c;    
-    }    
-    return cpld_addr;
-}
-
-int
-qsfp_port_to_sysfs_attr_offset(int port)
-{
-    int sysfs_attr_offset = 0;
-
-    if (port >=0 && port <=11) {
-        sysfs_attr_offset = port-0;    
-    } else if (port >=12 && port <=24) { 
-        sysfs_attr_offset = port-12;    
-    } else if (port >= 25 && port <=37) { 
-        sysfs_attr_offset = port-25;    
-    } else if (port >=38 && port <=39) { 
-        sysfs_attr_offset = port-38;    
-    } else if (port >=40 && port <=42) { 
-        sysfs_attr_offset = port-40;    
-    } else if (port >=43 && port <=52) { 
-        sysfs_attr_offset = port-43;    
-    }    
-    return sysfs_attr_offset;
 }
 
 int
