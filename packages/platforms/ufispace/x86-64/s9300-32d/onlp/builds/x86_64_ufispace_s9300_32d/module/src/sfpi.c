@@ -265,7 +265,7 @@ int sfp_cpu_eeprom_path_get(int port, char *eeprom_path, int size) {
 int
 onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {   
-    int ret;
+    int ret = ONLP_STATUS_OK;
     char eeprom_path[256];
     int size = 0;
     port_type_info_t port_type_info;
