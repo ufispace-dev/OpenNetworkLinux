@@ -63,6 +63,39 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
     def check_bmc_enable(self):
         return 1
 
+    def check_i2c_status(self):
+        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/mb_cpld/mux_reset"
+        controller_remove = "/sys/bus/pci/devices/0000:00:12.0/remove"
+        controller_rescan = "/sys/bus/pci/rescan"
+
+        # Check I2C status,assume i2c-ismt in bus 1
+        retcode = os.system("i2cget -f -y 1 0x75 > /dev/null 2>&1")
+        if retcode != 0:
+
+            #read mux failed, i2c bus may be stuck
+            msg("Warning: Read I2C Mux Failed!! (ret=%d)\n" % (retcode) )
+
+            #Recovery I2C
+            if os.path.exists(sysfs_mux_reset) and os.path.exists(controller_remove)\
+                    and os.path.exists(controller_rescan):
+                with open(sysfs_mux_reset, "w") as f:
+                    #write 0 to sysfs
+                    f.write("{}".format(0))
+
+                with open(controller_remove, "w") as f:
+                    #write 1 to sysfs
+                    f.write("{}".format(1))
+
+                with open(controller_rescan, "w") as f:
+                    #write 1 to sysfs
+                    f.write("{}".format(1))
+
+                os.system("rmmod i2c-ismt")
+                os.system("modprobe i2c-ismt")
+                msg("I2C bus recovery done.\n")
+            else:
+                msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -75,6 +108,12 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def baseconfig(self):
+
+        #CPLD
+        self.insmod("x86-64-ufispace-s9501-18smt-lpc")
+
+        # check i2c bus status
+        self.check_i2c_status()
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
@@ -89,8 +128,6 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
         #self.insmod("i2c-ismt") #module not found
         os.system("modprobe i2c-ismt")
 
-        #CPLD
-        self.insmod("x86-64-ufispace-s9501-18smt-lpc")
 
         # init PCA9548
         bus_i801=0

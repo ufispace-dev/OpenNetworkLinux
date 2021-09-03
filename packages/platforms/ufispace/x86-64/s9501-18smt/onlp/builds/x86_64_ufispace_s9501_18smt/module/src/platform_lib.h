@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -60,6 +59,11 @@
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 #define CMD_FRU_CACHE_SET           "ipmitool fru print %d "IPMITOOL_REDIRECT_ERR"| grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' > %s"
 #define CMD_FRU_CACHE_GET           "cat %s | sed -n '%dp' | tr -d '\n'"
+
+#define CMD_I2C_STUCK_CHECK         "i2cget -f -y 1 0x75 > /dev/null 2>&1"
+#define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/mb_cpld/mux_reset"
+#define I2C_RECOVERY_BIN_PATH       "/lib/platform-config/x86-64-ufispace-s9501-18smt-r0/onl/i2c_stuck_recovery.bin"
+#define CMD_I2C_STUCK_RECOVERY      I2C_RECOVERY_BIN_PATH" -f"
 
 #define PSU_STATUS_PRESENT          1
 #define PSU_STATUS_POWER_GOOD       1
@@ -368,6 +372,8 @@ bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 
 int
 bmc_fru_read(onlp_psu_info_t* info, int id);
+
+void check_and_do_i2c_mux_reset(int port);
 
 int
 sys_fan_present_get(onlp_fan_info_t* info, int id);

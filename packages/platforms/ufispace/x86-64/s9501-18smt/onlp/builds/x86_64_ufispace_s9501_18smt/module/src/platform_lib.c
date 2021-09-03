@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -112,6 +111,7 @@ void lock_init()
     {
         onlp_shlock_create(LOCK_MAGIC, &onlp_lock, "bmc-file-lock");
         sem_inited = 1;
+        check_and_do_i2c_mux_reset(-1);
     }
 }
 
@@ -1196,6 +1196,29 @@ file_vread_hex(int* value, const char* fmt, va_list vargs)
     //hex to int
     *value = (int) strtol((char *)data, NULL, 0);
     return 0;
+}
+
+/*
+ * This function check the I2C bus statuas by using the sysfs of cpld_id,
+ * If the I2C Bus is stcuk, do the i2c mux reset.
+ */
+void check_and_do_i2c_mux_reset(int port)
+{
+
+    char cmd_buf[256] = {0};
+    int ret = 0;
+
+    snprintf(cmd_buf, sizeof(cmd_buf), CMD_I2C_STUCK_CHECK);
+    ret = system(cmd_buf);
+    if (ret != 0) {
+        if( access( CMD_I2C_STUCK_RECOVERY, F_OK ) != -1 ) {
+            system(CMD_I2C_STUCK_RECOVERY);
+        } else {
+            AIM_LOG_ERROR("I2C Stuck recovery binary not exist, path=%s\r\n", I2C_RECOVERY_BIN_PATH);
+        }
+    }
+
+
 }
 
 int

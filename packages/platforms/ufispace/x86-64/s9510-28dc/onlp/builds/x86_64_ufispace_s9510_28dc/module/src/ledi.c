@@ -48,14 +48,14 @@
 
 #define CHASSIS_LED_INFO(id, desc)               \
     {                                            \
-        { ONLP_LED_ID_CREATE(id), #desc, POID_0},\
+        { ONLP_LED_ID_CREATE(id), desc, POID_0},\
         LED_STATUS,                              \
         LED_CAPS,                                \
     }
 
 #define CHASSIS_FLEXE_LED_INFO(id, desc)               \
     {                                            \
-        { ONLP_LED_ID_CREATE(id), #desc, POID_0},\
+        { ONLP_LED_ID_CREATE(id), desc, POID_0},\
         LED_STATUS,                              \
         FLEXE_LED_CAPS,                                \
     }

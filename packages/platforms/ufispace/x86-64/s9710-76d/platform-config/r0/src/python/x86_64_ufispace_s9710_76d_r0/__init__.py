@@ -59,9 +59,6 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9710.76"
     PORT_COUNT=76
     PORT_CONFIG="76x400"
-     
-    def check_bmc_enable(self):
-        return 1
 
     def check_i2c_status(self): 
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
@@ -145,13 +142,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # check i2c bus status
         self.check_i2c_status()
-
-        bmc_enable = self.check_bmc_enable()
-        msg("bmc enable : %r\n" % (True if bmc_enable else False))
         
-        # record the result for onlp
-        os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
-
         # Golden Finger to show CPLD
         os.system("i2cset -y 0 0x71 0x1")
         os.system("i2cget -y 0 0x30 0x2")
@@ -218,8 +209,8 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # init GPIO direction
         # 9555_BEACON_LED 0x20
-        
-        # for proto 
+
+        # for proto and later
         os.system("echo in > /sys/class/gpio/gpio511/direction")
         os.system("echo low > /sys/class/gpio/gpio510/direction")
         os.system("echo low > /sys/class/gpio/gpio509/direction")
@@ -236,7 +227,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         os.system("echo low > /sys/class/gpio/gpio498/direction")
         os.system("echo low > /sys/class/gpio/gpio497/direction")
         os.system("echo low > /sys/class/gpio/gpio496/direction")
-
+            
         # init GPIO direction
         # 9539_CPU_I2C 0x77
         for i in range(480, 496):

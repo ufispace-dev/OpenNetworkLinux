@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -61,6 +60,9 @@
 #define CMD_BMC_SDR_GET             "ipmitool sdr -c get %s"IPMITOOL_REDIRECT_ERR
 #define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
+#define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
+#define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/mux_reset"
+
 #define PSU_STATUS_PRESENT          1
 #define PSU_STATUS_POWER_GOOD       1
 #define FAN_PRESENT                 0
@@ -414,6 +416,8 @@ lock_init();
 
 int
 bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+
+void check_and_do_i2c_mux_reset(int port);
 
 extern bool bmc_enable;
 #endif  /* __PLATFORM_LIB_H__ */

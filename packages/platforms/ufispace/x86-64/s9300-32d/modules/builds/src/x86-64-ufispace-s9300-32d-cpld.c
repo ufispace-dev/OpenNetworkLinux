@@ -100,6 +100,7 @@ enum s9300_cpld_sysfs_attributes {
     CPLD_SYS_LED_CTRL_2,
     CPLD_BEACON_LED_CTRL,
     CPLD_PORT_LED_CLR_CTRL,
+    CPLD_EVENT_DETECT_CTRL,
     /* CPLD2 */
     CPLD_QSFPDD_MOD_INT_G0,
     CPLD_QSFPDD_MOD_INT_G1,
@@ -298,6 +299,8 @@ static SENSOR_DEVICE_ATTR(cpld_beacon_led_ctrl, S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, CPLD_BEACON_LED_CTRL);
 static SENSOR_DEVICE_ATTR(cpld_port_led_clr_ctrl, S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, CPLD_PORT_LED_CLR_CTRL);
+static SENSOR_DEVICE_ATTR(cpld_event_detect_ctrl, S_IWUSR | S_IRUGO, \
+        read_cpld_callback, write_cpld_callback, CPLD_EVENT_DETECT_CTRL);
 /* CPLD2 */
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mod_int_g0, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_QSFPDD_MOD_INT_G0);
@@ -477,6 +480,7 @@ static struct attribute *s9300_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_sys_led_ctrl_2.dev_attr.attr,
     &sensor_dev_attr_cpld_beacon_led_ctrl.dev_attr.attr,
     &sensor_dev_attr_cpld_port_led_clr_ctrl.dev_attr.attr,
+    &sensor_dev_attr_cpld_event_detect_ctrl.dev_attr.attr,
     NULL
 };
 
@@ -799,6 +803,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_PORT_LED_CLR_CTRL:
              reg = CPLD_PORT_LED_CLR_CTRL_REG;
              break;
+        case CPLD_EVENT_DETECT_CTRL:
+             reg = CPLD_EVENT_DETECT_CTRL_REG;
+             break;
         case CPLD_QSFPDD_MOD_INT_G0:
              reg = CPLD_QSFPDD_MOD_INT_G0_REG;
              break;
@@ -1087,6 +1094,9 @@ static ssize_t write_cpld_callback(struct device *dev,
              break;
         case CPLD_PORT_LED_CLR_CTRL:
              reg = CPLD_PORT_LED_CLR_CTRL_REG;
+             break;
+        case CPLD_EVENT_DETECT_CTRL:
+             reg = CPLD_EVENT_DETECT_CTRL_REG;
              break;
         case CPLD_QSFPDD_MOD_INT_MASK_G0:
              reg = CPLD_QSFPDD_MOD_INT_MASK_G0_REG;

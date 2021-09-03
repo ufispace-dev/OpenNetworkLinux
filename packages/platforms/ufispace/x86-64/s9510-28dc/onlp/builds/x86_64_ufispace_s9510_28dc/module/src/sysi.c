@@ -69,12 +69,52 @@
  *            |----[04] ONLP_FAN_3
  *            |----[05] ONLP_FAN_4
  */
- 
+
+static onlp_oid_t __onlp_oid_info[] = { 
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_5),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_6),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_7),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FPGA_R),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FPGA_L),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_GDDR),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_AMB),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_NTMCARD),
+
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_GNSS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_PWR),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_0),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_1),
+
+    ONLP_PSU_ID_CREATE(ONLP_PSU_0),
+    ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_2),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_3),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_4),
+};
+
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 #define SYSFS_CPLD_VER_H  LPC_FMT "cpld_version_h"
-#define SYSFS_HW_ID  LPC_FMT "board_hw_id"
-#define SYSFS_BUILD_ID  LPC_FMT "board_build_id"
+#define SYSFS_HW_ID       LPC_FMT "board_hw_id"
+#define SYSFS_BUILD_ID    LPC_FMT "board_build_id"
 
 #define CMD_BIOS_VER       "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
@@ -260,30 +300,9 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
  */
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
-    int i=0;
-    onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
+    memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
 
-    /* Thermal */
-    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_HWM_NTMCARD; i++) {
-        *e++ = ONLP_THERMAL_ID_CREATE(i);
-    }    
-
-    /* LED */
-    for (i = ONLP_LED_SYS_GNSS; i < ONLP_LED_MAX; i++) {
-        *e++ = ONLP_LED_ID_CREATE(i);
-    }
-
-    /* PSU */
-    for (i = ONLP_PSU_0; i < ONLP_PSU_MAX; i++) {
-        *e++ = ONLP_PSU_ID_CREATE(i);
-    }
-
-    /* FAN */
-    for (i = ONLP_FAN_0; i <= ONLP_FAN_4; i++) {
-        *e++ = ONLP_FAN_ID_CREATE(i);
-    }
-    
     return ONLP_STATUS_OK;
 }
 

@@ -43,7 +43,7 @@
 
 #define PSU_INFO(id, desc, fid, tid)            \
     {                                           \
-        { ONLP_PSU_ID_CREATE(id), #desc, POID_0,\
+        { ONLP_PSU_ID_CREATE(id), desc, POID_0,\
             {                                   \
                 ONLP_FAN_ID_CREATE(fid),        \
                 ONLP_THERMAL_ID_CREATE(tid),    \

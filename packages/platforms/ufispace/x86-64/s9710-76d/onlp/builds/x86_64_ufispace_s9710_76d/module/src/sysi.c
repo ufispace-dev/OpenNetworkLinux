@@ -76,7 +76,9 @@
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpu_cpld_addr = 0x600, cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor;
+    int cpu_cpld_addr = 0x600;
+    int cpu_cpld_build_addr = 0x6e0;
+    int cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor, cpu_cpld_ver_build;
     int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX], cpld_build[CPLD_MAX];
     int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
@@ -95,6 +97,12 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     }
     cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x03));
     cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
+
+    //get CPU CPLD build version
+    if (read_ioport(cpu_cpld_build_addr, &cpu_cpld_ver_build) < 0) {
+        AIM_LOG_ERROR("unable to read CPU CPLD build version\n");
+        return ONLP_STATUS_E_INTERNAL; 
+    }
     
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {        
@@ -122,13 +130,13 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->cpld_versions = aim_fstrdup(            
         "\n"
-        "[CPU CPLD] %d.%02d\n"
+        "[CPU CPLD] %d.%02d.%d\n"
         "[MB CPLD1] %d.%02d.%d\n"
         "[MB CPLD2] %d.%02d.%d\n"
         "[MB CPLD3] %d.%02d.%d\n"
         "[MB CPLD4] %d.%02d.%d\n" 
         "[MB CPLD5] %d.%02d.%d\n", 
-        cpu_cpld_ver_major, cpu_cpld_ver_minor,
+        cpu_cpld_ver_major, cpu_cpld_ver_minor, cpu_cpld_ver_build, 
         cpld_ver_major[0], cpld_ver_minor[0], cpld_build[0],
         cpld_ver_major[1], cpld_ver_minor[1], cpld_build[1],
         cpld_ver_major[2], cpld_ver_minor[2], cpld_build[2],
@@ -294,7 +302,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     memset(table, 0, max*sizeof(onlp_oid_t));
 
     /* Thermal */
-    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_EXT_ENV_2; i++) {
+    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_OP2_3; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
     }    
 

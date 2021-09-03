@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2020 Intel Corporation. */
+/* Copyright(c) 2013 - 2021 Intel Corporation. */
 
 #ifndef _I40E_H_
 #define _I40E_H_
@@ -13,6 +13,7 @@
 #include <linux/aer.h>
 #include <linux/netdevice.h>
 #include <linux/ioport.h>
+#include <linux/crash_dump.h>
 #include <linux/slab.h>
 #include <linux/list.h>
 #include <linux/hash.h>
@@ -85,6 +86,8 @@ bool i40e_is_l4mode_enabled(void);
 #define I40E_FDIR_RING_COUNT		32
 #define I40E_MAX_AQ_BUF_SIZE		4096
 #define I40E_AQ_LEN			256
+#define I40E_MIN_ARQ_LEN		1
+#define I40E_MIN_ASQ_LEN		2
 #define I40E_AQ_WORK_LIMIT		66 /* max number of VFs + a little */
 /*
  * If I40E_MAX_USER_PRIORITY is updated please also update
@@ -150,6 +153,7 @@ enum i40e_state_t {
 	__I40E_RESET_INTR_RECEIVED,
 	__I40E_REINIT_REQUESTED,
 	__I40E_PF_RESET_REQUESTED,
+	__I40E_PF_RESET_AND_REBUILD_REQUESTED,
 	__I40E_CORE_RESET_REQUESTED,
 	__I40E_GLOBAL_RESET_REQUESTED,
 	__I40E_EMP_RESET_REQUESTED,
@@ -180,6 +184,8 @@ enum i40e_state_t {
 };
 
 #define I40E_PF_RESET_FLAG	BIT_ULL(__I40E_PF_RESET_REQUESTED)
+#define I40E_PF_RESET_AND_REBUILD_FLAG	\
+	BIT_ULL(__I40E_PF_RESET_AND_REBUILD_REQUESTED)
 
 /* VSI state flags */
 enum i40e_vsi_state_t {
@@ -315,6 +321,12 @@ struct i40e_fdir_filter {
 #define I40E_CLOUD_FILTER_FLAGS_OIP1 I40E_CLOUD_FIELD_OIP1
 #define I40E_CLOUD_FILTER_FLAGS_OIP2 I40E_CLOUD_FIELD_OIP2
 
+#define I40E_CLOUD_FILTER_ANY_QUEUE		0xffff
+#define I40E_CLOUD_FILTER_TUNNEL_TYPE_VXLAN	0x0
+#define I40E_CLOUD_FILTER_TUNNEL_TYPE_NVGRE	0x1
+#define I40E_CLOUD_FILTER_TUNNEL_TYPE_GENEVE	0x2
+#define I40E_CLOUD_FILTER_TUNNEL_TYPE_IP_IN_GRE	0x3
+
 struct i40e_cloud_filter {
 	struct hlist_node cloud_node;
 	unsigned long cookie;
@@ -364,6 +376,7 @@ struct i40e_tc_info {
 	u16	qoffset;	/* Queue offset from base queue */
 	u16	qcount;		/* Total Queues */
 	u8	netdev_tc;	/* Netdev TC index if netdev associated */
+	u16	tc_bw_credits;	/* Relative credits assigned to TC */
 };
 
 /* TC configuration data structure */
@@ -605,6 +618,7 @@ struct i40e_pf {
 #define I40E_HW_STOP_FW_LLDP			BIT(16)
 #define I40E_HW_PORT_ID_VALID			BIT(17)
 #define I40E_HW_RESTART_AUTONEG			BIT(18)
+#define I40E_HW_OUTER_VLAN_CAPABLE		BIT(19)
 
 	u64 flags;
 #define I40E_FLAG_RX_CSUM_ENABLED		BIT(0)
@@ -637,6 +651,7 @@ struct i40e_pf {
 #define I40E_FLAG_RS_FEC			BIT(25)
 #define I40E_FLAG_BASE_R_FEC			BIT(26)
 #define I40E_FLAG_TOTAL_PORT_SHUTDOWN		BIT(27)
+#define I40E_FLAG_MULTIPLE_TRAFFIC_CLASSES	BIT(28)
 
 	/* flag to enable/disable vf base mode support */
 	bool vf_base_mode_only;
@@ -717,6 +732,8 @@ struct i40e_pf {
 #define I40E_GLGEN_GPIO_CTL_PRT_NUM_1 \
 	(1 << I40E_GLGEN_GPIO_CTL_PRT_NUM_SHIFT)
 #define I40E_GLGEN_GPIO_CTL_RESERVED	BIT(2)
+#define I40E_GLGEN_GPIO_CTL_PRT_NUM_NA_Z \
+	(1 << I40E_GLGEN_GPIO_CTL_PRT_NUM_NA_SHIFT)
 #define I40E_GLGEN_GPIO_CTL_DIR_OUT \
 	(1 << I40E_GLGEN_GPIO_CTL_PIN_DIR_SHIFT)
 #define I40E_GLGEN_GPIO_CTL_TRI_DRV_HI \
@@ -729,6 +746,8 @@ struct i40e_pf {
 	(4 << I40E_GLGEN_GPIO_CTL_PIN_FUNC_SHIFT)
 #define I40E_GLGEN_GPIO_CTL_NOT_FOR_PHY_CONN \
 	(0x3F << I40E_GLGEN_GPIO_CTL_PHY_PIN_NAME_SHIFT)
+#define I40E_GLGEN_GPIO_CTL_OUT_DEFAULT \
+	(1 << I40E_GLGEN_GPIO_CTL_OUT_DEFAULT_SHIFT)
 #define I40E_GLGEN_GPIO_CTL_PORT_0_IN_TIMESYNC_0 \
 	(I40E_GLGEN_GPIO_CTL_NOT_FOR_PHY_CONN | \
 	 I40E_GLGEN_GPIO_CTL_TIMESYNC_0 | \
@@ -747,6 +766,13 @@ struct i40e_pf {
 	 I40E_GLGEN_GPIO_CTL_TIMESYNC_1 | I40E_GLGEN_GPIO_CTL_OUT_HI_RST | \
 	 I40E_GLGEN_GPIO_CTL_TRI_DRV_HI | I40E_GLGEN_GPIO_CTL_DIR_OUT | \
 	 I40E_GLGEN_GPIO_CTL_RESERVED | I40E_GLGEN_GPIO_CTL_PRT_NUM_1)
+#define I40E_GLGEN_GPIO_CTL_LED_INIT \
+	(I40E_GLGEN_GPIO_CTL_PRT_NUM_NA_Z | \
+	 I40E_GLGEN_GPIO_CTL_DIR_OUT | \
+	 I40E_GLGEN_GPIO_CTL_TRI_DRV_HI | \
+	 I40E_GLGEN_GPIO_CTL_OUT_HI_RST | \
+	 I40E_GLGEN_GPIO_CTL_OUT_DEFAULT | \
+	 I40E_GLGEN_GPIO_CTL_NOT_FOR_PHY_CONN)
 #define I40E_PRTTSYN_AUX_1_INSTNT \
 	(1 << I40E_PRTTSYN_AUX_1_INSTNT_SHIFT)
 #define I40E_PRTTSYN_AUX_0_OUT_ENABLE \
@@ -817,6 +843,16 @@ struct i40e_pf {
 	int egress_vlan;
 	bool vf_bw_applied;
 	struct list_head *mac_list;	/* for backup vfs mac list */
+	/* User priority map provided in sysfs for each TC.
+	 * Defines if priority (index) belongs to TC, 0xff
+	 * means it is free for user to pick.
+	 */
+#define I40E_MULTIPLE_TRAFFIC_CLASS_NO_ENTRY 0xff
+	u8 dcb_user_up_map[I40E_MAX_USER_PRIORITY];
+	u8 dcb_user_lsp_map[I40E_MAX_TRAFFIC_CLASS];
+	u8 dcb_mib_bw_map[I40E_MAX_TRAFFIC_CLASS];
+	u16 dcb_veb_bw_map[I40E_MAX_TRAFFIC_CLASS];
+	bool dcb_user_reconfig;
 	/* List to keep previous DDP profiles to be rolled back in the future */
 	struct list_head ddp_old_prof;
 #if IS_ENABLED(CONFIG_MFD_CORE)
@@ -844,6 +880,7 @@ enum i40e_filter_state {
 	I40E_FILTER_ACTIVE,		/* Added to switch by FW */
 	I40E_FILTER_FAILED,		/* Rejected by FW */
 	I40E_FILTER_REMOVE,		/* To be removed */
+	I40E_FILTER_INACTIVE,		/* Removed from FW, only for vlan 0 */
 /* There is no 'removed' state; the filter struct is freed */
 };
 struct i40e_mac_filter {
@@ -1251,6 +1288,9 @@ int i40e_max_lump_qp(struct i40e_pf *pf);
 int i40e_veb_config_tc(struct i40e_veb *veb, u8 enabled_tc);
 int i40e_vsi_add_pvid(struct i40e_vsi *vsi, u16 vid);
 void i40e_vsi_remove_pvid(struct i40e_vsi *vsi);
+bool i40e_is_double_vlan(struct i40e_hw *hw);
+bool i40e_is_vid(struct i40e_aqc_vsi_properties_data *info);
+__le16 *i40e_get_current_vid(struct i40e_vsi *vsi);
 int i40e_get_custom_cloud_filter_type(u8 flags, u16 *type);
 int i40e_add_del_custom_cloud_filter(struct i40e_vsi *vsi,
 				     struct i40e_cloud_filter *filter,
@@ -1304,7 +1344,7 @@ int i40e_ptp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd);
 int i40e_open(struct net_device *netdev);
 int i40e_close(struct net_device *netdev);
 int i40e_vsi_open(struct i40e_vsi *vsi);
-void i40e_vlan_stripping_disable(struct i40e_vsi *vsi);
+int i40e_vlan_stripping_disable(struct i40e_vsi *vsi);
 int i40e_add_vlan_all_mac(struct i40e_vsi *vsi, s16 vid);
 int i40e_vsi_add_vlan(struct i40e_vsi *vsi, u16 vid);
 void i40e_rm_vlan_all_mac(struct i40e_vsi *vsi, s16 vid);
@@ -1315,7 +1355,7 @@ int i40e_del_mac_filter(struct i40e_vsi *vsi, const u8 *macaddr);
 bool i40e_is_vsi_in_vlan(struct i40e_vsi *vsi);
 int i40e_count_filters(struct i40e_vsi *vsi);
 struct i40e_mac_filter *i40e_find_mac(struct i40e_vsi *vsi, const u8 *macaddr);
-void i40e_vlan_stripping_enable(struct i40e_vsi *vsi);
+int i40e_vlan_stripping_enable(struct i40e_vsi *vsi);
 static inline bool i40e_is_sw_dcb(struct i40e_pf *pf)
 {
 	return !!(pf->flags & I40E_FLAG_DISABLE_FW_LLDP);
@@ -1329,10 +1369,14 @@ void i40e_dcbnl_flush_apps(struct i40e_pf *pf,
 void i40e_dcbnl_set_all(struct i40e_vsi *vsi);
 void i40e_dcbnl_setup(struct i40e_vsi *vsi);
 #endif /* HAVE_DCBNL_IEEE */
+int i40e_update_ets(struct i40e_pf *pf);
 bool i40e_dcb_need_reconfig(struct i40e_pf *pf,
 			    struct i40e_dcbx_config *old_cfg,
 			    struct i40e_dcbx_config *new_cfg);
 int i40e_hw_dcb_config(struct i40e_pf *pf, struct i40e_dcbx_config *new_cfg);
+#define I40E_ETS_NON_WILLING_MODE	0
+#define I40E_ETS_WILLING_MODE		1
+int i40e_dcb_sw_default_config(struct i40e_pf *pf, u8 ets_willing);
 #endif /* CONFIG_DCB */
 #ifdef HAVE_PTP_1588_CLOCK
 void i40e_ptp_rx_hang(struct i40e_pf *pf);
@@ -1351,6 +1395,8 @@ void i40e_ptp_stop(struct i40e_pf *pf);
 int i40e_ptp_alloc_pins(struct i40e_pf *pf);
 #endif /* HAVE_PTP_1588_CLOCK */
 u8 i40e_pf_get_num_tc(struct i40e_pf *pf);
+int i40e_update_adq_vsi_queues(struct i40e_vsi *vsi, int vsi_offset);
+int i40e_vsi_get_bw_info(struct i40e_vsi *vsi);
 int i40e_is_vsi_uplink_mode_veb(struct i40e_vsi *vsi);
 i40e_status i40e_get_partition_bw_setting(struct i40e_pf *pf);
 i40e_status i40e_set_partition_bw_setting(struct i40e_pf *pf);
@@ -1383,5 +1429,7 @@ static inline bool i40e_enabled_xdp_vsi(struct i40e_vsi *vsi)
 
 int i40e_restore_ingress_egress_mirror(struct i40e_vsi *src_vsi, int mirror,
 				       u16 rule_type, u16 *rule_id);
+int i40e_vsi_configure_tc_max_bw(struct i40e_vsi *vsi);
+int i40e_veb_configure_tc_max_bw(struct i40e_veb *veb, u8 enabled_tc);
 
 #endif /* _I40E_H_ */

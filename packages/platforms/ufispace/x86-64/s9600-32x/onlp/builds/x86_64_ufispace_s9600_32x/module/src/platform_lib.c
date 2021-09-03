@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -156,6 +155,7 @@ void lock_init()
     {
         onlp_shlock_create(LOCK_MAGIC, &onlp_lock, "bmc-file-lock");
         sem_inited = 1;
+        check_and_do_i2c_mux_reset(-1);
     }
 }
 
@@ -1185,6 +1185,31 @@ file_vread_hex(int* value, const char* fmt, va_list vargs)
     //hex to int
     *value = (int) strtol((char *)data, NULL, 0);
     return 0;
+}
+
+/*
+ * This function check the I2C bus statuas by using the sysfs of cpld_id,
+ * If the I2C Bus is stcuk, do the i2c mux reset.
+ */
+void check_and_do_i2c_mux_reset(int port)
+{
+    char cmd_buf[256] = {0};
+    int ret = 0;
+
+    if(access(MB_CPLD1_ID_PATH, F_OK) != -1 ) {
+
+        snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", MB_CPLD1_ID_PATH);
+        ret = system(cmd_buf);
+
+        if (ret != 0) {
+            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+                //AIM_LOG_ERROR("I2C bus is stuck!! (port=%d)", port);
+                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
+                ret = system(cmd_buf);
+                //AIM_LOG_ERROR("Do I2C mux reset!! (ret=%d)", ret);
+            }
+        }
+    }
 }
 
 int

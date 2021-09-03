@@ -63,6 +63,25 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
     def check_bmc_enable(self):
         return 1
 
+    def check_i2c_status(self):
+        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9600_64x_lpc/mb_cpld/mux_reset"
+
+        # Check I2C status
+        retcode = os.system("i2cget -f -y 0 0x71 > /dev/null 2>&1")
+        if retcode != 0:
+
+            # read mux failed, i2c bus may be stuck
+            msg("Warning: Read I2C Mux Failed!! (ret=%d)\n" % (retcode))
+
+            # Recovery I2C
+            if os.path.exists(sysfs_mux_reset):
+                with open(sysfs_mux_reset, "w") as f:
+                    # write 0 to sysfs
+                    f.write("{}".format(0))
+                    msg("I2C bus recovery done.\n")
+            else:
+                msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset))
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -76,6 +95,12 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        #CPLD
+        self.insmod("x86-64-ufispace-s9600-64x-lpc")
+
+        # check i2c bus status
+        self.check_i2c_status()
+
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
 
@@ -87,9 +112,6 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
         os.system("i2cget -y 0 0x30 0x2")
         os.system("i2cget -y 0 0x31 0x2")
         os.system("i2cset -y 0 0x75 0x0")
-
-        #CPLD
-        self.insmod("x86-64-ufispace-s9600-64x-lpc")
 
         ########### initialize I2C bus 0 ###########
         # init PCA9548

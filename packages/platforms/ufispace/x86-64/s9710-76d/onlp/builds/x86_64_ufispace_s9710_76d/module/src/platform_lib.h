@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -43,7 +42,60 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get ADC_CPU_TEMP TEMP_CPU_PECI TEMP_MAC_ENV_1 TEMP_MAC_ENV_2 TEMP_FRONT_ENV_1 TEMP_FRONT_ENV_2 TEMP_ENV_1 TEMP_ENV_2 TEMP_EXT_ENV_1 TEMP_EXT_ENV_2 PSU0_TEMP PSU1_TEMP FAN0_FRONT_RPM FAN0_REAR_RPM FAN1_FRONT_RPM FAN1_REAR_RPM FAN2_FRONT_RPM FAN2_REAR_RPM  FAN3_FRONT_RPM FAN3_REAR_RPM PSU0_FAN PSU1_FAN FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get "\
+                                    "ADC_CPU_TEMP "\
+                                    "TEMP_CPU_PECI "\
+                                    "TEMP_MAC_ENV_1 "\
+                                    "TEMP_MAC_ENV_2 "\
+                                    "TEMP_FRONT_ENV_1 "\
+                                    "TEMP_FRONT_ENV_2 "\
+                                    "TEMP_ENV_1 "\
+                                    "TEMP_ENV_2 "\
+                                    "TEMP_EXT_ENV_1 "\
+                                    "TEMP_EXT_ENV_2 "\
+                                    "TEMP_MAC0_PVT2 "\
+                                    "TEMP_MAC0_PVT3 "\
+                                    "TEMP_MAC0_PVT4 "\
+                                    "TEMP_MAC0_PVT6 "\
+                                    "TEMP_MAC0_HBM0 "\
+                                    "TEMP_MAC0_HBM1 "\
+                                    "TEMP_MAC1_PVT2 "\
+                                    "TEMP_MAC1_PVT3 "\
+                                    "TEMP_MAC1_PVT4 "\
+                                    "TEMP_MAC1_PVT6 "\
+                                    "TEMP_MAC1_HBM0 "\
+                                    "TEMP_MAC1_HBM1 "\
+                                    "TEMP_OP2_0 "\
+                                    "TEMP_OP2_1 "\
+                                    "TEMP_OP2_2 "\
+                                    "TEMP_OP2_3 "\
+                                    "PSU0_TEMP "\
+                                    "PSU1_TEMP "\
+                                    "FAN0_FRONT_RPM "\
+                                    "FAN0_REAR_RPM "\
+                                    "FAN1_FRONT_RPM "\
+                                    "FAN1_REAR_RPM "\
+                                    "FAN2_FRONT_RPM "\
+                                    "FAN2_REAR_RPM "\
+                                    "FAN3_FRONT_RPM "\
+                                    "FAN3_REAR_RPM "\
+                                    "PSU0_FAN "\
+                                    "PSU1_FAN "\
+                                    "FAN0_PRSNT_H "\
+                                    "FAN1_PRSNT_H "\
+                                    "FAN2_PRSNT_H "\
+                                    "FAN3_PRSNT_H "\
+                                    "PSU0_VIN "\
+                                    "PSU0_VOUT "\
+                                    "PSU0_IIN PSU0_IOUT "\
+                                    "PSU0_STBVOUT "\
+                                    "PSU0_STBIOUT "\
+                                    "PSU1_VIN PSU1_VOUT "\
+                                    "PSU1_IIN "\
+                                    "PSU1_IOUT "\
+                                    "PSU1_STBVOUT "\
+                                    "PSU1_STBIOUT "\
+                                    "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 #define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
 
@@ -71,13 +123,29 @@ enum bmc_attr_id {
     BMC_ATTR_ID_ADC_CPU_TEMP,
     BMC_ATTR_ID_TEMP_CPU_PECI,
     BMC_ATTR_ID_TEMP_MAC_ENV_1,
-    BMC_ATTR_ID_TEMP_MAC_ENV_2,
+    BMC_ATTR_ID_TEMP_MAC_ENV_2,                
     BMC_ATTR_ID_TEMP_FRONT_ENV_1,
     BMC_ATTR_ID_TEMP_FRONT_ENV_2,
     BMC_ATTR_ID_TEMP_ENV_1,
     BMC_ATTR_ID_TEMP_ENV_2,
     BMC_ATTR_ID_TEMP_EXT_ENV_1,
     BMC_ATTR_ID_TEMP_EXT_ENV_2,
+    BMC_ATTR_ID_TEMP_MAC0_PVT2,
+    BMC_ATTR_ID_TEMP_MAC0_PVT3,
+    BMC_ATTR_ID_TEMP_MAC0_PVT4,
+    BMC_ATTR_ID_TEMP_MAC0_PVT6,    
+    BMC_ATTR_ID_TEMP_MAC0_HBM0,    
+    BMC_ATTR_ID_TEMP_MAC0_HBM1,  
+    BMC_ATTR_ID_TEMP_MAC1_PVT2,
+    BMC_ATTR_ID_TEMP_MAC1_PVT3,
+    BMC_ATTR_ID_TEMP_MAC1_PVT4,
+    BMC_ATTR_ID_TEMP_MAC1_PVT6,    
+    BMC_ATTR_ID_TEMP_MAC1_HBM0,    
+    BMC_ATTR_ID_TEMP_MAC1_HBM1,        
+    BMC_ATTR_ID_TEMP_OP2_0,            
+    BMC_ATTR_ID_TEMP_OP2_1,            
+    BMC_ATTR_ID_TEMP_OP2_2,            
+    BMC_ATTR_ID_TEMP_OP2_3,    
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
     BMC_ATTR_ID_FAN0_FRONT_RPM,
@@ -166,16 +234,32 @@ enum onlp_thermal_id {
     ONLP_THERMAL_ADC_CPU   = 10,
     ONLP_THERMAL_CPU_PECI  = 11,
     ONLP_THERMAL_MAC_ENV_1 = 12,
-    ONLP_THERMAL_MAC_ENV_2 = 13,
+    ONLP_THERMAL_MAC_ENV_2 = 13,               
     ONLP_THERMAL_FRONT_ENV_1 = 14,
     ONLP_THERMAL_FRONT_ENV_2 = 15,
     ONLP_THERMAL_ENV_1 = 16,
     ONLP_THERMAL_ENV_2 = 17,
     ONLP_THERMAL_EXT_ENV_1 = 18,
-    ONLP_THERMAL_EXT_ENV_2 = 19,    
-    ONLP_THERMAL_PSU_0 = 20, 
-    ONLP_THERMAL_PSU_1 = 21,    
-    ONLP_THERMAL_MAX = 22,
+    ONLP_THERMAL_EXT_ENV_2 = 19,
+    ONLP_THERMAL_MAC0_PVT2 = 20,
+    ONLP_THERMAL_MAC0_PVT3 = 21,
+    ONLP_THERMAL_MAC0_PVT4 = 22,
+    ONLP_THERMAL_MAC0_PVT6 = 23,
+    ONLP_THERMAL_MAC0_HBM0 = 24,    
+    ONLP_THERMAL_MAC0_HBM1 = 25,        
+    ONLP_THERMAL_MAC1_PVT2 = 26,
+    ONLP_THERMAL_MAC1_PVT3 = 27,
+    ONLP_THERMAL_MAC1_PVT4 = 28,
+    ONLP_THERMAL_MAC1_PVT6 = 29,    
+    ONLP_THERMAL_MAC1_HBM0 = 30,    
+    ONLP_THERMAL_MAC1_HBM1 = 31,         
+    ONLP_THERMAL_OP2_0 = 32,             
+    ONLP_THERMAL_OP2_1 = 33,            
+    ONLP_THERMAL_OP2_2 = 34,            
+    ONLP_THERMAL_OP2_3 = 35,         
+    ONLP_THERMAL_PSU_0 = 36, 
+    ONLP_THERMAL_PSU_1 = 37,    
+    ONLP_THERMAL_MAX = 38,
 };
 
 typedef struct bmc_info_s

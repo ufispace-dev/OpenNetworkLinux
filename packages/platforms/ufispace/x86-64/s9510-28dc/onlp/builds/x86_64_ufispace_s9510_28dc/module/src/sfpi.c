@@ -44,70 +44,86 @@
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 
+typedef struct
+{
+    int abs_gpin;
+    int lpmode_gpin;
+    int reset_gpin;
+    int rxlos_gpin;
+    int txfault_gpin;
+    int txdis_gpin;
+    int eeprom_bus;
+} port_attr_t;
+
+static const port_attr_t port_attr[] = {
+/*  port  abs   lpmode reset rxlos txfault txdis eeprom */
+    [0] ={487  ,491   ,495  ,-1   ,-1     ,-1   ,13},
+    [1] ={486  ,490   ,494  ,-1   ,-1     ,-1   ,12},
+    [2] ={485  ,489   ,493  ,-1   ,-1     ,-1   ,11},
+    [3] ={484  ,488   ,492  ,-1   ,-1     ,-1   ,10},
+    [4] ={375  ,-1    ,-1   ,343  ,439    ,471  ,14},
+    [5] ={374  ,-1    ,-1   ,342  ,438    ,470  ,15},
+    [6] ={373  ,-1    ,-1   ,341  ,437    ,469  ,16},
+    [7] ={372  ,-1    ,-1   ,340  ,436    ,468  ,17},
+    [8] ={371  ,-1    ,-1   ,339  ,435    ,467  ,18},
+    [9] ={370  ,-1    ,-1   ,338  ,434    ,466  ,19},
+    [10]={369  ,-1    ,-1   ,337  ,433    ,465  ,20},
+    [11]={368  ,-1    ,-1   ,336  ,432    ,464  ,21},
+    [12]={383  ,-1    ,-1   ,351  ,447    ,479  ,22},
+    [13]={382  ,-1    ,-1   ,350  ,446    ,478  ,23},
+    [14]={381  ,-1    ,-1   ,349  ,445    ,477  ,24},
+    [15]={380  ,-1    ,-1   ,348  ,444    ,476  ,25},
+    [16]={379  ,-1    ,-1   ,347  ,443    ,475  ,26},
+    [17]={378  ,-1    ,-1   ,346  ,442    ,474  ,27},
+    [18]={377  ,-1    ,-1   ,345  ,441    ,473  ,28},
+    [19]={376  ,-1    ,-1   ,344  ,440    ,472  ,29},
+    [20]={359  ,-1    ,-1   ,327  ,423    ,455  ,30},
+    [21]={358  ,-1    ,-1   ,326  ,422    ,454  ,31},
+    [22]={357  ,-1    ,-1   ,325  ,421    ,453  ,32},
+    [23]={356  ,-1    ,-1   ,324  ,420    ,452  ,33},
+    [24]={355  ,-1    ,-1   ,323  ,419    ,451  ,34},
+    [25]={354  ,-1    ,-1   ,322  ,418    ,450  ,35},
+    [26]={353  ,-1    ,-1   ,321  ,417    ,449  ,36},
+    [27]={352  ,-1    ,-1   ,320  ,416    ,448  ,37},
+};
+
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
-    int gpio_base = 0, gpio_num = 0;
+    int gpio_num = -1;
 
      switch(control)
         {
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                if (IS_QSFPX(port)) {
-                    gpio_base = 495;
-                } else {
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                }
+                gpio_num = port_attr[port].reset_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                if (IS_SFP(port)) {
-                    gpio_base = 351;
-                } else {
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                }
+                gpio_num = port_attr[port].rxlos_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                if (IS_SFP(port)) {
-                    gpio_base = 447;
-                } else {
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                }
+                gpio_num = port_attr[port].txfault_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                if (IS_SFP(port)) {
-                    gpio_base = 479;
-                } else {
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                }
+                gpio_num = port_attr[port].txdis_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                if (IS_QSFPX(port)) {
-                    gpio_base = 491;
-                } else {
-                    return ONLP_STATUS_E_UNSUPPORTED;
-                }
+                gpio_num = port_attr[port].lpmode_gpin;
                 break;
             }
         default:
-            return ONLP_STATUS_E_UNSUPPORTED;
+            gpio_num=-1;
         }
 
-    //set gpio_num by port
-    if (IS_QSFPX(port)) {
-        gpio_num = gpio_base - port;
-    } else if (port>=4 && port<=11) {
-        gpio_num = gpio_base - (port+4);
-    } else if (port>=12 && port<=19) {
-        gpio_num = gpio_base - (port-12);
-    } else if (port>=20 && port<=27) {
-        gpio_num = gpio_base - (port+4);
+    if (gpio_num<0) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     }
 
     return gpio_num;
@@ -117,16 +133,7 @@ static int ufi_port_to_eeprom_bus(int port)
 {
     int bus = -1;
 
-    if (IS_QSFPDD(port) || IS_QSFP(port)) { //QSFPDD or QSFP
-        bus =  13 - port;
-    } else if (IS_SFP(port)) { //SFP
-        bus =  14 + SFP_PORT(port);
-    } else { //unknown ports
-        AIM_LOG_ERROR("unknown ports, port=%d\n", port);
-        check_and_do_i2c_mux_reset(port);
-        return ONLP_STATUS_E_UNSUPPORTED;
-    }
-
+    bus=port_attr[port].eeprom_bus;
     return bus;
 }
 
@@ -167,15 +174,7 @@ int onlp_sfpi_is_present(int port)
     VALIDATE_PORT(port);
 
     //set gpio_num by port
-    if (IS_QSFPX(port)) {
-        gpio_num = 487 - port;
-    } else if (port>=4 && port<=11) {
-        gpio_num = 375 - (port-4);
-    } else if (port>=12 && port<=19) {
-        gpio_num = 383 - (port-12);
-    } else if (port>=20 && port<=27) {
-        gpio_num = 359 - (port-20);
-    }
+    gpio_num=port_attr[port].abs_gpin;
 
     if ((status = file_read_hex(&value, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",

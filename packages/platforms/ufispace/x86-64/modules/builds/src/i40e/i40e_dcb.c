@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2013 - 2020 Intel Corporation. */
+/* Copyright(c) 2013 - 2021 Intel Corporation. */
 
 #include "i40e_adminq.h"
 #include "i40e_prototype.h"
@@ -234,7 +234,7 @@ static void i40e_parse_ieee_app_tlv(struct i40e_lldp_org_tlv *tlv,
 }
 
 /**
- * i40e_parse_ieee_etsrec_tlv
+ * i40e_parse_ieee_tlv
  * @tlv: IEEE 802.1Qaz TLV
  * @dcbcfg: Local store to update ETS REC data
  *
@@ -314,8 +314,14 @@ static void i40e_parse_cee_pgcfg_tlv(struct i40e_cee_feat_tlv *tlv,
 	 *        |pg0|pg1|pg2|pg3|pg4|pg5|pg6|pg7|
 	 *        ---------------------------------
 	 */
-	for (i = 0; i < I40E_MAX_TRAFFIC_CLASS; i++)
+	for (i = 0; i < I40E_MAX_TRAFFIC_CLASS; i++) {
 		etscfg->tcbwtable[i] = buf[offset++];
+
+		if (etscfg->prioritytable[i] == I40E_CEE_PGID_STRICT)
+			dcbcfg->etscfg.tsatable[i] = I40E_IEEE_TSA_STRICT;
+		else
+			dcbcfg->etscfg.tsatable[i] = I40E_IEEE_TSA_ETS;
+	}
 
 	/* Number of TCs supported (1 octet) */
 	etscfg->maxtcs = buf[offset];
@@ -1302,7 +1308,7 @@ i40e_status i40e_dcb_config_to_lldp(u8 *lldpmib, u16 *miblen,
 }
 
 /**
- * i40e_dcbx_event_handler
+ * i40e_process_lldp_event
  * @hw: pointer to the hw struct
  * @e: event data to be processed (LLDPDU)
  *
@@ -1602,7 +1608,7 @@ void i40e_dcb_hw_rx_ets_bw_config(struct i40e_hw *hw, u8 *bw_share,
 }
 
 /**
- * i40e_dcb_hw_rx_ets_bw_config
+ * i40e_dcb_hw_rx_up2tc_config
  * @hw: pointer to the hw struct
  * @prio_tc: priority to tc assignment indexed by priority
  *

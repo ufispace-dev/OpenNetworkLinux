@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -46,6 +45,22 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV_2] = {"TEMP_ENV_2", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_1] = {"TEMP_EXT_ENV_1", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_2] = {"TEMP_EXT_ENV_2", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT2] = {"TEMP_MAC0_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT3] = {"TEMP_MAC0_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT4] = {"TEMP_MAC0_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT6] = {"TEMP_MAC0_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM0] = {"TEMP_MAC0_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM1] = {"TEMP_MAC0_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT2] = {"TEMP_MAC1_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT3] = {"TEMP_MAC1_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT4] = {"TEMP_MAC1_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT6] = {"TEMP_MAC1_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM0] = {"TEMP_MAC1_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM1] = {"TEMP_MAC1_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_0] = {"TEMP_OP2_0", 0},
+    [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
+    [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},    
     [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
     [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
     [BMC_ATTR_ID_FAN0_FRONT_RPM] = {"FAN0_FRONT_RPM", 0},
@@ -381,4 +396,3 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
         reg_val = reg_val | (1 << bit);
     return reg_val;
 }
-

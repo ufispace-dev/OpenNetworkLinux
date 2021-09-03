@@ -109,6 +109,9 @@ enum LED_GREEN {
 #define CPLD_SYS_LED_CTRL_2_REG             0x81
 #define CPLD_BEACON_LED_CTRL_REG            0x84
 #define CPLD_PORT_LED_CLR_CTRL_REG          0x85
+// Event Detect Ctrl
+#define CPLD_EVENT_DETECT_CTRL_REG          0x5D
+
 /* CPLD 2 */
 /*  G0 - port 0 ~ 7
     G1 - port 8 ~ 15 
@@ -177,6 +180,7 @@ enum LED_GREEN {
 #define CPLD_SFP_TS_REG					    0x57
 // Port status
 #define CPLD_PORT_INT_STATUS_REG            0x58
+
 
 /* bit field structure for register value */
 struct cpld_reg_sku_id_t {

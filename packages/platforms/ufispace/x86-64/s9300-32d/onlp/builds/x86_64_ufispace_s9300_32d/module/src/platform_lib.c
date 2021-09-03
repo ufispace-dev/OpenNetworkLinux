@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -485,9 +484,9 @@ bmc_fru_read(onlp_psu_info_t* info, int fru_id)
 
     //read from cache
     cache_idx = (fru_id - 1)*2;
-    snprintf(info->model, sizeof(info->model), "%s", bmc_fru_cache[cache_idx].data);
+    snprintf(info->model, sizeof(info->model), "%s", bmc_fru_cache[cache_idx].data) < 0 ? abort() : (void)0;
     cache_idx = (fru_id - 1)*2 + 1;
-    snprintf(info->serial, sizeof(info->serial), "%s", bmc_fru_cache[cache_idx].data);
+    snprintf(info->serial, sizeof(info->serial), "%s", bmc_fru_cache[cache_idx].data) < 0 ? abort() : (void)0;
     
     return rv;
 

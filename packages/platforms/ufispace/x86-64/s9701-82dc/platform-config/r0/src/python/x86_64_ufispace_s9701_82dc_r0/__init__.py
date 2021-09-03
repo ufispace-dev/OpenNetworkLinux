@@ -249,7 +249,7 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         self.enable_ipmi_maintenance_mode()
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
-        os.system("modprobe i40e")
+        self.insmod("i40e")
         # init bcm82752
         os.system("/lib/platform-config/x86-64-ufispace-s9701-82dc-r0/onl/epdm_cli init 10G &")
         

@@ -21,7 +21,9 @@ x86-64-ufispace-s9705-48d-r5:
       <<: *kernel-4-19
 
     args: >-
-      console=ttyS0,115200n8      
+      console=ttyS0,115200n8
+      pcie_aspm=off
+      nomodeset
 
   ##network
   ##  interfaces:

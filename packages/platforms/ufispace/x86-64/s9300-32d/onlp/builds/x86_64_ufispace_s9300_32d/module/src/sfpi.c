@@ -27,6 +27,7 @@
 #include "platform_lib.h"
 
 #define EEPROM_SYS_FMT "/sys/bus/i2c/devices/%d-0050/eeprom" 
+#define SUPPORT_CPU_SFP_PRES 1
 
 typedef enum port_type_e {
     TYPE_QSFPDD = 0,
@@ -127,31 +128,6 @@ int qsfpdd_present_get(port_type_info_t *port_info, int *pres_val)
     return ONLP_STATUS_OK;
 }
 
-int cpu_sfp_present_get(port_type_info_t *port_info, int *pres_val) 
-{
-    int ret;
-    char cmd[128];
-
-    if (port_info->port_index == 0) {
-        snprintf(cmd, sizeof(cmd), CMD_SFP_PRES_GET, SFP_0_IFNAME);
-        // debug
-        //AIM_LOG_INFO("[%s] cmd=%s", __FUNCTION__, cmd);
-        ret = system(cmd);
-        *pres_val = (ret==0) ? 1 : 0;
-    } else if (port_info->port_index == 1) {
-        snprintf(cmd, sizeof(cmd), CMD_SFP_PRES_GET, SFP_1_IFNAME);
-        // debug
-        //AIM_LOG_INFO("[%s] cmd=%s", __FUNCTION__, cmd);
-        ret = system(cmd);
-        *pres_val = (ret==0) ? 1 : 0;
-    } else {
-        AIM_LOG_ERROR("unknow cpu sfp port, port=%d", port_info->port_index);
-        return ONLP_STATUS_E_INTERNAL;
-    }   
-
-    return ONLP_STATUS_OK;
-}
-
 int mac_sfp_present_get(port_type_info_t *port_info, int *pres_val) 
 {
     uint8_t data[8];
@@ -175,6 +151,35 @@ int mac_sfp_present_get(port_type_info_t *port_info, int *pres_val)
     } else {
         *pres_val = 1;
     }
+
+    return ONLP_STATUS_OK;
+}
+
+int cpu_sfp_present_get(port_type_info_t *port_info, int *pres_val) 
+{
+    int ret;
+    char cmd[128];
+
+    #ifdef SUPPORT_CPU_SFP_PRES
+    return mac_sfp_present_get(port_info, pres_val);
+    #endif
+ 
+    if (port_info->port_index == 0) {
+        snprintf(cmd, sizeof(cmd), CMD_SFP_PRES_GET, SFP_0_IFNAME);
+        // debug
+        //AIM_LOG_INFO("[%s] cmd=%s", __FUNCTION__, cmd);
+        ret = system(cmd);
+        *pres_val = (ret==0) ? 1 : 0;
+    } else if (port_info->port_index == 1) {
+        snprintf(cmd, sizeof(cmd), CMD_SFP_PRES_GET, SFP_1_IFNAME);
+        // debug
+        //AIM_LOG_INFO("[%s] cmd=%s", __FUNCTION__, cmd);
+        ret = system(cmd);
+        *pres_val = (ret==0) ? 1 : 0;
+    } else {
+        AIM_LOG_ERROR("unknow cpu sfp port, port=%d", port_info->port_index);
+        return ONLP_STATUS_E_INTERNAL;
+    }   
 
     return ONLP_STATUS_OK;
 }
@@ -276,7 +281,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
             snprintf(eeprom_path, sizeof(eeprom_path), EEPROM_SYS_FMT, port_type_info.eeprom_bus);
             break;
         case TYPE_CPU_SFP:
-            ret = sfp_cpu_eeprom_path_get(port, eeprom_path, sizeof(eeprom_path));
+            ret = sfp_cpu_eeprom_path_get(port_type_info.port_index, eeprom_path, sizeof(eeprom_path));
             break;
         default:
             AIM_LOG_ERROR("invalid port type(%d) for port(%d)", port_type_info.type, port);

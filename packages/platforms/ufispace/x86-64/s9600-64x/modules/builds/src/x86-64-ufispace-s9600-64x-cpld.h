@@ -93,8 +93,10 @@ enum LED_GREEN {
 #define CPLD_P5V_P3V3_PG_REG              0x71
 #define CPLD_PHY_PG_REG                   0x72
 #define CPLD_HBM_PWR_EN_REG               0x73
+#define CPLD_BUILD_REG                    0x80
 
 //CPLD 2-5
+#define CPLDX_BUILD_REG                   0x04
 #define CPLD_LED_MASK_REG                 0x10
 #define CPLDX_INTR_MASK_REG               0x11
 #define CPLD2_SFP_TX_RX_EVT_MASK_REG      0x12

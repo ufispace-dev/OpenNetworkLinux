@@ -71,6 +71,7 @@
 #endif
 
 #define MASK_ALL                          (0xFF)
+#define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -190,6 +191,8 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
     mutex_lock(&lpc_data->access_lock);
 
     outb(reg_val, reg);
+    mdelay(LPC_MDELAY);
+
     mutex_unlock(&lpc_data->access_lock);
 
     return count;
@@ -376,19 +379,21 @@ static ssize_t write_mux_reset(struct device *dev,
             //reset mux on NIF ports
             mux_reset_reg_val = inb(REG_MB_MUX_RESET);
             outb((mux_reset_reg_val & 0b11100000), REG_MB_MUX_RESET);
+            mdelay(LPC_MDELAY);
 
             //reset mux on top board (FAB ports)
             misc_reset_reg_val = inb(REG_MB_MISC_RESET);
             outb((misc_reset_reg_val & 0b11011111), REG_MB_MISC_RESET);
-
-            mdelay(100);
+            mdelay(LPC_MDELAY);
 
             //unset mux on NIF ports
             outb((mux_reset_reg_val | 0b00011111), REG_MB_MUX_RESET);
+            mdelay(LPC_MDELAY);
+
             //unset mux on top board (FAB ports)
             outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
-
             mdelay(500);
+
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {

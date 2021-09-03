@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2013 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -299,22 +298,23 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs)
  */
 void check_and_do_i2c_mux_reset(int port)
 {
-#if 0 // FIXME
-    char cmd_buf[256] = {0};
-    int ret = 0;
+    // only support beta and later
+    if (get_hw_rev_id() > 1) { 
+        char cmd_buf[256] = {0};
+        int ret = 0;
 
-    snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
-    ret = system(cmd_buf);
-    if (ret != 0) {
-        if(access(MUX_RESET_PATH, F_OK) != -1 ) {
-            //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
-            memset(cmd_buf, 0, sizeof(cmd_buf));
-            snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
-            ret = system(cmd_buf);
-            //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
+        snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
+        ret = system(cmd_buf);
+        if (ret != 0) {
+            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+                //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
+                memset(cmd_buf, 0, sizeof(cmd_buf));
+                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
+                ret = system(cmd_buf);
+                //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
+            }
         }
     }
-#endif
 }
 
 /* reg shift */
@@ -349,4 +349,27 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     else
         reg_val = reg_val | (1 << bit);
     return reg_val;
+}
+
+
+int get_hw_rev_id(void)
+{
+    int hw_rev;
+    char hw_rev_cmd[128];
+    char buffer[128];
+    FILE *fp;
+
+    snprintf(hw_rev_cmd, sizeof(hw_rev_cmd), "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id");
+    fp = popen(hw_rev_cmd, "r");
+    if (fp == NULL) {
+        AIM_LOG_ERROR("Unable to popen cmd(%s)\r\n", hw_rev_cmd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    /* Read the output a line at a time - output it. */
+    fgets(buffer, sizeof(buffer), fp);
+    hw_rev = atoi(buffer);
+
+    pclose(fp);
+
+    return hw_rev;
 }

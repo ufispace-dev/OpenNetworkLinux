@@ -185,4 +185,7 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
 
         self.enable_ipmi_maintenance_mode()
 
+        # init i40e
+        self.insmod("i40e")
+
         return True

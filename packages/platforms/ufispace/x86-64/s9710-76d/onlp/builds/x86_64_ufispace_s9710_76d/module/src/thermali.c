@@ -35,8 +35,14 @@
       THERMAL_ERROR_DEFAULT,   \
       THERMAL_SHUTDOWN_DEFAULT }
 #define THERMAL_THRESHOLD_CPU_PECI {85000, 95000, 100000}
-#define THERMAL_THRESHOLD_LM75        {40000, 48000, 46000}
 #define THERMAL_THRESHOLD_PSU          {65000, 70000, 75000}
+#define THERMAL_THRESHOLD_ENV          {60000, 65000, 70000}
+#define THERMAL_THRESHOLD_MAC_PVT  {90000, 95000, 105000}
+#define THERMAL_THRESHOLD_MAC_HBM {85000, 90000, 95000}
+#define THERMAL_THRESHOLD_MAC_ENV  {75000, 80000, 85000}
+#define THERMAL_THRESHOLD_OP2          {65000, 70000, 80000}
+
+
 
 #define VALIDATE(_id)                           \
     do {                                        \
@@ -47,7 +53,7 @@
 
 #define THERMAL_INFO(id, desc, threshold) \
     { \
-        { ONLP_THERMAL_ID_CREATE(id), #desc, POID_0 },\
+        { ONLP_THERMAL_ID_CREATE(id), desc, POID_0 },\
         ONLP_THERMAL_STATUS_PRESENT,\
         ONLP_THERMAL_CAPS_ALL,\
         0,\
@@ -67,14 +73,30 @@ static onlp_thermal_info_t thermal_info[] = {
     THERMAL_INFO(ONLP_THERMAL_CPU_7, "CPU Thermal 7", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_ADC_CPU, "ADC_CPU_TEMP", THERMAL_THRESHOLD_CPU_PECI),
     THERMAL_INFO(ONLP_THERMAL_CPU_PECI, "TEMP_CPU_PECI", THERMAL_THRESHOLD_CPU_PECI),
-    THERMAL_INFO(ONLP_THERMAL_MAC_ENV_1, "TEMP_MAC_ENV_1", THERMAL_THRESHOLD_LM75),
-    THERMAL_INFO(ONLP_THERMAL_MAC_ENV_2, "TEMP_MAC_ENV_2", THERMAL_THRESHOLD_LM75),
-    THERMAL_INFO(ONLP_THERMAL_FRONT_ENV_1, "TEMP_FRONT_ENV_1", THERMAL_THRESHOLD_LM75),
-    THERMAL_INFO(ONLP_THERMAL_FRONT_ENV_2, "TEMP_FRONT_ENV_2", THERMAL_THRESHOLD_LM75),
-    THERMAL_INFO(ONLP_THERMAL_ENV_1, "TEMP_ENV_1", THERMAL_THRESHOLD_LM75),    
-    THERMAL_INFO(ONLP_THERMAL_ENV_2, "TEMP_ENV_2", THERMAL_THRESHOLD_LM75),
-    THERMAL_INFO(ONLP_THERMAL_EXT_ENV_1, "TEMP_EXT_ENV_1", THERMAL_THRESHOLD_LM75),    
-    THERMAL_INFO(ONLP_THERMAL_EXT_ENV_2, "TEMP_EXT_ENV_2", THERMAL_THRESHOLD_LM75),
+    THERMAL_INFO(ONLP_THERMAL_MAC_ENV_1, "TEMP_MAC_ENV_1", THERMAL_THRESHOLD_MAC_ENV),
+    THERMAL_INFO(ONLP_THERMAL_MAC_ENV_2, "TEMP_MAC_ENV_2", THERMAL_THRESHOLD_MAC_ENV),
+    THERMAL_INFO(ONLP_THERMAL_FRONT_ENV_1, "TEMP_FRONT_ENV_1", THERMAL_THRESHOLD_ENV),
+    THERMAL_INFO(ONLP_THERMAL_FRONT_ENV_2, "TEMP_FRONT_ENV_2", THERMAL_THRESHOLD_ENV),
+    THERMAL_INFO(ONLP_THERMAL_ENV_1, "TEMP_ENV_1", THERMAL_THRESHOLD_ENV),    
+    THERMAL_INFO(ONLP_THERMAL_ENV_2, "TEMP_ENV_2", THERMAL_THRESHOLD_ENV),
+    THERMAL_INFO(ONLP_THERMAL_EXT_ENV_1, "TEMP_EXT_ENV_1", THERMAL_THRESHOLD_ENV),    
+    THERMAL_INFO(ONLP_THERMAL_EXT_ENV_2, "TEMP_EXT_ENV_2", THERMAL_THRESHOLD_ENV),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_PVT2, "TEMP_MAC0_PVT2", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_PVT3, "TEMP_MAC0_PVT3", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_PVT4, "TEMP_MAC0_PVT4", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_PVT6, "TEMP_MAC0_PVT6", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_HBM0, "TEMP_MAC0_HBM0", THERMAL_THRESHOLD_MAC_HBM),
+    THERMAL_INFO(ONLP_THERMAL_MAC0_HBM1, "TEMP_MAC0_HBM1", THERMAL_THRESHOLD_MAC_HBM),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_PVT2, "TEMP_MAC1_PVT2", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_PVT3, "TEMP_MAC1_PVT3", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_PVT4, "TEMP_MAC1_PVT4", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_PVT6, "TEMP_MAC1_PVT6", THERMAL_THRESHOLD_MAC_PVT),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_HBM0, "TEMP_MAC1_HBM0", THERMAL_THRESHOLD_MAC_HBM),
+    THERMAL_INFO(ONLP_THERMAL_MAC1_HBM1, "TEMP_MAC1_HBM1", THERMAL_THRESHOLD_MAC_HBM),
+    THERMAL_INFO(ONLP_THERMAL_OP2_0, "TEMP_OP2_0", THERMAL_THRESHOLD_OP2),
+    THERMAL_INFO(ONLP_THERMAL_OP2_1, "TEMP_OP2_1", THERMAL_THRESHOLD_OP2),
+    THERMAL_INFO(ONLP_THERMAL_OP2_2, "TEMP_OP2_2", THERMAL_THRESHOLD_OP2),
+    THERMAL_INFO(ONLP_THERMAL_OP2_3, "TEMP_OP2_3", THERMAL_THRESHOLD_OP2),    
     THERMAL_INFO(ONLP_THERMAL_PSU_0, "PSU-0-Thermal", THERMAL_THRESHOLD_PSU),
     THERMAL_INFO(ONLP_THERMAL_PSU_1, "PSU-1-Thermal", THERMAL_THRESHOLD_PSU),
 };
@@ -121,7 +143,7 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
             break;
         case ONLP_THERMAL_MAC_ENV_2:
             bmc_attr_id = BMC_ATTR_ID_TEMP_MAC_ENV_2;
-            break;
+            break;     
         case ONLP_THERMAL_FRONT_ENV_1:
             bmc_attr_id = BMC_ATTR_ID_TEMP_FRONT_ENV_1;
             break;
@@ -140,6 +162,54 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
         case ONLP_THERMAL_EXT_ENV_2:
             bmc_attr_id = BMC_ATTR_ID_TEMP_EXT_ENV_2;
             break;
+        case ONLP_THERMAL_MAC0_PVT2:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_PVT2;
+            break;            
+        case ONLP_THERMAL_MAC0_PVT3:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_PVT3;
+            break;
+        case ONLP_THERMAL_MAC0_PVT4:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_PVT4;
+            break;
+        case ONLP_THERMAL_MAC0_PVT6:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_PVT6;
+            break;
+        case ONLP_THERMAL_MAC0_HBM0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_HBM0;
+            break;            
+        case ONLP_THERMAL_MAC0_HBM1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0_HBM1;
+            break;
+        case ONLP_THERMAL_MAC1_PVT2:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_PVT2;
+            break;            
+        case ONLP_THERMAL_MAC1_PVT3:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_PVT3;
+            break;
+        case ONLP_THERMAL_MAC1_PVT4:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_PVT4;
+            break;
+        case ONLP_THERMAL_MAC1_PVT6:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_PVT6;
+            break;
+        case ONLP_THERMAL_MAC1_HBM0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_HBM0;
+            break;            
+        case ONLP_THERMAL_MAC1_HBM1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1_HBM1;
+            break;
+        case ONLP_THERMAL_OP2_0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_OP2_0;
+            break;            
+        case ONLP_THERMAL_OP2_1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_OP2_1;            
+            break;            
+        case ONLP_THERMAL_OP2_2:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_OP2_2;            
+            break;            
+        case ONLP_THERMAL_OP2_3:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_OP2_3;            
+            break;                   
         case ONLP_THERMAL_PSU_0:
             bmc_attr_id = BMC_ATTR_ID_PSU0_TEMP;
             break;
@@ -188,14 +258,10 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     *rv = thermal_info[sensor_id];
     
     switch (sensor_id) {        
-        case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_CPU_0 ... ONLP_THERMAL_CPU_7:
+        case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
             rc = ufi_cpu_thermal_info_get(rv, sensor_id);
             break;        
-        case ONLP_THERMAL_ADC_CPU:
-        case ONLP_THERMAL_CPU_PECI:
-        case ONLP_THERMAL_MAC_ENV_1 ... ONLP_THERMAL_EXT_ENV_2:
-        case ONLP_THERMAL_PSU_0 ... ONLP_THERMAL_PSU_1:
+        case ONLP_THERMAL_ADC_CPU ... ONLP_THERMAL_PSU_1:
             rc = ufi_bmc_thermal_info_get(rv, sensor_id);
             break;    
         default:            
@@ -252,4 +318,3 @@ int onlp_thermali_ioctl(int id, va_list vargs)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-

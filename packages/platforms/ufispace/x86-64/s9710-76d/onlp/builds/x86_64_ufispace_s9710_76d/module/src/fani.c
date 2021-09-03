@@ -27,8 +27,8 @@
 
 #define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
 #define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
-#define SYS_FAN_F_RPM_MAX 11300
-#define SYS_FAN_R_RPM_MAX 12000
+#define SYS_FAN_F_RPM_MAX 12000
+#define SYS_FAN_R_RPM_MAX 11300
 #define PSU_FAN_RPM_MAX 25000
 #define VALIDATE(_id)                           \
     do {                                        \
