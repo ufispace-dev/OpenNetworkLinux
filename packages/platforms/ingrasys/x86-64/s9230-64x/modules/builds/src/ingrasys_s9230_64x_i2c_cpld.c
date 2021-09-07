@@ -1,5 +1,5 @@
 /*
- * A i2c cpld driver for the ingrasys_s9280_64x
+ * A i2c cpld driver for the ingrasys_s9230_64x
  *
  * Copyright (C) 2017 Ingrasys Technology Corporation.
  * Leo Lin <feng.lee.usa@ingrasys.com>
@@ -21,6 +21,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
@@ -30,344 +31,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
-
-/* header file for i2c cpld driver of ingrasys_s9280_64x
- *
- * Copyright (C) 2017 Ingrasys Technology Corporation.
- * Leo Lin <feng.lee.usa@ingrasys.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
-
-#ifndef INGRASYS_S9280_64X_I2C_CPLD_H
-#define INGRASYS_S9280_64X_I2C_CPLD_H
-
-/* CPLD device index value */
-enum cpld_id {
-    cpld1,
-    cpld2,
-    cpld3,
-    cpld4,
-    cpld5
-};
-
-enum LED_BLINK {
-    BLINK,
-    NOBLINK,
-};
-
-enum LED_YELLOW {
-    YELLOW_OFF,
-    YELLOW_ON,
-};
-
-enum LED_GREEN {
-    GREEN_OFF,
-    GREEN_ON,
-};
-
-/* port number on CPLD */
-#define CPLD_1_PORT_NUM 12
-#define CPLD_2_PORT_NUM 13
-
-/* QSFP port number */
-#define QSFP_MAX_PORT_NUM   64
-#define QSFP_MIN_PORT_NUM   1
-
-/* SFP+ port number */
-#define SFP_MAX_PORT_NUM    2
-#define SFP_MIN_PORT_NUM    1
-
-
-/* CPLD registers */
-#define CPLD_BOARD_TYPE_REG             0x0
-#define CPLD_EXT_BOARD_TYPE_REG         0x7
-#define CPLD_VERSION_REG                0x1
-#define CPLD_ID_REG                     0x2
-#define CPLD_QSFP_PORT_STATUS_BASE_REG  0x20
-#define CPLD_QSFP_PORT_CONFIG_BASE_REG  0x30
-#define CPLD_QSFP_PORT_INTERRUPT_REG    0x40
-#define CPLD_SFP_PORT_STATUS_REG        0x2F
-#define CPLD_SFP_PORT_CONFIG_REG        0x3F
-#define CPLD_QSFP_PORT_INTERRUPT_REG    0x40
-#define CPLD_10GMUX_CONFIG_REG          0x41
-#define CPLD_BMC_STATUS_REG             0x42
-#define CPLD_BMC_WATCHDOG_REG           0x43
-#define CPLD_USB_STATUS_REG             0x44
-#define CPLD_RESET_CONTROL_REG           0x4A
-#define CPLD_SFP_LED_REG                0x80
-#define CPLD_SFP_LED_BLINK_REG          0x90
-#define CPLD_QSFP_LED_BASE_REG          0x80
-#define CPLD_QSFP_LED_BLINK_BASE_REG    0x90
-#define CPLD_RTMR_RESET_REG    0x4B
-#define CPLD_ROV_STATUS_REG    0x4C
-
-/* bit definition for register value */
-enum CPLD_QSFP_PORT_STATUS_BITS {
-    CPLD_QSFP_PORT_STATUS_INT_BIT,
-    CPLD_QSFP_PORT_STATUS_ABS_BIT,
-};
-enum CPLD_QSFP_PORT_CONFIG_BITS {
-    CPLD_QSFP_PORT_CONFIG_RESET_BIT,
-    CPLD_QSFP_PORT_CONFIG_RESERVE_BIT,
-    CPLD_QSFP_PORT_CONFIG_LPMODE_BIT,
-};
-enum CPLD_SFP_PORT_STATUS_BITS {
-    CPLD_SFP0_PORT_STATUS_PRESENT_BIT,
-    CPLD_SFP0_PORT_STATUS_TXFAULT_BIT,
-    CPLD_SFP0_PORT_STATUS_RXLOS_BIT,
-    CPLD_SFP_PORT_STATUS_DUMMY,
-    CPLD_SFP1_PORT_STATUS_PRESENT_BIT,
-    CPLD_SFP1_PORT_STATUS_TXFAULT_BIT,
-    CPLD_SFP1_PORT_STATUS_RXLOS_BIT,
-};
-enum CPLD_SFP_PORT_CONFIG_BITS {
-    CPLD_SFP0_PORT_CONFIG_TXDIS_BIT,
-    CPLD_SFP0_PORT_CONFIG_RS_BIT,
-    CPLD_SFP0_PORT_CONFIG_TS_BIT,
-    CPLD_SFP_PORT_CONFIG_DUMMY,
-    CPLD_SFP1_PORT_CONFIG_TXDIS_BIT,
-    CPLD_SFP1_PORT_CONFIG_RS_BIT,
-    CPLD_SFP1_PORT_CONFIG_TS_BIT,
-
-};
-enum CPLD_10GMUX_CONFIG_BITS {
-    CPLD_10GMUX_CONFIG_ENSMB_BIT,
-    CPLD_10GMUX_CONFIG_ENINPUT_BIT,
-    CPLD_10GMUX_CONFIG_SEL1_BIT,
-    CPLD_10GMUX_CONFIG_SEL0_BIT,
-};
-enum CPLD_BMC_WATCHDOG_BITS {
-    CPLD_10GMUX_CONFIG_ENTIMER_BIT,
-    CPLD_10GMUX_CONFIG_TIMEOUT_BIT,
-};
-enum CPLD_RESET_CONTROL_BITS {
-    CPLD_RESET_CONTROL_SWRST_BIT,
-    CPLD_RESET_CONTROL_CP2104RST_BIT,
-    CPLD_RESET_CONTROL_82P33814RST_BIT,
-    CPLD_RESET_CONTROL_BMCRST_BIT,
-};
-enum CPLD_SFP_LED_BITS {
-    CPLD_SFP_LED_SFP0_GREEN_BIT,
-    CPLD_SFP_LED_SFP0_YELLOW_BIT,
-    CPLD_SFP_LED_SFP1_GREEN_BIT,
-    CPLD_SFP_LED_SFP1_YELLOW_BIT,
-};
-enum CPLD_SFP_LED_BLINK_BITS {
-    CPLD_SFP_LED_BLINK_SFP0_BIT,
-    CPLD_SFP_LED_BLINK_SFP1_BIT,
-};
-enum CPLD_QSFP_LED_BITS {
-    CPLD_QSFP_LED_CHAN_0_GREEN_BIT,
-    CPLD_QSFP_LED_CHAN_0_YELLOW_BIT,
-    CPLD_QSFP_LED_CHAN_1_GREEN_BIT,
-    CPLD_QSFP_LED_CHAN_1_YELLOW_BIT,
-    CPLD_QSFP_LED_CHAN_2_GREEN_BIT,
-    CPLD_QSFP_LED_CHAN_2_YELLOW_BIT,
-    CPLD_QSFP_LED_CHAN_3_GREEN_BIT,
-    CPLD_QSFP_LED_CHAN_3_YELLOW_BIT,
-
-};
-enum CPLD_QSFP_LED_BLINK_BITS {
-    CPLD_QSFP_LED_BLINK_X_CHAN0_BIT,
-    CPLD_QSFP_LED_BLINK_X_CHAN1_BIT,
-    CPLD_QSFP_LED_BLINK_X_CHAN2_BIT,
-    CPLD_QSFP_LED_BLINK_X_CHAN3_BIT,
-    CPLD_QSFP_LED_BLINK_XPLUS_CHAN0_BIT,
-    CPLD_QSFP_LED_BLINK_XPLUS_CHAN1_BIT,
-    CPLD_QSFP_LED_BLINK_XPLUS_CHAN2_BIT,
-    CPLD_QSFP_LED_BLINK_XPLUS_CHAN3_BIT,
-};
-
-/* bit field structure for register value */
-struct cpld_reg_board_type_t {
-    u8 build_rev:2;
-    u8 hw_rev:2;
-    u8 board_id:4;
-};
-
-struct cpld_reg_version_t {
-    u8 revision:6;
-    u8 release:1;
-    u8 reserve:1;
-};
-
-struct cpld_reg_id_t {
-    u8 id:3;
-    u8 release:5;
-};
-
-/* common manipulation */
-#define INVALID(i, min, max)    ((i < min) || (i > max) ? 1u : 0u)
-#define READ_BIT(val, bit)      ((0u == (val & (1<<bit))) ? 0u : 1u)
-#define SET_BIT(val, bit)       (val |= (1 << bit))
-#define CLEAR_BIT(val, bit)     (val &= ~(1 << bit))
-#define TOGGLE_BIT(val, bit)    (val ^= (1 << bit))
-#define _BIT(n)                 (1<<(n))
-#define _BIT_MASK(len)          (BIT(len)-1)
-
-/* bitfield of register manipulation */
-#define READ_BF(bf_struct, val, bf_name, bf_value) \
-    (bf_value = ((struct bf_struct *)&val)->bf_name)
-#define READ_BF_1(bf_struct, val, bf_name, bf_value) \
-    bf_struct bf; \
-    bf.data = val; \
-    bf_value = bf.bf_name
-#define BOARD_TYPE_BUILD_REV_GET(val, res) \
-    READ_BF(cpld_reg_board_type_t, val, build_rev, res)
-#define BOARD_TYPE_HW_REV_GET(val, res) \
-    READ_BF(cpld_reg_board_type_t, val, hw_rev, res)
-#define BOARD_TYPE_BOARD_ID_GET(val, res) \
-    READ_BF(cpld_reg_board_type_t, val, board_id, res)
-#define CPLD_VERSION_REV_GET(val, res) \
-    READ_BF(cpld_reg_version_t, val, revision, res)
-#define CPLD_VERSION_REL_GET(val, res) \
-    READ_BF(cpld_reg_version_t, val, release, res)
-#define CPLD_ID_ID_GET(val, res) \
-    READ_BF(cpld_reg_id_t, val, id, res)
-#define CPLD_ID_REL_GET(val, res) \
-    READ_BF(cpld_reg_id_t, val, release, res)
-/* SFP/QSFP port led registers manipulation */
-#define SFP_LED_TO_CPLD_IDX(sfp_port) cpld1
-#define SFP_LED_REG(sfp_port) CPLD_SFP_LED_REG
-#define SFP_LED_BLINK_REG(sfp_port) CPLD_SFP_LED_BLINK_REG
-#define QSFP_LED_TO_CPLD_IDX(qsfp_port) \
-    ((qsfp_port - 1) / 16 + 2)
-#define QSFP_LED_REG(qsfp_port) \
-    ((qsfp_port - 1) % 16 + CPLD_QSFP_LED_BASE_REG)
-#define QSFP_LED_BLINK_REG(qsfp_port) \
-    (((qsfp_port - 1) % 16) / 2 + CPLD_QSFP_LED_BLINK_BASE_REG)
-/* QSFP/SFP port status registers manipulation */
-#define QSFP_TO_CPLD_IDX(qsfp_port, cpld_index, cpld_port) \
-{ \
-    if (QSFP_MIN_PORT_NUM <= qsfp_port && qsfp_port <= CPLD_1_PORT_NUM) { \
-        cpld_index = cpld1; \
-        cpld_port = qsfp_port - 1; \
-    } else if (CPLD_1_PORT_NUM < qsfp_port \
-        && qsfp_port <= QSFP_MAX_PORT_NUM) { \
-        cpld_index = cpld2 + (qsfp_port - 1 - CPLD_1_PORT_NUM) \
-                / CPLD_2_PORT_NUM; \
-        cpld_port = (qsfp_port - 1 - CPLD_1_PORT_NUM) % \
-                CPLD_2_PORT_NUM; \
-    } else { \
-        cpld_index = 0; \
-        cpld_port = 0; \
-    } \
-}
-#define QSFP_PORT_STATUS_REG(cpld_port) \
-    (CPLD_QSFP_PORT_STATUS_BASE_REG + cpld_port)
-#define QSFP_PORT_CONFIG_REG(cpld_port) \
-    (CPLD_QSFP_PORT_CONFIG_BASE_REG + cpld_port)
-#define QSFP_PORT_INT_BIT_GET(port_status_value) \
-    READ_BIT(port_status_value, CPLD_QSFP_PORT_STATUS_INT_BIT)
-#define QSFP_PORT_ABS_BIT_GET(port_status_value) \
-    READ_BIT(port_status_value, CPLD_QSFP_PORT_STATUS_ABS_BIT)
-#define QSFP_PORT_RESET_BIT_GET(port_config_value) \
-    READ_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_RESET_BIT)
-#define QSFP_PORT_LPMODE_BIT_GET(port_config_value) \
-    READ_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_LPMODE_BIT)
-#define QSFP_PORT_RESET_BIT_SET(port_config_value) \
-    SET_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_RESET_BIT)
-#define QSFP_PORT_RESET_BIT_CLEAR(port_config_value) \
-    CLEAR_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_RESET_BIT)
-#define QSFP_PORT_LPMODE_BIT_SET(port_config_value) \
-    SET_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_LPMODE_BIT)
-#define QSFP_PORT_LPMODE_BIT_CLEAR(port_config_value) \
-    CLEAR_BIT(port_config_value, CPLD_QSFP_PORT_CONFIG_LPMODE_BIT)
-#define SFP_PORT_PRESENT_BIT_GET(sfp_port, port_status_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_status_value, CPLD_SFP0_PORT_STATUS_PRESENT_BIT); \
-    } else { \
-        READ_BIT(port_status_value, CPLD_SFP1_PORT_STATUS_PRESENT_BIT); \
-    }
-#define SFP_PORT_TXFAULT_BIT_GET(sfp_port, port_status_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_status_value, CPLD_SFP0_PORT_STATUS_TXFAULT_BIT); \
-    } else { \
-        READ_BIT(port_status_value, CPLD_SFP1_PORT_STATUS_TXFAULT_BIT); \
-    }
-#define SFP_PORT_RXLOS_BIT_GET(sfp_port, port_status_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_status_value, CPLD_SFP0_PORT_STATUS_RXLOS_BIT); \
-    } else { \
-        READ_BIT(port_status_value, CPLD_SFP1_PORT_STATUS_RXLOS_BIT); \
-    }
-#define SFP_PORT_TXDIS_BIT_GET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TXDIS_BIT); \
-    } else { \
-        READ_BIT(port_config_value, CPLD_SFP1_PORT_STATUS_RXLOS_BIT); \
-    }
-#define SFP_PORT_RS_BIT_GET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_RS_BIT); \
-    } else { \
-        READ_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_RS_BIT); \
-    }
-#define SFP_PORT_TS_BIT_GET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        READ_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TS_BIT); \
-    } else { \
-        READ_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TS_BIT); \
-    }
-#define SFP_PORT_TXDIS_BIT_SET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        SET_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TXDIS_BIT); \
-    } else { \
-        SET_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_TXDIS_BIT); \
-    }
-#define SFP_PORT_TXDIS_BIT_CLEAR(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        CLEAR_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TXDIS_BIT); \
-    } else { \
-        CLEAR_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_TXDIS_BIT); \
-    }
-#define SFP_PORT_RS_BIT_SET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        SET_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_RS_BIT); \
-    } else { \
-        SET_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_RS_BIT); \
-    }
-#define SFP_PORT_RS_BIT_CLEAR(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        CLEAR_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_RS_BIT); \
-    } else { \
-        CLEAR_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_RS_BIT); \
-    }
-#define SFP_PORT_TS_BIT_SET(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        SET_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TS_BIT); \
-    } else { \
-        SET_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_TS_BIT); \
-    }
-#define SFP_PORT_TS_BIT_CLEAR(sfp_port, port_config_value) \
-    if (sfp_port == SFP_MIN_PORT_NUM) { \
-        CLEAR_BIT(port_config_value, CPLD_SFP0_PORT_CONFIG_TS_BIT); \
-    } else { \
-        CLEAR_BIT(port_config_value, CPLD_SFP1_PORT_CONFIG_TS_BIT); \
-    }
-
-/* CPLD access functions */
-extern int ingrasys_i2c_cpld_get_qsfp_port_status_val(u8 port_num);
-extern int ingrasys_i2c_cpld_get_qsfp_port_config_val(u8 port_num);
-extern int ingrasys_i2c_cpld_set_qsfp_port_config_val(u8 port_num, u8 reg_val);
-extern int ingrasys_i2c_cpld_get_sfp_port_status_val(void);
-extern int ingrasys_i2c_cpld_get_sfp_port_config_val(void);
-extern int ingrasys_i2c_cpld_set_sfp_port_config_val(u8 reg_val);
-extern u8 fp_port_to_phy_port(u8 fp_port);
-#endif
+#include "ingrasys_s9230_64x_i2c_cpld.h"
 
 #ifdef DEBUG
 #define DEBUG_PRINT(fmt, args...) \
@@ -391,7 +55,7 @@ extern u8 fp_port_to_phy_port(u8 fp_port);
 }
 
 /* CPLD sysfs attributes index  */
-enum s9280_64x_cpld_sysfs_attributes {
+enum s9230_64x_cpld_sysfs_attributes {
     CPLD_ACCESS_REG,
     CPLD_REGISTER_VAL,
     CPLD_PORT_START,
@@ -433,29 +97,6 @@ enum s9280_64x_cpld_sysfs_attributes {
     CPLD_BMC_STATUS,
     CPLD_BMC_WATCHDOG,
     CPLD_USB_STATUS,
-    CPLD_RESET_CONTROL,
-    CPLD_SFP_LED,
-    CPLD_SFP_LED_BLINK,
-    CPLD_QSFP_LED_1,
-    CPLD_QSFP_LED_2,
-    CPLD_QSFP_LED_3,
-    CPLD_QSFP_LED_4,
-    CPLD_QSFP_LED_5,
-    CPLD_QSFP_LED_6,
-    CPLD_QSFP_LED_7,
-    CPLD_QSFP_LED_8,
-    CPLD_QSFP_LED_9,
-    CPLD_QSFP_LED_10,
-    CPLD_QSFP_LED_11,
-    CPLD_QSFP_LED_12,
-    CPLD_QSFP_LED_13,
-    CPLD_QSFP_LED_14,
-    CPLD_QSFP_LED_15,
-    CPLD_QSFP_LED_16,
-    CPLD_QSFP_LED_BLINK,
-    CPLD_RTMR_RESET,
-    CPLD_ROV_STATUS,
-
 };
 
 /* CPLD sysfs attributes hook functions  */
@@ -504,32 +145,6 @@ static ssize_t read_bmc_watchdog(struct device *dev,
 static ssize_t write_bmc_watchdog(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
 static ssize_t read_usb_status(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t read_reset_control(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_reset_control(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_sfp_led(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_sfp_led(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_sfp_led_blink(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_sfp_led_blink(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_qsfp_led(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_qsfp_led(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_qsfp_led_blink(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_qsfp_led_blink(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_rtmr_reset(struct device *dev,
-                struct device_attribute *da, char *buf);
-static ssize_t write_rtmr_reset(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_rov_status(struct device *dev,
                 struct device_attribute *da, char *buf);
 
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
@@ -602,8 +217,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_12, S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_13, S_IRUGO,
         read_qsfp_port_status, NULL, CPLD_QSFP_PORT_STATUS_13);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfp_port_config, write_qsfp_port_config, 
-                CPLD_QSFP_PORT_CONFIG_1);
+    read_qsfp_port_config, write_qsfp_port_config, CPLD_QSFP_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfp_port_config, write_qsfp_port_config,
                 CPLD_QSFP_PORT_CONFIG_2);
@@ -656,55 +270,11 @@ static SENSOR_DEVICE_ATTR(cpld_bmc_watchdog, S_IWUSR | S_IRUGO,
                 CPLD_BMC_WATCHDOG);
 static SENSOR_DEVICE_ATTR(cpld_usb_status, S_IRUGO,
                 read_usb_status, NULL, CPLD_USB_STATUS);
-static SENSOR_DEVICE_ATTR(cpld_reset_control, S_IWUSR | S_IRUGO,
-                read_reset_control, write_reset_control,
-                CPLD_BMC_WATCHDOG);
-static SENSOR_DEVICE_ATTR(cpld_sfp_led, S_IWUSR | S_IRUGO,
-                read_sfp_led, write_sfp_led, CPLD_SFP_LED);
-static SENSOR_DEVICE_ATTR(cpld_sfp_led_blink, S_IWUSR | S_IRUGO,
-                read_sfp_led_blink, write_sfp_led_blink, CPLD_SFP_LED_BLINK);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_1, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_2, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_2);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_3, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_3);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_4, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_4);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_5, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_5);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_6, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_6);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_7, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_7);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_8, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_8);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_9, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_9);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_10, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_10);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_11, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_11);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_12, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_12);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_13, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_13);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_14, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_14);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_15, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_15);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_16, S_IWUSR | S_IRUGO,
-                read_qsfp_led, write_qsfp_led, CPLD_QSFP_LED_16);
-static SENSOR_DEVICE_ATTR(cpld_qsfp_led_blink, S_IWUSR | S_IRUGO,
-                read_qsfp_led_blink, write_qsfp_led_blink, CPLD_QSFP_LED_BLINK);
-static SENSOR_DEVICE_ATTR(cpld_rtmr_reset, S_IWUSR | S_IRUGO,
-                read_rtmr_reset, write_rtmr_reset, CPLD_RTMR_RESET);
-static SENSOR_DEVICE_ATTR(cpld_rov_status, S_IRUGO,
-                read_rov_status, NULL, CPLD_ROV_STATUS);
+
 
 /* define support attributes of cpldx , total 5 */
 /* cpld 1 */
-static struct attribute *s9280_64x_cpld1_attributes[] = {
+static struct attribute *s9230_64x_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_access_register.dev_attr.attr,
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_start.dev_attr.attr,
@@ -744,16 +314,49 @@ static struct attribute *s9280_64x_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_bmc_status.dev_attr.attr,
     &sensor_dev_attr_cpld_bmc_watchdog.dev_attr.attr,
     &sensor_dev_attr_cpld_usb_status.dev_attr.attr,
-    &sensor_dev_attr_cpld_reset_control.dev_attr.attr,    
-    &sensor_dev_attr_cpld_sfp_led.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_led_blink.dev_attr.attr,
-    &sensor_dev_attr_cpld_rtmr_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_rov_status.dev_attr.attr,
     NULL
 };
-
-/* cpld 2 / cpld 3 / cpld 4 / cpld 5 */
-static struct attribute *s9280_64x_cpld2345_attributes[] = {
+/* cpld 2 */
+static struct attribute *s9230_64x_cpld2_attributes[] = {
+    &sensor_dev_attr_cpld_access_register.dev_attr.attr,
+    &sensor_dev_attr_cpld_register_value.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_start.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_ports.dev_attr.attr,
+    &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_2.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_4.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_5.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_6.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_7.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_8.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_9.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_10.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_11.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_12.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_status_13.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_2.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_4.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_5.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_6.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_7.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_8.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_9.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_10.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_11.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_12.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_13.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_interrupt.dev_attr.attr,
+    &sensor_dev_attr_cpld_sfp_port_status.dev_attr.attr,
+    &sensor_dev_attr_cpld_sfp_port_config.dev_attr.attr,
+    NULL
+};
+/* cpld 3 / cpld 4 / cpld 5 */
+static struct attribute *s9230_64x_cpld345_attributes[] = {
 &sensor_dev_attr_cpld_access_register.dev_attr.attr,
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_start.dev_attr.attr,
@@ -787,33 +390,20 @@ static struct attribute *s9280_64x_cpld2345_attributes[] = {
     &sensor_dev_attr_cpld_qsfp_port_config_12.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_13.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_interrupt.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_2.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_3.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_4.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_5.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_6.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_7.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_8.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_9.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_10.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_11.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_12.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_13.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_14.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_15.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_16.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_led_blink.dev_attr.attr,
     NULL
 };
 
 /* cpld 1 attributes group */
-static const struct attribute_group s9280_64x_cpld1_group = {
-    .attrs = s9280_64x_cpld1_attributes,
+static const struct attribute_group s9230_64x_cpld1_group = {
+    .attrs = s9230_64x_cpld1_attributes,
 };
-/* cpld 2/3/4/5 attributes group */
-static const struct attribute_group s9280_64x_cpld2345_group = {
-    .attrs = s9280_64x_cpld2345_attributes,
+/* cpld 2 attributes group */
+static const struct attribute_group s9230_64x_cpld2_group = {
+    .attrs = s9230_64x_cpld2_attributes,
+};
+/* cpld 3/4/5 attributes group */
+static const struct attribute_group s9230_64x_cpld345_group = {
+    .attrs = s9230_64x_cpld345_attributes,
 };
 
 /* read access register from cpld data */
@@ -1293,7 +883,7 @@ static ssize_t write_bmc_watchdog(struct device *dev,
         if (unlikely(ret < 0)) {
             dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
             return ret;
-        }            
+        }
     }
     return count;
 }
@@ -1311,336 +901,6 @@ static ssize_t read_usb_status(struct device *dev,
 
     if (attr->index == CPLD_USB_STATUS) {
         reg = CPLD_USB_STATUS_REG;
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* get reset control register value */
-static ssize_t read_reset_control(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index == CPLD_RESET_CONTROL) {
-        reg = CPLD_RESET_CONTROL_REG;
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* set value to reset control register */
-static ssize_t write_reset_control(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val;
-    int ret;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
-
-    if (attr->index == CPLD_RESET_CONTROL) {
-        reg = CPLD_RESET_CONTROL_REG;
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-        if (unlikely(ret < 0)) {
-            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-            return ret;
-        }
-    }
-    return count;
-}
-
-/* get sfp port 0/1 led register */
-static ssize_t read_sfp_led(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index == CPLD_SFP_LED) {
-        reg = CPLD_SFP_LED_REG;
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* set value to sfp 0/1 port led register */
-static ssize_t write_sfp_led(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val;
-    int ret;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
-
-    if (attr->index == CPLD_SFP_LED) {
-        reg = CPLD_SFP_LED_REG;
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-        if (unlikely(ret < 0)) {
-            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-            return ret;
-        }
-    }
-    return count;
-}
-
-/* get sfp port 0/1 led blink register */
-static ssize_t read_sfp_led_blink(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index == CPLD_SFP_LED_BLINK) {
-        reg = CPLD_SFP_LED_BLINK_REG;
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* set value to sfp port  0/1 led blink register */
-static ssize_t write_sfp_led_blink(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val;
-    int ret;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
-
-    if (attr->index == CPLD_SFP_LED_BLINK) {
-        reg = CPLD_SFP_LED_BLINK_REG;
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-        if (unlikely(ret < 0)) {
-            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-            return ret;
-        }
-    }
-    return count;
-}
-
-/* get qsfp port led register */
-static ssize_t read_qsfp_led(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index >= CPLD_QSFP_LED_1 &&
-        attr->index <= CPLD_QSFP_LED_16) {
-        reg = CPLD_QSFP_LED_BASE_REG + (attr->index - CPLD_QSFP_LED_1);
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* set value to qsfp port led register */
-static ssize_t write_qsfp_led(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val;
-    int ret;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
-
-    if (attr->index >= CPLD_QSFP_LED_1 &&
-        attr->index <= CPLD_QSFP_LED_16) {
-        reg = CPLD_QSFP_LED_BASE_REG + (attr->index - CPLD_QSFP_LED_1);
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-        if (unlikely(ret < 0)) {
-            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-            return ret;
-        }
-    }
-    return count;
-}
-
-/* get qsfp 16 port led blink register value in 64 bit map */
-/*
-    each register for 2 port, each port has 4 channel for led blink
-    bit   64       56       48       40      32     24     16     8     0
-    port   16/15  14/13  12/11  10/9   8/7   6/5   4/3  2/1  
-  */
-static ssize_t read_qsfp_led_blink(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val, i;
-    u64 bitmap = 0;
-
-    if (attr->index == CPLD_QSFP_LED_BLINK) {
-        for (i = 0; i  <= 7; i++) {
-            reg = CPLD_QSFP_LED_BLINK_BASE_REG + i;
-            I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-            if (reg_val < 0)
-                return -1;
-            reg_val = reg_val & 0xff;
-            bitmap =  bitmap | (reg_val<<(i*8));
-        }
-        return sprintf(buf, "0x%llx\n", bitmap);
-    }
-    return -1;
-}
-
-/* set 64 bit map value to qsfp port led blink register */
-/*
-    each register for 2 port, each port has 4 channel for led blink
-    bit   63     56     48     40    32   24   16   8   0
-    port    16/15  14/13  12/11  10/9  8/7  6/5  4/3 2/1  
-  */
-static ssize_t write_qsfp_led_blink(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val, i;
-    int ret;
-    u64 bitmap = 0;
-
-    if (kstrtou64(buf, 0, &bitmap) < 0)
-        return -EINVAL;
-
-    if (attr->index == CPLD_QSFP_LED_BLINK) {
-        for (i = 0; i  <= 7; i++) {
-            reg = CPLD_QSFP_LED_BLINK_BASE_REG + i;
-            reg_val = (u8)((bitmap >> i*8) & 0xFF);
-            I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-            if (unlikely(ret < 0)) {
-                dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-                return ret;
-            }
-        }
-    }
-    return count;
-}
-
-/* get retimer reset register */
-static ssize_t read_rtmr_reset(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index == CPLD_RTMR_RESET) {
-        reg = CPLD_RTMR_RESET_REG;
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (reg_val < 0)
-            return -1;
-        return sprintf(buf, "0x%02x\n", reg_val);
-    }
-    return -1;
-}
-
-/* set value to retimer reset register */
-static ssize_t write_rtmr_reset(struct device *dev,
-                    struct device_attribute *da,
-                    const char *buf,
-                    size_t count)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg, reg_val;
-    int ret;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
-
-    if (attr->index == CPLD_RTMR_RESET) {
-        reg = CPLD_RTMR_RESET_REG;
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                    client, reg, reg_val);
-        if (unlikely(ret < 0)) {
-            dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
-            return ret;
-        }
-    }
-    return count;
-}
-
-/* get rov status register */
-static ssize_t read_rov_status(struct device *dev,
-                    struct device_attribute *da,
-                    char *buf)
-{
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    struct i2c_client *client = to_i2c_client(dev);
-    struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg;
-    int reg_val;
-
-    if (attr->index == CPLD_ROV_STATUS) {
-        reg = CPLD_ROV_STATUS_REG;
         I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
         if (reg_val < 0)
             return -1;
@@ -1701,6 +961,7 @@ static int ingrasys_i2c_cpld_probe(struct i2c_client *client,
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
+    int err;
     int idx;
 
     data = kzalloc(sizeof(struct cpld_data), GFP_KERNEL);
@@ -1753,14 +1014,17 @@ static int ingrasys_i2c_cpld_probe(struct i2c_client *client,
     switch (data->index) {
     case cpld1:
         status = sysfs_create_group(&client->dev.kobj,
-                    &s9280_64x_cpld1_group);
+                    &s9230_64x_cpld1_group);
         break;
     case cpld2:
+        status = sysfs_create_group(&client->dev.kobj,
+                    &s9230_64x_cpld2_group);
+        break;
     case cpld3:
     case cpld4:
     case cpld5:
         status = sysfs_create_group(&client->dev.kobj,
-                    &s9280_64x_cpld2345_group);
+                    &s9230_64x_cpld345_group);
         break;
     default:
         status = -EINVAL;
@@ -1776,7 +1040,7 @@ static int ingrasys_i2c_cpld_probe(struct i2c_client *client,
 
     return 0;
 exit:
-    sysfs_remove_group(&client->dev.kobj, &s9280_64x_cpld2345_group);
+    sysfs_remove_group(&client->dev.kobj, &s9230_64x_cpld345_group);
     return status;
 }
 
@@ -1787,14 +1051,16 @@ static int ingrasys_i2c_cpld_remove(struct i2c_client *client)
 
     switch (data->index) {
     case cpld1:
-        sysfs_remove_group(&client->dev.kobj, &s9280_64x_cpld1_group);
+        sysfs_remove_group(&client->dev.kobj, &s9230_64x_cpld1_group);
         break;
     case cpld2:
+        sysfs_remove_group(&client->dev.kobj, &s9230_64x_cpld2_group);
+        break;
     case cpld3:
     case cpld4:
     case cpld5:
         sysfs_remove_group(&client->dev.kobj,
-                    &s9280_64x_cpld2345_group);
+                    &s9230_64x_cpld345_group);
         break;
     }
 
@@ -1807,178 +1073,13 @@ MODULE_DEVICE_TABLE(i2c, ingrasys_i2c_cpld_id);
 static struct i2c_driver ingrasys_i2c_cpld_driver = {
     .class      = I2C_CLASS_HWMON,
     .driver = {
-        .name = "ingrasys_i2c_cpld",
+        .name = "x86_64_ingrasys_s9230_64x_cpld",
     },
     .probe = ingrasys_i2c_cpld_probe,
     .remove = ingrasys_i2c_cpld_remove,
     .id_table = ingrasys_i2c_cpld_id,
     .address_list = cpld_i2c_addr,
 };
-
-/* provid cpld register read */
-/* cpld_idx indicate the index of cpld device */
-int ingrasys_i2c_cpld_read(u8 cpld_idx,
-                u8 reg)
-{
-    struct list_head *list_node = NULL;
-    struct cpld_client_node *cpld_node = NULL;
-    int ret = -EPERM;
-    struct cpld_data *data;
-
-    list_for_each(list_node, &cpld_client_list) {
-        cpld_node = list_entry(list_node,
-                    struct cpld_client_node, list);
-        data = i2c_get_clientdata(cpld_node->client);
-        if (data->index == cpld_idx) {
-            DEBUG_PRINT("cpld_idx=%d, read reg 0x%02x",
-                    cpld_idx, reg);
-            I2C_READ_BYTE_DATA(ret, &data->access_lock,
-                    cpld_node->client, reg);
-            DEBUG_PRINT("cpld_idx=%d, read reg 0x%02x = 0x%02x",
-                    cpld_idx, reg, ret);
-        break;
-        }
-    }
-
-    return ret;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_read);
-
-/* provid cpld register write */
-/* cpld_idx indicate the index of cpld device */
-int ingrasys_i2c_cpld_write(u8 cpld_idx,
-                u8 reg,
-                u8 value)
-{
-    struct list_head *list_node = NULL;
-    struct cpld_client_node *cpld_node = NULL;
-    int ret = -EIO;
-    struct cpld_data *data;
-
-    list_for_each(list_node, &cpld_client_list) {
-        cpld_node = list_entry(list_node,
-                    struct cpld_client_node, list);
-        data = i2c_get_clientdata(cpld_node->client);
-
-        if (data->index == cpld_idx) {
-                        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
-                        cpld_node->client,
-                        reg, value);
-            DEBUG_PRINT("cpld_idx=%d, write reg 0x%02x val 0x%02x, ret=%d",
-                            cpld_idx, reg, value, ret);
-            break;
-        }
-    }
-
-    return ret;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_write);
-
-/* provid qsfp port status register read */
-/* port_num indicate the front panel qsfp port number */
-int ingrasys_i2c_cpld_get_qsfp_port_status_val(u8 port_num)
-{
-    u8 cpld_idx, cpld_port, reg;
-    int reg_val;
-
-    if (INVALID(port_num, QSFP_MIN_PORT_NUM, QSFP_MAX_PORT_NUM)) {
-        DEBUG_PRINT("invalid input value %d", port_num);
-        return -1;
-    }
-    QSFP_TO_CPLD_IDX(port_num, cpld_idx, cpld_port);
-    reg = QSFP_PORT_STATUS_REG(cpld_port);
-    DEBUG_PRINT("port_num=%d, cpld_idx=%d, cpld_port=%d, reg=0x%x",
-                    port_num, cpld_idx, cpld_port, reg);
-    reg_val = ingrasys_i2c_cpld_read(cpld_idx, reg);
-    return reg_val;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_get_qsfp_port_status_val);
-
-/* provid qsfp port config register read */
-/* port_num indicate the front panel qsfp port number */
-int ingrasys_i2c_cpld_get_qsfp_port_config_val(u8 port_num)
-{
-    u8 cpld_idx, cpld_port, reg;
-    int reg_val;
-
-    if (INVALID(port_num, QSFP_MIN_PORT_NUM, QSFP_MAX_PORT_NUM)) {
-        DEBUG_PRINT("invalid input value %d", port_num);
-        return -1;
-    }
-    QSFP_TO_CPLD_IDX(port_num, cpld_idx, cpld_port);
-    reg = QSFP_PORT_CONFIG_REG(cpld_port);
-    DEBUG_PRINT("port_num=%d, cpld_idx=%d, cpld_port=%d, reg=0x%x",
-                    port_num, cpld_idx, cpld_port, reg);
-    reg_val = ingrasys_i2c_cpld_read(cpld_idx, reg);
-    return reg_val;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_get_qsfp_port_config_val);
-
-/* provid qsfp port config register write */
-/* port_num indicate the front panel qsfp port number */
-int ingrasys_i2c_cpld_set_qsfp_port_config_val(u8 port_num,
-                            u8 reg_val)
-{
-    u8 cpld_idx, cpld_port, reg, ret;
-
-    if (INVALID(port_num, QSFP_MIN_PORT_NUM, QSFP_MAX_PORT_NUM)) {
-        DEBUG_PRINT("invalid input value %d", port_num);
-        return -1;
-    }
-    QSFP_TO_CPLD_IDX(port_num, cpld_idx, cpld_port);
-    reg = QSFP_PORT_CONFIG_REG(cpld_port);
-    DEBUG_PRINT("port_num=%d, cpld_idx=%d, cpld_port=%d, reg=0x%x",
-                    port_num, cpld_idx, cpld_port, reg);
-    ret = ingrasys_i2c_cpld_write(cpld_idx, reg, reg_val);
-    return ret;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_set_qsfp_port_config_val);
-
-/* provid sfp port 0/1 status register read */
-int ingrasys_i2c_cpld_get_sfp_port_status_val(void)
-{
-    u8 cpld_idx, reg;
-    int reg_val;
-
-    cpld_idx = cpld1;
-    reg = CPLD_SFP_PORT_STATUS_REG;
-    DEBUG_PRINT("cpld_idx=%d, reg=0x%x",
-                    cpld_idx, reg);
-    reg_val = ingrasys_i2c_cpld_read(cpld_idx, reg);
-    return reg_val;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_get_sfp_port_status_val);
-
-/* provid qsfp port config register read */
-/* port_num indicate the front panel qsfp port number */
-int ingrasys_i2c_cpld_get_sfp_port_config_val(void)
-{
-    u8 cpld_idx, reg;
-    int reg_val;
-
-    cpld_idx = cpld1;
-    reg = CPLD_SFP_PORT_CONFIG_REG;
-    DEBUG_PRINT("cpld_idx=%d, reg=0x%x",
-                cpld_idx, reg);
-    reg_val = ingrasys_i2c_cpld_read(cpld_idx, reg);
-    return reg_val;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_get_sfp_port_config_val);
-
-/* provid qsfp port config register write */
-/* port_num indicate the front panel qsfp port number */
-int ingrasys_i2c_cpld_set_sfp_port_config_val(u8 reg_val)
-{
-    u8 cpld_idx, reg, ret;
-
-    cpld_idx = cpld1;
-    reg = CPLD_SFP_PORT_CONFIG_REG;
-    DEBUG_PRINT("cpld_idx=%d, reg=0x%x",
-                cpld_idx, reg);
-    ret = ingrasys_i2c_cpld_write(cpld_idx, reg, reg_val);
-    return ret;
-}
-EXPORT_SYMBOL(ingrasys_i2c_cpld_set_sfp_port_config_val);
 
 static int __init ingrasys_i2c_cpld_init(void)
 {
@@ -1992,7 +1093,7 @@ static void __exit ingrasys_i2c_cpld_exit(void)
 }
 
 MODULE_AUTHOR("Leo Lin <feng.lee.usa@ingrasys.com>");
-MODULE_DESCRIPTION("ingrasys_i2c_cpld driver");
+MODULE_DESCRIPTION("x86_64_ingrasys_s9230_64x_cpld driver");
 MODULE_LICENSE("GPL");
 
 module_init(ingrasys_i2c_cpld_init);

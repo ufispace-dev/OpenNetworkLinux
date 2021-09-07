@@ -1,5 +1,5 @@
-#ifndef _S9230_64X_PLATFORM_H
-#define _S9230_64X_PLATFORM_H
+#ifndef _S9280_64X_PLATFORM_H
+#define _S9280_64X_PLATFORM_H
 
 #include <linux/i2c.h>
 

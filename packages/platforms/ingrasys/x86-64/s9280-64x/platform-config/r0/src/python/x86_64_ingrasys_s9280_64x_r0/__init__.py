@@ -16,6 +16,17 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
     PORT_COUNT=64
     PORT_CONFIG="64x100"
 
+    def init_i2c_mux_idle_state(self, muxs):        
+        IDLE_STATE_DISCONNECT = -2
+        
+        for mux in muxs:
+            i2c_addr = mux[1]
+            i2c_bus = mux[2]
+            sysfs_idle_state = "/sys/bus/i2c/devices/%d-%s/idle_state" % (i2c_bus, hex(i2c_addr)[2:].zfill(4))
+            if os.path.exists(sysfs_idle_state):
+                with open(sysfs_idle_state, 'w') as f:
+                    f.write(str(IDLE_STATE_DISCONNECT))
+
     def baseconfig(self):
 
         # fp port to phy port mapping
@@ -53,24 +64,28 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         
         ########### initialize I2C bus 0 ###########
         # init PCA9548
-        self.new_i2c_devices(
-            [
-                ('pca9548', 0x70, 0),  #pca9548_0
-                ('pca9548', 0x73, 0),  #pca9548_1
-                ('pca9546', 0x72, 0),  #pca9546_0
-                ('pca9548', 0x71, 19), #pca9548_2
-                ('pca9546', 0x71, 20), #pca9546_1
-                ('pca9548', 0x75, 0),  #pca9548_11
-                ('pca9548', 0x74, 21), #pca9548_3
-                ('pca9548', 0x74, 22), #pca9548_4
-                ('pca9548', 0x74, 23), #pca9548_5
-                ('pca9548', 0x74, 24), #pca9548_6
-                ('pca9548', 0x74, 25), #pca9548_7
-                ('pca9548', 0x74, 26), #pca9548_8
-                ('pca9548', 0x74, 27), #pca9548_9
-                ('pca9548', 0x74, 28), #pca9548_10
-            ]
-        )
+        i2c_muxs = [
+            ('pca9548', 0x70, 0),  #pca9548_0
+            ('pca9548', 0x73, 0),  #pca9548_1
+            ('pca9546', 0x72, 0),  #pca9546_0
+            ('pca9548', 0x71, 19), #pca9548_2
+            ('pca9546', 0x71, 20), #pca9546_1
+            ('pca9548', 0x75, 0),  #pca9548_11
+            ('pca9548', 0x74, 21), #pca9548_3
+            ('pca9548', 0x74, 22), #pca9548_4
+            ('pca9548', 0x74, 23), #pca9548_5
+            ('pca9548', 0x74, 24), #pca9548_6
+            ('pca9548', 0x74, 25), #pca9548_7
+            ('pca9548', 0x74, 26), #pca9548_8
+            ('pca9548', 0x74, 27), #pca9548_9
+            ('pca9548', 0x74, 28), #pca9548_10
+        ]
+
+        self.new_i2c_devices(i2c_muxs)
+        
+        #init idle state on mux
+        self.init_i2c_mux_idle_state(i2c_muxs)
+
         # _i2c_hwm_init  
         os.system("i2cset -y -r 16 0x2f 0x00 0x80")
         os.system("i2cset -y -r 16 0x2f 0x01 0x9C")

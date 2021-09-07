@@ -210,14 +210,5 @@ struct cpld_reg_id_t {
     SET_BIT(port_config_value, CPLD_SFP_PORT_CONFIG_TS_BIT)
 #define SFP_PORT_TS_BIT_CLEAR(port_config_value) \
     CLEAR_BIT(port_config_value, CPLD_SFP_PORT_CONFIG_TS_BIT)
-
-/* CPLD access functions */
-extern int ingrasys_i2c_cpld_get_qsfp_port_status_val(u8 port_num);
-extern int ingrasys_i2c_cpld_get_qsfp_port_config_val(u8 port_num);
-extern int ingrasys_i2c_cpld_set_qsfp_port_config_val(u8 port_num, u8 reg_val);
-extern int ingrasys_i2c_cpld_get_sfp_port_status_val(u8 port_num);
-extern int ingrasys_i2c_cpld_get_sfp_port_config_val(u8 port_num);
-extern int ingrasys_i2c_cpld_set_sfp_port_config_val(u8 port_num, u8 reg_val);
-extern u8 fp_port_to_phy_port(u8 fp_port);
 #endif
 
