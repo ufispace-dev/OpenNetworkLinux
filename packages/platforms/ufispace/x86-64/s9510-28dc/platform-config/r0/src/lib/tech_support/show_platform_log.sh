@@ -537,42 +537,52 @@ function _show_i2c_tree_bus_mux_i2c {
         _check_i2c_device "${bus}" "${chip_addr1}"
         ret=$?
         if [ "$ret" == "0" ]; then
-            ## MUX1(9546_ROOT_SFP)-0x76
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}" "4" "MUX1(9546_ROOT_SFP)-0x76"
 
-            ## MUX1(9546_ROOT_SFP)-0x76(3)
-            #                                |-MUX2(9546_CHILD_QSFPX_0_3)-0x70
-            #                                |-MUX3(9548_CHILD_SFP_4_11)-0x71
-            #                                |-MUX4(9548_CHILD_SFP_12_19)-0x72
-            #                                |-MUX5(9548_CHILD_SFP_20_27)-0x73
+            # Name                  | Alpha_MUX#  |  Beta_MUX#
+            # ----------------------|-------------| -----------
+            # 9546_ROOT_TIMING      |  MUX0       |  MUX0
+            # 9546_ROOT_SFP         |  MUX1       |  MUX2
+            # 9546_CHILD_QSFPX_0_3  |  MUX2       |  MUX7
+            # 9548_CHILD_SFP_4_11   |  MUX3       |  MUX3
+            # 9548_CHILD_SFP_12_19  |  MUX4       |  MUX4
+            # 9548_CHILD_SFP_20_27  |  MUX5       |  MUX5
+
+            ## (9546_ROOT_SFP)-0x76
+            _show_i2c_mux_devices "${bus}" "${chip_addr1}" "4" "(9546_ROOT_SFP)-0x76"
+
+            ## (9546_ROOT_SFP)-0x76(3)
+            #                                |-(9546_CHILD_QSFPX_0_3)-0x70
+            #                                |-(9548_CHILD_SFP_4_11)-0x71
+            #                                |-(9548_CHILD_SFP_12_19)-0x72
+            #                                |-(9548_CHILD_SFP_20_27)-0x73
             i2cset -y ${bus} ${chip_addr1} $(( 2 ** 3 ))
 
             chip_addr2="0x70"
             _check_i2c_device "${bus}" "${chip_addr2}"
             ret=$?
             if [ "$ret" == "0" ]; then
-                _show_i2c_mux_devices "${bus}" "${chip_addr2}" "4" "MUX2(9546_CHILD_QSFPX_0_3)-0x70"
+                _show_i2c_mux_devices "${bus}" "${chip_addr2}" "4" "(9546_CHILD_QSFPX_0_3)-0x70"
             fi
 
             chip_addr2="0x71"
             _check_i2c_device "${bus}" "${chip_addr2}"
             ret=$?
             if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "MUX3(9548_CHILD_SFP_4_11)-0x71"
+            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_4_11)-0x71"
             fi
 
             chip_addr2="0x72"
             _check_i2c_device "${bus}" "${chip_addr2}"
             ret=$?
             if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "MUX4(9548_CHILD_SFP_12_19)-0x72"
+            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_12_19)-0x72"
             fi
 
             chip_addr2="0x73"
             _check_i2c_device "${bus}" "${chip_addr2}"
             ret=$?
             if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "MUX5(9548_CHILD_SFP_20_27)-0x73"
+            _show_i2c_mux_devices "${bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_20_27)-0x73"
             fi
 
             i2cset -y ${bus} ${chip_addr1} 0x0

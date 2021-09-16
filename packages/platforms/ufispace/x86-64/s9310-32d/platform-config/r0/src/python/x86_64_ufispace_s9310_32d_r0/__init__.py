@@ -131,6 +131,29 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def enable_port_led(self): 
+        sysfs_path = "/sys/bus/i2c/devices/2-0030/cpld_misc_ctrl"
+        port_led_mask = 0b00100000
+        
+        # read register value from sysfs
+        if os.path.exists(sysfs_path):
+            with open(sysfs_path, "r") as f:
+                # read content
+                content = f.read()
+                reg_val = int(content.strip(), 0)
+        else:
+            msg("Warning: switch port led sysfs does not exist!! (path=%s)\n" % (sysfs_path))
+            return False
+
+        # set value to enable port led
+        reg_val |= port_led_mask
+        
+        # write back register value
+        with open(sysfs_path, "w") as f:
+            f.write(str(reg_val))
+            
+        return True
+
     def baseconfig(self):
 
         # lpc driver
@@ -187,5 +210,8 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
 
         # init i40e
         self.insmod("i40e")
+
+        # enable port led
+        self.enable_port_led()
 
         return True

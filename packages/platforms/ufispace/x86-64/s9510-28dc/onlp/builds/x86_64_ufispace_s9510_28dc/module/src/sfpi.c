@@ -169,23 +169,23 @@ int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
-    int value = 0;
+    int abs = 0, present = 0;
 
     VALIDATE_PORT(port);
 
     //set gpio_num by port
     gpio_num=port_attr[port].abs_gpin;
 
-    if ((status = file_read_hex(&value, SYS_GPIO_FMT, gpio_num)) < 0) {
+    if ((status = file_read_hex(&abs, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",
             status, SYS_GPIO_FMT, gpio_num);
         check_and_do_i2c_mux_reset(port);
         return status;
     }
 
-    value = !value;
+    present = (abs==0) ? 1:0;
 
-    return value;
+    return present;
 }
 
 /**
@@ -273,6 +273,12 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if ((rc = onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -287,6 +293,12 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
     if ((rc = onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
          check_and_do_i2c_mux_reset(port);
     }
@@ -305,6 +317,12 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
+
+    if(onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if((rc = onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
          check_and_do_i2c_mux_reset(port);
     }
@@ -319,6 +337,12 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
+
+    if(onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+    
     if((rc = onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -338,7 +362,7 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
 
     VALIDATE_PORT(port);
 
-    if (onlp_sfpi_is_present(port) < 0) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -346,13 +370,9 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     devaddr = EEPROM_ADDR;
     bus = ufi_port_to_eeprom_bus(port);
 
-    if (port < PORT_NUM) {
-        if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
-            check_and_do_i2c_mux_reset(port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-    } else {
-        return ONLP_STATUS_E_PARAM;
+    if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
     }
 
     return ONLP_STATUS_OK;
@@ -366,6 +386,11 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
 
     if ((rc = onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
@@ -387,6 +412,11 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     int bus = 0;
 
     VALIDATE_PORT(port);
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
 
     memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));
@@ -479,7 +509,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
  */
 int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
-    int rc;
+    int rc = 0;
     int gpio_num = 0;
 
     VALIDATE_PORT(port);
@@ -490,8 +520,8 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_RESET:
             {
                 if (IS_QSFPX(port)) {
-                     //reverse bit
-                    value = !value;
+                    //reverse value
+                    value = (value == 0) ? 1:0;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }

@@ -202,7 +202,7 @@ class OnlPlatform_x86_64_ufispace_s9501_28smt_r0(OnlPlatformUfiSpace):
         # init all GPIO direction to "in"
         gpio_dir = ["in"] * 512
 
-        # get board id
+        # get board id 0
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9501_28smt_lpc/mb_cpld/board_id_0"
         status, output = commands.getstatusoutput("cat /sys/devices/platform/x86_64_ufispace_s9501_28smt_lpc/mb_cpld/board_id_0")
         if status != 0:
@@ -215,8 +215,18 @@ class OnlPlatform_x86_64_ufispace_s9501_28smt_r0(OnlPlatformUfiSpace):
         build_rev = (board_id & 0b11000000) >> 6
         hw_build_rev = (hw_rev << 2) | (build_rev)
 
+        # get board id 1 (ext board id)
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9501_28smt_lpc/mb_cpld/board_id_1"
+        status, output = commands.getstatusoutput(
+            "cat /sys/devices/platform/x86_64_ufispace_s9501_28smt_lpc/mb_cpld/board_id_1")
+        if status != 0:
+            msg("Get board id from LPC failed, status=%s, output=%s, cmd=%s\n" % (status, output, cmd))
+            return
+        ext_id = int(output, 10)
+        deph_id = ext_id & 0b00010000
+
         #Alpha 1
-        if hw_build_rev == 4:
+        if hw_build_rev == 4 and deph_id == 0:
             # init GPIO direction to output low
             for i in range(495, 487, -1) + \
                      range(483, 475, -1) + \

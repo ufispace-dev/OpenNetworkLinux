@@ -180,4 +180,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         # init i40e
         self.insmod("i40e")
         
+        # enable port led 
+        os.system("echo 1 > /sys/bus/i2c/devices/2-0030/cpld_port_led_clr_ctrl")
+
         return True
