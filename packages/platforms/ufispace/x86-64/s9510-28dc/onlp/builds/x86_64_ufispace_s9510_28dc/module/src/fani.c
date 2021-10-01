@@ -136,11 +136,11 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
     if (id >= ONLP_FAN_0 && id < ONLP_PSU_0_FAN) {
         percentage = (info->rpm*100)/sys_max_fan_speed;
-        info->percentage = percentage;
+        info->percentage = (percentage >= 100) ? 100:percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
         percentage = (info->rpm*100)/psu_max_fan_speed;
-        info->percentage = percentage;
+        info->percentage = (percentage >= 100) ? 100:percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
 

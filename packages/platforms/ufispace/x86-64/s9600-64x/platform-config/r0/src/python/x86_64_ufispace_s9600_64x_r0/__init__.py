@@ -191,6 +191,15 @@ class OnlPlatform_x86_64_ufispace_s9600_64x_r0(OnlPlatformUfiSpace):
             msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg_val) )
             os.system("i2cset -y {} {} {} {}".format(rov_bus[index], rov_addr, rov_reg, rov_reg_val))
 
+        #config LED mask
+        cpld_led_addr =[31, 32, 33, 34]
+        cpld_bus=1
+
+        for index, addr in enumerate(cpld_led_addr):
+            #set cpld led mask
+            subprocess.call("echo 0 > /sys/bus/i2c/devices/{}-00{}/cpld_led_mask".format(cpld_bus, addr), shell=True)
+            msg("Setting disable LED mask with i2c device {}-00{}\n".format(cpld_bus, addr))
+
         self.enable_ipmi_maintenance_mode()
 
         return True
