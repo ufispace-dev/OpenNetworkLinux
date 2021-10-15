@@ -53,6 +53,7 @@ static onlp_led_info_t led_info[] =
     CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 2 (FAN LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 3 (PSU0 LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 4 (PSU1 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 5 (SYNC LED)"),
 };
 
 static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
@@ -60,19 +61,10 @@ static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
     int value;
     int sysfs_index;
     int shift, led_val,led_val_color, led_val_blink, led_val_onoff;
-	
-    if (id == ONLP_LED_SYS_SYS) {        
-        sysfs_index=0;
-        shift = 0;    
-    } else if (id == ONLP_LED_SYS_PSU_0) {
-        sysfs_index=1;
-        shift = 0;    
-    } else if (id == ONLP_LED_SYS_PSU_1) {
-        sysfs_index=1;
-        shift = 4;        
-    } else if (id == ONLP_LED_SYS_FAN) {
-        sysfs_index=0;
-        shift = 4;
+
+    if (id < ONLP_LED_MAX) {        
+        sysfs_index=(id-ONLP_LED_SYS_SYS)/2;
+        shift = ((id-ONLP_LED_SYS_SYS)%2)*4;    
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -128,10 +120,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
     *rv = led_info[led_id];
 
     switch (led_id) {        
-        case ONLP_LED_SYS_SYS:
-        case ONLP_LED_SYS_PSU_0:
-        case ONLP_LED_SYS_PSU_1:
-        case ONLP_LED_SYS_FAN:
+        case ONLP_LED_SYS_SYS ... ONLP_LED_SYS_SYNC:
             rc = ufi_sys_led_info_get(rv, led_id);
             break;        
         default:            

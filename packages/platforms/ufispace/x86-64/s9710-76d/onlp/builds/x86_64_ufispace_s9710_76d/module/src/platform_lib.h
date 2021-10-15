@@ -197,7 +197,8 @@ enum onlp_led_id {
     ONLP_LED_SYS_SYS = 1,    
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PSU_0,
-    ONLP_LED_SYS_PSU_1,    
+    ONLP_LED_SYS_PSU_1,
+    ONLP_LED_SYS_SYNC,    
     ONLP_LED_MAX
 };
 

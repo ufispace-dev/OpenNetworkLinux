@@ -27,6 +27,13 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9710_76d_lpc"
 #define CPU_BDE 0
 #define CPU_SKY 1
@@ -106,14 +113,28 @@ enum lpc_sysfs_attributes {
     ATT_MAX
 };
 
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
+};
+
 struct lpc_data_s {
     struct mutex    access_lock;
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16];
-char bsp_debug[32];
+char bsp_version[16]="";
+char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -149,6 +170,48 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
     return reg_val;
 }
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
 /* get lpc register value */
 static u8 _read_lpc_reg(u16 reg, u8 mask)
 {
@@ -157,6 +220,8 @@ static u8 _read_lpc_reg(u16 reg, u8 mask)
     mutex_lock(&lpc_data->access_lock);
     reg_val=_mask_shift(inb(reg), mask);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return reg_val;
 }
@@ -195,6 +260,8 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
     return count;
 }
 
@@ -207,6 +274,8 @@ static ssize_t read_bsp(char *buf, char *str)
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg_val=%s", str);
+
     return len;
 }
 
@@ -216,6 +285,8 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
 	mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg_val=%s", str);
 
     return count;
 }
@@ -236,6 +307,8 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
     return len;
 }
 
@@ -254,6 +327,8 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
 	reg_val=_mask_shift(inb(reg), mask);
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return len;
 }
@@ -374,25 +449,29 @@ static ssize_t write_mux_reset(struct device *dev,
         if (val == 0) {
             mutex_lock(&lpc_data->access_lock);
             mux_reset_flag = 1;
-            printk(KERN_INFO "i2c mux reset is triggered...\n");
+            BSP_LOG_W("i2c mux reset is triggered...");
 
             //reset mux on NIF ports
             mux_reset_reg_val = inb(REG_MB_MUX_RESET);
             outb((mux_reset_reg_val & 0b11100000), REG_MB_MUX_RESET);
             mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val & 0b11100000);
 
             //reset mux on top board (FAB ports)
             misc_reset_reg_val = inb(REG_MB_MISC_RESET);
             outb((misc_reset_reg_val & 0b11011111), REG_MB_MISC_RESET);
             mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
 
             //unset mux on NIF ports
             outb((mux_reset_reg_val | 0b00011111), REG_MB_MUX_RESET);
             mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
 
             //unset mux on top board (FAB ports)
             outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
             mdelay(500);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x",REG_MB_MISC_RESET, misc_reset_reg_val | 0b00100000);
 
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
@@ -400,7 +479,7 @@ static ssize_t write_mux_reset(struct device *dev,
             return -EINVAL;
         }
     } else {
-        printk(KERN_INFO "i2c mux is resetting... (ignore)\n");
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
         mutex_lock(&lpc_data->access_lock);
         mutex_unlock(&lpc_data->access_lock);
     }
@@ -443,6 +522,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     int str_len=0;
     char *str=NULL;
     u16 reg = 0;
+    u8 bsp_debug_u8 = 0;
 
     switch (attr->index) {
         case ATT_BSP_VERSION:
@@ -463,6 +543,15 @@ static ssize_t write_bsp_callback(struct device *dev,
         default:
             return -EINVAL;
     }
+    
+    if (attr->index == ATT_BSP_DEBUG) {
+        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+            return -EINVAL;
+        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+            return -EINVAL;
+        }    	
+    }
+    
     return write_bsp(buf, str, str_len, count);
 }
 

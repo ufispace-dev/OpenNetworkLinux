@@ -53,7 +53,7 @@ i801_bus=""
 ismt_bus=""
 
 function _echo {
-    str="$1"
+    str="$@"
 
     if [ "${LOG_FILE_ENABLE}" == "1" ] && [ -f "${LOG_FILE_PATH}" ]; then
         echo "${str}" >> "${LOG_FILE_PATH}"
@@ -69,7 +69,7 @@ function _banner {
        _echo ""
        _echo "##############################"
        _echo "#   ${banner}"
-       #echo  "#   ${banner}..."
+       echo  "#   ${banner}..."
        _echo "##############################"
    fi
 }
@@ -273,6 +273,14 @@ function _show_driver {
     done
 }
 
+function _pre_log {
+    _banner "Pre Log"
+
+    _show_i2c_tree_bus
+    _show_i2c_tree_bus
+    _show_i2c_tree_bus
+}
+
 function _show_board_info {
     _banner "Show Board Info"
 
@@ -464,7 +472,7 @@ function _show_version {
     _bios_version
     _bmc_version
     _cpld_version
-    _ucd_version
+    # _ucd_version # Not support
 }
 
 function _show_i2c_tree_bus {
@@ -782,8 +790,6 @@ function _show_psu_status_cpld {
 function _show_rov_sysfs {
     # Not Support
     return 0
-    _banner "Show ROV"
-
 }
 
 function _show_rov {
@@ -1081,16 +1087,16 @@ function _show_system_led_sysfs {
                     sys_str=${YELLOW_SOLID}
                     ;;
                 '1_0_1')
-                    sys_str=LED_YELLOW_BLINKING
+                    sys_str=${LED_YELLOW_BLINKING}
                     ;;
                 '1_1_0')
-                    sys_str=LED_GREEN_SOLID
+                    sys_str=${LED_GREEN_SOLID}
                     ;;
-                '1_1_0')
-                    sys_str=LED_GREEN_BLINKING
+                '1_1_1')
+                    sys_str=${LED_GREEN_BLINKING}
                     ;;
                 *)
-                    sys_str=LED_OFF
+                    sys_str=${LED_OFF}
             esac
 
             # FAN LED
@@ -1102,16 +1108,16 @@ function _show_system_led_sysfs {
                     fan_str=${YELLOW_SOLID}
                     ;;
                 '1_0_1')
-                    fan_str=LED_YELLOW_BLINKING
+                    fan_str=${LED_YELLOW_BLINKING}
                     ;;
                 '1_1_0')
-                    fan_str=LED_GREEN_SOLID
+                    fan_str=${LED_GREEN_SOLID}
                     ;;
-                '1_1_0')
-                    fan_str=LED_GREEN_BLINKING
+                '1_1_1')
+                    fan_str=${LED_GREEN_BLINKING}
                     ;;
                 *)
-                    fan_str=LED_OFF
+                    fan_str=${LED_OFF}
             esac
 
 
@@ -1124,16 +1130,16 @@ function _show_system_led_sysfs {
                     psu_str=${YELLOW_SOLID}
                     ;;
                 '1_0_1')
-                    psu_str=LED_YELLOW_BLINKING
+                    psu_str=${LED_YELLOW_BLINKING}
                     ;;
                 '1_1_0')
-                    psu_str=LED_GREEN_SOLID
+                    psu_str=${LED_GREEN_SOLID}
                     ;;
-                '1_1_0')
-                    psu_str=LED_GREEN_BLINKING
+                '1_1_1')
+                    psu_str=${LED_GREEN_BLINKING}
                     ;;
                 *)
-                    psu_str=LED_OFF
+                    psu_str=${LED_OFF}
             esac
 
 
@@ -1146,16 +1152,16 @@ function _show_system_led_sysfs {
                     sync_str=${YELLOW_SOLID}
                     ;;
                 '1_0_1')
-                    sync_str=LED_YELLOW_BLINKING
+                    sync_str=${LED_YELLOW_BLINKING}
                     ;;
                 '1_1_0')
-                    sync_str=LED_GREEN_SOLID
+                    sync_str=${LED_GREEN_SOLID}
                     ;;
-                '1_1_0')
-                    sync_str=LED_GREEN_BLINKING
+                '1_1_1')
+                    sync_str=${LED_GREEN_BLINKING}
                     ;;
                 *)
-                    sync_str=LED_OFF
+                    sync_str=${LED_OFF}
             esac
 
 
@@ -1168,16 +1174,16 @@ function _show_system_led_sysfs {
                     gnss_str=${YELLOW_SOLID}
                     ;;
                 '1_0_1')
-                    gnss_str=LED_YELLOW_BLINKING
+                    gnss_str=${LED_YELLOW_BLINKING}
                     ;;
                 '1_1_0')
-                    gnss_str=LED_GREEN_SOLID
+                    gnss_str=${LED_GREEN_SOLID}
                     ;;
-                '1_1_0')
-                    gnss_str=LED_GREEN_BLINKING
+                '1_1_1')
+                    gnss_str=${LED_GREEN_BLINKING}
                     ;;
                 *)
-                    gnss_str=LED_OFF
+                    gnss_str=${LED_OFF}
             esac
 
             _echo "[System LED Color   ]: ${sys_color}"
@@ -1218,7 +1224,6 @@ function _show_system_led {
 function _show_beacon_led_sysfs {
     # Not Support
     return 0
-    _banner "Show Beacon LED"
 }
 
 function _show_beacon_led {
@@ -1247,6 +1252,69 @@ function _show_ioport {
         reg=`printf "0x%X\n" ${reg}`
         _echo "${ret}"
     done
+}
+
+function _show_onlpdump {
+    _banner "Show onlpdump"
+    
+    which onlpdump > /dev/null 2>&1
+    ret_onlpdump=$?
+
+    if [ ${ret_onlpdump} -eq 0 ]; then
+        cmd_array=("onlpdump -d" \
+                   "onlpdump -s" \
+                   "onlpdump -r" \
+                   "onlpdump -e" \
+                   "onlpdump -o" \
+                   "onlpdump -x" \
+                   "onlpdump -i" \
+                   "onlpdump -p" \
+                   "onlpdump -S")
+        for (( i=0; i<${#cmd_array[@]}; i++ ))
+        do
+            _echo "[Command]: ${cmd_array[$i]}"
+            ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT} | tr -d '\0'")
+            _echo "${ret}"
+            _echo ""
+        done
+    else
+        _echo "Not support!"
+    fi
+}
+
+function _show_onlps {
+    _banner "Show onlps"
+    
+    which onlps > /dev/null 2>&1
+    ret_onlps=$?
+
+    if [ ${ret_onlps} -eq 0 ]; then
+        cmd_array=("onlps chassis onie show -" \
+                   "onlps chassis asset show -" \
+                   "onlps chassis env -" \
+                   "onlps sfp inventory -" \
+                   "onlps sfp bitmaps -" \
+                   "onlps chassis debug show -")
+        for (( i=0; i<${#cmd_array[@]}; i++ ))
+        do
+            _echo "[Command]: ${cmd_array[$i]}"
+            ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT} | tr -d '\0'")
+            _echo "${ret}"
+            _echo ""
+        done
+    else
+        _echo "Not support!"
+    fi
+}
+
+function _show_cpld_error_log {
+    # Not Support
+    return 0
+}
+
+function _show_memory_correctable_error_count {
+    # Not Support
+    return 0
 }
 
 function _show_usb_info {
@@ -1459,64 +1527,8 @@ function _show_bmc_info {
 }
 
 function _show_bmc_device_status {
-    _banner "Show BMC Device Status"
     # Not Support
     return 0
-    # FIXME
-    # Step1: Stop IPMI Polling
-    # ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x0 ${LOG_REDIRECT}")
-    # _echo "[Stop IPMI Polling ]: ${ret}"
-    # _echo ""
-    # sleep 3
-
-    # _echo "[PSU Device Status (BMC) ]"
-    # if [ "${MODEL_NAME}" == "S9510" ]; then
-    #     ## Step1: Stop IPMI Polling
-    #     #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x0 ${LOG_REDIRECT}")
-    #     #_echo "[Stop IPMI Polling ]: ${ret}"
-    #     #sleep 3
-
-    #     # Step2: Switch I2C MUX to PSU0 Channel and Check Status Registers
-    #     status_word_psu0=$(eval "ipmitool i2c bus=4 0x80 0x2 0x79 ${LOG_REDIRECT}" | head -n 1)
-    #     status_vout_psu0=$(eval "ipmitool i2c bus=4 0x80 0x1 0x7a ${LOG_REDIRECT}" | head -n 1)
-    #     status_iout_psu0=$(eval "ipmitool i2c bus=4 0x80 0x1 0x7b ${LOG_REDIRECT}" | head -n 1)
-    #     status_temperature_psu0=$(eval "ipmitool i2c bus=4 0x80 0x1 0x7d ${LOG_REDIRECT}" | head -n 1)
-    #     status_fan_psu0=$(eval "ipmitool i2c bus=4 0x80 0x1 0x81 ${LOG_REDIRECT}" | head -n 1)
-    #     _echo "[PSU0 Status Word  ]: ${status_word_psu0}"
-    #     _echo "[PSU0 Status VOUT  ]: ${status_vout_psu0}"
-    #     _echo "[PSU0 Status IOUT  ]: ${status_iout_psu0}"
-    #     _echo "[PSU0 Status Temp  ]: ${status_temperature_psu0}"
-    #     _echo "[PSU0 Status FAN   ]: ${status_fan_psu0}"
-
-    #     # Step3: Switch I2C MUX to PSU1 Channel and Check Status Registers
-    #     ret=$(eval "ipmitool i2c bus=5 0xe0 0x0 0x02 ${LOG_REDIRECT}")
-    #     status_word_psu1=$(eval "ipmitool i2c bus=5 0x80 0x2 0x79 ${LOG_REDIRECT}" | head -n 1)
-    #     status_vout_psu1=$(eval "ipmitool i2c bus=5 0x80 0x1 0x7a ${LOG_REDIRECT}" | head -n 1)
-    #     status_iout_psu1=$(eval "ipmitool i2c bus=5 0x80 0x1 0x7b ${LOG_REDIRECT}" | head -n 1)
-    #     status_temperature_psu1=$(eval "ipmitool i2c bus=5 0x80 0x1 0x7d ${LOG_REDIRECT}" | head -n 1)
-    #     status_fan_psu1=$(eval "ipmitool i2c bus=5 0x80 0x1 0x81 ${LOG_REDIRECT}" | head -n 1)
-    #     _echo "[PSU1 Status Word  ]: ${status_word_psu1}"
-    #     _echo "[PSU1 Status VOUT  ]: ${status_vout_psu1}"
-    #     _echo "[PSU1 Status IOUT  ]: ${status_iout_psu1}"
-    #     _echo "[PSU1 Status Tempe ]: ${status_temperature_psu1}"
-    #      _echo "[PSU1 Status FAN   ]: ${status_fan_psu1}"
-    #      _echo ""
-
-    #     ## Step4: Re-start IPMI polling
-    #     #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x1 ${LOG_REDIRECT}")
-    #     #_echo "[Start IPMI Polling]: ${ret}"
-    #     #_echo ""
-    # else
-    #     _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
-    #     exit 1
-    # fi
-
-    # # Step4: Re-start IPMI polling
-    # ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x1 ${LOG_REDIRECT}")
-    # _echo "[Start IPMI Polling]: ${ret}"
-    # _echo ""
-
-    # sleep 10
 }
 
 function _show_bmc_sensors {
@@ -1525,6 +1537,11 @@ function _show_bmc_sensors {
     ret=$(eval "ipmitool sensor ${LOG_REDIRECT}")
     _echo "[Sensors]:"
     _echo "${ret}"
+}
+
+function _show_bmc_sel_raw_data {
+    # Not Support
+    return 0
 }
 
 function _show_bmc_sel_elist {
@@ -1610,6 +1627,7 @@ function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
     _pkg_version
+    _pre_log
     _show_board_info
     _show_version
     _show_i2c_tree
@@ -1618,14 +1636,18 @@ function _main {
     _show_cpu_eeprom
     _show_gpio
     _show_psu_status_cpld
-    # _show_rov # FIXME, not support
+#   _show_rov # Not support
     _show_port_status
     _show_cpu_temperature
     _show_cpld_interrupt
     _show_system_led
-    # _show_beacon_led # FIXME, not support
+#   _show_beacon_led # Not support
     _show_ioport
+    _show_onlpdump
+    _show_onlps
     _show_system_info
+#   _show_cpld_error_log # Not support
+#   _show_memory_correctable_error_count # Not support
     _show_grub
     _show_driver
     _show_usb_info
@@ -1637,8 +1659,9 @@ function _main {
     _show_proc_interrupt
     _show_bios_info
     _show_bmc_info
-    # _show_bmc_device_status # FIXME, not support
     _show_bmc_sensors
+#   _show_bmc_device_status # Not support
+#   _show_bmc_sel_raw_data # Not support
     _show_bmc_sel_elist
     _show_bmc_sel_elist_detail
     _show_dmesg
