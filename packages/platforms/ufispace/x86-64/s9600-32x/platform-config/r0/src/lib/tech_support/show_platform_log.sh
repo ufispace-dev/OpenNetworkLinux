@@ -364,32 +364,6 @@ function _cpld_version_i2c {
             mb_cpld3_ver=$(eval "i2cget -y -f 0 0x32 0x2 ${LOG_REDIRECT}")            
             i2cset -y 0 0x75 0x0
         fi
-        
-        # CPLD 4-5 #TODO: 64X only
-        
-#        _check_i2c_device "0x72"
-#        value=$(eval "i2cget -y -f 0 0x72 ${LOG_REDIRECT}")
-#        ret=$?
-#
-#        if [ ${ret} -eq 0 ]; then
-#
-#            i2cset -y 0 0x72 0x1
-#
-#            _check_i2c_device "0x76"
-#            value=$(eval "i2cget -y -f 0 0x76 ${LOG_REDIRECT}")
-#            ret=$?
-#
-#            if [ ${ret} -eq 0 ]; then
-#                i2cset -y 0 0x76 0x20
-#                _check_i2c_device "0x33"
-#                _check_i2c_device "0x34"
-#                mb_cpld4_ver=$(eval "i2cget -y -f 0 0x33 0x2 ${LOG_REDIRECT}")
-#                mb_cpld5_ver=$(eval "i2cget -y -f 0 0x34 0x2 ${LOG_REDIRECT}")
-#                i2cset -y 0 0x76 0x0
-#            fi
-#
-#            i2cset -y 0 0x72 0x0
-#        fi
 
         _echo "[MB CPLD1 Version]: $(( (mb_cpld1_ver & 2#11000000) >> 6)).$(( mb_cpld1_ver & 2#00111111 ))"
         _echo "[MB CPLD2 Version]: $(( (mb_cpld2_ver & 2#11000000) >> 6)).$(( mb_cpld2_ver & 2#00111111 ))"
@@ -778,6 +752,7 @@ function _show_rov {
 
 function _show_port_status_sysfs {
     _banner "Show QSFP Port Status / EEPROM"
+    echo "    Show QSFP Port Status / EEPROM, please wait..."
 
     bus_id=""
     port_status_cpld_addr_array=""
@@ -838,27 +813,39 @@ function _show_port_status_sysfs {
             # Module Port Dump EEPROM
             if [ "${port_module_absent_l}" == "0" ]; then
                 _check_filepath "/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom"
-                port_eeprom=$(eval "dd if=/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
+                port_eeprom_p0_1st=$(eval "dd if=/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
+                port_eeprom_p0_2nd=$(eval "dd if=/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
+                port_eeprom_p17_1st=$(eval "dd if=/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
+                port_eeprom_p17_2nd=$(eval "dd if=/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
+                if [ -z "$port_eeprom_p0_1st" ]; then
+                    port_eeprom_p0_1st="ERROR!!! The result is empty. It should read failed (/sys/bus/i2c/devices/${nif_port_eeprom_bus_id_array[${i}]}-0050/eeprom)!!"
+                fi
                 if [ "${LOG_FILE_ENABLE}" == "1" ]; then
                     hexdump -C "/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom" > ${LOG_FOLDER_PATH}/qsfpdd_nif_port${i}_eeprom.log 2>&1
                 fi
-                if [ -z "$port_eeprom" ]; then
-                    port_eeprom="ERROR!!! The result is empty. It should read failed (/sys/bus/i2c/devices/$((port_eeprom_bus_id_base + i))-0050/eeprom)!!"
-                fi
             else
-                port_eeprom="N/A"
+                port_eeprom_p0_1st="N/A"
+                port_eeprom_p0_2nd="N/A"
+                port_eeprom_p17_1st="N/A"
+                port_eeprom_p17_2nd="N/A"
             fi
 
             _echo "[Port${i} Status Reg Raw]: ${port_module_interrupt_reg}"
             _echo "[Port${i} Module INT (L)]: ${port_module_interrupt_l}"
-            _echo "[Port${i} Module Absent Reg Raq]: ${port_module_absent_reg}"
+            _echo "[Port${i} Module Absent Reg Raw]: ${port_module_absent_reg}"
             _echo "[Port${i} Module Absent ]: ${port_module_absent_l}"
             _echo "[Port${i} Config Reg Raw]: ${port_lp_mode_reg}"
             _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
             _echo "[Port${i} Reset Reg Raw]: ${port_reset_reg}"
             _echo "[Port${i} Reset Status]: ${port_reset}"    
-            _echo "[Port${i} EEPROM Page0-1]:"
-            _echo "${port_eeprom}"
+            _echo "[Port${i} EEPROM Page0-0(1st)]:"
+            _echo "${port_eeprom_p0_1st}"
+            _echo "[Port${i} EEPROM Page0-0(2nd)]:"
+            _echo "${port_eeprom_p0_2nd}"
+            _echo "[Port${i} EEPROM Page17 (1st)]:"
+            _echo "${port_eeprom_p17_1st}"
+            _echo "[Port${i} EEPROM Page17 (2nd)]:"
+            _echo "${port_eeprom_p17_2nd}"
             _echo ""
         done
     else
@@ -1267,6 +1254,11 @@ function _show_memory_correctable_error_count {
 function _show_usb_info {
     _banner "Show USB Info"
 
+    _echo "[Command]: lsusb -t"
+    ret=$(eval "lsusb -t ${LOG_REDIRECT}")
+    _echo "${ret}"
+    _echo ""
+    
     _echo "[Command]: lsusb -v"
     ret=$(eval "lsusb -v ${LOG_REDIRECT}")
     _echo "${ret}"
