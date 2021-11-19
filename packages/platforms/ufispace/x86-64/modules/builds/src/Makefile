@@ -1,4 +1,5 @@
 obj-m += x86-64-ufispace-eeprom-mb.o
+obj-m += x86-64-ufispace-optoe.o
 
 ccflags-y += -I$(src)/i40e
 subdir-ccflags-y += -I$(src)/i40e
