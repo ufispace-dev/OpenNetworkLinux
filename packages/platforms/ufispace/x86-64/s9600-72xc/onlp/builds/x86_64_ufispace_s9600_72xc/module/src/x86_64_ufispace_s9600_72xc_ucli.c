@@ -1,21 +1,21 @@
 /************************************************************
  * <bsn.cl fy=2014 v=onl>
- * 
- *        Copyright 2014, 2015 Big Switch Networks, Inc.       
- * 
+ *
+ *        Copyright 2014, 2015 Big Switch Networks, Inc.
+ *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  *        http://www.eclipse.org/legal/epl-v10.html
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the
  * License.
- * 
+ *
  * </bsn.cl>
  ************************************************************
  *
@@ -31,8 +31,7 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
-static ucli_status_t
-x86_64_ufispace_s9600_72xc_ucli_ucli__config__(ucli_context_t* uc)
+static ucli_status_t x86_64_ufispace_s9600_72xc_ucli_ucli__config__(ucli_context_t* uc)
 {
     UCLI_HANDLER_MACRO_MODULE_CONFIG(x86_64_ufispace_s9600_72xc)
 }
@@ -62,8 +61,7 @@ x86_64_ufispace_s9600_72xc_ucli_module__ =
         NULL,
     };
 
-ucli_node_t*
-x86_64_ufispace_s9600_72xc_ucli_node_create(void)
+ucli_node_t* x86_64_ufispace_s9600_72xc_ucli_node_create(void)
 {
     ucli_node_t* n;
     ucli_module_init(&x86_64_ufispace_s9600_72xc_ucli_module__);
@@ -73,8 +71,7 @@ x86_64_ufispace_s9600_72xc_ucli_node_create(void)
 }
 
 #else
-void*
-x86_64_ufispace_s9600_72xc_ucli_node_create(void)
+void* x86_64_ufispace_s9600_72xc_ucli_node_create(void)
 {
     return NULL;
 }

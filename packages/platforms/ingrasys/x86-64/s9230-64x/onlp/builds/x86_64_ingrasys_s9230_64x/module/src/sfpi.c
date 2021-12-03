@@ -38,8 +38,7 @@ static int _fp2phy_port_mapping[64] = {
     3, 4, 7, 8, 11, 12, 15, 16, 19, 20, 23, 24, 27, 28, 31, 32, 
     35, 36, 39, 40, 43, 44, 47, 48, 51, 52, 55, 56, 59, 60, 63, 64};
 
-static void
-qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
+static void qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
 {
     phy_port = phy_port  - 1;
     if (phy_port < CPLD1_PORTS) { 
@@ -52,15 +51,12 @@ qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
     return;
 }
 
-
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {  
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 1; p <= PORT_NUM; p++) {
@@ -69,8 +65,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status, phy_port;
     int i2c_id, cpld_id, cpld_port_index;
@@ -79,7 +74,7 @@ onlp_sfpi_is_present(int port)
     uint8_t data[8];
     int data_len;
 
-    if (port >= 1 && port <=64) {
+    if (port >= 1 && port <= 64) {
         phy_port = _fp2phy_port_mapping[port-1];
         qsfp_to_cpld_index(phy_port, &cpld_id, &cpld_port_index);
 
@@ -118,9 +113,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 1;
     int rc = 0;
@@ -137,8 +130,7 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {   
     int eeprombus=0, eeprombusbase=0, phy_port=0, port_group=0, eeprombusshift=0;
     char eeprom_path[512], eeprom_addr[32];
@@ -154,9 +146,9 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         eeprombusbase = 33 + (port_group * 8);
         eeprombusshift = (phy_port-1)%8;
         eeprombus = eeprombusbase + eeprombusshift;
-    } else if (port == 65 ){
+    } else if (port == 65){
         eeprombus = 21;
-    } else if (port == 66 ){
+    } else if (port == 66){
         eeprombus = 22;
     } else {
         return ONLP_STATUS_E_INTERNAL;
@@ -175,8 +167,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

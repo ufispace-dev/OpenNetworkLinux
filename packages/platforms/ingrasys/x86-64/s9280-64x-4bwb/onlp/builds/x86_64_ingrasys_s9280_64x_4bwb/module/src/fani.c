@@ -69,14 +69,13 @@ onlp_fan_info_t fan_info[] = {
     {
         { FAN_OID_PSU2_FAN1, "PSU-2 FAN1", 0 },
         ONLP_FAN_STATUS_PRESENT,
-    }    
+    }
 };
 
 /*
  * This function will be called prior to all of onlp_fani_* functions.
  */
-int
-onlp_fani_init(void)
+int onlp_fani_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
@@ -87,20 +86,17 @@ int sys_fan_present_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int 
-sys_fan_info_get(onlp_fan_info_t* info, int id)
+int sys_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-sys_fan_rpm_percent_set(int perc)
-{  
+int sys_fan_rpm_percent_set(int perc)
+{
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-onlp_fani_rpm_set(onlp_oid_t id, int rpm)
+int onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -113,26 +109,24 @@ onlp_fani_rpm_set(onlp_oid_t id, int rpm)
  *
  * It is optional if you have no fans at all with this feature.
  */
-int
-onlp_fani_percentage_set(onlp_oid_t id, int percentage)
+int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;  
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
+int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id ,rc;
-    
+
     fan_id = ONLP_OID_ID_GET(id);
     *rv = fan_info[fan_id];
     rv->caps |= ONLP_FAN_CAPS_GET_RPM;
-       
+
     switch (fan_id) {
         case FAN_ID_FAN1 ... FAN_ID_PSU2_FAN1:
             rc = bmc_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

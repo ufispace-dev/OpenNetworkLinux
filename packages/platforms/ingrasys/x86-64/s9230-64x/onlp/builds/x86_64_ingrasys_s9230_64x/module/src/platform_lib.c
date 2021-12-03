@@ -35,8 +35,7 @@
 
 #include "platform_lib.h"
 
-int 
-psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
+int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
 {
     int pw_exist, pw_good;
     int offset, i2c_bus, rc;
@@ -109,8 +108,7 @@ psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_fan_info_get(onlp_fan_info_t* info, int id)
+int psu_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int pw_exist, pw_good;
     int i2c_bus, rc;
@@ -160,8 +158,7 @@ psu_fan_info_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_vout_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_vout_get(onlp_psu_info_t* info, int i2c_bus)
 {
     int v_value = 0;
     int n_value = 0;
@@ -199,8 +196,7 @@ psu_vout_get(onlp_psu_info_t* info, int i2c_bus)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_iout_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_iout_get(onlp_psu_info_t* info, int i2c_bus)
 {
     int value;
     unsigned int y_value = 0;
@@ -238,8 +234,7 @@ psu_iout_get(onlp_psu_info_t* info, int i2c_bus)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
 {
     int value;
     unsigned int y_value = 0;
@@ -277,8 +272,7 @@ psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
 {
     int value;
     unsigned int y_value = 0;
@@ -316,8 +310,7 @@ psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_eeprom_get(onlp_psu_info_t* info, int id)
+int psu_eeprom_get(onlp_psu_info_t* info, int id)
 {
     uint8_t data[256];
     char eeprom_path[128];
@@ -369,8 +362,7 @@ psu_eeprom_get(onlp_psu_info_t* info, int id)
 }
 
 
-int
-psu_present_get(int *pw_exist, char *sys_psu_prefix)
+int psu_present_get(int *pw_exist, char *sys_psu_prefix)
 {
     int rv, psu_pres;     
 
@@ -383,8 +375,7 @@ psu_present_get(int *pw_exist, char *sys_psu_prefix)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_pwgood_get(int *pw_good, char *sys_psu_prefix)
+int psu_pwgood_get(int *pw_good, char *sys_psu_prefix)
 {
     int rv, psu_pwgood;      
     
@@ -397,8 +388,7 @@ psu_pwgood_get(int *pw_good, char *sys_psu_prefix)
     return ONLP_STATUS_OK;
 }
 
-int
-system_led_set(onlp_led_mode_t mode)
+int system_led_set(onlp_led_mode_t mode)
 {
     int rc;
     if(mode == ONLP_LED_MODE_GREEN) {        
@@ -419,8 +409,7 @@ system_led_set(onlp_led_mode_t mode)
     return ONLP_STATUS_OK;
 }
 
-int
-fan_led_set(onlp_led_mode_t mode)
+int fan_led_set(onlp_led_mode_t mode)
 {
     int rc;
 
@@ -446,8 +435,7 @@ fan_led_set(onlp_led_mode_t mode)
     return ONLP_STATUS_OK;
 }
 
-int
-psu1_led_set(onlp_led_mode_t mode)
+int psu1_led_set(onlp_led_mode_t mode)
 {
     int rc;
     if(mode == ONLP_LED_MODE_GREEN) {    
@@ -473,8 +461,7 @@ psu1_led_set(onlp_led_mode_t mode)
     return ONLP_STATUS_OK;
 }
 
-int
-psu2_led_set(onlp_led_mode_t mode)
+int psu2_led_set(onlp_led_mode_t mode)
 {
     int rc;
     if(mode == ONLP_LED_MODE_GREEN) {
@@ -501,8 +488,7 @@ psu2_led_set(onlp_led_mode_t mode)
     return ONLP_STATUS_OK;
 }
 
-int
-fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
+int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int rc, temp_id;
     int fan_tray_id, offset;
@@ -553,8 +539,7 @@ fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
     return ONLP_STATUS_OK;
 }
 
-int
-sysi_platform_info_get(onlp_platform_info_t* pi)
+int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int cpld_version, cpld_rev;
     int bus_i;

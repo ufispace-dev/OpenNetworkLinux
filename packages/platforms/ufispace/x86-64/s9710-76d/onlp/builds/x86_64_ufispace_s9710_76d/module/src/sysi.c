@@ -79,10 +79,10 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int cpu_cpld_addr = 0x600;
     int cpu_cpld_build_addr = 0x6e0;
-    int cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor, cpu_cpld_ver_build;
+    int cpu_cpld_ver = 0, cpu_cpld_ver_major = 0, cpu_cpld_ver_minor = 0, cpu_cpld_ver_build = 0;
     int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX], cpld_build[CPLD_MAX];
-    int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
-    int i;
+    int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
+    int i = 0;
     char bios_out[32];
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
 
@@ -92,25 +92,17 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     memset(bmc_out3, 0, sizeof(bmc_out3));
 
     //get CPU CPLD version
-    if (read_ioport(cpu_cpld_addr, &cpu_cpld_ver) < 0) {
-        AIM_LOG_ERROR("unable to read CPU CPLD version\n");
-        return ONLP_STATUS_E_INTERNAL; 
-    }
+    ONLP_TRY(read_ioport(cpu_cpld_addr, &cpu_cpld_ver));
     cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x03));
     cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
 
     //get CPU CPLD build version
-    if (read_ioport(cpu_cpld_build_addr, &cpu_cpld_ver_build) < 0) {
-        AIM_LOG_ERROR("unable to read CPU CPLD build version\n");
-        return ONLP_STATUS_E_INTERNAL; 
-    }
+    ONLP_TRY(read_ioport(cpu_cpld_build_addr, &cpu_cpld_ver_build));
     
     //get MB CPLD version
-    for(i=0; i<CPLD_MAX; ++i) {        
-        if (file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_version",
-                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]) < 0) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
+    for(i=0; i<CPLD_MAX; ++i) {
+        ONLP_TRY(file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_version",
+                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
         if (cpld_ver[i] < 0) {            
             AIM_LOG_ERROR("unable to read MB CPLD version\n");
             return ONLP_STATUS_E_INTERNAL;             
@@ -119,10 +111,8 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x03));
         cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
 
-        if (file_read_hex(&cpld_build[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_build",
-                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]) < 0) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(file_read_hex(&cpld_build[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_build",
+                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
         if (cpld_build[i] < 0) {            
             AIM_LOG_ERROR("unable to read MB CPLD build\n");
             return ONLP_STATUS_E_INTERNAL;             
@@ -145,18 +135,13 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         cpld_ver_major[4], cpld_ver_minor[4], cpld_build[4]);
     
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
+    
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 0 & 0x03));
     mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
     
     //Get BIOS version 
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL; 
-    }
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
@@ -298,7 +283,7 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
  */
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
-    int i=0;
+    int i = 0;
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
 
@@ -374,9 +359,7 @@ int onlp_sysi_platform_manage_leds(void)
  */
 int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
 {
-    if (ufi_sysi_platform_info_get(info) < 0) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(ufi_sysi_platform_info_get(info));
     
     return ONLP_STATUS_OK;
 }

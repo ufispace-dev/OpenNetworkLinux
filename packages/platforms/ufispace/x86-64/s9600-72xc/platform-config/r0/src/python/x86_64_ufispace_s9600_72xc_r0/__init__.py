@@ -103,7 +103,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
     def check_bmc_enable(self):
         return 1
 
-    def check_i2c_status(self): 
+    def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/mb_cpld/mux_reset"
 
         # Check I2C status
@@ -137,45 +137,45 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         # init SFP+ EEPROM
         for bus in range(25, 89):
             self.new_i2c_device('optoe2', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
         # init QSFP EEPROM
         for bus in range(89, 93):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
         # init QSFP EEPROM
         for bus in range(95, 99):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
-            
+
         # init MGMT SFP+ EEPROM
         for bus in range(10, 12):
             self.new_i2c_device('optoe2', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
-    def init_i2c_mux_idle_state(self, muxs):        
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -191,12 +191,6 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
 
         # check i2c bus status
         self.check_i2c_status()
-
-        bmc_enable = self.check_bmc_enable()
-        msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
-        # record the result for onlp
-        os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         # initialize I210 I2C bus 0 #
         # init PCA9548
@@ -217,7 +211,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         ]
 
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
 
@@ -244,6 +238,6 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.insmod("i40e")
         # init bcm82752
-        os.system("/lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init 10G &")
-        
+        os.system("/lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init -s auto_10G -d mdio &")
+
         return True

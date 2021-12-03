@@ -90,14 +90,12 @@ static onlp_thermal_info_t thermal_info[] = {
 /*
  * This will be called to intiialize the thermali subsystem.
  */
-int
-onlp_thermali_init(void)
+int onlp_thermali_init(void)
 {    
     return ONLP_STATUS_OK;
 }
 
-static int
-lm_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int lm_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
     char sysfs_path[64];
@@ -137,8 +135,7 @@ lm_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
     int offset;
@@ -160,8 +157,7 @@ cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_thermal_info_get(onlp_thermal_info_t* info, int id)
+int psu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
     
@@ -183,8 +179,7 @@ psu_thermal_info_get(onlp_thermal_info_t* info, int id)
  * Note -- it is expected that you fill out the information
  * structure even if the sensor described by the OID is not present.
  */
-int
-onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
+int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
 {   
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);

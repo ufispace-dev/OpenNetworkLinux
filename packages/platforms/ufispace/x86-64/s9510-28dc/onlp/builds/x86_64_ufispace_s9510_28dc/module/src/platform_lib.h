@@ -30,6 +30,15 @@
 #include <onlplib/i2c.h>
 #include "x86_64_ufispace_s9510_28dc_log.h"
 
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
@@ -39,21 +48,64 @@
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
+#define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
 
+/* BMC CMD */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_MAC TEMP_DDR4 TEMP_BMC TEMP_FANCARD1 TEMP_FANCARD2 TEMP_FPGA_R TEMP_FPGA_L HWM_TEMP_GDDR HWM_TEMP_MAC HWM_TEMP_AMB HWM_TEMP_NTMCARD PSU0_TEMP1 PSU1_TEMP1 FAN_0 FAN_1 FAN_2 FAN_3 FAN_4 PSU0_FAN PSU1_FAN  PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
-#define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
+#define FAN_CACHE_TIME          10
+#define PSU_CACHE_TIME          30
+#define THERMAL_CACHE_TIME      10
 
-#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
+#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get "\
+                                    "TEMP_MAC "\
+                                    "TEMP_DDR4 "\
+                                    "TEMP_BMC "\
+                                    "TEMP_FANCARD1 "\
+                                    "TEMP_FANCARD2 "\
+                                    "TEMP_FPGA_R "\
+                                    "TEMP_FPGA_L "\
+                                    "HWM_TEMP_GDDR "\
+                                    "HWM_TEMP_MAC "\
+                                    "HWM_TEMP_AMB "\
+                                    "HWM_TEMP_NTMCARD "\
+                                    "PSU0_TEMP1 "\
+                                    "PSU1_TEMP1 "\
+                                    "FAN_0 "\
+                                    "FAN_1 "\
+                                    "FAN_2 "\
+                                    "FAN_3 "\
+                                    "FAN_4 "\
+                                    "PSU0_FAN "\
+                                    "PSU1_FAN "\
+                                    "PSU0_VIN "\
+                                    "PSU0_VOUT "\
+                                    "PSU0_IIN "\
+                                    "PSU0_IOUT "\
+                                    "PSU0_STBVOUT "\
+                                    "PSU0_STBIOUT "\
+                                    "PSU1_VIN "\
+                                    "PSU1_VOUT "\
+                                    "PSU1_IIN "\
+                                    "PSU1_IOUT "\
+                                    "PSU1_STBVOUT "\
+                                    "PSU1_STBIOUT "\
+                                    "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
+#define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
+#define BMC_FRU_KEY_NAME            "Product Name"
+#define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
+#define BMC_FRU_KEY_SERIAL          "Product Serial"
 
-/* BMC CMD */
-#define FAN_CACHE_TIME          5
-#define PSU_CACHE_TIME          5
-#define THERMAL_CACHE_TIME  10
+#define CMD_FRU_CACHE_SET "ipmitool fru print %d " \
+                           IPMITOOL_REDIRECT_ERR \
+                          " | grep %s" \
+                          " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
+                          " > %s"
 
 enum sensor
 {
@@ -156,11 +208,38 @@ enum onlp_thermal_id {
     ONLP_THERMAL_MAX,
 };
 
+/** onlp_psu_type */
+typedef enum onlp_psu_type_e {
+    ONLP_PSU_TYPE_AC,
+    ONLP_PSU_TYPE_DC12,
+    ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_COUNT,
+    ONLP_PSU_TYPE_INVALID = -1,
+} onlp_psu_type_t;
+
 typedef struct bmc_info_s
 {
     char name[20];
     float data;
 } bmc_info_t;
+
+typedef struct bmc_fru_attr_s
+{
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+}bmc_fru_attr_t;
+
+typedef struct bmc_fru_s
+{
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+}bmc_fru_t;
 
 int read_ioport(int addr, int *reg_val);
 
@@ -173,6 +252,7 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs);
 void lock_init();
 
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 
 void check_and_do_i2c_mux_reset(int port);
 
@@ -184,4 +264,6 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 int get_hw_rev_id(void);
 
+int get_psu_present_status(int local_id, int *pw_present);
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 #endif  /* __PLATFORM_LIB_H__ */

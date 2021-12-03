@@ -36,20 +36,17 @@
 
 #include "platform_lib.h"
 
-const char*
-onlp_sysi_platform_get(void)
+const char* onlp_sysi_platform_get(void)
 {   
     return "x86-64-ingrasys-s9280-64x-r0";
 }
 
-int
-onlp_sysi_init(void)
+int onlp_sysi_init(void)
 {    
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_onie_data_get(uint8_t** data, int* size)
+int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
     uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
@@ -58,15 +55,21 @@ onlp_sysi_onie_data_get(uint8_t** data, int* size)
             return ONLP_STATUS_OK;
         }
     }
-    
+
     AIM_LOG_INFO("Unable to get data from eeprom \n");    
     aim_free(rdata);
     *size = 0;
     return ONLP_STATUS_E_INTERNAL;
 }
 
-int
-onlp_sysi_oids_get(onlp_oid_t* table, int max)
+void onlp_sysi_onie_data_free(uint8_t* data)
+{
+    if (data) {
+        aim_free(data);
+    }
+}
+
+int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
@@ -94,8 +97,7 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
     return ONLP_STATUS_OK;
 }
 
-int
-decide_fan_percentage(int is_up, int new_temp)
+int decide_fan_percentage(int is_up, int new_temp)
 {
     int new_perc;
     if (is_up) {
@@ -119,8 +121,7 @@ decide_fan_percentage(int is_up, int new_temp)
     return new_perc;
 }
 
-int 
-platform_thermal_temp_get(int *thermal_temp)
+int platform_thermal_temp_get(int *thermal_temp)
 {
     int i, temp, max_temp, rc;
     onlp_thermal_info_t thermal_info;
@@ -149,8 +150,7 @@ platform_thermal_temp_get(int *thermal_temp)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_platform_manage_fans(void)
+int onlp_sysi_platform_manage_fans(void)
 {
     int rc, is_up ,new_temp, thermal_temp, diff;
     static int new_perc = 0, ori_perc = 0;
@@ -184,34 +184,33 @@ onlp_sysi_platform_manage_fans(void)
     if ((rc = onlp_fani_percentage_set(THERMAL_OID_ASIC, new_perc)) != ONLP_STATUS_OK) {
         goto _EXIT;
     }
-            
+
     /* update */
     ori_perc = new_perc;
     ori_temp = new_temp;
-       
+
 _EXIT :
     return rc;
 }
 
-int
-onlp_sysi_platform_manage_leds(void)
+int onlp_sysi_platform_manage_leds(void)
 {
     int psu1_status, psu2_status, rc, i;
     static int pre_psu1_status = 0, pre_psu2_status = 0, pre_fan_status = 0;
-    
+
     //-------------------------------
     static int pre_fan_tray_status[4] = {0};
     int fan_tray_id, sum, total = 0;
     onlp_led_status_t fan_tray_status[SYS_FAN_NUM];
     //-------------------------------
-    
+
     onlp_psu_info_t psu_info;
     onlp_fan_info_t fan_info;
 
     //-------- -----------------------    
     memset(&fan_tray_status, 0, sizeof(fan_tray_status));
     //-------------------------------
- 
+
     memset(&psu_info, 0, sizeof(onlp_psu_info_t));   
     memset(&fan_info, 0, sizeof(onlp_fan_info_t));
     uint32_t fan_arr[] = { FAN_OID_FAN1, 
@@ -261,7 +260,7 @@ onlp_sysi_platform_manage_leds(void)
         }
         pre_psu2_status = psu2_status;
     }
-    
+
     /* FAN LED CTRL */
     for (i=0; i<SYS_FAN_NUM; i++) {
         if ((rc = onlp_fani_info_get(fan_arr[i], &fan_info)) != ONLP_STATUS_OK) {
@@ -288,7 +287,6 @@ onlp_sysi_platform_manage_leds(void)
                 break;
         }
 
-    
         /* the enum of fan_tray id is start from 5 to 8, 
          * the "-5" means mapping to array index 0 to 3
          */
@@ -307,7 +305,7 @@ onlp_sysi_platform_manage_leds(void)
             
             pre_fan_tray_status[fan_tray_id - 5] = sum;
         }
-    }    
+    }
 
     if (total != pre_fan_status) {
         if (total == (ONLP_LED_STATUS_PRESENT * 4)) {
@@ -315,11 +313,11 @@ onlp_sysi_platform_manage_leds(void)
         } else {
             rc = onlp_ledi_mode_set(LED_OID_FAN, ONLP_LED_MODE_ORANGE);
         }
-        
+
         if (rc != ONLP_STATUS_OK) {
             goto _EXIT;
         }
-        
+
         pre_fan_status = total;
     }
 
@@ -327,14 +325,23 @@ _EXIT :
     return rc;
 }
 
-int
-onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
+int onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int rc;
     if ((rc = sysi_platform_info_get(pi)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
+void onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
+{
+    if (pi->cpld_versions) {
+        aim_free(pi->cpld_versions);
+    }
+
+    if (pi->other_versions) {
+        aim_free(pi->other_versions);
+    }
+}

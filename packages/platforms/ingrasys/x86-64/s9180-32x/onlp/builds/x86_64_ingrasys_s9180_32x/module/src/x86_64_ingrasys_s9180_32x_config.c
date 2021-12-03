@@ -70,8 +70,7 @@ x86_64_ingrasys_s9180_32x_config_settings_t x86_64_ingrasys_s9180_32x_config_set
 #undef __x86_64_ingrasys_s9180_32x_config_STRINGIFY_VALUE
 #undef __x86_64_ingrasys_s9180_32x_config_STRINGIFY_NAME
 
-const char*
-x86_64_ingrasys_s9180_32x_config_lookup(const char* setting)
+const char* x86_64_ingrasys_s9180_32x_config_lookup(const char* setting)
 {
     int i;
     for(i = 0; x86_64_ingrasys_s9180_32x_config_settings[i].name; i++) {
@@ -82,8 +81,7 @@ x86_64_ingrasys_s9180_32x_config_lookup(const char* setting)
     return NULL;
 }
 
-int
-x86_64_ingrasys_s9180_32x_config_show(struct aim_pvs_s* pvs)
+int x86_64_ingrasys_s9180_32x_config_show(struct aim_pvs_s* pvs)
 {
     int i;
     for(i = 0; x86_64_ingrasys_s9180_32x_config_settings[i].name; i++) {

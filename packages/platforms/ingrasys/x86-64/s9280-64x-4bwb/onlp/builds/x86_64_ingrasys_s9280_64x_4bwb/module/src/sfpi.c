@@ -47,10 +47,9 @@ static int _fp2phy_port_mapping[64] = {
    47, 50, 51, 54, 55,
    58, 59, 62, 63};
 
-static void
-qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
+static void qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
 {
-    if (phy_port < CPLD1_PORTS) { 
+    if (phy_port < CPLD1_PORTS) {
         *cpld_id = 0;
         *cpld_port_index = phy_port + 1;
     } else {
@@ -61,15 +60,13 @@ qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
 }
 
 
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 1; p <= PORT_NUM; p++) {
@@ -78,8 +75,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status, phy_port;
     int i2c_id, cpld_id, cpld_port_index;
@@ -94,7 +90,7 @@ onlp_sfpi_is_present(int port)
         i2c_id = CPLD_BUS_BASE + cpld_id;
         mask = 1 << CPLD_PRES_BIT;
 
-        snprintf(sysfs, 128, CPLD_QSFP_REG_PATH, i2c_id, CPLD_I2C_ADDR, 
+        snprintf(sysfs, 128, CPLD_QSFP_REG_PATH, i2c_id, CPLD_I2C_ADDR,
             MB_CPLD_QSFP_PORT_STATUS_ATTR, cpld_port_index);
     } else if (port>= 65 && port <= 66) {
         cpld_port_index = 0;
@@ -106,7 +102,7 @@ onlp_sfpi_is_present(int port)
             mask = 1 << CPLD_SFP2_PRES_BIT;
         }
 
-        snprintf(sysfs, 128, CPLD_SFP_REG_PATH, i2c_id, CPLD_I2C_ADDR, 
+        snprintf(sysfs, 128, CPLD_SFP_REG_PATH, i2c_id, CPLD_I2C_ADDR,
             MB_CPLD_SFP_PORT_STATUS_ATTR);
     } else {
         return ONLP_STATUS_E_INTERNAL;
@@ -125,9 +121,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 1;
     int rc = 0;
@@ -144,17 +138,16 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
-{   
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+{
     int eeprombus=0, eeprombusbase=0, phy_port=0, port_group=0, eeprombusshift=0;
     char eeprom_path[512], eeprom_addr[32];
-    memset(eeprom_path, 0, sizeof(eeprom_path));    
-    memset(eeprom_addr, 0, sizeof(eeprom_addr));    
-    aim_strlcpy(eeprom_addr, "0050", sizeof(eeprom_addr));    
-    
+    memset(eeprom_path, 0, sizeof(eeprom_path));
+    memset(eeprom_addr, 0, sizeof(eeprom_addr));
+    aim_strlcpy(eeprom_addr, "0050", sizeof(eeprom_addr));
+
     memset(data, 0, 256);
-    
+
     if (port >=1 && port <= 64) {
         phy_port = _fp2phy_port_mapping[port-1] + 1;
         port_group = (phy_port-1)/8;
@@ -168,19 +161,18 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    snprintf(eeprom_path, sizeof(eeprom_path), 
+
+    snprintf(eeprom_path, sizeof(eeprom_path),
              "/sys/bus/i2c/devices/%d-%s/eeprom", eeprombus, eeprom_addr);
 
     if (onlplib_sfp_eeprom_read_file(eeprom_path, data) != 0) {
         return ONLP_STATUS_E_INTERNAL;
-    } 
+    }
 
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int i=0, value=0, rc=0;
 
@@ -191,7 +183,7 @@ onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 
     /* Populate bitmap - SFP+ ports*/
     for(i = QSFP_NUM + 1; i <= PORT_NUM; i++) {
-        if ((rc=onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)) 
+        if ((rc=onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value))
                 != ONLP_STATUS_OK) {
             return ONLP_STATUS_E_INTERNAL;
         } else {
@@ -202,13 +194,12 @@ onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
+int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     int data_val, mask, shift, port_index;
     char sysfs[128];
     int rc;
-    
+
     //QSFP ports are not supported
     if (port <= QSFP_NUM || port > PORT_NUM) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -216,22 +207,22 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 
     // sfp port number
     port_index = port - QSFP_NUM - 1;
- 
+
     //sysfs path
     if (control == ONLP_SFP_CONTROL_RX_LOS) {
-        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_STATUS_ATTR, 
+        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_STATUS_ATTR,
             I2C_BUS_CPLD1, CPLD_I2C_ADDR);
         mask = 0b00000100 << (port_index*4);
         shift = 2 + (port_index*4);
-        
+
     } else if (control == ONLP_SFP_CONTROL_TX_FAULT) {
-        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_STATUS_ATTR, 
+        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_STATUS_ATTR,
             I2C_BUS_CPLD1, CPLD_I2C_ADDR);
         mask = 0b00000010 << (port_index*4);
         shift = 1 + (port_index*4);;
 
     } else if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
-        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_CONFIF_ATTR, 
+        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_CONFIF_ATTR,
             I2C_BUS_CPLD1, CPLD_I2C_ADDR);
         mask = 0b00000001 << (port_index*4);
         shift = 0 + (port_index*4);
@@ -248,8 +239,7 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
+int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
 
     int data_val, mask, port_index;
@@ -257,7 +247,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     int reg_val;
     int rc;
 
-    
+
     //QSFP ports are not supported
     if (port <= QSFP_NUM || port > PORT_NUM) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -267,7 +257,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     port_index = port - QSFP_NUM - 1;
 
     if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
-        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_CONFIF_ATTR, 
+        snprintf(sysfs, sizeof(sysfs), MB_CPLD_SYSFS_PATH"/"MB_CPLD_SFP_PORT_CONFIF_ATTR,
             I2C_BUS_CPLD1, CPLD_I2C_ADDR);
         mask = 0b00000001 << (port_index*4);
     } else {
@@ -287,13 +277,13 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     }
 
     // write reg val back
-    if ((rc = onlp_file_write_int(reg_val, sysfs)) 
+    if ((rc = onlp_file_write_int(reg_val, sysfs))
             != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("Unable to write tx disable value, error=%d, \
                                     sysfs=%s, reg_val=%x", rc, sysfs, reg_val);
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -301,8 +291,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

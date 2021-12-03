@@ -94,14 +94,12 @@ static onlp_thermal_info_t thermal_info[] = {
 /*
  * This will be called to intiialize the thermali subsystem.
  */
-int
-onlp_thermali_init(void)
+int onlp_thermali_init(void)
 {    
     return ONLP_STATUS_OK;
 }
 
-static int
-sys_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int sys_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
@@ -124,8 +122,7 @@ sys_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
     int offset;
@@ -147,15 +144,14 @@ cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_thermal_info_get(onlp_thermal_info_t* info, int id)
+int psu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
     if ( bmc_enable ) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
-	
+
     rv = psu_thermal_get(info, id);
     if(rv == ONLP_STATUS_E_INTERNAL) {
         return rv;
@@ -164,8 +160,7 @@ psu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_board_thermal_info_get(onlp_thermal_info_t* info)
+static int cpu_board_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
@@ -176,7 +171,7 @@ cpu_board_thermal_info_get(onlp_thermal_info_t* info)
         rv = onlp_file_read_int(&info->mcelsius,
                             SYS_CPU_BOARD_TEMP_PREFIX "temp1_input");
     }
-	
+
     if (rv == ONLP_STATUS_E_INTERNAL) {
         return rv;
     }
@@ -189,25 +184,24 @@ cpu_board_thermal_info_get(onlp_thermal_info_t* info)
     return ONLP_STATUS_OK;
 }
 
-static int
-psu_near_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int psu_near_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
     if (id == THERMAL_ID_PSU1_NEAR) {
-	 if ( bmc_enable ) {	
+        if ( bmc_enable ) {	
             return ONLP_STATUS_E_UNSUPPORTED;
-	 } else {
+        } else {
             rv = onlp_file_read_int(&info->mcelsius,
-                                SYS_PSU1_NEAR_TEMP_PREFIX "temp1_input");	 
-	 }
+                                SYS_PSU1_NEAR_TEMP_PREFIX "temp1_input");
+        }
     } else if (id == THERMAL_ID_PSU2_NEAR) {
-    	 if ( bmc_enable ) {	
+        if ( bmc_enable ) {
             return ONLP_STATUS_E_UNSUPPORTED;
-    	 } else {
+        } else {
             rv = onlp_file_read_int(&info->mcelsius,
                                 SYS_PSU2_NEAR_TEMP_PREFIX "temp1_input");
-    	 }
+        }
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -224,8 +218,7 @@ psu_near_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-static int
-mac_rear_thermal_info_get(onlp_thermal_info_t* info)
+static int mac_rear_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
@@ -235,7 +228,7 @@ mac_rear_thermal_info_get(onlp_thermal_info_t* info)
         rv = onlp_file_read_int(&info->mcelsius,
                             SYS_MAC_REAR_TEMP_PREFIX "temp1_input");    
     }
-	
+
     if (rv == ONLP_STATUS_E_INTERNAL) {
         return rv;
     }
@@ -248,8 +241,7 @@ mac_rear_thermal_info_get(onlp_thermal_info_t* info)
     return ONLP_STATUS_OK;
 }
 
-static int
-qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
+static int qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
@@ -282,8 +274,7 @@ qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
  * Note -- it is expected that you fill out the information
  * structure even if the sensor described by the OID is not present.
  */
-int
-onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
+int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
 {   
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);

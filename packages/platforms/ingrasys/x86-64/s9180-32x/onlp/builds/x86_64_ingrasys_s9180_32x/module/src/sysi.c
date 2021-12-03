@@ -38,37 +38,34 @@
 
 bool bmc_enable = false;
 
-const char*
-onlp_sysi_platform_get(void)
+const char* onlp_sysi_platform_get(void)
 {   
     return "x86-64-ingrasys-s9180-32x-r0";
 }
 
-int
-onlp_sysi_init(void)
+int onlp_sysi_init(void)
 {    
     /* check if the platform is bmc enabled */
     if ( onlp_sysi_bmc_en_get() ) {
         bmc_enable = true;
         //AIM_LOG_INFO("BMC detected on platform!");
         AIM_SYSLOG_INFO(
-				"BMC detected on platform!",
-				"BMC detected on platform!",
-				"BMC detected on platform!");
+                "BMC detected on platform!",
+                "BMC detected on platform!",
+                "BMC detected on platform!");
     } else {
         bmc_enable = false;
         //AIM_LOG_INFO("BMC NOT detected on platform!");
         AIM_SYSLOG_INFO(
-				"BMC NOT detected on platform!",
-				"BMC NOT detected on platform!",
-				"BMC NOT detected on platform!");
+                "BMC NOT detected on platform!",
+                "BMC NOT detected on platform!",
+                "BMC NOT detected on platform!");
     }
 
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_onie_data_get(uint8_t** data, int* size)
+int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
     uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
@@ -84,16 +81,14 @@ onlp_sysi_onie_data_get(uint8_t** data, int* size)
     return ONLP_STATUS_E_INTERNAL;
 }
 
-void
-onlp_sysi_onie_data_free(uint8_t* data)
+void onlp_sysi_onie_data_free(uint8_t* data)
 {
     if (data) {
         aim_free(data);
     }
 }
 
-int
-onlp_sysi_oids_get(onlp_oid_t* table, int max)
+int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
@@ -114,7 +109,7 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
             *e++ = ONLP_FAN_ID_CREATE(i);
         }
     }
-	
+
     /* THERMALs Item */
     if ( !bmc_enable ) {
         for (i=1; i<=THERMAL_NUM; i++) {
@@ -131,8 +126,7 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
     return ONLP_STATUS_OK;
 }
 
-int
-decide_fan_percentage(int is_up, int new_temp)
+int decide_fan_percentage(int is_up, int new_temp)
 {
     int new_perc;
     if (is_up) {
@@ -156,8 +150,7 @@ decide_fan_percentage(int is_up, int new_temp)
     return new_perc;
 }
 
-int 
-platform_thermal_temp_get(int *thermal_temp)
+int platform_thermal_temp_get(int *thermal_temp)
 {
     int i, temp, max_temp, rc;
     onlp_thermal_info_t thermal_info;
@@ -186,8 +179,7 @@ platform_thermal_temp_get(int *thermal_temp)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_platform_manage_fans(void)
+int onlp_sysi_platform_manage_fans(void)
 {
     int rc, is_up ,new_temp, thermal_temp, diff;
     static int new_perc = 0, ori_perc = 0;
@@ -234,8 +226,7 @@ _EXIT :
     return rc;
 }
 
-int
-onlp_sysi_platform_manage_leds(void)
+int onlp_sysi_platform_manage_leds(void)
 {
     int psu1_status, psu2_status, rc, i;
     static int pre_psu1_status = 0, pre_psu2_status = 0, pre_fan_status = 0;
@@ -378,8 +369,7 @@ _EXIT :
     return rc;
 }
 
-int
-onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
+int onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int rc;
     if ((rc = sysi_platform_info_get(pi)) != ONLP_STATUS_OK) {
@@ -389,8 +379,7 @@ onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
     return ONLP_STATUS_OK;
 }
 
-void
-onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
+void onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
 {
     if (pi->cpld_versions) {
         aim_free(pi->cpld_versions);

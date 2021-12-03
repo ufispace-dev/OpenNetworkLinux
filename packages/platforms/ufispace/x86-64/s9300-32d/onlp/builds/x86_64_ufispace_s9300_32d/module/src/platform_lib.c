@@ -568,13 +568,13 @@ int
 sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     char sysfs[128];
-    uint8_t cpu_cpld_ver_h[32];
+    char cpu_cpld_ver_h[32];
+    int cpu_cpld_ver, cpu_cpld_build;
     int cpld_ver_major, cpld_ver_minor, cpld_ver_build;
     char mb_cpld_ver_h[CPLD_MAX][16];
     char bios_ver_h[32];
     char bmc_ver[3][16];
     int sku_id, hw_id, id_type, build_id, deph_id;
-    int data_len;
     int rc=0;
     int i;
 
@@ -587,13 +587,20 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     //get CPU CPLD version readable string
     snprintf(sysfs, sizeof(sysfs), "%s/%s", 
                     LPC_CPU_CPLD_SYSFFS_PATH, LPC_CPU_CPLD_VER_ATTR);
-    if ((rc = onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), 
-                &data_len, sysfs)) != ONLP_STATUS_OK) {
-        AIM_LOG_ERROR("onlp_file_read failed, error=%d, %s", rc, sysfs);
+    if ((rc = file_read_hex(&cpu_cpld_ver, sysfs)) != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("file_read_hex failed, error=%d, %s", rc, sysfs);
         return ONLP_STATUS_E_INTERNAL;
     }
-    // trim new line
-    cpu_cpld_ver_h[strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
+    
+    snprintf(sysfs, sizeof(sysfs), "%s/%s", 
+                    LPC_CPU_CPLD_SYSFFS_PATH, LPC_CPU_CPLD_BUILD_ATTR);
+    if ((rc = file_read_hex(&cpu_cpld_build, sysfs)) != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("file_read_hex failed, error=%d, %s", rc, sysfs);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    snprintf(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), "%d.%02d build %03d",
+                cpu_cpld_ver >> 6, cpu_cpld_ver & 0b00111111, cpu_cpld_build);    
     
     //get MB CPLD version from CPLD sysfs
     for(i=0; i<CPLD_MAX; ++i) {
@@ -618,7 +625,7 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
         }
 
-        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d.%03d",
+        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d build %03d",
                     cpld_ver_major, cpld_ver_minor, cpld_ver_build);
     }
 

@@ -175,7 +175,6 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x76, 12), # 9548_NIF_3
             ('pca9548', 0x76, 13), # 9548_NIF_4
             ('pca9548', 0x76, 14), # 9548_NIF_5
-            ('pca9548', 0x76, 18), # 9548_EXT                
         ]
             
         self.new_i2c_devices(i2c_muxs)
@@ -227,7 +226,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         os.system("echo low > /sys/class/gpio/gpio498/direction")
         os.system("echo low > /sys/class/gpio/gpio497/direction")
         os.system("echo low > /sys/class/gpio/gpio496/direction")
-            
+
         # init GPIO direction
         # 9539_CPU_I2C 0x77
         for i in range(480, 496):
@@ -240,6 +239,38 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         for i, addr in enumerate((0x33, 0x34)):
             self.new_i2c_device("s9710_76d_cpld" + str(i+4), addr, 30)    
 
+        #config mac rov        
+        cpld_addr=30
+        cpld_bus=1
+        rov_addrs=[0x60, 0x62]
+        rov_reg=0x21
+        rov_bus=21
+        
+        # vid to mac vdd value mapping 
+        vdd_val_array=( 0.84, 0.80, 0.70, 0.72, 0.74, 0.76, 0.78, 0.82 )
+        # vid to rov reg value mapping 
+        rov_reg_array=( 0x77, 0x6f, 0x5b, 0x5f, 0x63, 0x67, 0x6b, 0x73 )
+
+        #get rov from cpld
+        reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr), shell=True)
+        reg_val = int(reg_val_str, 16)
+        msg("/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov={}".format(cpld_bus, cpld_addr, reg_val_str))
+        
+        for index, rov_addr in enumerate(rov_addrs):
+            vid = (reg_val >> 3*index) & 0x7
+            mac_vdd_val = vdd_val_array[vid]
+            rov_reg_val = rov_reg_array[vid]            
+            #set rov to mac
+            msg("Setting mac[%d] vdd %1.2f with rov register value 0x%x\n" % (index, mac_vdd_val, rov_reg_val) )
+            os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
+        
+        # enable event ctrl
+        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
+        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
+        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
+        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0033/cpld_evt_ctrl", shell=True)
+        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0034/cpld_evt_ctrl", shell=True)
+        
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 

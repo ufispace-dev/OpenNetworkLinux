@@ -58,9 +58,9 @@
  *            |----[06] ONLP_LED_FLEXE_0
  *            |----[07] ONLP_LED_FLEXE_1
  *            |
- *            |----[01] ONLP_PSU_0----[11] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[21] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[12] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[22] ONLP_THERMAL_PSU_1
  *            |                  |----[07] ONLP_PSU_1_FAN
  *            |
  *            |----[01] ONLP_FAN_0
@@ -70,7 +70,7 @@
  *            |----[05] ONLP_FAN_4
  */
 
-static onlp_oid_t __onlp_oid_info[] = { 
+static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
@@ -112,9 +112,10 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
-#define SYSFS_CPLD_VER_H  LPC_FMT "cpld_version_h"
-#define SYSFS_HW_ID       LPC_FMT "board_hw_id"
-#define SYSFS_BUILD_ID    LPC_FMT "board_build_id"
+#define SYSFS_CPLD_VER     LPC_FMT "cpld_version"
+#define SYSFS_CPLD_BUILD   LPC_FMT "cpld_build"
+#define SYSFS_HW_ID        LPC_FMT "board_hw_id"
+#define SYSFS_BUILD_ID     LPC_FMT "board_build_id"
 
 #define CMD_BIOS_VER       "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
@@ -123,41 +124,35 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    uint8_t mb_cpld_ver_h[32] = {0};
-    int mb_cpld_hw_rev, mb_cpld_build_rev;
-    int rc, size=0;
+    int mb_cpld_ver = 0, cpld_ver_major = 0, cpld_ver_minor = 0, cpld_build = 0;
+    int mb_cpld_hw_rev = 0, mb_cpld_build_rev = 0;
     char bios_out[32] = {0};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
 
     //get MB CPLD version
+    ONLP_TRY(onlp_file_read_int(&mb_cpld_ver, SYSFS_CPLD_VER));
 
-    if((rc = onlp_file_read(mb_cpld_ver_h, sizeof(mb_cpld_ver_h), &size, SYSFS_CPLD_VER_H)) < 0) {
-        AIM_LOG_ERROR("Unable to read SYSFS_CPLD_VER_H %s\n", SYSFS_CPLD_VER_H);
-        return rc;
-    }    
+    // Major: bit 6-7, Minor: bit 0-5
+    cpld_ver_major = mb_cpld_ver >> 6 & 0x03;
+    cpld_ver_minor = mb_cpld_ver & 0x3F;
 
-    pi->cpld_versions = aim_fstrdup(            
+    //get MB CPLD Build
+    ONLP_TRY(onlp_file_read_int(&cpld_build, SYSFS_CPLD_BUILD));
+
+    pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %s\n", mb_cpld_ver_h);
-    
+        "[MB CPLD] %d.%02d.%d\n", cpld_ver_major, cpld_ver_minor, cpld_build);
+
     //Get HW Version
-    
-    if ((rc = file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID)) < 0) {
-        AIM_LOG_ERROR("Unable to read SYSFS_HW_ID %s", SYSFS_HW_ID);
-        return rc;
-    }    
+    ONLP_TRY(file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID));
 
     //Get Build Version
+    ONLP_TRY(file_read_hex(&mb_cpld_build_rev, SYSFS_BUILD_ID));
 
-    if ((rc = file_read_hex(&mb_cpld_build_rev, SYSFS_BUILD_ID)) < 0) {
-        AIM_LOG_ERROR("Unable to read SYSFS_BUILD_ID %s", SYSFS_BUILD_ID);
-        return rc;
-    }
-    
-    //Get BIOS version 
+    //Get BIOS version
     if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
         AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
 
     //Get BMC version
@@ -165,7 +160,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
         exec_cmd(CMD_BMC_VER_3, bmc_out3, sizeof(bmc_out3))) {
             AIM_LOG_ERROR("unable to read BMC version\n");
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
     }
 
     pi->other_versions = aim_fstrdup(
@@ -259,8 +254,8 @@ int onlp_sysi_onie_data_get(uint8_t** data, int* size)
             return ONLP_STATUS_OK;
         }
     }
-    
-    AIM_LOG_INFO("Unable to get data from eeprom \n");    
+
+    AIM_LOG_INFO("Unable to get data from eeprom \n");
     aim_free(rdata);
     *size = 0;
     return ONLP_STATUS_E_INTERNAL;
@@ -358,7 +353,7 @@ int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
     if (ufi_sysi_platform_info_get(info) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 

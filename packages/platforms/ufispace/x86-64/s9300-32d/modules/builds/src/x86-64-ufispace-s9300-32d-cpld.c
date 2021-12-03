@@ -40,17 +40,26 @@
 #define DEBUG_PRINT(fmt, args...)
 #endif
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define I2C_READ_BYTE_DATA(ret, lock, i2c_client, reg) \
 { \
     mutex_lock(lock); \
     ret = i2c_smbus_read_byte_data(i2c_client, reg); \
     mutex_unlock(lock); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
 }
 #define I2C_WRITE_BYTE_DATA(ret, lock, i2c_client, reg, val) \
 { \
     mutex_lock(lock); \
     ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
     mutex_unlock(lock); \
+    BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
 /* CPLD sysfs attributes index  */
@@ -158,7 +167,22 @@ enum s9300_cpld_sysfs_attributes {
     CPLD_SFP_TX_DIS,
     CPLD_SFP_RS,
     CPLD_SFP_TS,
-    CPLD_PORT_INT_STATUS
+    CPLD_PORT_INT_STATUS,
+
+    //BSP DEBUG
+    BSP_DEBUG   
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 /* CPLD sysfs attributes hook functions  */
@@ -181,8 +205,15 @@ static ssize_t write_cpld_callback(struct device *dev,
 // cpld access api
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
-static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val);
+static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val, int *errno);
 static bool read_cpld_reg_raw_int(struct device *dev, u8 reg, int *val);
+// bsp debug api
+static ssize_t read_bsp(char *buf, char *str);
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count);
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf);
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count);
 
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
@@ -205,6 +236,10 @@ static const struct i2c_device_id s9300_cpld_id[] = {
     { "s9300_32d_cpld3",  cpld3 },
     {}
 };
+
+char bsp_debug[2]="0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
 
 /* Addresses scanned for s9300_cpld */
 static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, 0x32, I2C_CLIENT_END };
@@ -432,6 +467,9 @@ static SENSOR_DEVICE_ATTR(cpld_sfp_ts, S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, CPLD_SFP_TS);
 static SENSOR_DEVICE_ATTR(cpld_port_int_status, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_PORT_INT_STATUS);
+//BSP DEBUG
+static SENSOR_DEVICE_ATTR(bsp_debug, S_IRUGO | S_IWUSR, \
+        read_bsp_callback, write_bsp_callback, BSP_DEBUG);
 
 /* define support attributes of cpldx , total 3 */
 /* cpld 1 */
@@ -481,6 +519,7 @@ static struct attribute *s9300_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_beacon_led_ctrl.dev_attr.attr,
     &sensor_dev_attr_cpld_port_led_clr_ctrl.dev_attr.attr,
     &sensor_dev_attr_cpld_event_detect_ctrl.dev_attr.attr,
+    &sensor_dev_attr_bsp_debug.dev_attr.attr,
     NULL
 };
 
@@ -576,6 +615,115 @@ static const struct attribute_group s9300_cpld3_group = {
     .attrs = s9300_cpld3_attributes,
 };
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+/* get bsp value */
+static ssize_t read_bsp(char *buf, char *str)
+{
+    ssize_t len=0;
+
+    len=sprintf(buf, "%s", str);
+    BSP_LOG_R("reg_val=%s", str);
+
+    return len;
+}
+
+/* set bsp value */
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
+{
+    snprintf(str, str_len, "%s", buf);
+    BSP_LOG_W("reg_val=%s", str);
+
+    return count;
+}
+
+/* get bsp parameter value */
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+
+    switch (attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(bsp_debug);
+            break;
+        default:
+            return -EINVAL;
+    }
+    return read_bsp(buf, str);
+}
+
+/* set bsp parameter value */
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+    ssize_t ret = 0;
+    u8 bsp_debug_u8 = 0;
+
+    switch (attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(str);
+            ret = write_bsp(buf, str, str_len, count);
+
+            if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+                return -EINVAL;
+            } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+                return -EINVAL;
+            }
+            return ret;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
 /* read access register from cpld data */
 static ssize_t read_access_register(struct device *dev,
                     struct device_attribute *da,
@@ -618,7 +766,7 @@ static ssize_t read_register_value(struct device *dev,
     I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
 
     if (reg_val < 0)
-        return -1;
+        return reg_val;
 
     return sprintf(buf, "0x%x\n", reg_val);
 }
@@ -655,35 +803,34 @@ static ssize_t read_cpld_reg(struct device *dev,
 {
     int reg_val;
 
-    if (!read_cpld_reg_raw_int(dev, reg, &reg_val))
-        return -1;
-    else
+    if (read_cpld_reg_raw_int(dev, reg, &reg_val))
         return sprintf(buf, "0x%02x\n", reg_val);
+    else
+        return reg_val;
 }
 
 static bool read_cpld_reg_raw_int(struct device *dev, u8 reg, int *val)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
-    int reg_val;
-    I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-    if (reg_val < 0)
+    I2C_READ_BYTE_DATA(*val, &data->access_lock, client, reg);
+    if (unlikely(*val < 0)) {
+        dev_err(dev, "read_cpld_reg_raw_int() error, return=%d\n", *val);
         return false;
-    else {
-        *val = reg_val;
-        return true;
     }
+    return true;
 }
 
-static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val)
+static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val, int *errno)
 {
     int reg_val;
 
-    if (!read_cpld_reg_raw_int(dev, reg, &reg_val))
-        return false;
-    else {
+    if (read_cpld_reg_raw_int(dev, reg, &reg_val)) {
         *val = (u8)reg_val;
         return true;
+    } else {
+        *errno = reg_val;
+        return false;
     }
 }
 
@@ -989,11 +1136,12 @@ static ssize_t read_hw_rev_cb(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = CPLD_HW_REV_REG;
-    u8 reg_val;
+    u8 reg_val = 0;
+    int errno = 0;
     u8 res;
 
-    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val))
-        return -1;
+    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
 
     switch (attr->index) {
         case CPLD_HW_REV:
@@ -1020,11 +1168,12 @@ static ssize_t read_cpld_version_cb(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = CPLD_VERSION_REG;
-    u8 reg_val;
+    u8 reg_val = 0;
+    int errno = 0;
     u8 res;
 
-    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val))
-        return -1;
+    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
 
     switch (attr->index) {
         case CPLD_MAJOR_VER:

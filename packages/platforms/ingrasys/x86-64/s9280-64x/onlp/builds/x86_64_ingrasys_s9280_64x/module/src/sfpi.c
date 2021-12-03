@@ -47,8 +47,7 @@ static int _fp2phy_port_mapping[64] = {
    47, 50, 51, 54, 55,
    58, 59, 62, 63};
 
-static void
-qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
+static void qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
 {
     if (phy_port < CPLD1_PORTS) { 
         *cpld_id = 0;
@@ -61,14 +60,12 @@ qsfp_to_cpld_index(int phy_port, int *cpld_id, int *cpld_port_index)
 }
 
 
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {  
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 1; p <= PORT_NUM; p++) {
@@ -77,8 +74,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status, phy_port;
     int i2c_id, cpld_id, cpld_port_index;
@@ -126,9 +122,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 1;
     int rc = 0;
@@ -145,17 +139,16 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {   
     int eeprombus=0, eeprombusbase=0, phy_port=0, port_group=0, eeprombusshift=0;
     char eeprom_path[512], eeprom_addr[32];
     memset(eeprom_path, 0, sizeof(eeprom_path));    
     memset(eeprom_addr, 0, sizeof(eeprom_addr));    
     aim_strlcpy(eeprom_addr, "0050", sizeof(eeprom_addr));    
-    
+
     memset(data, 0, 256);
-    
+
     if (port >=1 && port <= 64) {
         phy_port = _fp2phy_port_mapping[port-1] + 1;
         port_group = (phy_port-1)/8;
@@ -169,7 +162,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     snprintf(eeprom_path, sizeof(eeprom_path), 
              "/sys/bus/i2c/devices/%d-%s/eeprom", eeprombus, eeprom_addr);
 
@@ -183,8 +176,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

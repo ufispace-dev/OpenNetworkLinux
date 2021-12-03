@@ -56,11 +56,11 @@ static onlp_led_info_t led_info[] =
     CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 5 (SYNC LED)"),
 };
 
-static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
+static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
 {
-    int value;
-    int sysfs_index;
-    int shift, led_val,led_val_color, led_val_blink, led_val_onoff;
+    int value = 0;
+    int sysfs_index = 0;
+    int shift = 0, led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
 
     if (id < ONLP_LED_MAX) {        
         sysfs_index=(id-ONLP_LED_SYS_SYS)/2;
@@ -68,10 +68,8 @@ static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    if (file_read_hex(&value, LED_SYSFS, sysfs_index) < 0) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+
+    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index));
 
     led_val = (value >> shift);
     led_val_color = (led_val >> 0) & 1;
@@ -113,7 +111,7 @@ int onlp_ledi_init(void)
  */
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
-    int led_id, rc=ONLP_STATUS_OK;
+    int led_id = 0, rc = ONLP_STATUS_OK;
     VALIDATE(id);
     
     led_id = ONLP_OID_ID_GET(id);
@@ -121,7 +119,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 
     switch (led_id) {        
         case ONLP_LED_SYS_SYS ... ONLP_LED_SYS_SYNC:
-            rc = ufi_sys_led_info_get(rv, led_id);
+            rc = ufi_sys_led_info_get(led_id, rv);
             break;        
         default:            
             return ONLP_STATUS_E_INTERNAL;
@@ -156,8 +154,8 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int result = ONLP_STATUS_OK;
-    onlp_led_info_t* info;
-    int led_id;
+    onlp_led_info_t* info = NULL;
+    int led_id = 0;
     VALIDATE(id);
 
     led_id = ONLP_OID_ID_GET(id);

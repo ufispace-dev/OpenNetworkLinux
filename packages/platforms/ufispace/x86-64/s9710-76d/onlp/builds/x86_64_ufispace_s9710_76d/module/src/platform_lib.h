@@ -30,6 +30,15 @@
 #include <onlplib/i2c.h>
 #include "x86_64_ufispace_s9710_76d_log.h"
 
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+    
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
@@ -87,17 +96,30 @@
                                     "FAN3_PRSNT_H "\
                                     "PSU0_VIN "\
                                     "PSU0_VOUT "\
-                                    "PSU0_IIN PSU0_IOUT "\
+                                    "PSU0_IIN "\
+                                    "PSU0_IOUT "\
                                     "PSU0_STBVOUT "\
                                     "PSU0_STBIOUT "\
-                                    "PSU1_VIN PSU1_VOUT "\
+                                    "PSU1_VIN "\
+                                    "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
                                     "PSU1_STBVOUT "\
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
-#define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
-#define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
+
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
+#define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
+#define BMC_FRU_KEY_NAME            "Product Name"
+#define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
+#define BMC_FRU_KEY_SERIAL          "Product Serial"
+
+#define CMD_FRU_CACHE_SET "ipmitool fru print %d " \
+                           IPMITOOL_REDIRECT_ERR \
+                          " | grep %s" \
+                          " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
+                          " > %s"
 
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
 #define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
@@ -108,9 +130,13 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 extern const int CPLD_I2C_BUS[CPLD_MAX];
 
 /* BMC CMD */
-#define FAN_CACHE_TIME          5
-#define PSU_CACHE_TIME          5
-#define THERMAL_CACHE_TIME  10
+#define FAN_CACHE_TIME          10
+#define PSU_CACHE_TIME          30
+#define THERMAL_CACHE_TIME      10
+
+/* PSU */
+#define TMP_PSU_TYPE "/tmp/psu_type_%d"
+#define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
 
 enum sensor
 {
@@ -123,7 +149,7 @@ enum bmc_attr_id {
     BMC_ATTR_ID_ADC_CPU_TEMP,
     BMC_ATTR_ID_TEMP_CPU_PECI,
     BMC_ATTR_ID_TEMP_MAC_ENV_1,
-    BMC_ATTR_ID_TEMP_MAC_ENV_2,                
+    BMC_ATTR_ID_TEMP_MAC_ENV_2,
     BMC_ATTR_ID_TEMP_FRONT_ENV_1,
     BMC_ATTR_ID_TEMP_FRONT_ENV_2,
     BMC_ATTR_ID_TEMP_ENV_1,
@@ -177,6 +203,18 @@ enum bmc_attr_id {
     BMC_ATTR_ID_MAX
 };
 
+enum fru_attr_id {
+    FRU_ATTR_ID_PSU0_VENDOR,
+    FRU_ATTR_ID_PSU0_NAME,        
+    FRU_ATTR_ID_PSU0_MODEL,
+    FRU_ATTR_ID_PSU0_SERIAL,    
+    FRU_ATTR_ID_PSU1_VENDOR,
+    FRU_ATTR_ID_PSU1_NAME,        
+    FRU_ATTR_ID_PSU1_MODEL,
+    FRU_ATTR_ID_PSU1_SERIAL,
+    FRU_ATTR_ID_MAX
+};
+
 /* fan_id */
 enum onlp_fan_id {
     ONLP_FAN_F_0 = 1,
@@ -223,6 +261,7 @@ enum onlp_psu_id {
 
 /* thermal_id */
 enum onlp_thermal_id {
+    ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG = 1,
     ONLP_THERMAL_CPU_0 = 2,
     ONLP_THERMAL_CPU_1 = 3,
@@ -235,7 +274,7 @@ enum onlp_thermal_id {
     ONLP_THERMAL_ADC_CPU   = 10,
     ONLP_THERMAL_CPU_PECI  = 11,
     ONLP_THERMAL_MAC_ENV_1 = 12,
-    ONLP_THERMAL_MAC_ENV_2 = 13,               
+    ONLP_THERMAL_MAC_ENV_2 = 13,
     ONLP_THERMAL_FRONT_ENV_1 = 14,
     ONLP_THERMAL_FRONT_ENV_2 = 15,
     ONLP_THERMAL_ENV_1 = 16,
@@ -263,11 +302,39 @@ enum onlp_thermal_id {
     ONLP_THERMAL_MAX = 38,
 };
 
+enum onlp_psu_type_e {
+  ONLP_PSU_TYPE_AC,
+  ONLP_PSU_TYPE_DC12,
+  ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_COUNT,
+  ONLP_PSU_TYPE_INVALID = -1
+};
+
 typedef struct bmc_info_s
 {
     char name[20];
     float data;
-} bmc_info_t;
+}bmc_info_t;
+
+
+typedef struct bmc_fru_attr_s
+{
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+}bmc_fru_attr_t;
+
+typedef struct bmc_fru_s
+{
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+}bmc_fru_t;
+
 
 int read_ioport(int addr, int *reg_val);
 
@@ -277,10 +344,11 @@ int file_read_hex(int* value, const char* fmt, ...);
 
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 void lock_init();
 
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 void check_and_do_i2c_mux_reset(int port);
 
 uint8_t ufi_shift(uint8_t mask);
@@ -290,3 +358,13 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 #endif  /* __PLATFORM_LIB_H__ */
+
+
+
+
+
+
+
+
+
+

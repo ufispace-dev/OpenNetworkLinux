@@ -72,7 +72,8 @@
 
 #define LPC_CPU_CPLD_SYSFFS_PATH \
             "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/cpu_cpld"
-#define LPC_CPU_CPLD_VER_ATTR "cpu_cpld_version_h"
+#define LPC_CPU_CPLD_VER_ATTR "cpu_cpld_version"
+#define LPC_CPU_CPLD_BUILD_ATTR "cpu_cpld_build"
 
 /* BMC CMD */
 #define BMC_CACHE_EN            1

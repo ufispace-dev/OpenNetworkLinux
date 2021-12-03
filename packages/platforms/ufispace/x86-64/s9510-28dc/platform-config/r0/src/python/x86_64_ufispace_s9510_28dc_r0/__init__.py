@@ -8,6 +8,7 @@ import commands
 import subprocess
 import time
 import fcntl
+import yaml
 
 def msg(s, fatal=False):
     sys.stderr.write(s)
@@ -130,33 +131,45 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         self.init_i2c_mux_idle_state(i2c_muxs)
 
     def init_eeprom(self):
-        port = 0
+        data = None
+        port_eeprom = {
+            0: {"type": "QSFPDD", "bus": 13, "driver": "optoe3"},
+            1: {"type": "QSFPDD", "bus": 12, "driver": "optoe3"},
+            2: {"type": "QSFP"  , "bus": 11, "driver": "optoe1"},
+            3: {"type": "QSFP"  , "bus": 10, "driver": "optoe1"},
+            4: {"type": "SFP"   , "bus": 14, "driver": "optoe2"},
+            5: {"type": "SFP"   , "bus": 15, "driver": "optoe2"},
+            6: {"type": "SFP"   , "bus": 16, "driver": "optoe2"},
+            7: {"type": "SFP"   , "bus": 17, "driver": "optoe2"},
+            8: {"type": "SFP"   , "bus": 18, "driver": "optoe2"},
+            9: {"type": "SFP"   , "bus": 19, "driver": "optoe2"},
+            10:{"type": "SFP"   , "bus": 20, "driver": "optoe2"},
+            11:{"type": "SFP"   , "bus": 21, "driver": "optoe2"},
+            12:{"type": "SFP"   , "bus": 22, "driver": "optoe2"},
+            13:{"type": "SFP"   , "bus": 23, "driver": "optoe2"},
+            14:{"type": "SFP"   , "bus": 24, "driver": "optoe2"},
+            15:{"type": "SFP"   , "bus": 25, "driver": "optoe2"},
+            16:{"type": "SFP"   , "bus": 26, "driver": "optoe2"},
+            17:{"type": "SFP"   , "bus": 27, "driver": "optoe2"},
+            18:{"type": "SFP"   , "bus": 28, "driver": "optoe2"},
+            19:{"type": "SFP"   , "bus": 29, "driver": "optoe2"},
+            20:{"type": "SFP"   , "bus": 30, "driver": "optoe2"},
+            21:{"type": "SFP"   , "bus": 31, "driver": "optoe2"},
+            22:{"type": "SFP"   , "bus": 32, "driver": "optoe2"},
+            23:{"type": "SFP"   , "bus": 33, "driver": "optoe2"},
+            24:{"type": "SFP"   , "bus": 34, "driver": "optoe2"},
+            25:{"type": "SFP"   , "bus": 35, "driver": "optoe2"},
+            26:{"type": "SFP"   , "bus": 36, "driver": "optoe2"},
+            27:{"type": "SFP"   , "bus": 37, "driver": "optoe2"},
+        }
+        with open("/lib/platform-config/x86-64-ufispace-s9510-28dc-r0/onl/port_config.yml", 'r') as yaml_file:
+            data = yaml.safe_load(yaml_file)
 
-        # init QSFPDD EEPROM
-        bus = 13
-        self.new_i2c_device('optoe3', 0x50, bus)
-        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(0, bus), shell=True)
-
-        bus = 12
-        self.new_i2c_device('optoe3', 0x50, bus)
-        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(1, bus), shell=True)
-
-        # init QSFP28 EEPROM
-        bus = 11
-        self.new_i2c_device('optoe1', 0x50, bus)
-        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(2, bus), shell=True)
-
-        bus = 10
-        self.new_i2c_device('optoe1', 0x50, bus)
-        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(3, bus), shell=True)
-
-        port = 4
-        # init SFP28 EEPROM
-        for bus in range(14, 38):
-            self.new_i2c_device('optoe2', 0x50, bus)
-            # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-            port = port + 1
+        # config eeprom
+        for port, config in port_eeprom.items():
+            self.new_i2c_device(config["driver"], 0x50, config["bus"])
+            port_name = data[config["type"]][port]["port_name"]
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, config["bus"]), shell=True)
 
     def init_gpio(self):
 

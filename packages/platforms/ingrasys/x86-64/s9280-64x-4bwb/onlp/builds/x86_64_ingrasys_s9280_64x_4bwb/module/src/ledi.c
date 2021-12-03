@@ -45,19 +45,19 @@ static onlp_led_info_t led_info[] =
     {
         { LED_OID_FAN, "Chassis LED 2 (FAN LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
         { LED_OID_PSU1, "Chassis LED 3 (PSU1 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
         { LED_OID_PSU2, "Chassis LED 4 (PSU2 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
 #endif
@@ -66,29 +66,27 @@ static onlp_led_info_t led_info[] =
 /*
  * This function will be called prior to any other onlp_ledi_* functions.
  */
-int
-onlp_ledi_init(void)
+int onlp_ledi_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
+int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
 {
     int led_id, rc=ONLP_STATUS_OK;
-    
+
     led_id = ONLP_OID_ID_GET(id);
     *info = led_info[led_id];
 
-    switch (led_id) {        
+    switch (led_id) {
         case LED_ID_SYS:
         case LED_ID_FAN:
         case LED_ID_PSU1:
         case LED_ID_PSU2:
             rc = sys_led_info_get(info, led_id);
-            break;        
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
@@ -105,8 +103,7 @@ onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
  * What 'on' means in terms of colors or modes for multimode LEDs is
  * up to the platform to decide. This is intended as baseline toggle mechanism.
  */
-int
-onlp_ledi_set(onlp_oid_t id, int on_or_off)
+int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
 
     return ONLP_STATUS_E_UNSUPPORTED;
@@ -118,14 +115,12 @@ onlp_ledi_set(onlp_oid_t id, int on_or_off)
  *
  * Only modes reported in the LED's capabilities will be attempted.
  */
-int
-onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
+int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
+int onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
 {
     return ONLP_STATUS_OK;
 }

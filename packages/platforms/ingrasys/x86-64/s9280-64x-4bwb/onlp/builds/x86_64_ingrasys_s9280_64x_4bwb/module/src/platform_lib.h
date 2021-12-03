@@ -36,17 +36,17 @@
 #include <x86_64_ingrasys_s9280_64x_4bwb/x86_64_ingrasys_s9280_64x_4bwb_config.h>
 
 
-#define SYS_CPU_CORETEMP_PREFIX         "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
-#define SYS_CPU_CORETEMP_PREFIX2      "/sys/devices/platform/coretemp.0/"
-#define SYS_CPU_BOARD_PREFIX                "/sys/class/hwmon/hwmon1/"
+#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
+#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_BOARD_PREFIX        "/sys/class/hwmon/hwmon1/"
 #define SYS_EEPROM_PATH             "/sys/bus/i2c/devices/0-0053/eeprom"
-#define SYS_EEPROM_SIZE 512
+#define SYS_EEPROM_SIZE             512
 #define PSU_STATUS_PRESENT          1
 #define PSU_STATUS_POWER_GOOD       1
 #define QSFP_NUM                    64
 #define SFP_NUM                     2
 #define PSU_NUM                     2
-#define PORT_NUM                QSFP_NUM + SFP_NUM 
+#define PORT_NUM                    QSFP_NUM + SFP_NUM
 
 #define THERMAL_SHUTDOWN_DEFAULT    105000
 
@@ -58,58 +58,58 @@
 
 #define THERMAL_NORMAL_DEFAULT      72000
 #define THERMAL_NORMAL_FAN_PERC     50
-    
-/* I2C bus */
-#define I2C_BUS_0               0
-#define I2C_BUS_1               1
-#define I2C_BUS_2               2
-#define I2C_BUS_3               3
-#define I2C_BUS_4               4
-#define I2C_BUS_5               5
 
-#define I2C_BUS_CPLD1           I2C_BUS_1      /* CPLD 1 */
-#define I2C_BUS_CPLD2           I2C_BUS_2      /* CPLD 2 */
-#define I2C_BUS_CPLD3           I2C_BUS_3      /* CPLD 3 */
-#define I2C_BUS_CPLD4           I2C_BUS_4      /* CPLD 4 */
-#define I2C_BUS_CPLD5           I2C_BUS_5      /* CPLD 5 */
+/* I2C bus */
+#define I2C_BUS_0                   0
+#define I2C_BUS_1                   1
+#define I2C_BUS_2                   2
+#define I2C_BUS_3                   3
+#define I2C_BUS_4                   4
+#define I2C_BUS_5                   5
+
+#define I2C_BUS_CPLD1               I2C_BUS_1      /* CPLD 1 */
+#define I2C_BUS_CPLD2               I2C_BUS_2      /* CPLD 2 */
+#define I2C_BUS_CPLD3               I2C_BUS_3      /* CPLD 3 */
+#define I2C_BUS_CPLD4               I2C_BUS_4      /* CPLD 4 */
+#define I2C_BUS_CPLD5               I2C_BUS_5      /* CPLD 5 */
 
 /* CPLD */
 #define CPLD_MAX                    5
-#define CPLD_I2C_ADDR           0x33
-#define CPLD_BUS_BASE           I2C_BUS_1
+#define CPLD_I2C_ADDR               0x33
+#define CPLD_BUS_BASE               I2C_BUS_1
 
 /* SYSFS ATTR */
-#define MB_CPLD_SYSFS_PATH    "/sys/bus/i2c/devices/%d-00%02x"
-#define MB_CPLD_VER_ATTR    "cpld_version"
-#define MB_CPLD_BOARD_TYPE_ATTR    "cpld_board_type"
-#define MB_CPLD_EXT_BOARD_TYPE_ATTR    "cpld_ext_board_type"
+#define MB_CPLD_SYSFS_PATH              "/sys/bus/i2c/devices/%d-00%02x"
+#define MB_CPLD_VER_ATTR                "cpld_version"
+#define MB_CPLD_BOARD_TYPE_ATTR         "cpld_board_type"
+#define MB_CPLD_EXT_BOARD_TYPE_ATTR     "cpld_ext_board_type"
 #define MB_CPLD_QSFP_PORT_STATUS_ATTR   "cpld_qsfp_port_status"
 #define MB_CPLD_SFP_PORT_STATUS_ATTR    "cpld_sfp_port_status"
 #define MB_CPLD_SFP_PORT_CONFIF_ATTR    "cpld_sfp_port_config"
 
 /* PORTS */
-#define QSFP_EEPROM_I2C_ADDR    0x50    
-#define CPLD1_PORTS             12
-#define CPLDx_PORTS             13
-#define CPLD_PRES_BIT           1
-#define CPLD_SFP1_PRES_BIT      1
-#define CPLD_SFP2_PRES_BIT      4
+#define QSFP_EEPROM_I2C_ADDR        0x50
+#define CPLD1_PORTS                 12
+#define CPLDx_PORTS                 13
+#define CPLD_PRES_BIT               1
+#define CPLD_SFP1_PRES_BIT          1
+#define CPLD_SFP2_PRES_BIT          4
 #define CPLD_QSFP_REG_PATH          "/sys/bus/i2c/devices/%d-00%02x/%s_%d"
 #define CPLD_SFP_REG_PATH           "/sys/bus/i2c/devices/%d-00%02x/%s"
 
 /* bmc cache */
-#define BMC_SENSOR_CACHE      "/tmp/bmc_sensor_cache"
-#define BMC_FRU_CACHE            "/tmp/bmc_fru_cache.PUS%d"
+#define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
+#define BMC_FRU_CACHE               "/tmp/bmc_fru_cache.PUS%d"
 #define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get %s > "BMC_SENSOR_CACHE
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
-#define CMD_BMC_FRU_CACHE        "ipmitool fru print %d > %s"
-#define CMD_CACHE_FRU_GET        "cat %s | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\\n'"
-#define CMD_BMC_LED_GET        "ipmitool raw 0x3c 0x20 0x0 | xargs | cut -d' ' -f%d"
+#define CMD_BMC_FRU_CACHE           "ipmitool fru print %d > %s"
+#define CMD_CACHE_FRU_GET           "cat %s | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\\n'"
+#define CMD_BMC_LED_GET             "ipmitool raw 0x3c 0x20 0x0 | xargs | cut -d' ' -f%d"
 
-#define FAN_CACHE_TIME          5
-#define PSU_CACHE_TIME          5
-#define THERMAL_CACHE_TIME      10
-#define FRU_CACHE_TIME      10
+#define FAN_CACHE_TIME              5
+#define PSU_CACHE_TIME              5
+#define THERMAL_CACHE_TIME          10
+#define FRU_CACHE_TIME              10
 
 /* VERSION */
 #define CMD_BIOS_VER                "dmidecode -s bios-version | tail -1 | tr -d '\\r\\n'"
@@ -118,7 +118,7 @@
 #define CMD_BMC_VER_3               "echo $((`ipmitool mc info | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
 
 /* FUCNTION ENABLE */
-#define ENABLE_SYSLED 1
+#define ENABLE_SYSLED               1
 
 enum sensor
 {
@@ -166,7 +166,7 @@ typedef enum led_id_e {
 /** Thermal_oid */
 typedef enum thermal_oid_e {
     THERMAL_OID_CPU_PECI = ONLP_THERMAL_ID_CREATE(1),
-    THERMAL_OID_BMC_ENV = ONLP_THERMAL_ID_CREATE(2),    
+    THERMAL_OID_BMC_ENV = ONLP_THERMAL_ID_CREATE(2),
     THERMAL_OID_PCIE_CONN = ONLP_THERMAL_ID_CREATE(3),
     THERMAL_OID_CAGE_R = ONLP_THERMAL_ID_CREATE(4),
     THERMAL_OID_CAGE_L = ONLP_THERMAL_ID_CREATE(5),
@@ -180,26 +180,26 @@ typedef enum thermal_oid_e {
     THERMAL_OID_CPU1 = ONLP_THERMAL_ID_CREATE(13),
     THERMAL_OID_CPU2 = ONLP_THERMAL_ID_CREATE(14),
     THERMAL_OID_CPU3 = ONLP_THERMAL_ID_CREATE(15),
-    THERMAL_OID_CPU4 = ONLP_THERMAL_ID_CREATE(16), 
-    THERMAL_OID_CPU5 = ONLP_THERMAL_ID_CREATE(17), 
-    THERMAL_OID_CPU6 = ONLP_THERMAL_ID_CREATE(18), 
-    THERMAL_OID_CPU7 = ONLP_THERMAL_ID_CREATE(19), 
+    THERMAL_OID_CPU4 = ONLP_THERMAL_ID_CREATE(16),
+    THERMAL_OID_CPU5 = ONLP_THERMAL_ID_CREATE(17),
+    THERMAL_OID_CPU6 = ONLP_THERMAL_ID_CREATE(18),
+    THERMAL_OID_CPU7 = ONLP_THERMAL_ID_CREATE(19),
     THERMAL_OID_CPU8 = ONLP_THERMAL_ID_CREATE(20),
 } thermal_oid_t;
 
 /** thermal_id */
 typedef enum thermal_id_e {
-    THERMAL_ID_CPU_PECI = 1,    
+    THERMAL_ID_CPU_PECI = 1,
     THERMAL_ID_BMC_ENV = 2,
-    THERMAL_ID_PCIE_CONN = 3, 
-    THERMAL_ID_CAGE_R = 4,      
+    THERMAL_ID_PCIE_CONN = 3,
+    THERMAL_ID_CAGE_R = 4,
     THERMAL_ID_CAGE_L = 5,
     THERMAL_ID_MAC_FRONT = 6,
     THERMAL_ID_MAC_ENV = 7,
     THERMAL_ID_MAC_DIE = 8,
-    THERMAL_ID_PSU1 = 9, 
-    THERMAL_ID_PSU2 = 10, 
-    THERMAL_ID_CPU_BOARD = 11,   
+    THERMAL_ID_PSU1 = 9,
+    THERMAL_ID_PSU2 = 10,
+    THERMAL_ID_CPU_BOARD = 11,
     THERMAL_ID_CPU_PKG = 12,
     THERMAL_ID_CPU1 = 13,
     THERMAL_ID_CPU2 = 14,
@@ -216,7 +216,7 @@ typedef enum thermal_id_e {
     { THERMAL_WARNING_DEFAULT, \
       THERMAL_ERROR_DEFAULT,   \
       THERMAL_SHUTDOWN_DEFAULT }
-      
+
 /** Fan_oid */
 typedef enum fan_oid_e {
     FAN_OID_FAN1 = ONLP_FAN_ID_CREATE(1),

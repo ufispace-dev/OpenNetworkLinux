@@ -36,28 +36,24 @@
 
 #include "platform_lib.h"
 
-const char*
-onlp_sysi_platform_get(void)
-{   
+const char* onlp_sysi_platform_get(void)
+{
     return "x86-64-ingrasys-s9280-64x-4bwb-r0";
 }
 
-int
-onlp_sysi_platform_set(const char* platform)
+int onlp_sysi_platform_set(const char* platform)
 {
     //AIM_LOG_INFO("Set ONL platform interface to '%s'\n", platform);
     //AIM_LOG_INFO("Real HW Platform: '%s'\n", onlp_sysi_platform_get());
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_init(void)
-{    
+int onlp_sysi_init(void)
+{
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_onie_data_get(uint8_t** data, int* size)
+int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
     uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
@@ -66,27 +62,25 @@ onlp_sysi_onie_data_get(uint8_t** data, int* size)
             return ONLP_STATUS_OK;
         }
     }
-    
-    AIM_LOG_INFO("Unable to get data from eeprom \n");    
+
+    AIM_LOG_INFO("Unable to get data from eeprom \n");
     aim_free(rdata);
     *size = 0;
     return ONLP_STATUS_E_INTERNAL;
 }
 
-void
-onlp_sysi_onie_data_free(uint8_t* data)
+void onlp_sysi_onie_data_free(uint8_t* data)
 {
     if (data) {
         aim_free(data);
     }
 }
 
-int
-onlp_sysi_oids_get(onlp_oid_t* table, int max)
+int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
-    
+
     // THERMAL
     *e++ = THERMAL_OID_CPU_PECI;
     *e++ = THERMAL_OID_BMC_ENV;
@@ -99,7 +93,7 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
     *e++ = THERMAL_OID_PSU1;
     *e++ = THERMAL_OID_PSU2;
     *e++ = THERMAL_OID_CPU_BOARD;
-    *e++ = THERMAL_OID_CPU_PKG;        
+    *e++ = THERMAL_OID_CPU_PKG;
     *e++ = THERMAL_OID_CPU1;
     *e++ = THERMAL_OID_CPU2;
     *e++ = THERMAL_OID_CPU3;
@@ -129,30 +123,27 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sysi_platform_manage_fans(void)
+int onlp_sysi_platform_manage_fans(void)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-onlp_sysi_platform_manage_leds(void)
+int onlp_sysi_platform_manage_leds(void)
 {
-return ONLP_STATUS_E_UNSUPPORTED;}
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
 
-int
-onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
+int onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int rc;
     if ((rc = sysi_platform_info_get(pi)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
-void
-onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
+void onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
 {
     if (pi->cpld_versions) {
         aim_free(pi->cpld_versions);

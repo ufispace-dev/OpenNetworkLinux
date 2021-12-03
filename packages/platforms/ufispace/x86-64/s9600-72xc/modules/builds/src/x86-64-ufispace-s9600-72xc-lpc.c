@@ -27,6 +27,13 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9600_72xc_lpc"
 #define CPU_BDE 0
 #define CPU_SKY 1
@@ -50,11 +57,13 @@
 #define REG_CPU_STATUS_1                  (REG_BASE_CPU + 0x02)
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
+#define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
 #define REG_MB_BRD_ID_0                   (REG_BASE_MB + 0x00)
 #define REG_MB_BRD_ID_1                   (REG_BASE_MB + 0x01)
 #define REG_MB_CPLD_VERSION               (REG_BASE_MB + 0x02)
+#define REG_MB_CPLD_BUILD                 (REG_BASE_MB + 0x04)
 #define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x5C)
 #define REG_MB_MUX_RESET1                 (REG_BASE_MB + 0x46)
 #define REG_MB_MUX_RESET2                 (REG_BASE_MB + 0x47)
@@ -68,6 +77,7 @@
 #endif
 
 #define MASK_ALL                          (0xFF)
+#define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -76,11 +86,13 @@ enum lpc_sysfs_attributes {
     ATT_CPU_CPLD_VERSION_H,
     ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_BIOS_BOOT_CFG,
+    ATT_CPU_CPLD_BUILD,
     //MB CPLD
     ATT_MB_BRD_ID_0,
     ATT_MB_BRD_ID_1,
     ATT_MB_CPLD_1_VERSION,
     ATT_MB_CPLD_1_VERSION_H,
+    ATT_MB_CPLD_1_BUILD,
     ATT_MB_MUX_CTRL,
     ATT_MB_MUX_RESET,
     ATT_MB_BRD_SKU_ID,
@@ -100,14 +112,28 @@ enum lpc_sysfs_attributes {
     ATT_MAX
 };
 
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
+};
+
 struct lpc_data_s {
     struct mutex    access_lock;
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16];
-char bsp_debug[32];
+char bsp_version[16]="";
+char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -115,8 +141,8 @@ static u8 _shift(u8 mask)
     int i=0, mask_one=1;
 
     for(i=0; i<8; ++i) {
-	      if ((mask & mask_one) == 1)
-	    	    return i;
+        if((mask & mask_one) == 1)
+            return i;
         else
             mask >>= 1;
     }
@@ -136,11 +162,53 @@ static u8 _mask_shift(u8 val, u8 mask)
 
 static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
 {
-    if (bit_val == 0)
+    if(bit_val == 0)
         reg_val = reg_val & ~(1 << bit);
     else
         reg_val = reg_val | (1 << bit);
     return reg_val;
+}
+
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
 }
 
 /* get lpc register value */
@@ -151,6 +219,8 @@ static u8 _read_lpc_reg(u16 reg, u8 mask)
     mutex_lock(&lpc_data->access_lock);
     reg_val=_mask_shift(inb(reg), mask);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return reg_val;
 }
@@ -172,11 +242,11 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 {
     u8 reg_val, reg_val_now, shift;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
+    if(kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
     //apply SINGLE BIT operation if mask is specified, multiple bits are not supported
-    if (mask != MASK_ALL) {
+    if(mask != MASK_ALL) {
         reg_val_now = _read_lpc_reg(reg, 0x0);
         shift = _shift(mask);
         reg_val = _bit_operation(reg_val_now, shift, reg_val);
@@ -185,7 +255,11 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
     mutex_lock(&lpc_data->access_lock);
 
     outb(reg_val, reg);
+    mdelay(LPC_MDELAY);
+
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return count;
 }
@@ -199,6 +273,8 @@ static ssize_t read_bsp(char *buf, char *str)
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg_val=%s", str);
+
     return len;
 }
 
@@ -208,6 +284,8 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
     mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg_val=%s", str);
 
     return count;
 }
@@ -228,6 +306,8 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
     return len;
 }
 
@@ -247,6 +327,8 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
     return len;
 }
 
@@ -262,7 +344,9 @@ static ssize_t read_mux_reset_callback(struct device *dev,
 
     mutex_lock(&lpc_data->access_lock);
     reg_val1=_mask_shift(inb(reg1), mask);
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg1, reg_val1);
     reg_val2=_mask_shift(inb(reg2), mask);
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg2, reg_val2);
     len=sprintf(buf, "reset1:%d\nreset2:%d\n", reg_val1, reg_val2);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -281,22 +365,35 @@ static ssize_t write_mux_reset_callback(struct device *dev,
     u8 mask = 0b11111111;
     static int mux_reset_flag = 0;
 
-    if (kstrtou8(buf, 0, &val) < 0)
+    if(kstrtou8(buf, 0, &val) < 0)
         return -EINVAL;
 
-    if (mux_reset_flag == 0) {
-        if (val == 0) {
+    if(mux_reset_flag == 0) {
+        if(val == 0) {
             mutex_lock(&lpc_data->access_lock);
             mux_reset_flag = 1;
-            printk(KERN_INFO "i2c mux reset is triggered...\n");
+            BSP_LOG_W("i2c mux reset is triggered...");
+
             reg_val1 = inb(reg1);
             outb((reg_val1 & ~mask), reg1);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg1, reg_val1 & ~mask);
+
             reg_val2 = inb(reg2);
             outb((reg_val2 & ~mask), reg2);
-            mdelay(100);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg2, reg_val2 & ~mask);
+
+            mdelay(500);
             outb((reg_val1 | mask), reg1);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg1, reg_val1 | mask);
+
             mdelay(500);
             outb((reg_val2 | mask), reg2);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg2, reg_val2 | mask);
+
             mdelay(500);
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
@@ -304,7 +401,7 @@ static ssize_t write_mux_reset_callback(struct device *dev,
             return -EINVAL;
         }
     } else {
-        printk(KERN_INFO "i2c mux is resetting... (ignore)\n");
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
         mutex_lock(&lpc_data->access_lock);
         mutex_unlock(&lpc_data->access_lock);
     }
@@ -320,7 +417,7 @@ static ssize_t read_lpc_callback(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_ALL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         //CPU CPLD
         case ATT_CPU_CPLD_VERSION:
             reg = REG_CPU_CPLD_VERSION;
@@ -330,21 +427,27 @@ static ssize_t read_lpc_callback(struct device *dev,
             mask = 0x80;
             break;
         case ATT_CPU_BIOS_BOOT_CFG:
-        	reg = REG_CPU_CTRL_1;
+            reg = REG_CPU_CTRL_1;
             mask = 0x80;
+            break;
+        case ATT_CPU_CPLD_BUILD:
+            reg = REG_CPU_CPLD_BUILD;
             break;
         //MB CPLD
         case ATT_MB_BRD_ID_0:
-        	  reg = REG_MB_BRD_ID_0;
+            reg = REG_MB_BRD_ID_0;
             break;
         case ATT_MB_BRD_ID_1:
-        	  reg = REG_MB_BRD_ID_1;
+            reg = REG_MB_BRD_ID_1;
             break;
         case ATT_MB_CPLD_1_VERSION:
-        	  reg = REG_MB_CPLD_VERSION;
+            reg = REG_MB_CPLD_VERSION;
+            break;
+        case ATT_MB_CPLD_1_BUILD:
+            reg = REG_MB_CPLD_BUILD;
             break;
         case ATT_MB_BRD_SKU_ID:
-        	  reg = REG_MB_BRD_ID_0;
+            reg = REG_MB_BRD_ID_0;
             mask = 0xFF;
             break;
         case ATT_MB_BRD_HW_ID:
@@ -352,34 +455,34 @@ static ssize_t read_lpc_callback(struct device *dev,
             mask = 0x03;
             break;
         case ATT_MB_BRD_ID_TYPE:
-        	  reg = REG_MB_BRD_ID_1;
+            reg = REG_MB_BRD_ID_1;
             mask = 0x80;
             break;
         case ATT_MB_BRD_BUILD_ID:
-        	  reg = REG_MB_BRD_ID_1;
+            reg = REG_MB_BRD_ID_1;
             mask = 0x38;
             break;
         case ATT_MB_BRD_DEPH_ID:
-        	  reg = REG_MB_BRD_ID_1;
+            reg = REG_MB_BRD_ID_1;
             mask = 0x04;
             break;
         case ATT_MB_MUX_CTRL:
-        	  reg = REG_MB_MUX_CTRL;
+            reg = REG_MB_MUX_CTRL;
             break;
         //I2C Alert
         case ATT_ALERT_STATUS:
-        	  reg = REG_ALERT_STATUS;
+            reg = REG_ALERT_STATUS;
             mask = 0x20;
             break;
 #if CPU_TYPE == CPU_BDE
         case ATT_ALERT_DISABLE:
-        	  reg = REG_ALERT_DISABLE;
-        	  mask = 0x04;
+            reg = REG_ALERT_DISABLE;
+            mask = 0x04;
             break;
 #endif
         //BSP
         case ATT_BSP_REG:
-            if (kstrtou16(bsp_reg, 0, &reg) < 0)
+            if(kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
             break;
         default:
@@ -396,7 +499,7 @@ static ssize_t write_lpc_callback(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_ALL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
@@ -414,14 +517,18 @@ static ssize_t read_bsp_callback(struct device *dev,
     int str_len=0;
     char *str=NULL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_BSP_VERSION:
-        	  str = bsp_version;
+            str = bsp_version;
             str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
-        	  str = bsp_debug;
+            str = bsp_debug;
             str_len = sizeof(bsp_debug);
+            break;
+        case ATT_BSP_REG:
+            str = bsp_reg;
+            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;
@@ -437,26 +544,36 @@ static ssize_t write_bsp_callback(struct device *dev,
     int str_len=0;
     char *str=NULL;
     u16 reg = 0;
+    u8 bsp_debug_u8 = 0;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_BSP_VERSION:
-        	  str = bsp_version;
+            str = bsp_version;
             str_len = sizeof(str);
             break;
         case ATT_BSP_DEBUG:
-        	  str = bsp_debug;
+            str = bsp_debug;
             str_len = sizeof(str);
             break;
         case ATT_BSP_REG:
-        	if (kstrtou16(buf, 0, &reg) < 0)
+            if(kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
-        	str = bsp_reg;
+            str = bsp_reg;
             str_len = sizeof(str);
             break;
         default:
             return -EINVAL;
     }
+
+    if(attr->index == ATT_BSP_DEBUG) {
+        if(kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+            return -EINVAL;
+        } else if(_config_bsp_log(bsp_debug_u8) < 0) {
+            return -EINVAL;
+        }
+    }
+
     return write_bsp(buf, str, str_len, count);
 }
 
@@ -465,11 +582,13 @@ static SENSOR_DEVICE_ATTR(cpu_cpld_version, S_IRUGO, read_lpc_callback, NULL, AT
 static SENSOR_DEVICE_ATTR(cpu_cpld_version_h, S_IRUGO, read_cpu_cpld_version_h, NULL, ATT_CPU_CPLD_VERSION_H);
 static SENSOR_DEVICE_ATTR(boot_rom,         S_IRUGO, read_lpc_callback, NULL, ATT_CPU_BIOS_BOOT_ROM);
 static SENSOR_DEVICE_ATTR(boot_cfg,         S_IRUGO, read_lpc_callback, NULL, ATT_CPU_BIOS_BOOT_CFG);
+static SENSOR_DEVICE_ATTR(cpu_cpld_build,     S_IRUGO, read_lpc_callback, NULL, ATT_CPU_CPLD_BUILD);
 //SENSOR_DEVICE_ATTR - MB
 static SENSOR_DEVICE_ATTR(board_id_0,      S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_0);
 static SENSOR_DEVICE_ATTR(board_id_1,      S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_1);
 static SENSOR_DEVICE_ATTR(mb_cpld_1_version,   S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_VERSION);
 static SENSOR_DEVICE_ATTR(mb_cpld_1_version_h, S_IRUGO, read_mb_cpld_1_version_h, NULL, ATT_MB_CPLD_1_VERSION_H);
+static SENSOR_DEVICE_ATTR(mb_cpld_1_build,   S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_BUILD);
 static SENSOR_DEVICE_ATTR(mux_ctrl,        S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_MB_MUX_CTRL);
 static SENSOR_DEVICE_ATTR(mux_reset,        S_IRUGO | S_IWUSR, read_mux_reset_callback, write_mux_reset_callback, ATT_MB_MUX_RESET);
 static SENSOR_DEVICE_ATTR(board_sku_id,    S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_SKU_ID);
@@ -490,6 +609,7 @@ static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback,
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpu_cpld_version_h.dev_attr.attr,
+    &sensor_dev_attr_cpu_cpld_build.dev_attr.attr,
     NULL,
 };
 
@@ -497,14 +617,15 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_id_0.dev_attr.attr,
     &sensor_dev_attr_board_id_1.dev_attr.attr,
     &sensor_dev_attr_mb_cpld_1_version.dev_attr.attr,
-	&sensor_dev_attr_mb_cpld_1_version_h.dev_attr.attr,
-	&sensor_dev_attr_board_sku_id.dev_attr.attr,
-	&sensor_dev_attr_board_hw_id.dev_attr.attr,
-	&sensor_dev_attr_board_id_type.dev_attr.attr,
-	&sensor_dev_attr_board_build_id.dev_attr.attr,
-	&sensor_dev_attr_board_deph_id.dev_attr.attr,
-	&sensor_dev_attr_mux_ctrl.dev_attr.attr,
-	&sensor_dev_attr_mux_reset.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld_1_version_h.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld_1_build.dev_attr.attr,
+    &sensor_dev_attr_board_sku_id.dev_attr.attr,
+    &sensor_dev_attr_board_hw_id.dev_attr.attr,
+    &sensor_dev_attr_board_id_type.dev_attr.attr,
+    &sensor_dev_attr_board_build_id.dev_attr.attr,
+    &sensor_dev_attr_board_deph_id.dev_attr.attr,
+    &sensor_dev_attr_mux_ctrl.dev_attr.attr,
+    &sensor_dev_attr_mux_reset.dev_attr.attr,
     NULL,
 };
 
@@ -530,27 +651,27 @@ static struct attribute *bsp_attrs[] = {
 };
 
 static struct attribute_group cpu_cpld_attr_grp = {
-	  .name = "cpu_cpld",
+    .name = "cpu_cpld",
     .attrs = cpu_cpld_attrs,
 };
 
 static struct attribute_group mb_cpld_attr_grp = {
-	  .name = "mb_cpld",
+    .name = "mb_cpld",
     .attrs = mb_cpld_attrs,
 };
 
 static struct attribute_group bios_attr_grp = {
-	  .name = "bios",
+    .name = "bios",
     .attrs = bios_attrs,
 };
 
 static struct attribute_group i2c_alert_attr_grp = {
-	  .name = "i2c_alert",
+    .name = "i2c_alert",
     .attrs = i2c_alert_attrs,
 };
 
 static struct attribute_group bsp_attr_grp = {
-	  .name = "bsp",
+    .name = "bsp",
     .attrs = bsp_attrs,
 };
 
@@ -575,13 +696,13 @@ static int lpc_drv_probe(struct platform_device *pdev)
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
                             GFP_KERNEL);
-    if (!lpc_data)
+    if(!lpc_data)
         return -ENOMEM;
 
     mutex_init(&lpc_data->access_lock);
 
     for (i=0; i<grp_num; ++i) {
-        switch (i) {
+        switch(i) {
             case 0:
                 grp = &cpu_cpld_attr_grp;
                 break;
@@ -602,11 +723,11 @@ static int lpc_drv_probe(struct platform_device *pdev)
     }
 
         err[i] = sysfs_create_group(&pdev->dev.kobj, grp);
-        if (err[i]) {
+        if(err[i]) {
             printk(KERN_ERR "Cannot create sysfs for group %s\n", grp->name);
             goto exit;
         } else {
-        	continue;
+            continue;
         }
     }
 
@@ -614,7 +735,7 @@ static int lpc_drv_probe(struct platform_device *pdev)
 
 exit:
     for (i=0; i<grp_num; ++i) {
-        switch (i) {
+        switch(i) {
             case 0:
                 grp = &cpu_cpld_attr_grp;
                 break;
@@ -635,7 +756,7 @@ exit:
         }
 
         sysfs_remove_group(&pdev->dev.kobj, grp);
-        if (!err[i]) {
+        if(!err[i]) {
             //remove previous successful cases
             continue;
         } else {
@@ -668,21 +789,21 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    
+
     err = platform_driver_register(&lpc_drv);
-    if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
+    if(err) {
+        printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	
-    	return err;
+
+        return err;
     }
-        
+
     err = platform_device_register(&lpc_dev);
-    if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
+    if(err) {
+        printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	platform_driver_unregister(&lpc_drv);
-    	return err;
+        platform_driver_unregister(&lpc_drv);
+        return err;
     }
 
     return err;

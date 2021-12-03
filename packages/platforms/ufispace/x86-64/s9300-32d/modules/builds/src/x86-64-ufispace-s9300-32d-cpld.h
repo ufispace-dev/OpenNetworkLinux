@@ -39,7 +39,7 @@ enum LED_BLINK_SPEED {
 };
 
 enum LED_STATUS {
-    OFF,    
+    OFF,
     ON,
 };
 
@@ -94,8 +94,8 @@ enum LED_GREEN {
 #define CPLD_BMC_RST_REG                    0x43
 #define CPLD_USB_RST_REG                    0x44
 #define CPLD_MUX_RST_REG                    0x46
-#define CPLD_MISC_RST_REG                   0x46
-#define CPLD_BMC_WATCHDOG_REG               0x46
+#define CPLD_MISC_RST_REG                   0x48
+#define CPLD_BMC_WATCHDOG_REG               0x4D
 // Sys status
 #define CPLD_DAU_BD_PRES_REG                0x50
 #define CPLD_PSU_STATUS_REG                 0x51
@@ -103,7 +103,7 @@ enum LED_GREEN {
 #define CPLD_MISC_REG                       0x5B
 // Mux ctrl
 #define CPLD_MUX_CTRL_REG                   0x5C
-#define CPLD_MAC_QSFP_SEL_CTRL_REG          0x5C
+#define CPLD_MAC_QSFP_SEL_CTRL_REG          0x5F
 // Led ctrl
 #define CPLD_SYS_LED_CTRL_1_REG             0x80
 #define CPLD_SYS_LED_CTRL_2_REG             0x81
@@ -114,7 +114,7 @@ enum LED_GREEN {
 
 /* CPLD 2 */
 /*  G0 - port 0 ~ 7
-    G1 - port 8 ~ 15 
+    G1 - port 8 ~ 15
     G2 - port 16 ~ 23
     G3 - port 24 ~ 31
   */

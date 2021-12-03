@@ -67,6 +67,29 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_PSU1_STBIOUT]    = {"PSU1_STBIOUT"    , 0}
 };
 
+static bmc_fru_t bmc_fru_cache[] =
+{
+    [ONLP_PSU_0] = {
+        .bmc_fru_id = 1,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_1",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+
+    },
+    [ONLP_PSU_1] = {
+        .bmc_fru_id = 2,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_2",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+};
+
 static onlp_shlock_t* onlp_lock = NULL;
 
 #define ONLP_LOCK() \
@@ -84,8 +107,7 @@ static onlp_shlock_t* onlp_lock = NULL;
 void lock_init()
 {
     static int sem_inited = 0;
-    if(!sem_inited)
-    {
+    if(!sem_inited) {
         onlp_shlock_create(LOCK_MAGIC, &onlp_lock, "bmc-file-lock");
         sem_inited = 1;
         check_and_do_i2c_mux_reset(-1);
@@ -114,20 +136,16 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 
     if(last_time == 0) {
         bmc_cache_expired = 1;
-    }
-    else {
+    } else {
          if(new_time > last_time) {
              if((new_time - last_time) > cache_time) {
                 bmc_cache_expired = 1;
-             }
-             else {
+             } else {
                 bmc_cache_expired = 0;
              }
-         }
-         else if(new_time == last_time) {
+         } else if(new_time == last_time) {
              bmc_cache_expired = 0;
-         }
-         else {
+         } else {
              bmc_cache_expired = 1;
          }
     }
@@ -137,19 +155,11 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 {
-    struct timeval new_tv;
-    FILE *fp = NULL;
-    char ipmi_cmd[1024] = {0};
-    char get_data_cmd[256] = {0};
-    char buf[20];
-    int rv = ONLP_STATUS_OK;
-    int dev_num = 0;
     int cache_time = 0;
     int bmc_cache_expired = 0;
-    float f_rv = 0;
     long file_last_time = 0;
-    static long bmc_cache_time = 0;
-    int retry = 0, retry_max = 3;
+    static int init_cache = 1;
+    int rv = ONLP_STATUS_OK;
 
     switch(sensor_type) {
         case FAN_SENSOR:
@@ -163,8 +173,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             break;
     }
 
-    if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time))
-    {
+    ONLP_LOCK();
+
+    if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
+        struct timeval new_tv = {0};
         gettimeofday(&new_tv, NULL);
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
@@ -175,24 +187,20 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         bmc_cache_expired = 1;
     }
 
-    if(bmc_cache_time == 0 && check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
-        bmc_cache_expired = 1;
-        gettimeofday(&new_tv,NULL);
-        bmc_cache_time = new_tv.tv_sec;
-    }
-
     //update cache
-    if(bmc_cache_expired == 1)
-    {
-        ONLP_LOCK();
-        if(bmc_cache_expired_check(file_last_time, bmc_cache_time, cache_time)) {
+    if(bmc_cache_expired == 1 || init_cache == 1) {
+        if(bmc_cache_expired == 1) {
+            char ipmi_cmd[1024] = {0};
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
+            int retry = 0, retry_max = 3;
             for (retry = 0; retry < retry_max; ++retry) {
-                if ((rv=system(ipmi_cmd)) < 0) {
+                int ret = 0;
+                if((ret=system(ipmi_cmd)) < 0) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d",
-                            __func__, retry, ipmi_cmd, rv);
-                        return ONLP_STATUS_E_INTERNAL;
+                            __func__, retry, ipmi_cmd, ret);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
                     } else {
                         continue;
                     }
@@ -202,29 +210,162 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             }
         }
 
-        for(dev_num = 0; dev_num < BMC_ATTR_ID_MAX; dev_num++)
-        {
-            memset(buf, 0, sizeof(buf));
-            snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
+        //read sensor from cache file and save to bmc_cache
+        FILE *fp = NULL;
+        fp = fopen (BMC_SENSOR_CACHE, "r");
+        if(fp == NULL) {
+            AIM_LOG_ERROR("%s() open file failed, file=%s", __func__, BMC_SENSOR_CACHE);
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
+        }
 
-            fp = popen(get_data_cmd, "r");
-            if(fp != NULL)
-            {
-                if(fgets(buf, sizeof(buf), fp) != NULL) {
-                    f_rv = atof(buf);
-                    bmc_cache[dev_num].data = f_rv;
+        //read file line by line
+        char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE, fp) != NULL) {
+            int i = 0;
+            char *line_ptr = line;
+            char *token = NULL;
+
+            //parse line into fields. fields[0]: fields name, fields[1]: fields value
+            char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE] = {{0}};
+            while ((token = strsep (&line_ptr, ",")) != NULL) {
+                sscanf (token, "%[^\n]", line_fields[i++]);
+            }
+
+            //save bmc_cache from fields
+            for(i=0; i<BMC_ATTR_ID_MAX; ++i) {
+                if(strcmp(line_fields[0], bmc_cache[i].name) == 0) {
+                    bmc_cache[i].data = atof(line_fields[1]);
+                    break;
                 }
             }
-            pclose(fp);
         }
-        gettimeofday(&new_tv,NULL);
-        bmc_cache_time = new_tv.tv_sec;
-        ONLP_UNLOCK();
+        fclose(fp);
+        init_cache = 0;
     }
 
     //read from cache
     *data = bmc_cache[bmc_cache_index].data;
 
+done:
+    ONLP_UNLOCK();
+    return rv;
+}
+
+/**
+ * @brief bmc fru read
+ * @param local_id The psu local id
+ * @param[out] data The psu fru information.
+ */
+int bmc_fru_read(int local_id, bmc_fru_t *data)
+{
+    struct timeval new_tv;
+    char ipmi_cmd[400] = {0};
+    int cache_time = PSU_CACHE_TIME;
+    int bmc_cache_expired = 0;
+    long file_last_time = 0;
+    int rv = ONLP_STATUS_OK;
+
+    if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    bmc_fru_t *fru = &bmc_fru_cache[local_id];
+
+    ONLP_LOCK();
+
+    if(check_file_exist(fru->cache_files, &file_last_time)) {
+        gettimeofday(&new_tv, NULL);
+        if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
+            bmc_cache_expired = 1;
+        } else {
+            bmc_cache_expired = 0;
+        }
+    } else {
+        bmc_cache_expired = 1;
+    }
+
+    //update cache
+    if(bmc_cache_expired == 1 || fru->init_done == 0) {
+        //get fru from ipmitool and save to cache file
+        if(bmc_cache_expired == 1) {
+            char fields[256]="";
+            snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
+                        BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);
+
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, fru->bmc_fru_id, fields, fru->cache_files);
+            int retry = 0, retry_max = 3;
+            for (retry = 0; retry < retry_max; ++retry) {
+                int ret = 0;
+                if ((ret = system(ipmi_cmd)) < 0) {
+                    if (retry == retry_max-1) {
+                        AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
+                            __func__, retry, ipmi_cmd, ret);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        //read fru from cache file and save to bmc_fru_cache
+        FILE *fp = NULL;
+        fp = fopen (fru->cache_files, "r");
+        while(1) {
+            char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+            char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+                break;
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
+                memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
+                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
+                memset(fru->name.val, '\0', sizeof(fru->name.val));
+                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
+                memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
+                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_SERIAL) == 0) {
+                memset(fru->serial.val, '\0', sizeof(fru->serial.val));
+                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+        }
+
+        fclose(fp);
+
+        fru->init_done = 1;
+
+        //Check output is correct
+        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s",
+                local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
+        }
+    }
+
+    //read from cache
+    *data = *fru;
+
+done:
+    ONLP_UNLOCK();
     return rv;
 }
 
@@ -233,7 +374,7 @@ int read_ioport(int addr, int *reg_val) {
 
     /*set r/w permission of all 65536 ports*/
     ret = iopl(3);
-    if(ret < 0){
+    if(ret < 0) {
         AIM_LOG_ERROR("unable to read cpu cpld version, iopl enable error %d\n", ret);
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -241,7 +382,7 @@ int read_ioport(int addr, int *reg_val) {
 
     /*set r/w permission of  all 65536 ports*/
     ret = iopl(0);
-    if(ret < 0){
+    if(ret < 0) {
         AIM_LOG_ERROR("unable to read cpu cpld version, iopl disable error %d\n", ret);
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -253,7 +394,7 @@ int exec_cmd(char *cmd, char* out, int size) {
 
     /* Open the command for reading. */
     fp = popen(cmd, "r");
-    if (fp == NULL) {
+    if(fp == NULL) {
         AIM_LOG_ERROR("Failed to run command %s\n", cmd );
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -299,13 +440,13 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs)
 void check_and_do_i2c_mux_reset(int port)
 {
     // only support beta and later
-    if (get_hw_rev_id() > 1) { 
+    if(get_hw_rev_id() > 1) {
         char cmd_buf[256] = {0};
         int ret = 0;
 
         snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
         ret = system(cmd_buf);
-        if (ret != 0) {
+        if(ret != 0) {
             if(access(MUX_RESET_PATH, F_OK) != -1 ) {
                 //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
                 memset(cmd_buf, 0, sizeof(cmd_buf));
@@ -323,7 +464,7 @@ uint8_t ufi_shift(uint8_t mask)
     int i=0, mask_one=1;
 
     for(i=0; i<8; ++i) {
-        if ((mask & mask_one) == 1)
+        if((mask & mask_one) == 1)
             return i;
         else
             mask >>= 1;
@@ -344,7 +485,7 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask)
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
 {
-    if (bit_val == 0)
+    if(bit_val == 0)
         reg_val = reg_val & ~(1 << bit);
     else
         reg_val = reg_val | (1 << bit);
@@ -361,7 +502,7 @@ int get_hw_rev_id(void)
 
     snprintf(hw_rev_cmd, sizeof(hw_rev_cmd), "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id");
     fp = popen(hw_rev_cmd, "r");
-    if (fp == NULL) {
+    if(fp == NULL) {
         AIM_LOG_ERROR("Unable to popen cmd(%s)\r\n", hw_rev_cmd);
         return ONLP_STATUS_E_INTERNAL;
     }

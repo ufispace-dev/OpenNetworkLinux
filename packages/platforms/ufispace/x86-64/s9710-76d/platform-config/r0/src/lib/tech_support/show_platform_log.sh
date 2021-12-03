@@ -245,8 +245,9 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00000000)))
-    model_name_array=("NCP3")
+    model_id_array=($((2#00000000)) $((2#00010000)))
+    model_name_array=("NCP3" "NCP3(w/o OP2)")
+    model_name=""
 
     model_id=`${IOGET} 0xE00`
     ret=$?
@@ -284,15 +285,21 @@ function _show_board_info {
     # Build Rev D[3:5]
     build_rev_id=$(((board_rev_id & 2#00111000) >> 3))
     build_rev=${build_rev_array[${build_rev_id}]}
-
-    # MODEL ID D[0:7]    
-    if [ $model_id -eq ${model_id_array[0]} ]; then    
-       model_name=${model_name_array[0]}    
-    else
+   
+    # Model Name    
+    for (( i=0; i<${#model_id_array[@]}; i++ ))
+    do
+        if [ $model_id -eq ${model_id_array[$i]} ]; then    
+           model_name=${model_name_array[$i]}
+           break
+        fi
+    done
+    
+    if [ "$model_name" == "" ]; then    
        _echo "Invalid model_id: ${model_id}"
        exit 1
-    fi  
-
+    fi     
+    
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
     _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
@@ -349,7 +356,7 @@ function _cpld_version_i2c {
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} build ${cpu_cpld_build}" 
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 )) build $((cpu_cpld_build))"          
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         # MB CPLD NCP3
         mb_cpld1_ver=""
         mb_cpld2_ver=""
@@ -446,7 +453,7 @@ function _cpld_version_sysfs {
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} build ${cpu_cpld_build}" 
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 )) build $((cpu_cpld_build))"
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         # MB CPLD NCP3
         _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_version"
         _check_filepath "/sys/bus/i2c/devices/1-0031/cpld_version"
@@ -545,7 +552,7 @@ function _show_i2c_tree_bus_mux_i2c {
     local chip_addr1_chann=""
     local chip_addr2_chann=""
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then 
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then 
         ## ROOT-0x71
         _show_i2c_mux_devices "0x71" "8" "ROOT-0x71"
         
@@ -649,7 +656,7 @@ function _show_i2c_device_info {
     _echo ""
 
     local pca954x_device_id=("")
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         pca954x_device_id=("0x71" "0x72" "0x73")    
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -730,7 +737,7 @@ function _show_psu_status_cpld_sysfs {
     _banner "Show PSU Status (CPLD)"
 
     bus_id=""
-    if [ "${MODEL_NAME}" == "NCP3" ]; then        
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then        
         bus_id="1"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -770,7 +777,7 @@ function _show_rov_sysfs {
     _banner "Show ROV"
 
     bus_id=""
-    if [ "${MODEL_NAME}" == "NCP3" ]; then 
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then 
         bus_id="1"
         rov_i2c_bus="21"
         rov_i2c_addr=("0x60" "0x62")
@@ -832,7 +839,7 @@ function _show_nif_port_status_sysfs {
     port_status_sysfs_idx_array=""
     port_status_bit_idx_array=""
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then 
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then 
         bus_id="1"
         nif_port_eeprom_bus_id_base=73
 
@@ -953,7 +960,7 @@ function _show_fab_port_status_sysfs {
     port_led_cpld_addr_array=""
     port_led_cpld_index_array=""
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         bus_id="30"
         fab_port_eeprom_bus_id_base=33
         port_status_cpld_addr_array=("0033" "0033" "0033" "0033" "0033" \
@@ -1090,7 +1097,7 @@ function _show_sfp_status_sysfs {
 
     bus_id=""
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         bus_id="1"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1175,7 +1182,7 @@ function _show_cpu_temperature {
 function _show_cpld_interrupt_sysfs {
     _banner "Show CPLD Interrupt"
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         bus_id=("1" "1" "1" "30" "30")
         cpld_addr_array=("0030" "0031" "0032" "0033" "0034")
         sysfs_array=("cpld_qsfpdd_intr_port" "cpld_qsfpdd_intr_present" "cpld_qsfpdd_intr_fuse")
@@ -1226,7 +1233,7 @@ function _show_cpld_interrupt {
 function _show_system_led_sysfs {
     _banner "Show System LED"
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_system_led_0"
         _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_system_led_1"
         system_led0=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_system_led_0 ${LOG_REDIRECT}")
@@ -1248,7 +1255,7 @@ function _show_system_led {
 function _show_beacon_led_sysfs {
     _banner "Show Beacon LED"
 
-    if [ "${MODEL_NAME}" == "NCP3" ]; then
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then
         for ((i=496;i<=502;i++))
         do
             _check_filepath "/sys/class/gpio/gpio$((${i}-${GPIO_OFFSET}))/value"
@@ -1695,7 +1702,7 @@ function _show_bmc_info {
 function _show_bmc_device_status {    
     _banner "Show BMC Device Status"
     
-    if [ "${MODEL_NAME}" == "NCP3" ]; then 
+    if [[ $MODEL_NAME == *"NCP3"* ]]; then 
         # Step 1: Get PSU 0 Status Registers
         _echo "[PSU 0 Device Status (BMC) ]"        
         status_word_psu0=$(eval     "ipmitool i2c bus=4 0x80 0x2 0x79 ${LOG_REDIRECT}" | head -n 1)
@@ -1911,7 +1918,7 @@ function _main {
     _show_bios_info
     _show_bmc_info
     _show_bmc_sensors
-    _show_bmc_device_status
+    _show_bmc_device_status    
     _show_bmc_sel_raw_data
     _show_bmc_sel_elist
     _show_bmc_sel_elist_detail

@@ -32,14 +32,12 @@
 #include "x86_64_ingrasys_s9180_32x_log.h"
 #include "platform_lib.h"
 
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {  
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = 1; p <= PORT_NUM; p++) {
@@ -48,8 +46,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status;
 
@@ -60,9 +57,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 1;
     int rc = 0;
@@ -79,8 +74,7 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {   
     int eeprombusidx, eeprombus, eeprombusbase;
     char eeprom_path[512], eeprom_addr[32];
@@ -153,8 +147,7 @@ onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

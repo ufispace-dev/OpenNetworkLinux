@@ -31,8 +31,7 @@
 #include <uCli/ucli_argparse.h>
 #include <uCli/ucli_handler_macros.h>
 
-static ucli_status_t
-x86_64_ingrasys_s9230_64x_ucli_ucli__config__(ucli_context_t* uc)
+static ucli_status_t x86_64_ingrasys_s9230_64x_ucli_ucli__config__(ucli_context_t* uc)
 {
     UCLI_HANDLER_MACRO_MODULE_CONFIG(x86_64_ingrasys_s9230_64x)
 }
@@ -62,8 +61,7 @@ x86_64_ingrasys_s9230_64x_ucli_module__ =
         NULL,
     };
 
-ucli_node_t*
-x86_64_ingrasys_s9230_64x_ucli_node_create(void)
+ucli_node_t* x86_64_ingrasys_s9230_64x_ucli_node_create(void)
 {
     ucli_node_t* n;
     ucli_module_init(&x86_64_ingrasys_s9230_64x_ucli_module__);
@@ -73,8 +71,7 @@ x86_64_ingrasys_s9230_64x_ucli_node_create(void)
 }
 
 #else
-void*
-x86_64_ingrasys_s9230_64x_ucli_node_create(void)
+void* x86_64_ingrasys_s9230_64x_ucli_node_create(void)
 {
     return NULL;
 }

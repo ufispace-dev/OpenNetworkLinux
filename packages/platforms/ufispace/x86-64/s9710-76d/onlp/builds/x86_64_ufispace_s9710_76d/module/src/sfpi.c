@@ -180,8 +180,8 @@ static int ufi_port_to_cpld_bus(int port)
 
 static int ufi_qsfp_present_get(int port, int *pres_val)
 {     
-    int reg_val, rc;
-    int cpld_bus, cpld_addr, attr_offset;
+    int reg_val = 0, rc = 0;
+    int cpld_bus = 0, cpld_addr = 0, attr_offset = 0;
        
     //get cpld bus, cpld addr and sysfs_attr_offset
     cpld_bus = ufi_port_to_cpld_bus(port);
@@ -203,8 +203,8 @@ static int ufi_qsfp_present_get(int port, int *pres_val)
 
 static int ufi_sfp_present_get(int port, int *pres_val)
 {
-    int reg_val, rc;
-    int cpld_bus, cpld_addr; 
+    int reg_val = 0, rc = 0;
+    int cpld_bus = 0, cpld_addr = 0; 
 
     //get cpld bus and cpld addr
     cpld_bus = ufi_port_to_cpld_bus(port);
@@ -238,7 +238,7 @@ int onlp_sfpi_init(void)
  */
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
-    int p;
+    int p = 0;
     for(p = 0; p < PORT_NUM; p++) {
         AIM_BITMAP_SET(bmap, p);
     }
@@ -254,21 +254,15 @@ int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
  */
 int onlp_sfpi_is_present(int port)
 {
-    int status=ONLP_STATUS_OK;
+    int status = ONLP_STATUS_OK;
 
     VALIDATE_PORT(port);
     
     //QSFPDD Ports
     if (IS_QSFPX(port)) {
-        if (ufi_qsfp_present_get(port, &status) < 0) {
-            AIM_LOG_ERROR("qsfp_presnet_get() failed, port=%d\n", port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(ufi_qsfp_present_get(port, &status));
     } else if (IS_SFP(port)) { //SFP
-        if (ufi_sfp_present_get(port, &status) < 0) {
-            AIM_LOG_ERROR("sfp_presnet_get() failed, port=%d\n", port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(ufi_sfp_present_get(port, &status));
     } else {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -299,7 +293,7 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
-    int i=0, value=0;
+    int i = 0, value = 0;
 
     /* Populate bitmap - QSFPDD_NIF and QSFPDD_FAB ports */
     for(i = 0; i < (QSFPX_NUM); i++) {
@@ -308,11 +302,8 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 
     /* Populate bitmap - SFP+ ports */
     for(i = QSFPX_NUM; i < PORT_NUM; i++) {
-	if (onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)< 0) {
-            return ONLP_STATUS_E_INTERNAL;
-        } else {
-            AIM_BITMAP_MOD(dst, i, value);
-        }
+        ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
+        AIM_BITMAP_MOD(dst, i, value);
     }
 
     return ONLP_STATUS_OK;
@@ -365,7 +356,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
         return ONLP_STATUS_OK;
     }
     
-    if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+    if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
     
@@ -386,7 +377,7 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
         return ONLP_STATUS_OK;
     }
 
-    if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+    if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }   
     
@@ -411,7 +402,7 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
         return ONLP_STATUS_OK;
     }
     
-    if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
+    if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }  
     
@@ -432,7 +423,7 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
         return ONLP_STATUS_OK;
     }
     
-    if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
+    if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
     
@@ -478,7 +469,7 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
         return ONLP_STATUS_OK;
     }
     
-    if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE))<0) {
+    if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
     
@@ -493,7 +484,7 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
 int onlp_sfpi_dom_read(int port, uint8_t data[256])
 {
     char eeprom_path[512];
-    FILE* fp;
+    FILE* fp = NULL;
     int bus = 0;
 
     //sfp dom is on 0x51 (2nd 256 bytes)
@@ -565,7 +556,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
     VALIDATE_PORT(port);
     
     //set unsupported as default value
-    *rv=0;
+    *rv = 0;
     
     switch (control) {
         case ONLP_SFP_CONTROL_RESET:
@@ -714,7 +705,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
  */
 int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
-    int rc;
+    int rc = 0;
     int reg_val = 0, reg_mask = 0;
     int bus = 0;
     int cpld_addr = 0;    

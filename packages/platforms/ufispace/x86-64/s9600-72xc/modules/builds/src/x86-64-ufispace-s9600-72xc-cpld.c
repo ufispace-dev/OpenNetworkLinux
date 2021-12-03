@@ -41,17 +41,26 @@
 #define DEBUG_PRINT(fmt, args...)
 #endif
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define I2C_READ_BYTE_DATA(ret, lock, i2c_client, reg) \
 { \
     mutex_lock(lock); \
     ret = i2c_smbus_read_byte_data(i2c_client, reg); \
     mutex_unlock(lock); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
 }
 #define I2C_WRITE_BYTE_DATA(ret, lock, i2c_client, reg, val) \
 { \
         mutex_lock(lock); \
         ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
         mutex_unlock(lock); \
+        BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
 /* CPLD sysfs attributes index  */
@@ -167,6 +176,21 @@ enum s9600_cpld_sysfs_attributes {
     CPLD_QSFP_PORT_64_71_RST,
     CPLD_QSFP_PORT_64_71_LPMODE,
     CPLD_BEACON_LED,
+
+    //BSP DEBUG
+    BSP_DEBUG
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 /* CPLD sysfs attributes hook functions  */
@@ -189,8 +213,15 @@ static ssize_t write_cpld_cb(struct device *dev,
 // cpld access api
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
-static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val);
+static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val, int *errno);
 static bool read_cpld_reg_raw_int(struct device *dev, u8 reg, int *val);
+// bsp debug api
+static ssize_t read_bsp(char *buf, char *str);
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count);
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf);
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count);
 
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
@@ -211,9 +242,13 @@ static const struct i2c_device_id s9600_cpld_id[] = {
     { "s9600_72xc_cpld1",  cpld1 },
     { "s9600_72xc_cpld2",  cpld2 },
     { "s9600_72xc_cpld3",  cpld3 },
-    { "s9600_72xc_cpld4",  cpld4 },    
+    { "s9600_72xc_cpld4",  cpld4 },
     {}
 };
+
+char bsp_debug[2]="0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
 
 /* Addresses scanned for s9600_cpld */
 static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, 0x32, 0x33, I2C_CLIENT_END };
@@ -441,6 +476,9 @@ static SENSOR_DEVICE_ATTR(cpld_qsfp_port_64_71_lpmode, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_QSFP_PORT_64_71_LPMODE);
 static SENSOR_DEVICE_ATTR(cpld_beacon_led, S_IWUSR | S_IRUGO, \
         read_cpld_cb, write_cpld_cb, CPLD_BEACON_LED);
+//BSP DEBUG
+static SENSOR_DEVICE_ATTR(bsp_debug, S_IRUGO | S_IWUSR, \
+        read_bsp_callback, write_bsp_callback, BSP_DEBUG);
 
 /* define support attributes of cpldx , total 3 */
 /* cpld 1 */
@@ -499,6 +537,7 @@ static struct attribute *s9600_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_op2_pg.dev_attr.attr,
     &sensor_dev_attr_cpld_misc_pg.dev_attr.attr,
     &sensor_dev_attr_cpld_hbm_pw_en.dev_attr.attr,
+    &sensor_dev_attr_bsp_debug.dev_attr.attr,
     NULL
 };
 
@@ -609,6 +648,115 @@ static const struct attribute_group s9600_cpld4_group = {
     .attrs = s9600_cpld4_attributes,
 };
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+/* get bsp value */
+static ssize_t read_bsp(char *buf, char *str)
+{
+    ssize_t len=0;
+
+    len=sprintf(buf, "%s", str);
+    BSP_LOG_R("reg_val=%s", str);
+
+    return len;
+}
+
+/* set bsp value */
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
+{
+    snprintf(str, str_len, "%s", buf);
+    BSP_LOG_W("reg_val=%s", str);
+
+    return count;
+}
+
+/* get bsp parameter value */
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+
+    switch(attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(bsp_debug);
+            break;
+        default:
+            return -EINVAL;
+    }
+    return read_bsp(buf, str);
+}
+
+/* set bsp parameter value */
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+    ssize_t ret = 0;
+    u8 bsp_debug_u8 = 0;
+
+    switch(attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(str);
+            ret = write_bsp(buf, str, str_len, count);
+
+            if(kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+                return -EINVAL;
+            } else if(_config_bsp_log(bsp_debug_u8) < 0) {
+                return -EINVAL;
+            }
+            return ret;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
 /* read access register from cpld data */
 static ssize_t read_access_register(struct device *dev,
                     struct device_attribute *da,
@@ -631,7 +779,7 @@ static ssize_t write_access_register(struct device *dev,
     struct cpld_data *data = i2c_get_clientdata(client);
     u8 reg;
 
-    if (kstrtou8(buf, 0, &reg) < 0)
+    if(kstrtou8(buf, 0, &reg) < 0)
         return -EINVAL;
 
     data->access_reg = reg;
@@ -650,8 +798,8 @@ static ssize_t read_register_value(struct device *dev,
 
     I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
 
-    if (reg_val < 0)
-        return -1;
+    if(reg_val < 0)
+        return reg_val;
 
     return sprintf(buf, "0x%x\n", reg_val);
 }
@@ -668,12 +816,12 @@ static ssize_t write_register_value(struct device *dev,
     u8 reg = data->access_reg;
     u8 reg_val;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
+    if(kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock, client, reg, reg_val);
 
-    if (unlikely(ret < 0)) {
+    if(unlikely(ret < 0)) {
         dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
         return ret;
     }
@@ -688,35 +836,34 @@ static ssize_t read_cpld_reg(struct device *dev,
 {
     int reg_val;
 
-    if (!read_cpld_reg_raw_int(dev, reg, &reg_val))
-        return -1;
-    else
+    if(read_cpld_reg_raw_int(dev, reg, &reg_val))
         return sprintf(buf, "0x%02x\n", reg_val);
+    else
+        return reg_val;
 }
 
 static bool read_cpld_reg_raw_int(struct device *dev, u8 reg, int *val)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
-    int reg_val;
-    I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-    if (reg_val < 0)
+    I2C_READ_BYTE_DATA(*val, &data->access_lock, client, reg);
+    if(unlikely(*val < 0)) {
+        dev_err(dev, "read_cpld_reg_raw_int() error, return=%d\n", *val);
         return false;
-    else {
-        *val = reg_val;
-        return true;
     }
+    return true;
 }
 
-static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val)
+static bool read_cpld_reg_raw_byte(struct device *dev, u8 reg, u8 *val, int *errno)
 {
     int reg_val;
 
-    if (!read_cpld_reg_raw_int(dev, reg, &reg_val))
-        return false;
-    else {
+    if(read_cpld_reg_raw_int(dev, reg, &reg_val)) {
         *val = (u8)reg_val;
         return true;
+    } else {
+        *errno = reg_val;
+        return false;
     }
 }
 
@@ -727,7 +874,7 @@ static ssize_t read_cpld_cb(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = 0;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case CPLD_SKU_ID:
              reg = CPLD_SKU_ID_REG;
              break;
@@ -1049,13 +1196,14 @@ static ssize_t read_hw_rev_cb(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = CPLD_HW_REV_REG;
-    u8 reg_val;
+    u8 reg_val = 0;
+    int errno = 0;
     u8 res;
 
-    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val))
-        return -1;
+    if(!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case CPLD_HW_REV:
              HW_REV_GET(reg_val, res);
              break;
@@ -1080,13 +1228,14 @@ static ssize_t read_cpld_version_cb(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = CPLD_VERSION_REG;
-    u8 reg_val;
+    u8 reg_val = 0;
+    int errno = 0;
     u8 res;
 
-    if (!read_cpld_reg_raw_byte(dev, reg, &reg_val))
-        return -1;
+    if(!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case CPLD_MAJOR_VER:
              CPLD_MAJOR_VERSION_GET(reg_val, res);
              break;
@@ -1106,7 +1255,7 @@ static ssize_t write_cpld_cb(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = 0;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case CPLD_MAC_OP2_INTR_MASK:
              reg = CPLD_MAC_OP2_INTR_MASK_REG;
              break;
@@ -1253,13 +1402,13 @@ static ssize_t write_cpld_reg(struct device *dev,
     u8 reg_val;
     int ret;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
+    if(kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                client, reg, reg_val);
 
-    if (unlikely(ret < 0)) {
+    if(unlikely(ret < 0)) {
         dev_err(dev, "I2C_WRITE_BYTE_DATA error, return=%d\n", ret);
         return ret;
     }
@@ -1273,7 +1422,7 @@ static void s9600_cpld_add_client(struct i2c_client *client)
     struct cpld_client_node *node = NULL;
 
     node = kzalloc(sizeof(struct cpld_client_node), GFP_KERNEL);
-    if (!node) {
+    if(!node) {
         dev_info(&client->dev,
             "Can't allocate cpld_client_node for index %d\n",
             client->addr);
@@ -1299,13 +1448,13 @@ static void s9600_cpld_remove_client(struct i2c_client *client)
         cpld_node = list_entry(list_node,
                 struct cpld_client_node, list);
 
-        if (cpld_node->client == client) {
+        if(cpld_node->client == client) {
             found = 1;
             break;
         }
     }
 
-    if (found) {
+    if(found) {
         list_del(list_node);
         kfree(cpld_node);
     }
@@ -1322,14 +1471,14 @@ static int s9600_cpld_probe(struct i2c_client *client,
     int idx;
 
     data = kzalloc(sizeof(struct cpld_data), GFP_KERNEL);
-    if (!data)
+    if(!data)
         return -ENOMEM;
 
     /* init cpld data for client */
     i2c_set_clientdata(client, data);
     mutex_init(&data->access_lock);
 
-    if (!i2c_check_functionality(client->adapter,
+    if(!i2c_check_functionality(client->adapter,
                 I2C_FUNC_SMBUS_BYTE_DATA)) {
         dev_info(&client->dev,
             "i2c_check_functionality failed (0x%x)\n",
@@ -1341,7 +1490,7 @@ static int s9600_cpld_probe(struct i2c_client *client,
     /* get cpld id from device */
     ret = i2c_smbus_read_byte_data(client, CPLD_ID_REG);
 
-    if (ret < 0) {
+    if(ret < 0) {
         dev_info(&client->dev,
             "fail to get cpld id (0x%x) at addr (0x%x)\n",
             CPLD_ID_REG, client->addr);
@@ -1351,7 +1500,7 @@ static int s9600_cpld_probe(struct i2c_client *client,
 
     CPLD_ID_ID_GET(ret,  idx);
 
-    if (INVALID(idx, cpld1, cpld4)) {
+    if(INVALID(idx, cpld1, cpld4)) {
         dev_info(&client->dev,
             "cpld id %d(device) not valid\n", idx);
         //status = -EPERM;
@@ -1362,12 +1511,12 @@ static int s9600_cpld_probe(struct i2c_client *client,
 
     /* register sysfs hooks for different cpld group */
     dev_info(&client->dev, "probe cpld with index %d\n", data->index);
-    switch (data->index) {
+    switch(data->index) {
     case cpld1:
         status = sysfs_create_group(&client->dev.kobj,
                     &s9600_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &s9600_cpld2_group);
         break;
@@ -1378,12 +1527,12 @@ static int s9600_cpld_probe(struct i2c_client *client,
     case cpld4:
         status = sysfs_create_group(&client->dev.kobj,
                     &s9600_cpld4_group);
-        break;        
+        break;
     default:
         status = -EINVAL;
     }
 
-    if (status)
+    if(status)
         goto exit;
 
     dev_info(&client->dev, "chip found\n");
@@ -1393,18 +1542,18 @@ static int s9600_cpld_probe(struct i2c_client *client,
 
     return 0;
 exit:
-    switch (data->index) {
+    switch(data->index) {
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &s9600_cpld1_group);
         break;
-    case cpld2:    	  
-    	  sysfs_remove_group(&client->dev.kobj, &s9600_cpld2_group);
+    case cpld2:
+        sysfs_remove_group(&client->dev.kobj, &s9600_cpld2_group);
         break;
     case cpld3:
-    	  sysfs_remove_group(&client->dev.kobj, &s9600_cpld3_group);
+        sysfs_remove_group(&client->dev.kobj, &s9600_cpld3_group);
         break;
     case cpld4:
-    	  sysfs_remove_group(&client->dev.kobj, &s9600_cpld4_group);
+        sysfs_remove_group(&client->dev.kobj, &s9600_cpld4_group);
         break;
 
     default:
@@ -1418,7 +1567,7 @@ static int s9600_cpld_remove(struct i2c_client *client)
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
-    switch (data->index) {
+    switch(data->index) {
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &s9600_cpld1_group);
         break;
@@ -1426,10 +1575,10 @@ static int s9600_cpld_remove(struct i2c_client *client)
         sysfs_remove_group(&client->dev.kobj, &s9600_cpld2_group);
         break;
     case cpld3:
-    	sysfs_remove_group(&client->dev.kobj, &s9600_cpld3_group);
+        sysfs_remove_group(&client->dev.kobj, &s9600_cpld3_group);
         break;
     case cpld4:
-    	sysfs_remove_group(&client->dev.kobj, &s9600_cpld4_group);
+        sysfs_remove_group(&client->dev.kobj, &s9600_cpld4_group);
         break;
     }
 
@@ -1464,7 +1613,7 @@ int s9600_cpld_read(u8 cpld_idx,
         cpld_node = list_entry(list_node,
                     struct cpld_client_node, list);
         data = i2c_get_clientdata(cpld_node->client);
-        if (data->index == cpld_idx) {
+        if(data->index == cpld_idx) {
             DEBUG_PRINT("cpld_idx=%d, read reg 0x%02x",
                     cpld_idx, reg);
             I2C_READ_BYTE_DATA(ret, &data->access_lock,
@@ -1495,7 +1644,7 @@ int s9600_cpld_write(u8 cpld_idx,
                     struct cpld_client_node, list);
         data = i2c_get_clientdata(cpld_node->client);
 
-        if (data->index == cpld_idx) {
+        if(data->index == cpld_idx) {
                         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                         cpld_node->client,
                         reg, value);

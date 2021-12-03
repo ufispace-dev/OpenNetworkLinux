@@ -75,16 +75,16 @@ static onlp_led_info_t led_info[] =
     CHASSIS_FLEXE_LED_INFO(ONLP_LED_FLEXE_1, "Chassis LED 6 (FlexE 1)")
 };
 
-static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
+static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
 {
     int value1, value2;
     int shift, led_val,led_val_color, led_val_blink, led_val_onoff;
     int gpio_g , gpio_y;
     char *sysfs = NULL;
 
-    if (id >= ONLP_LED_SYS_GNSS && id <= ONLP_LED_SYS_PWR) {
+    if (local_id >= ONLP_LED_SYS_GNSS && local_id <= ONLP_LED_SYS_PWR) {
 
-        switch(id) {
+        switch(local_id) {
             case ONLP_LED_SYS_GNSS:
                 sysfs = SYSFS_LED_CTRL1;
                 shift = 0;
@@ -130,8 +130,8 @@ static int ufi_sys_led_info_get(onlp_led_info_t* info, int id)
                 info->mode = (led_val_blink == 1) ? ONLP_LED_MODE_GREEN_BLINKING : ONLP_LED_MODE_GREEN;
             }
         }
-    } else if (id >= ONLP_LED_FLEXE_0 && id <= ONLP_LED_FLEXE_1) {
-        switch(id) {
+    } else if (local_id >= ONLP_LED_FLEXE_0 && local_id <= ONLP_LED_FLEXE_1) {
+        switch(local_id) {
             case ONLP_LED_FLEXE_0:
                 gpio_g = FLEXE0_G_PIN;
                 gpio_y = FLEXE0_Y_PIN;
@@ -183,13 +183,18 @@ int onlp_ledi_init(void)
  */
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
-    int led_id, rc=ONLP_STATUS_OK;
+    int local_id;
     VALIDATE(id);
 
-    led_id = ONLP_OID_ID_GET(id);
-    *rv = led_info[led_id];
+    local_id = ONLP_OID_ID_GET(id);
+    *rv = led_info[local_id];
+    ONLP_TRY(onlp_ledi_status_get(id, &rv->status));
 
-    switch (led_id) {
+    if((rv->status & ONLP_LED_STATUS_PRESENT) == 0) {
+        return ONLP_STATUS_OK;
+    }
+
+    switch (local_id) {
         case ONLP_LED_SYS_GNSS:
         case ONLP_LED_SYS_SYNC:
         case ONLP_LED_SYS_SYS:
@@ -197,14 +202,12 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
         case ONLP_LED_SYS_PWR:
         case ONLP_LED_FLEXE_0:
         case ONLP_LED_FLEXE_1:
-            rc = ufi_sys_led_info_get(rv, led_id);
-            break;
+            return ufi_sys_led_info_get(local_id, rv);
         default:
             return ONLP_STATUS_E_INTERNAL;
-            break;
     }
 
-    return rc;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -214,14 +217,13 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
  */
 int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_led_info_t info;
+    int local_id;
     VALIDATE(id);
 
-    result = onlp_ledi_info_get(id, &info);
-    *rv = info.status;
+    local_id = ONLP_OID_ID_GET(id);
+    *rv = led_info[local_id].status;
 
-    return result;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -231,19 +233,16 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
  */
 int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_led_info_t* info;
-    int led_id;
+    int local_id;
     VALIDATE(id);
 
-    led_id = ONLP_OID_ID_GET(id);
-    if(led_id >= ONLP_LED_MAX) {
-        result = ONLP_STATUS_E_INVALID;
+    local_id = ONLP_OID_ID_GET(id);
+    if(local_id >= ONLP_LED_MAX) {
+        return ONLP_STATUS_E_INVALID;
     } else {
-        info = &led_info[led_id];
-        *rv = info->hdr;
+        *rv = led_info[local_id].hdr;
     }
-    return result;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -322,14 +321,8 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
             return ONLP_STATUS_E_PARAM;
     }
 
-
-    if (onlp_file_write_int(value1, SYS_GPIO_FMT, gpio_g) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    if (onlp_file_write_int(value2, SYS_GPIO_FMT, gpio_y) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(onlp_file_write_int(value1, SYS_GPIO_FMT, gpio_g));
+    ONLP_TRY(onlp_file_write_int(value2, SYS_GPIO_FMT, gpio_y));
 
     return ONLP_STATUS_OK;
 }

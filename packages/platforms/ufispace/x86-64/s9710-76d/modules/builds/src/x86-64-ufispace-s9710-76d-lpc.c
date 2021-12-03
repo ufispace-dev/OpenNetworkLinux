@@ -77,6 +77,9 @@
 #define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
 #endif
 
+//Thermal
+#define REG_TEMP_BASE                     (REG_BASE_MB + 0xC0)
+
 #define MASK_ALL                          (0xFF)
 #define LPC_MDELAY                        (5)
 
@@ -110,6 +113,23 @@ enum lpc_sysfs_attributes {
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
     ATT_BSP_REG,
+    //Thermal
+    ATT_TEMP_MAC0_PVT2,
+    ATT_TEMP_MAC0_PVT3,
+    ATT_TEMP_MAC0_PVT4,
+    ATT_TEMP_MAC0_PVT6,
+    ATT_TEMP_MAC0_HBM0,
+    ATT_TEMP_MAC0_HBM1,
+    ATT_TEMP_OP2_0,
+    ATT_TEMP_OP2_1,
+    ATT_TEMP_MAC1_PVT2,
+    ATT_TEMP_MAC1_PVT3,
+    ATT_TEMP_MAC1_PVT4,
+    ATT_TEMP_MAC1_PVT6,
+    ATT_TEMP_MAC1_HBM0,
+    ATT_TEMP_MAC1_HBM1,
+    ATT_TEMP_OP2_2,
+    ATT_TEMP_OP2_3,
     ATT_MAX
 };
 
@@ -135,6 +155,7 @@ char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
 u8 enable_log_read=LOG_DISABLE;
 u8 enable_log_write=LOG_DISABLE;
+u8 mailbox_inited=0;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -210,6 +231,75 @@ static int _config_bsp_log(u8 log_type)
             return -EINVAL;
     }
     return 0;
+}
+
+/* init bmc mailbox */
+static int init_bmc_mailbox(void)
+{
+    if (mailbox_inited) {
+        return mailbox_inited;
+    }
+
+    //Enable super io writing
+    outb(0xa5, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0xa5, 0x2e);
+    mdelay(LPC_MDELAY);
+
+    //Logic device number
+    outb(0x07, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x0e, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Disable mailbox
+    outb(0x30, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x00, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Set base address bit
+    outb(0x60, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x0e, 0x2f);
+    mdelay(LPC_MDELAY);
+    outb(0x61, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0xc0, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Select bit[3:0] of SIRQ
+    outb(0x70, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x07, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Low level trigger
+    outb(0x71, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x01, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Enable mailbox
+    outb(0x30, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x01, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Disable super io writing
+    outb(0xaa, 0x2e);
+    mdelay(LPC_MDELAY);
+
+    //Mailbox initial
+    outb(0x00, 0xed6);
+    mdelay(LPC_MDELAY);
+    outb(0x00, 0xed7);
+    mdelay(LPC_MDELAY);
+
+    //set mailbox_inited
+    mailbox_inited = 1;
+
+    return mailbox_inited;
 }
 
 /* get lpc register value */
@@ -409,6 +499,11 @@ static ssize_t read_lpc_callback(struct device *dev,
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
             break;
+        //Thermal
+        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
+            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
+            init_bmc_mailbox();
+            break;
         default:
             return -EINVAL;
     }
@@ -426,6 +521,11 @@ static ssize_t write_lpc_callback(struct device *dev,
     switch (attr->index) {
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
+            break;
+        //Thermal
+        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
+            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
+            init_bmc_mailbox();
             break;
         default:
             return -EINVAL;
@@ -583,6 +683,23 @@ static SENSOR_DEVICE_ATTR(alert_disable,   S_IRUGO, read_lpc_callback, NULL, ATT
 static SENSOR_DEVICE_ATTR(bsp_version,     S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug,       S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+//SENSOR_DEVICE_ATTR - Thermal
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt2,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT2);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt3,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT3);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt4,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT4);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt6,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT6);
+static SENSOR_DEVICE_ATTR(temp_mac0_hbm0,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_HBM0);
+static SENSOR_DEVICE_ATTR(temp_mac0_hbm1,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_HBM1);
+static SENSOR_DEVICE_ATTR(temp_op2_0,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_0);
+static SENSOR_DEVICE_ATTR(temp_op2_1,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_1);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt2,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT2);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt3,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT3);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt4,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT4);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt6,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT6);
+static SENSOR_DEVICE_ATTR(temp_mac1_hbm0,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_HBM0);
+static SENSOR_DEVICE_ATTR(temp_mac1_hbm1,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_HBM1);
+static SENSOR_DEVICE_ATTR(temp_op2_2,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_2);
+static SENSOR_DEVICE_ATTR(temp_op2_3,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_3);
 
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
@@ -628,6 +745,26 @@ static struct attribute *bsp_attrs[] = {
     NULL,
 };
 
+static struct attribute *temp_attrs[] = {
+    &sensor_dev_attr_temp_mac0_pvt2.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt3.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt4.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt6.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_hbm0.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_hbm1.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_0.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_1.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt2.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt3.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt4.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt6.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_hbm0.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_hbm1.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_2.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_3.dev_attr.attr,
+    NULL,
+};
+
 static struct attribute_group cpu_cpld_attr_grp = {
     .name = "cpu_cpld",
     .attrs = cpu_cpld_attrs,
@@ -653,6 +790,11 @@ static struct attribute_group bsp_attr_grp = {
     .attrs = bsp_attrs,
 };
 
+static struct attribute_group temp_attr_grp = {
+    .name = "temp",
+    .attrs = temp_attrs,
+};
+
 static void lpc_dev_release( struct device * dev)
 {
     return;
@@ -668,8 +810,8 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 5;
-    int err[5] = {0};
+    int i = 0, grp_num = 6;
+    int err[6] = {0};
     struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
@@ -695,6 +837,9 @@ static int lpc_drv_probe(struct platform_device *pdev)
             	break;
             case 4:
             	grp = &bsp_attr_grp;
+                break;
+            case 5:
+                grp = &temp_attr_grp;
                 break;
             default:
                 break;
@@ -729,6 +874,9 @@ exit:
             case 4:
             	grp = &bsp_attr_grp;
                 break;
+            case 5:
+                grp = &temp_attr_grp;
+                break;
             default:
                 break;
         }
@@ -752,6 +900,7 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
 
     return 0;
 }

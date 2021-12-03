@@ -319,11 +319,11 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_FAN_PRESENT_0:
             reg = REG_FAN_PRESENT;
-            mask = 0x02;
+            mask = 0x20;
             break;
         case ATT_FAN_PRESENT_1:
             reg = REG_FAN_PRESENT;
-            mask = 0x04;
+            mask = 0x10;
             break;
         case ATT_FAN_PRESENT_2:
             reg = REG_FAN_PRESENT;
@@ -331,11 +331,11 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_FAN_PRESENT_3:
             reg = REG_FAN_PRESENT;
-            mask = 0x10;
+            mask = 0x04;
             break;
         case ATT_FAN_PRESENT_4:
             reg = REG_FAN_PRESENT;
-            mask = 0x20;
+            mask = 0x02;
             break;
         case ATT_PSU_STATUS:
             reg = REG_PSU_STATUS;

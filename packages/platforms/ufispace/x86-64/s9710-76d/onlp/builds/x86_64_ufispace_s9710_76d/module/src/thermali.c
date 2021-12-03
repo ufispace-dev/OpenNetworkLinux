@@ -101,9 +101,9 @@ static onlp_thermal_info_t thermal_info[] = {
     THERMAL_INFO(ONLP_THERMAL_PSU_1, "PSU-1-Thermal", THERMAL_THRESHOLD_PSU),
 };
 
-static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int ufi_cpu_thermal_info_get(int id, onlp_thermal_info_t* info)
 {
-    int rv;
+    int rv = 0;
     
     rv = onlp_file_read_int(&info->mcelsius,
                             SYS_CPU_CORETEMP_PREFIX "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);    
@@ -115,19 +115,14 @@ static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
             return rv;
         }
     }
-
-    if(rv == ONLP_STATUS_E_MISSING) {
-        info->status &= ~1;
-        return 0;
-    }
     
     return ONLP_STATUS_OK;
 }
 
 int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
-    int rc=0;
-    float data=0;
+    int rc = 0;
+    float data = 0;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
 
     switch(id)
@@ -223,12 +218,8 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     if(bmc_attr_id == BMC_ATTR_ID_MAX) {
         return ONLP_STATUS_E_PARAM;
     }
-    
-    rc = bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data);
-    if ( rc < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
-        return rc;
-    }        
+
+    ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
     info->mcelsius = (int) (data*1000);
         
     return rc;    
@@ -250,7 +241,7 @@ int onlp_thermali_init(void)
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
 {   
-    int sensor_id, rc;
+    int sensor_id = 0, rc = 0;
     VALIDATE(id);
 	
     sensor_id = ONLP_OID_ID_GET(id);
@@ -259,7 +250,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     
     switch (sensor_id) {        
         case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
-            rc = ufi_cpu_thermal_info_get(rv, sensor_id);
+            rc = ufi_cpu_thermal_info_get(sensor_id, rv);
             break;        
         case ONLP_THERMAL_ADC_CPU ... ONLP_THERMAL_PSU_1:
             rc = ufi_bmc_thermal_info_get(rv, sensor_id);
@@ -297,8 +288,8 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int result = ONLP_STATUS_OK;
-    onlp_thermal_info_t* info;
-    int thermal_id;
+    onlp_thermal_info_t* info = NULL;
+    int thermal_id = 0;
     VALIDATE(id);
 
     thermal_id = ONLP_OID_ID_GET(id);

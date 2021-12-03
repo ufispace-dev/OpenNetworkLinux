@@ -334,15 +334,15 @@ int cpu_thermal_sysfs_id [] =
     [ONLP_THERMAL_CPU_7]   = 16
 };
 
-static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int ufi_cpu_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
     int rv;
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", cpu_thermal_sysfs_id[id]);
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", cpu_thermal_sysfs_id[local_id]);
 
     if(rv < 0) {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", cpu_thermal_sysfs_id[id]);
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", cpu_thermal_sysfs_id[local_id]);
         if(rv < 0) {
             return rv;
         }
@@ -351,13 +351,12 @@ static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
+int ufi_bmc_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
-    int rc=0;
     float data=0;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
 
-    switch(id)
+    switch(local_id)
     {
         case ONLP_THERMAL_MAC:
             bmc_attr_id = BMC_ATTR_ID_TEMP_MAC;
@@ -406,14 +405,11 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
         return ONLP_STATUS_E_PARAM;
     }
 
-    rc = bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data);
-    if ( rc < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
-        return rc;
-    }
+    ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
+
     info->mcelsius = (int) (data*1000);
 
-    return rc;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -432,14 +428,21 @@ int onlp_thermali_init(void)
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
 {
-    int sensor_id, rc;
+    int local_id;
     VALIDATE(id);
 
-    sensor_id = ONLP_OID_ID_GET(id);
+    local_id = ONLP_OID_ID_GET(id);
 
-    *rv = thermal_info[sensor_id];
+    *rv = thermal_info[local_id];
 
-    switch (sensor_id) {
+    /* update status  */
+    ONLP_TRY(onlp_thermali_status_get(id, &rv->status));
+
+    if((rv->status & ONLP_THERMAL_STATUS_PRESENT) == 0) {
+        return ONLP_STATUS_OK;
+    }
+
+    switch (local_id) {
         case ONLP_THERMAL_CPU_PKG:
         case ONLP_THERMAL_CPU_0:
         case ONLP_THERMAL_CPU_1:
@@ -449,7 +452,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
         case ONLP_THERMAL_CPU_5:
         case ONLP_THERMAL_CPU_6:
         case ONLP_THERMAL_CPU_7:
-            rc = ufi_cpu_thermal_info_get(rv, sensor_id);
+            ONLP_TRY(ufi_cpu_thermal_info_get(local_id, rv));
             break;
         case ONLP_THERMAL_MAC:
         case ONLP_THERMAL_DDR4:
@@ -464,14 +467,14 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
         case ONLP_THERMAL_HWM_NTMCARD:
         case ONLP_THERMAL_PSU_0:
         case ONLP_THERMAL_PSU_1:
-            rc = ufi_bmc_thermal_info_get(rv, sensor_id);
+            ONLP_TRY(ufi_bmc_thermal_info_get(local_id, rv));
             break;
         default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
 
-    return rc;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -481,14 +484,32 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
  */
 int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_thermal_info_t info;
+
+    int local_id;
     VALIDATE(id);
+    local_id = ONLP_OID_ID_GET(id);
 
-    result = onlp_thermali_info_get(id, &info);
-    *rv = info.status;
+    *rv = thermal_info[local_id].status;
+    /* When the PSU module is unplugged, the psu thermal does not exist. */
+    if(local_id == ONLP_THERMAL_PSU_0 || local_id == ONLP_THERMAL_PSU_1) {
+        int psu_local_id = ONLP_PSU_MAX;
 
-    return result;
+        if(local_id == ONLP_THERMAL_PSU_0) {
+             psu_local_id = ONLP_PSU_0;
+        } else {
+             psu_local_id = ONLP_PSU_1;
+        }
+
+        int psu_present = 0;
+        ONLP_TRY(get_psu_present_status(psu_local_id, &psu_present));
+        if (psu_present == 0) {
+            *rv = ONLP_THERMAL_STATUS_FAILED;
+        } else if (psu_present == 1) {
+            *rv = ONLP_THERMAL_STATUS_PRESENT;
+        }
+    }
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -498,19 +519,16 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
  */
 int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_thermal_info_t* info;
-    int thermal_id;
+    int local_id;
     VALIDATE(id);
 
-    thermal_id = ONLP_OID_ID_GET(id);
-    if(thermal_id >= ONLP_THERMAL_MAX) {
-        result = ONLP_STATUS_E_INVALID;
+    local_id = ONLP_OID_ID_GET(id);
+    if(local_id >= ONLP_THERMAL_MAX) {
+        return ONLP_STATUS_E_INVALID;
     } else {
-        info = &thermal_info[thermal_id];
-        *rv = info->hdr;
+        *rv = thermal_info[local_id].hdr;
     }
-    return result;
+    return ONLP_STATUS_OK;
 }
 
 /**

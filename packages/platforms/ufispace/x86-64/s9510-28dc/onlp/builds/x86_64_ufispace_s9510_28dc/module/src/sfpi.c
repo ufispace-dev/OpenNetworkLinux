@@ -31,18 +31,18 @@
 #define QSFPX_NUM             (QSFP_NUM+QSFPDD_NUM)
 #define PORT_NUM              (SFP_NUM+QSFPX_NUM)
 
-#define SFP_PORT(_port) (port-QSFPX_NUM)
-
-#define IS_SFP(_port)         (_port >= QSFPX_NUM && _port < PORT_NUM)
-#define IS_QSFPX(_port)       (_port >= 0 && _port < QSFPX_NUM)
-#define IS_QSFP(_port)        (_port >= QSFPDD_NUM && _port < QSFPX_NUM)
-#define IS_QSFPDD(_port)      (_port >= 0 && _port < QSFPDD_NUM)
-
 #define SYSFS_EEPROM         "eeprom"
-
 #define EEPROM_ADDR (0x50)
-
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
+
+typedef enum port_type_e {
+    TYPE_SFP = 0,
+    TYPE_QSFP,
+    TYPE_QSFPDD,
+    TYPE_MGMT_SFP,
+    TYPE_UNNKOW,
+    TYPE__MAX,
+} port_type_t;
 
 typedef struct
 {
@@ -53,46 +53,53 @@ typedef struct
     int txfault_gpin;
     int txdis_gpin;
     int eeprom_bus;
+    int port_type;
 } port_attr_t;
 
 static const port_attr_t port_attr[] = {
-/*  port  abs   lpmode reset rxlos txfault txdis eeprom */
-    [0] ={487  ,491   ,495  ,-1   ,-1     ,-1   ,13},
-    [1] ={486  ,490   ,494  ,-1   ,-1     ,-1   ,12},
-    [2] ={485  ,489   ,493  ,-1   ,-1     ,-1   ,11},
-    [3] ={484  ,488   ,492  ,-1   ,-1     ,-1   ,10},
-    [4] ={375  ,-1    ,-1   ,343  ,439    ,471  ,14},
-    [5] ={374  ,-1    ,-1   ,342  ,438    ,470  ,15},
-    [6] ={373  ,-1    ,-1   ,341  ,437    ,469  ,16},
-    [7] ={372  ,-1    ,-1   ,340  ,436    ,468  ,17},
-    [8] ={371  ,-1    ,-1   ,339  ,435    ,467  ,18},
-    [9] ={370  ,-1    ,-1   ,338  ,434    ,466  ,19},
-    [10]={369  ,-1    ,-1   ,337  ,433    ,465  ,20},
-    [11]={368  ,-1    ,-1   ,336  ,432    ,464  ,21},
-    [12]={383  ,-1    ,-1   ,351  ,447    ,479  ,22},
-    [13]={382  ,-1    ,-1   ,350  ,446    ,478  ,23},
-    [14]={381  ,-1    ,-1   ,349  ,445    ,477  ,24},
-    [15]={380  ,-1    ,-1   ,348  ,444    ,476  ,25},
-    [16]={379  ,-1    ,-1   ,347  ,443    ,475  ,26},
-    [17]={378  ,-1    ,-1   ,346  ,442    ,474  ,27},
-    [18]={377  ,-1    ,-1   ,345  ,441    ,473  ,28},
-    [19]={376  ,-1    ,-1   ,344  ,440    ,472  ,29},
-    [20]={359  ,-1    ,-1   ,327  ,423    ,455  ,30},
-    [21]={358  ,-1    ,-1   ,326  ,422    ,454  ,31},
-    [22]={357  ,-1    ,-1   ,325  ,421    ,453  ,32},
-    [23]={356  ,-1    ,-1   ,324  ,420    ,452  ,33},
-    [24]={355  ,-1    ,-1   ,323  ,419    ,451  ,34},
-    [25]={354  ,-1    ,-1   ,322  ,418    ,450  ,35},
-    [26]={353  ,-1    ,-1   ,321  ,417    ,449  ,36},
-    [27]={352  ,-1    ,-1   ,320  ,416    ,448  ,37},
+/*  port  abs   lpmode reset rxlos txfault txdis eeprom type */
+    [0] ={487  ,491   ,495  ,-1   ,-1     ,-1   ,13    ,TYPE_QSFPDD},
+    [1] ={486  ,490   ,494  ,-1   ,-1     ,-1   ,12    ,TYPE_QSFPDD},
+    [2] ={485  ,489   ,493  ,-1   ,-1     ,-1   ,11    ,TYPE_QSFP  },
+    [3] ={484  ,488   ,492  ,-1   ,-1     ,-1   ,10    ,TYPE_QSFP  },
+    [4] ={375  ,-1    ,-1   ,343  ,439    ,471  ,14    ,TYPE_SFP   },
+    [5] ={374  ,-1    ,-1   ,342  ,438    ,470  ,15    ,TYPE_SFP   },
+    [6] ={373  ,-1    ,-1   ,341  ,437    ,469  ,16    ,TYPE_SFP   },
+    [7] ={372  ,-1    ,-1   ,340  ,436    ,468  ,17    ,TYPE_SFP   },
+    [8] ={371  ,-1    ,-1   ,339  ,435    ,467  ,18    ,TYPE_SFP   },
+    [9] ={370  ,-1    ,-1   ,338  ,434    ,466  ,19    ,TYPE_SFP   },
+    [10]={369  ,-1    ,-1   ,337  ,433    ,465  ,20    ,TYPE_SFP   },
+    [11]={368  ,-1    ,-1   ,336  ,432    ,464  ,21    ,TYPE_SFP   },
+    [12]={383  ,-1    ,-1   ,351  ,447    ,479  ,22    ,TYPE_SFP   },
+    [13]={382  ,-1    ,-1   ,350  ,446    ,478  ,23    ,TYPE_SFP   },
+    [14]={381  ,-1    ,-1   ,349  ,445    ,477  ,24    ,TYPE_SFP   },
+    [15]={380  ,-1    ,-1   ,348  ,444    ,476  ,25    ,TYPE_SFP   },
+    [16]={379  ,-1    ,-1   ,347  ,443    ,475  ,26    ,TYPE_SFP   },
+    [17]={378  ,-1    ,-1   ,346  ,442    ,474  ,27    ,TYPE_SFP   },
+    [18]={377  ,-1    ,-1   ,345  ,441    ,473  ,28    ,TYPE_SFP   },
+    [19]={376  ,-1    ,-1   ,344  ,440    ,472  ,29    ,TYPE_SFP   },
+    [20]={359  ,-1    ,-1   ,327  ,423    ,455  ,30    ,TYPE_SFP   },
+    [21]={358  ,-1    ,-1   ,326  ,422    ,454  ,31    ,TYPE_SFP   },
+    [22]={357  ,-1    ,-1   ,325  ,421    ,453  ,32    ,TYPE_SFP   },
+    [23]={356  ,-1    ,-1   ,324  ,420    ,452  ,33    ,TYPE_SFP   },
+    [24]={355  ,-1    ,-1   ,323  ,419    ,451  ,34    ,TYPE_SFP   },
+    [25]={354  ,-1    ,-1   ,322  ,418    ,450  ,35    ,TYPE_SFP   },
+    [26]={353  ,-1    ,-1   ,321  ,417    ,449  ,36    ,TYPE_SFP   },
+    [27]={352  ,-1    ,-1   ,320  ,416    ,448  ,37    ,TYPE_SFP   },
 };
+
+#define IS_SFP(_port)         (port_attr[_port].port_type == TYPE_SFP)
+#define IS_QSFPX(_port)       (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
+#define IS_QSFP(_port)        (port_attr[_port].port_type == TYPE_QSFP)
+#define IS_QSFPDD(_port)      (port_attr[_port].port_type == TYPE_QSFPDD)
 
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
     int gpio_num = -1;
 
-     switch(control)
-        {
+    switch(control)
+    {
+        case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
                 gpio_num = port_attr[port].reset_gpin;
@@ -120,7 +127,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             }
         default:
             gpio_num=-1;
-        }
+    }
 
     if (gpio_num<0) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -278,7 +285,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
     if ((rc = onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -322,7 +329,7 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
     if((rc = onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
          check_and_do_i2c_mux_reset(port);
     }
@@ -342,7 +349,7 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
     if((rc = onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -516,7 +523,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 
     //check control is valid for this port
     switch(control)
-        {
+    {
         case ONLP_SFP_CONTROL_RESET:
             {
                 if (IS_QSFPX(port)) {
@@ -544,8 +551,8 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 }
             }
         default:
-            rc = ONLP_STATUS_E_UNSUPPORTED;
-        }
+            return ONLP_STATUS_E_UNSUPPORTED;
+    }
 
     //get gpio_num
     if ((rc = ufi_port_to_gpio_num(port, control)) < 0) {

@@ -48,22 +48,20 @@ static onlp_psu_info_t pinfo[] =
             0,
             {
                 FAN_OID_PSU2_FAN1,
-                THERMAL_OID_PSU2,					
+                THERMAL_OID_PSU2,
             },
         }
     }
 };
 
-int
-onlp_psui_init(void)
-{  
+int onlp_psui_init(void)
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
+int psu_status_info_get(int id, onlp_psu_info_t *info)
+{
     int rc;
     int stbmvout, stbmiout;
     float data;
@@ -74,9 +72,9 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
         offset_sts = 6;
         offset_status = 2;
     }
-    
+
      /* Get PSU present status */
-    if ((rc = bmc_sensor_read(ID_PSU1_PRSNT_L + offset_status, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_PRSNT_L + offset_status, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
@@ -88,9 +86,9 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     info->status |= ONLP_PSU_STATUS_PRESENT;
-    
+
     /* Get PSU power good status */
-    if ((rc = bmc_sensor_read(ID_PSU1_PWROK_H + offset_status, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_PWROK_H + offset_status, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -102,81 +100,80 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
     }
 
     /* Get power vin status */
-    if ((rc = bmc_sensor_read(ID_PSU1_VIN + offset_sts, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_VIN + offset_sts, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->mvin = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_VIN;
     }
-    
+
     /* Get power vout status */
-    if ((rc = bmc_sensor_read(ID_PSU1_VOUT + offset_sts, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_VOUT + offset_sts, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->mvout = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_VOUT;
     }
-            
+
     /* Get power iin status */
-    if ((rc = bmc_sensor_read(ID_PSU1_IIN+ offset_sts, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_IIN+ offset_sts, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
-    } else {        
+    } else {
         info->miin = (int) (data*1000);
         info->caps |= ONLP_PSU_CAPS_IIN;
     }
-    
-    /* Get power iout status */
-    if ((rc = bmc_sensor_read(ID_PSU1_IOUT + offset_sts, PSU_SENSOR, 
-        &data)) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {        
-        info->miout = (int) (data*1000);        
-        info->caps |= ONLP_PSU_CAPS_IOUT;
-    }    
 
-    /* Get standby power vout */    
-    if ((rc = bmc_sensor_read(ID_PSU1_STBVOUT+ offset_sts, PSU_SENSOR, 
+    /* Get power iout status */
+    if ((rc = bmc_sensor_read(ID_PSU1_IOUT + offset_sts, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
-        stbmvout = (int) (data*1000);        
+        info->miout = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_IOUT;
     }
-    
+
+    /* Get standby power vout */
+    if ((rc = bmc_sensor_read(ID_PSU1_STBVOUT+ offset_sts, PSU_SENSOR,
+        &data)) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_INTERNAL;
+    } else {
+        stbmvout = (int) (data*1000);
+    }
+
     /* Get standby power iout */
-    if ((rc = bmc_sensor_read(ID_PSU1_STBIOUT + offset_sts, PSU_SENSOR, 
+    if ((rc = bmc_sensor_read(ID_PSU1_STBIOUT + offset_sts, PSU_SENSOR,
         &data)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     } else {
-        stbmiout = (int) (data*1000);        
+        stbmiout = (int) (data*1000);
     }
-    
+
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;        
+    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
-    
+
     /* Get FRU (model/serial) */
-    if ((rc = bmc_fru_read(info, fru_id)) != ONLP_STATUS_OK) {        
+    if ((rc = bmc_fru_read(info, fru_id)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 
 }
 
-int
-onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
-{        
+int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
+{
     int pid;
-    
+
     pid = ONLP_OID_ID_GET(id);
     memset(info, 0, sizeof(onlp_psu_info_t));
-    
+
     /* Set the onlp_oid_hdr_t */
-    *info = pinfo[pid]; 
+    *info = pinfo[pid];
 
     switch (pid) {
         case PSU_ID_PSU1:

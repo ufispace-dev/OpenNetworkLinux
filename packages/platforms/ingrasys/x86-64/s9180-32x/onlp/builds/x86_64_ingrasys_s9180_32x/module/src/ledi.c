@@ -90,14 +90,12 @@ extern int sys_fan_info_get(onlp_fan_info_t* info, int id);
 /*
  * This function will be called prior to any other onlp_ledi_* functions.
  */
-int
-onlp_ledi_init(void)
+int onlp_ledi_init(void)
 {  
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
+int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
 {
     int led_id, pw_exist, pw_good, rc, psu_mask, fan_id;
     int exist_offset, good_offset, i2c_bus;
@@ -176,8 +174,7 @@ onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
  * What 'on' means in terms of colors or modes for multimode LEDs is
  * up to the platform to decide. This is intended as baseline toggle mechanism.
  */
-int
-onlp_ledi_set(onlp_oid_t id, int on_or_off)
+int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
     if (!on_or_off) {
         return onlp_ledi_mode_set(id, ONLP_LED_MODE_OFF);
@@ -192,8 +189,7 @@ onlp_ledi_set(onlp_oid_t id, int on_or_off)
  *
  * Only modes reported in the LED's capabilities will be attempted.
  */
-int
-onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
+int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int led_id, rc;
 
@@ -229,8 +225,7 @@ onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
     return rc;
 }
 
-int
-onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
+int onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
 {
     return ONLP_STATUS_OK;
 }

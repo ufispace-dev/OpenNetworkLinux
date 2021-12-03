@@ -52,15 +52,13 @@ static onlp_psu_info_t pinfo[] =
     }
 };
 
-int
-onlp_psui_init(void)
-{    
+int onlp_psui_init(void)
+{
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
+int psu_status_info_get(int id, onlp_psu_info_t *info)
+{
     int pw_exist, pw_good;
     int rc, i2c_bus;
     char *sys_psu_prefix = NULL;
@@ -74,48 +72,48 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
      /* Get power present status */
     if ((rc = psu_present_get(&pw_exist, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (pw_exist != PSU_STATUS_PRESENT) {
         info->status &= ~ONLP_PSU_STATUS_PRESENT;
         info->status |=  ONLP_PSU_STATUS_FAILED;
         return ONLP_STATUS_OK;
     }    
     info->status |= ONLP_PSU_STATUS_PRESENT;
-    
+
     /* Get power good status */
     if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix)) 
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }   
-    
+
     if (pw_good != PSU_STATUS_POWER_GOOD) {        
         info->status |= ONLP_PSU_STATUS_UNPLUGGED;
         return ONLP_STATUS_OK;
     } else {
         info->status &= ~ONLP_PSU_STATUS_UNPLUGGED;
     }
-    
+
     /* Get power eeprom status */
     if ((rc = psu_eeprom_get(info, id)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     /* Get power iout status */
     if ((rc = psu_iout_get(info, i2c_bus)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     /* Get power pout status */
     if ((rc = psu_pout_get(info, i2c_bus)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     /* Get power pin status */
     if ((rc = psu_pin_get(info, i2c_bus)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
@@ -125,18 +123,17 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
     if ((rc = psu_vout_get(info, i2c_bus)) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
+int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
 {        
     int pid;
-    
+
     pid = ONLP_OID_ID_GET(id);
     memset(info, 0, sizeof(onlp_psu_info_t));
-    
+
     /* Set the onlp_oid_hdr_t */
     *info = pinfo[pid]; 
 
@@ -151,6 +148,4 @@ onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
     }
 
     return ONLP_STATUS_OK;
-
-
 }

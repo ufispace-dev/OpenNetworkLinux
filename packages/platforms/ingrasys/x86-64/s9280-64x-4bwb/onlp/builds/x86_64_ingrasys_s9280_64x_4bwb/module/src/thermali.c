@@ -32,7 +32,7 @@ static onlp_thermal_info_t thermal_info[] = {
     { { THERMAL_OID_CPU_PECI, "TEMP_CPU_PECI", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {95000, 105000, 110000}
-    },    
+    },
     { { THERMAL_OID_BMC_ENV, "TEMP_BMC_ENV", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {80000, 85000, 90000}
@@ -115,19 +115,17 @@ static onlp_thermal_info_t thermal_info[] = {
 /*
  * This will be called to intiialize the thermali subsystem.
  */
-int
-onlp_thermali_init(void)
+int onlp_thermali_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_board_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int cpu_board_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
-    rv = onlp_file_read_int(&info->mcelsius, 
+    rv = onlp_file_read_int(&info->mcelsius,
                             SYS_CPU_BOARD_PREFIX "temp1_input");
 
     if(rv == ONLP_STATUS_E_INTERNAL) {
@@ -138,26 +136,25 @@ cpu_board_thermal_info_get(onlp_thermal_info_t* info, int id)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
 
 
-static int
-cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
-    
+
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", 
-                            (id - THERMAL_ID_CPU_PKG) + 1);    
-    
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input",
+                            (id - THERMAL_ID_CPU_PKG) + 1);
+
     if(rv != ONLP_STATUS_OK) {
 
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", 
-                            (id - THERMAL_ID_CPU_PKG) + 1); 
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input",
+                            (id - THERMAL_ID_CPU_PKG) + 1);
 
         if(rv != ONLP_STATUS_OK) {
             return rv;
@@ -168,7 +165,7 @@ cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -182,12 +179,11 @@ cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
  * Note -- it is expected that you fill out the information
  * structure even if the sensor described by the OID is not present.
  */
-int
-onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
-{   
+int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
+{
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);
-    
+
     *info = thermal_info[sensor_id];
     info->caps |= ONLP_THERMAL_CAPS_GET_TEMPERATURE;
 
@@ -197,15 +193,14 @@ onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
             break;
         case THERMAL_ID_CPU_PKG ... THERMAL_ID_CPU8:
             rc = cpu_thermal_info_get(info, sensor_id);
-            break;        
+            break;
         case THERMAL_ID_CPU_PECI ... THERMAL_ID_PSU2:
             rc = bmc_thermal_info_get(info, sensor_id);
-            break;    
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
 
     return rc;
-
 }
