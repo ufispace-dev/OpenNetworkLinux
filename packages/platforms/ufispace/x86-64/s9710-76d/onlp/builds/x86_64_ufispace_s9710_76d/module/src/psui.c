@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2014 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -26,7 +25,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <onlp/platformi/psui.h>
 #include <onlplib/file.h>
 #include <AIM/aim.h>
@@ -48,7 +46,7 @@
  *            |
  *            |----[02] ONLP_PSU_1----[10] ONLP_PSU_1_FAN
  */
-static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = {
+static onlp_psu_info_t __onlp_psu_info[] = {
     { }, /* Not used */
     {
         .hdr = {
@@ -84,20 +82,22 @@ static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = {
     }
 };
 
+static char *vendors[] = {"DELTA", "FSPGROUP"};
+
 /**
  * @brief get psu presnet status
  * @param local_id: psu id
- * @return:
- *    0: absence
- *    1: presence
- *   <0: error code
+ * @param[out] psu_present: psu present status(0: absence, 1: presence) 
  */
-int get_psu_present_status(int local_id)
+int get_psu_present_status(int local_id, int *psu_present)
 {
     int psu_reg_value = 0;
-    int psu_presence = 0;
     int mask;
-    
+
+    if(psu_present == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
     if (local_id == ONLP_PSU_0) {
         mask = PSU0_PRESENT_MASK;
     } else if (local_id == ONLP_PSU_1) {
@@ -105,39 +105,90 @@ int get_psu_present_status(int local_id)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    ONLP_TRY(file_read_hex(&psu_reg_value, SYSFS_PSU_STATUS));
-    psu_presence = (psu_reg_value & mask) ? 0 : 1;
 
-    return psu_presence;
+    ONLP_TRY(file_read_hex(&psu_reg_value, SYSFS_PSU_STATUS));
+    *psu_present = (psu_reg_value & mask) ? 0 : 1;
+
+    return ONLP_STATUS_OK;
 }
 
 /**
  * @brief get psu pwgood status
  * @param local_id: psu id
- * @return:
- *    0: absence
- *    1: presence
- *   <0: error code
+ * @param[out] psu_pwgood: psu power good status (0: not good, 1: good) 
  */
-static int get_psu_pwgood_status(int local_id)
+static int get_psu_pwgood_status(int local_id, int *psu_pwgood)
 {
     int psu_reg_value = 0;
-    int psu_pwgood = 0;
     int mask;
-    
+
+    if(psu_pwgood == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
     if (local_id == ONLP_PSU_0) {
         mask = PSU0_PWGOOD_MASK;
     } else if (local_id == ONLP_PSU_1) {
         mask = PSU1_PWGOOD_MASK;
     } else {
         return ONLP_STATUS_E_INTERNAL;
-    }    
-    
-    ONLP_TRY(file_read_hex(&psu_reg_value, SYSFS_PSU_STATUS));
-    psu_pwgood = (psu_reg_value & mask) ? 1 : 0;
+    }
 
-    return psu_pwgood;
+    ONLP_TRY(file_read_hex(&psu_reg_value, SYSFS_PSU_STATUS));
+    *psu_pwgood = (psu_reg_value & mask) ? 1 : 0;
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief get psu type
+ * @param local_id: psu id
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48) 
+ * @param fru_in: input fru node. we will use the input node informations to get psu type
+ */
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
+{
+    bmc_fru_t *fru = NULL;
+    bmc_fru_t fru_tmp = {0};
+    
+    if(psu_type == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if(fru_in == NULL) {
+        fru = &fru_tmp;
+        ONLP_TRY(bmc_fru_read(local_id, fru));
+    } else {
+        fru = fru_in;
+    }
+    
+    if (strncmp(fru->vendor.val, vendors[0], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //Delta
+        //read from part_num
+        if (fru->part_num.val[7] == 'A') {
+            *psu_type = ONLP_PSU_TYPE_AC;
+        } else if (fru->part_num.val[7] == 'D') {
+            *psu_type = ONLP_PSU_TYPE_DC48;
+        } else {
+            AIM_LOG_ERROR("unknown PSU type, vendor=%d, model=%s, func=%s\n", fru->vendor.val, fru->part_num.val, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL; 
+        }
+    } else if (strncmp(fru->vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //FSP FIXME: check rule
+        //read from name        
+        if (strstr(fru->name.val, "AM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_AC;
+        } else if (strstr(fru->name.val, "EM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_DC48;
+        } else {
+            AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL; 
+        }
+    } else {
+        *psu_type = ONLP_PSU_TYPE_INVALID;
+        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
+        return ONLP_STATUS_E_INTERNAL; 
+    }
+    
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -152,17 +203,17 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
     hdr->status = 0;
 
     /* get psu present status */
-    psu_presence = get_psu_present_status(local_id);
+    ONLP_TRY(get_psu_present_status(local_id, &psu_presence));
     if (psu_presence == 0) {
         ONLP_OID_STATUS_FLAG_SET(hdr, UNPLUGGED);
     } else if (psu_presence == 1) {
         ONLP_OID_STATUS_FLAG_SET(hdr, PRESENT);
     } else {
         return ONLP_STATUS_E_INTERNAL;
-    }   
+    }
 
     /* get psu power good status */
-    psu_pwgood = get_psu_pwgood_status(local_id);
+    ONLP_TRY(get_psu_pwgood_status(local_id, &psu_pwgood));
     if (psu_pwgood == 0) {
         ONLP_OID_STATUS_FLAG_SET(hdr, FAILED);
     } else if (psu_pwgood == 1) {
@@ -174,7 +225,6 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
     return ONLP_STATUS_OK;
 }
 
-
 /**
  * @brief Update the information of Model and Serial from PSU EEPROM
  * @param id The PSU Local ID
@@ -182,118 +232,28 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
  */
 static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
-    char cmd[256];
-    char cmd_out[64];
-    char fru_vendor[] = "Product Manufacturer";
-    //only Product Name can identify AC/DC for FSPGROUP"
-    char *fru_model[] = {"Product Part Number", "Product Name"};  
-    char fru_serial[] = "Product Serial";
-    char *vendors[] = {"DELTA", "FSPGROUP"};
-    char vendor_name[64];
-    int vendor_idx = -1;
-    int i=0;
+    bmc_fru_t fru = {0};
 
-    //FRU (vendor)
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_vendor);
-    
-    //Get psu fru info (vendor) from BMC 
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) { 
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }    
+    //read fru data
+    ONLP_TRY(bmc_fru_read(local_id, &fru));
 
-    //Check output is correct    
-    if (strnlen(cmd_out, sizeof(cmd_out)) == 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }    
-
-    //get vendor_name
-    strncpy(vendor_name, cmd_out, sizeof(vendor_name));
-
-    //get vendor_idx from vendor_name
-    for (i=0; i< sizeof(vendors)/sizeof(vendors[0]); ++i) {
-        if (strncmp(vendors[i], vendor_name, sizeof(vendor_name))==0) {
-            vendor_idx = i;
-            break;
-        }
-    }
-
-    //unknown vendor
-    if (vendor_idx == -1) {
-        AIM_LOG_ERROR("unknown fru vendor, fru id=%d, cmd=%s, vendor=%s\n", local_id, cmd, vendor_name);
-        return ONLP_STATUS_E_INTERNAL; 
-    }
-    
-    //FRU (model)    
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    memset(info->model, 0, sizeof(info->model));
-    
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_model[vendor_idx]);
-    
-    //Get psu fru info (model) from BMC 
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) { 
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }    
-
-    //Check output is correct    
-    if (strnlen(cmd_out, sizeof(cmd_out)) == 0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL; 
-    }    
-    
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
-
-    //FRU (serial) 
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    memset(info->serial, 0, sizeof(info->serial));
-    
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_serial);
-    
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out)) == 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-    
-    snprintf(info->serial, sizeof(info->model), "%s", cmd_out);
-
-    //Get psu AC/DC type
-    if (vendor_idx == 0) {
-        if (info->model[7] == 'A') {
-            info->type = ONLP_PSU_TYPE_AC;
-        } else if (info->model[7] == 'D') {
-            info->type = ONLP_PSU_TYPE_DC48;
-        } else {
-            AIM_LOG_ERROR("unknown PSU type, model=%s, func=%s\n", info->model, __FUNCTION__);
-        }
-    } else if (vendor_idx == 1) { //FIXME: check rule
-        if (strstr(info->model, "AM") > 0) {
-            info->type = ONLP_PSU_TYPE_AC;
-        } else if (strstr(info->model, "EM") > 0) {
-            info->type = ONLP_PSU_TYPE_DC48;
-        } else {
-            AIM_LOG_ERROR("unknown PSU type, model=%s, func=%s\n", info->model, __FUNCTION__);
-        }
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));   
+    if (strncmp(fru.vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) {
+        //read product name for FSP
+        snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
     } else {
-        //do nothing
+        //read part num for others
+        snprintf(info->model, sizeof(info->model), "%s", fru.part_num.val);
     }
 
-    //save psu type       
-    ONLP_TRY(onlp_file_write_int(info->type, TMP_PSU_TYPE, local_id));      
-    
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    //update FRU type
+    ONLP_TRY(get_psu_type(local_id, &info->type, &fru));
+
     return ONLP_STATUS_OK;
 }
 
@@ -304,82 +264,56 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
  */
 static int update_psui_info(int local_id, onlp_psu_info_t* info)
 {
-    int ret = ONLP_STATUS_OK;
-    int stbmvout, stbmiout;
-    float data;
-    int id_offset = 0;
-
-    if ((info->hdr.status & ONLP_OID_STATUS_FLAG_PRESENT) == 0) {
-        //not present, do nothing
-        return ONLP_STATUS_OK;
-    }
-
+    int stbmvout = 0, stbmiout = 0;
+    float data = 0;
+    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_stbvout = 0, attr_stbiout = 0;
+    
     if (local_id == ONLP_PSU_0) {
-        id_offset = ONLP_PSU_0_VIN - local_id;
-    } else if (local_id == ONLP_PSU_1) {
-        id_offset = ONLP_PSU_1_VIN - local_id;
+        attr_vin = BMC_ATTR_ID_PSU0_VIN;
+        attr_vout = BMC_ATTR_ID_PSU0_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU0_IIN;
+        attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
     } else {
-        AIM_LOG_ERROR("unknown PSU_ID (%d), func=%s\n", local_id, __FUNCTION__);
-        return ONLP_STATUS_E_INTERNAL;
+        attr_vin = BMC_ATTR_ID_PSU1_VIN;
+        attr_vout = BMC_ATTR_ID_PSU1_VOUT;
+        attr_iin = BMC_ATTR_ID_PSU1_IIN;
+        attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
+        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
 
     /* Get power vin status */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 0, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        info->mvin = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_vin, PSU_SENSOR, &data));
+    info->mvin = (int) (data*1000);
 
     /* Get power vout status */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 1, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        info->mvout = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_vout, PSU_SENSOR, &data));
+    info->mvout = (int) (data*1000);
 
     /* Get power iin status */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 2, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        info->miin = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_iin, PSU_SENSOR, &data));
+    info->miin = (int) (data*1000);
 
     /* Get power iout status */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 3, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        info->miout = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_iout, PSU_SENSOR, &data));
+    info->miout = (int) (data*1000);
 
     /* Get standby power vout */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 4, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        stbmvout = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data));
+    stbmvout = (int) (data*1000);
 
     /* Get standby power iout */
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_PSU + id_offset + 5, PSU_SENSOR, &data);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    } else {
-        stbmiout = (int) (data*1000);
-    }
+    ONLP_TRY(bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data));
+    stbmiout = (int) (data*1000);
 
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
     info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
 
-    /* Update FRU (model/serial) */
-    ret = update_psui_fru_info(local_id, info);
-    if (ret != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    /* Get FRU info */
+    ONLP_TRY(update_psui_fru_info(local_id, info));
 
     return ONLP_STATUS_OK;
 }
@@ -389,20 +323,7 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
  */
 int onlp_psui_sw_init(void)
 {
-    char file_psu_type[32];
-    char cmd[32];
-    int i=0;    
-
-    //create file for psu_type if not exists
-    for(i=ONLP_PSU_0; i<=ONLP_PSU_1; ++i) {
-        memset(file_psu_type, 0, sizeof(file_psu_type));
-        snprintf(file_psu_type, sizeof(file_psu_type), TMP_PSU_TYPE, i);
-        if( access( file_psu_type, F_OK ) != 0 ) {
-            snprintf(cmd, sizeof(cmd), CMD_CREATE_PSU_TYPE, i);
-            system(cmd);        
-        }
-    }
-    
+    lock_init();
     return ONLP_STATUS_OK;
 }
 
@@ -440,7 +361,7 @@ int onlp_psui_id_validate(onlp_oid_id_t id)
  * @param id The PSU OID.
  * @param[out] rv Receives the header.
  */
-int onlp_psui_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_psui_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);
@@ -461,15 +382,18 @@ int onlp_psui_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
  */
 int onlp_psui_info_get(onlp_oid_id_t id, onlp_psu_info_t* info)
 {
-    int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);
-
+    
     /* Set the onlp_psu_info_t */
     memset(info, 0, sizeof(onlp_psu_info_t));
     *info = __onlp_psu_info[local_id];
     ONLP_TRY(onlp_psui_hdr_get(id, &info->hdr));
-   
-    ret = update_psui_info(local_id, info);      
 
-    return ret;
+    if (ONLP_OID_STATUS_FLAG_GET_VALUE(&info->hdr, PRESENT) == 0) {
+        return ONLP_STATUS_OK;
+    }
+
+    ONLP_TRY(update_psui_info(local_id, info));
+
+    return ONLP_STATUS_OK;
 }

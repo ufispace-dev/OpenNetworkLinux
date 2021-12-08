@@ -22,7 +22,9 @@ x86-64-ufispace-s9710-76d-r0:
 
     args: >-
       console=ttyS0,115200n8      
-
+      pcie_aspm=off
+      nomodeset
+      
   ##network
   ##  interfaces:
   ##    ma1:

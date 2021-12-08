@@ -1,8 +1,7 @@
 /************************************************************
  * <bsn.cl fy=2014 v=onl>
  *
- *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2014 Accton Technology Corporation.
+ *           Copyright 2014 Big Switch Networks, Inc. 
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -28,8 +27,8 @@
 #include <onlplib/file.h>
 #include "platform_lib.h"
 
-#define SYS_FAN_F_RPM_MAX 11300
-#define SYS_FAN_R_RPM_MAX 12000
+#define SYS_FAN_F_RPM_MAX 12000
+#define SYS_FAN_R_RPM_MAX 11300
 #define PSU_FAN_RPM_MAX_AC 25000
 #define PSU_FAN_RPM_MAX_DC 32500
 
@@ -181,21 +180,57 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
  */
 static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
 {
-    int ret = ONLP_STATUS_OK;
     int fan_presence = 0;
     int psu_presence = 0;
     float data = 0;
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
 
     /* clear FAN status */
     hdr->status = 0;
+    
+    switch(local_id)
+    {
+        case ONLP_FAN_F_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_PRSNT_H;
+            break;
+        case ONLP_FAN_R_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_PRSNT_H;
+            break;
+        case ONLP_FAN_F_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_PRSNT_H;
+            break;
+        case ONLP_FAN_R_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_PRSNT_H;
+            break;
+        case ONLP_FAN_F_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_PRSNT_H;
+            break;
+        case ONLP_FAN_R_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_PRSNT_H;
+            break;
+        case ONLP_FAN_F_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_PRSNT_H;
+            break;
+        case ONLP_FAN_R_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_PRSNT_H;
+            break;            
+        case ONLP_PSU_0_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            break;
+        case ONLP_PSU_1_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            break;
+        default:
+            bmc_attr_id = BMC_ATTR_ID_MAX;
+    }
 
-    if (local_id >= ONLP_FAN_F_0 && local_id <= ONLP_FAN_R_3) {
+    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (local_id >= ONLP_FAN_F_0 && local_id <= ONLP_FAN_R_3) {        
         hdr->status = 0;
-        ret = bmc_sensor_read((local_id-ONLP_FAN_F_0)/2 + CACHE_OFFSET_FAN_PRESENT, FAN_SENSOR, &data);
-        if ( ret != ONLP_STATUS_OK) {
-            AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", local_id);
-            return ret;
-        }
+        ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
 
         fan_presence = (int) data;
 
@@ -205,7 +240,7 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
             ONLP_OID_STATUS_FLAG_SET(hdr, UNPLUGGED);
         }
     } else if (local_id == ONLP_PSU_0_FAN) {
-        psu_presence = get_psu_present_status(ONLP_PSU_0);
+        ONLP_TRY(get_psu_present_status(ONLP_PSU_0, &psu_presence));
         if (psu_presence == 0) {
             ONLP_OID_STATUS_FLAG_SET(hdr, UNPLUGGED);
         } else if (psu_presence == 1) {
@@ -214,7 +249,7 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
             return ONLP_STATUS_E_INTERNAL;
         }
     } else if (local_id == ONLP_PSU_1_FAN) {
-        psu_presence = get_psu_present_status(ONLP_PSU_1);
+        ONLP_TRY(get_psu_present_status(ONLP_PSU_1, &psu_presence));
         if (psu_presence == 0) {
             ONLP_OID_STATUS_FLAG_SET(hdr, UNPLUGGED);
         } else if (psu_presence == 1) {
@@ -237,7 +272,6 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
  */
 static int update_fani_info(int local_id, onlp_fan_info_t* info)
 {
-    int ret = ONLP_STATUS_OK;
     int rpm = 0, percentage = 0;
     float data = 0;
     int sys_fan_max = 0;
@@ -245,18 +279,55 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     int sys_fan_r_max = SYS_FAN_R_RPM_MAX;
     int psu_fan_max = 0;
     int psu_type = 0;
+    int bmc_attr_id = BMC_ATTR_ID_MAX;
 
+    switch(local_id)
+    {
+        case ONLP_FAN_F_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_FRONT_RPM;
+            break;
+        case ONLP_FAN_R_0:
+            bmc_attr_id = BMC_ATTR_ID_FAN0_REAR_RPM;
+            break;
+        case ONLP_FAN_F_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_FRONT_RPM;
+            break;
+        case ONLP_FAN_R_1:
+            bmc_attr_id = BMC_ATTR_ID_FAN1_REAR_RPM;
+            break;
+        case ONLP_FAN_F_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_FRONT_RPM;
+            break;
+        case ONLP_FAN_R_2:
+            bmc_attr_id = BMC_ATTR_ID_FAN2_REAR_RPM;
+            break;
+        case ONLP_FAN_F_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_FRONT_RPM;
+            break;
+        case ONLP_FAN_R_3:
+            bmc_attr_id = BMC_ATTR_ID_FAN3_REAR_RPM;
+            break;            
+        case ONLP_PSU_0_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            break;
+        case ONLP_PSU_1_FAN:
+            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            break;
+        default:
+            bmc_attr_id = BMC_ATTR_ID_MAX;
+    }
+
+    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }
+    
     if ((info->hdr.status & ONLP_OID_STATUS_FLAG_PRESENT) == 0) {
         //not present, do nothing
         return ONLP_STATUS_OK;
     }
 
     //get fan rpm
-    ret = bmc_sensor_read(local_id + CACHE_OFFSET_FAN_RPM, FAN_SENSOR, &data);    
-    if ( ret != ONLP_STATUS_OK) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", local_id);
-        return ret;
-    }
+    ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
     
     rpm = (int) data;
     
@@ -274,8 +345,15 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
         info->hdr.status |= (rpm == 0) ? ONLP_OID_STATUS_FLAG_FAILED : ONLP_OID_STATUS_FLAG_OPERATIONAL;
     } else if (local_id >= ONLP_PSU_0_FAN && local_id <= ONLP_PSU_1_FAN) {
         //get psu type
-        ONLP_TRY(onlp_file_read_int(&psu_type, TMP_PSU_TYPE, local_id-ONLP_PSU_0_FAN+1));        
-
+        if(local_id == ONLP_PSU_0_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
+        } else if(local_id == ONLP_PSU_1_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_1, &psu_type, NULL));
+        } else {
+            AIM_LOG_ERROR("unknown fan id (%d), func=%s", local_id, __FUNCTION__);
+            return ONLP_STATUS_E_PARAM;
+        }
+        
         //AC/DC has different MAX RPM
         if (psu_type==ONLP_PSU_TYPE_AC) {
             psu_fan_max = PSU_FAN_RPM_MAX_AC;
@@ -336,7 +414,7 @@ int onlp_fani_id_validate(onlp_oid_id_t id)
  * @param id The fan id.
  * @param[out] hdr Receives the OID header.
  */
-int onlp_fani_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_fani_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);

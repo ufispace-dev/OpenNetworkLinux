@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2014 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -39,6 +38,7 @@
  *            |----[02] ONLP_LED_SYS_FAN
  *            |----[03] ONLP_LED_SYS_PSU_0
  *            |----[04] ONLP_LED_SYS_PSU_1
+ *            |----[05] ONLP_LED_SYS_SYNC
  */
 static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
 {
@@ -83,6 +83,16 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
         .caps = ONLP_LED_CAPS_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
                 ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING,
     },
+    {
+        .hdr = {
+            .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+            .description = "Chassis LED 5 (SYNC LED)",
+            .poid = ONLP_OID_CHASSIS,
+            .status = ONLP_OID_STATUS_FLAG_PRESENT,
+        },
+        .caps = ONLP_LED_CAPS_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
+                ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING,
+    },
 };
 
 /**
@@ -92,22 +102,13 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
  */
 static int update_ledi_info(int local_id, onlp_led_info_t* info)
 {
-    int value;
-    int sysfs_index;
-    int shift, led_val,led_val_color, led_val_blink, led_val_onoff;
+    int value = 0;
+    int sysfs_index = 0;
+    int shift = 0, led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
 
-    if (local_id == ONLP_LED_SYS_SYS) {
-        sysfs_index = 0;
-        shift = 0;
-    } else if (local_id == ONLP_LED_SYS_PSU_0) {
-        sysfs_index = 1;
-        shift = 0;
-    } else if (local_id == ONLP_LED_SYS_PSU_1) {
-        sysfs_index = 1;
-        shift = 4;
-    } else if (local_id == ONLP_LED_SYS_FAN) {
-        sysfs_index = 0;
-        shift = 4;
+    if (local_id < ONLP_LED_MAX) {        
+        sysfs_index=(local_id-ONLP_LED_SYS_SYS)/2;
+        shift = ((local_id-ONLP_LED_SYS_SYS)%2)*4;    
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -185,7 +186,7 @@ int onlp_ledi_id_validate(onlp_oid_id_t id)
  * @param id The LED OID
  * @param[out] rv  Receives the header.
  */
-int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_ledi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);

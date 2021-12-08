@@ -2,7 +2,6 @@
  * <bsn.cl fy=2014 v=onl>
  *
  *           Copyright 2014 Big Switch Networks, Inc.
- *           Copyright 2014 Accton Technology Corporation.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -56,8 +55,6 @@
 #define SYSFS_QSFPDD_LPMODE  "cpld_qsfpdd_lpmode"
 #define SYSFS_QSFPDD_PRESENT "cpld_qsfpdd_intr_present"
 #define SYSFS_EEPROM         "eeprom"
-
-#define EEPROM_ADDR (0x50)
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
@@ -186,8 +183,8 @@ static int ufi_port_to_cpld_bus(int port)
 
 static int ufi_qsfp_present_get(int port, int *pres_val)
 {     
-    int reg_val, rc;
-    int cpld_bus, cpld_addr, attr_offset;
+    int reg_val = 0, rc = 0;
+    int cpld_bus = 0, cpld_addr = 0, attr_offset = 0;
        
     //get cpld bus, cpld addr and sysfs_attr_offset
     cpld_bus = ufi_port_to_cpld_bus(port);
@@ -209,8 +206,8 @@ static int ufi_qsfp_present_get(int port, int *pres_val)
 
 static int ufi_sfp_present_get(int port, int *pres_val)
 {
-    int reg_val, rc;
-    int cpld_bus, cpld_addr; 
+    int reg_val = 0, rc = 0;
+    int cpld_bus = 0, cpld_addr = 0; 
 
     //get cpld bus and cpld addr
     cpld_bus = ufi_port_to_cpld_bus(port);
@@ -264,7 +261,7 @@ int onlp_sfpi_sw_denit(void)
  */
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
-    int p;
+    int p = 0;
 
     AIM_BITMAP_CLR_ALL(bmap);
     for(p = 0; p < PORT_NUM; p++) {
@@ -312,15 +309,9 @@ int onlp_sfpi_is_present(onlp_oid_id_t id)
     
     //QSFPDD Ports
     if (IS_QSFPX(port)) {
-        if (ufi_qsfp_present_get(port, &status) < 0) {
-            AIM_LOG_ERROR("qsfp_presnet_get() failed, port=%d\n", port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(ufi_qsfp_present_get(port, &status));
     } else if (IS_SFP(port)) { //SFP
-        if (ufi_sfp_present_get(port, &status) < 0) {
-            AIM_LOG_ERROR("sfp_presnet_get() failed, port=%d\n", port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(ufi_sfp_present_get(port, &status));
     } else {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -352,7 +343,7 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
-    int i=0, value=0;
+    int i = 0, value = 0;
 
     /* Populate bitmap - QSFPDD_NIF and QSFPDD_FAB ports */
     for(i = 0; i < (QSFPX_NUM); i++) {
@@ -361,11 +352,8 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 
     /* Populate bitmap - SFP+ ports */
     for(i = QSFPX_NUM; i < PORT_NUM; i++) {
-	if (onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)< 0) {
-            return ONLP_STATUS_E_INTERNAL;
-        } else {
-            AIM_BITMAP_MOD(dst, i, value);
-        }
+        ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
+        AIM_BITMAP_MOD(dst, i, value);
     }
 
     return ONLP_STATUS_OK;
@@ -387,22 +375,16 @@ int onlp_sfpi_dev_read(onlp_oid_id_t id, int devaddr, int addr, uint8_t* dst, in
 
     VALIDATE_PORT(port);
     
-    if (onlp_sfpi_is_present(port) < 0) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+    if (onlp_sfpi_is_present(id) != 1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent. \n", port);
         return ONLP_STATUS_OK;
     }
 
-    devaddr = EEPROM_ADDR;
     bus = ufi_port_to_eeprom_bus(port);
-    
-    if (port < PORT_NUM) {        
-        if (onlp_i2c_block_read(bus, devaddr, addr, len, dst, ONLP_I2C_F_FORCE) < 0) {
-            check_and_do_i2c_mux_reset(port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-    } else {
-        return ONLP_STATUS_E_PARAM;
-    }
+    if (onlp_i2c_block_read(bus, devaddr, addr, len, dst, ONLP_I2C_F_FORCE) < 0) {
+        check_and_do_i2c_mux_reset(port);
+        return ONLP_STATUS_E_INTERNAL;
+    }    
 
     return ONLP_STATUS_OK;
 }
@@ -417,11 +399,18 @@ int onlp_sfpi_dev_read(onlp_oid_id_t id, int devaddr, int addr, uint8_t* dst, in
  */
 int onlp_sfpi_dev_write(onlp_oid_id_t id, int devaddr, int addr, uint8_t* src, int len)
 {
-    int port = ONLP_OID_ID_GET(id);
-    VALIDATE_PORT(port);
+    int port = ONLP_OID_ID_GET(id);    
     int rc = 0;
-    int bus = ufi_port_to_eeprom_bus(port);
+    int bus = -1;
 
+    VALIDATE_PORT(port);
+
+    if (onlp_sfpi_is_present(id) != 1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
     if ((rc=onlp_i2c_write(bus, devaddr, addr, len, src, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -438,16 +427,18 @@ int onlp_sfpi_dev_write(onlp_oid_id_t id, int devaddr, int addr, uint8_t* src, i
  */
 int onlp_sfpi_dev_readb(onlp_oid_id_t id, int devaddr, int addr)
 {
-    int port = ONLP_OID_ID_GET(id);
-    VALIDATE_PORT(port);
+    int port = ONLP_OID_ID_GET(id);    
     int rc = 0;
-    int bus = ufi_port_to_eeprom_bus(port);
+    int bus = -1;
 
+    VALIDATE_PORT(port);
+    
     if (onlp_sfpi_is_present(id) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
+    bus = ufi_port_to_eeprom_bus(port);
     if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -464,16 +455,18 @@ int onlp_sfpi_dev_readb(onlp_oid_id_t id, int devaddr, int addr)
  */
 int onlp_sfpi_dev_writeb(onlp_oid_id_t id, int devaddr, int addr, uint8_t value)
 {
-    int port = ONLP_OID_ID_GET(id);
-    VALIDATE_PORT(port);
+    int port = ONLP_OID_ID_GET(id);    
     int rc = 0;
-    int bus = ufi_port_to_eeprom_bus(port);    
+    int bus = -1;
 
+    VALIDATE_PORT(port);
+    
     if (onlp_sfpi_is_present(id) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
+    bus = ufi_port_to_eeprom_bus(port);
     if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }   
@@ -490,16 +483,18 @@ int onlp_sfpi_dev_writeb(onlp_oid_id_t id, int devaddr, int addr, uint8_t value)
  */
 int onlp_sfpi_dev_readw(onlp_oid_id_t id, int devaddr, int addr)
 {
-    int port = ONLP_OID_ID_GET(id);
-    VALIDATE_PORT(port);
+    int port = ONLP_OID_ID_GET(id);    
     int rc = 0;
-    int bus = ufi_port_to_eeprom_bus(port);
+    int bus = -1;
+
+    VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(id) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
+    bus = ufi_port_to_eeprom_bus(port);
     if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }
@@ -516,16 +511,18 @@ int onlp_sfpi_dev_readw(onlp_oid_id_t id, int devaddr, int addr)
  */
 int onlp_sfpi_dev_writew(onlp_oid_id_t id, int devaddr, int addr, uint16_t value)
 {
-    int port = ONLP_OID_ID_GET(id);
-    VALIDATE_PORT(port);
+    int port = ONLP_OID_ID_GET(id);    
     int rc = 0;
-    int bus = ufi_port_to_eeprom_bus(port);    
+    int bus = -1;
+
+    VALIDATE_PORT(port);   
 
     if (onlp_sfpi_is_present(id) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
+    bus = ufi_port_to_eeprom_bus(port);
     if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE))<0) {
         check_and_do_i2c_mux_reset(port);
     }   
@@ -561,7 +558,7 @@ int onlp_sfpi_control_supported(onlp_oid_id_t id, onlp_sfp_control_t control, in
     VALIDATE_PORT(port);
     
     //set unsupported as default value
-    *rv=0;
+    *rv = 0;
     
     switch (control) {
         case ONLP_SFP_CONTROL_RESET:
@@ -712,7 +709,7 @@ int onlp_sfpi_control_set(onlp_oid_id_t id, onlp_sfp_control_t control, int valu
 int onlp_sfpi_control_get(onlp_oid_id_t id, onlp_sfp_control_t control, int* value)
 {
     int port = ONLP_OID_ID_GET(id);
-    int rc;
+    int rc = 0;
     int reg_val = 0, reg_mask = 0;
     int bus = 0;
     int cpld_addr = 0;    

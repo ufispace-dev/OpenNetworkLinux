@@ -27,6 +27,13 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9710_76d_lpc"
 #define CPU_BDE 0
 #define CPU_SKY 1
@@ -70,7 +77,11 @@
 #define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
 #endif
 
+//Thermal
+#define REG_TEMP_BASE                     (REG_BASE_MB + 0xC0)
+
 #define MASK_ALL                          (0xFF)
+#define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -102,7 +113,36 @@ enum lpc_sysfs_attributes {
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
     ATT_BSP_REG,
+    //Thermal
+    ATT_TEMP_MAC0_PVT2,
+    ATT_TEMP_MAC0_PVT3,
+    ATT_TEMP_MAC0_PVT4,
+    ATT_TEMP_MAC0_PVT6,
+    ATT_TEMP_MAC0_HBM0,
+    ATT_TEMP_MAC0_HBM1,
+    ATT_TEMP_OP2_0,
+    ATT_TEMP_OP2_1,
+    ATT_TEMP_MAC1_PVT2,
+    ATT_TEMP_MAC1_PVT3,
+    ATT_TEMP_MAC1_PVT4,
+    ATT_TEMP_MAC1_PVT6,
+    ATT_TEMP_MAC1_HBM0,
+    ATT_TEMP_MAC1_HBM1,
+    ATT_TEMP_OP2_2,
+    ATT_TEMP_OP2_3,
     ATT_MAX
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 struct lpc_data_s {
@@ -110,9 +150,12 @@ struct lpc_data_s {
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16];
-char bsp_debug[32];
+char bsp_version[16]="";
+char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
+u8 mailbox_inited=0;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -148,6 +191,117 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
     return reg_val;
 }
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+/* init bmc mailbox */
+static int init_bmc_mailbox(void)
+{
+    if (mailbox_inited) {
+        return mailbox_inited;
+    }
+
+    //Enable super io writing
+    outb(0xa5, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0xa5, 0x2e);
+    mdelay(LPC_MDELAY);
+
+    //Logic device number
+    outb(0x07, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x0e, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Disable mailbox
+    outb(0x30, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x00, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Set base address bit
+    outb(0x60, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x0e, 0x2f);
+    mdelay(LPC_MDELAY);
+    outb(0x61, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0xc0, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Select bit[3:0] of SIRQ
+    outb(0x70, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x07, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Low level trigger
+    outb(0x71, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x01, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Enable mailbox
+    outb(0x30, 0x2e);
+    mdelay(LPC_MDELAY);
+    outb(0x01, 0x2f);
+    mdelay(LPC_MDELAY);
+
+    //Disable super io writing
+    outb(0xaa, 0x2e);
+    mdelay(LPC_MDELAY);
+
+    //Mailbox initial
+    outb(0x00, 0xed6);
+    mdelay(LPC_MDELAY);
+    outb(0x00, 0xed7);
+    mdelay(LPC_MDELAY);
+
+    //set mailbox_inited
+    mailbox_inited = 1;
+
+    return mailbox_inited;
+}
+
 /* get lpc register value */
 static u8 _read_lpc_reg(u16 reg, u8 mask)
 {
@@ -156,6 +310,8 @@ static u8 _read_lpc_reg(u16 reg, u8 mask)
     mutex_lock(&lpc_data->access_lock);
     reg_val=_mask_shift(inb(reg), mask);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return reg_val;
 }
@@ -190,7 +346,11 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
     mutex_lock(&lpc_data->access_lock);
 
     outb(reg_val, reg);
+    mdelay(LPC_MDELAY);
+
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return count;
 }
@@ -204,6 +364,8 @@ static ssize_t read_bsp(char *buf, char *str)
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg_val=%s", str);
+
     return len;
 }
 
@@ -213,6 +375,8 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
 	mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg_val=%s", str);
 
     return count;
 }
@@ -233,6 +397,8 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
     return len;
 }
 
@@ -251,6 +417,8 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
 	reg_val=_mask_shift(inb(reg), mask);
     len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
 
     return len;
 }
@@ -331,6 +499,11 @@ static ssize_t read_lpc_callback(struct device *dev,
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
             break;
+        //Thermal
+        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
+            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
+            init_bmc_mailbox();
+            break;
         default:
             return -EINVAL;
     }
@@ -348,6 +521,11 @@ static ssize_t write_lpc_callback(struct device *dev,
     switch (attr->index) {
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
+            break;
+        //Thermal
+        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
+            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
+            init_bmc_mailbox();
             break;
         default:
             return -EINVAL;
@@ -371,31 +549,37 @@ static ssize_t write_mux_reset(struct device *dev,
         if (val == 0) {
             mutex_lock(&lpc_data->access_lock);
             mux_reset_flag = 1;
-            printk(KERN_INFO "i2c mux reset is triggered...\n");
+            BSP_LOG_W("i2c mux reset is triggered...");
 
             //reset mux on NIF ports
             mux_reset_reg_val = inb(REG_MB_MUX_RESET);
             outb((mux_reset_reg_val & 0b11100000), REG_MB_MUX_RESET);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val & 0b11100000);
 
             //reset mux on top board (FAB ports)
             misc_reset_reg_val = inb(REG_MB_MISC_RESET);
             outb((misc_reset_reg_val & 0b11011111), REG_MB_MISC_RESET);
-
-            mdelay(100);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
 
             //unset mux on NIF ports
             outb((mux_reset_reg_val | 0b00011111), REG_MB_MUX_RESET);
+            mdelay(LPC_MDELAY);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
+
             //unset mux on top board (FAB ports)
             outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
-
             mdelay(500);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x",REG_MB_MISC_RESET, misc_reset_reg_val | 0b00100000);
+
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {
             return -EINVAL;
         }
     } else {
-        printk(KERN_INFO "i2c mux is resetting... (ignore)\n");
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
         mutex_lock(&lpc_data->access_lock);
         mutex_unlock(&lpc_data->access_lock);
     }
@@ -438,6 +622,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     int str_len=0;
     char *str=NULL;
     u16 reg = 0;
+    u8 bsp_debug_u8 = 0;
 
     switch (attr->index) {
         case ATT_BSP_VERSION:
@@ -458,6 +643,15 @@ static ssize_t write_bsp_callback(struct device *dev,
         default:
             return -EINVAL;
     }
+    
+    if (attr->index == ATT_BSP_DEBUG) {
+        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+            return -EINVAL;
+        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+            return -EINVAL;
+        }    	
+    }
+    
     return write_bsp(buf, str, str_len, count);
 }
 
@@ -489,6 +683,23 @@ static SENSOR_DEVICE_ATTR(alert_disable,   S_IRUGO, read_lpc_callback, NULL, ATT
 static SENSOR_DEVICE_ATTR(bsp_version,     S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug,       S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+//SENSOR_DEVICE_ATTR - Thermal
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt2,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT2);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt3,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT3);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt4,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT4);
+static SENSOR_DEVICE_ATTR(temp_mac0_pvt6,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_PVT6);
+static SENSOR_DEVICE_ATTR(temp_mac0_hbm0,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_HBM0);
+static SENSOR_DEVICE_ATTR(temp_mac0_hbm1,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC0_HBM1);
+static SENSOR_DEVICE_ATTR(temp_op2_0,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_0);
+static SENSOR_DEVICE_ATTR(temp_op2_1,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_1);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt2,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT2);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt3,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT3);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt4,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT4);
+static SENSOR_DEVICE_ATTR(temp_mac1_pvt6,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_PVT6);
+static SENSOR_DEVICE_ATTR(temp_mac1_hbm0,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_HBM0);
+static SENSOR_DEVICE_ATTR(temp_mac1_hbm1,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_MAC1_HBM1);
+static SENSOR_DEVICE_ATTR(temp_op2_2,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_2);
+static SENSOR_DEVICE_ATTR(temp_op2_3,      S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_OP2_3);
 
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
@@ -534,6 +745,26 @@ static struct attribute *bsp_attrs[] = {
     NULL,
 };
 
+static struct attribute *temp_attrs[] = {
+    &sensor_dev_attr_temp_mac0_pvt2.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt3.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt4.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_pvt6.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_hbm0.dev_attr.attr,
+    &sensor_dev_attr_temp_mac0_hbm1.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_0.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_1.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt2.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt3.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt4.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_pvt6.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_hbm0.dev_attr.attr,
+    &sensor_dev_attr_temp_mac1_hbm1.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_2.dev_attr.attr,
+    &sensor_dev_attr_temp_op2_3.dev_attr.attr,
+    NULL,
+};
+
 static struct attribute_group cpu_cpld_attr_grp = {
     .name = "cpu_cpld",
     .attrs = cpu_cpld_attrs,
@@ -559,6 +790,11 @@ static struct attribute_group bsp_attr_grp = {
     .attrs = bsp_attrs,
 };
 
+static struct attribute_group temp_attr_grp = {
+    .name = "temp",
+    .attrs = temp_attrs,
+};
+
 static void lpc_dev_release( struct device * dev)
 {
     return;
@@ -574,8 +810,8 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 5;
-    int err[5] = {0};
+    int i = 0, grp_num = 6;
+    int err[6] = {0};
     struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
@@ -601,6 +837,9 @@ static int lpc_drv_probe(struct platform_device *pdev)
             	break;
             case 4:
             	grp = &bsp_attr_grp;
+                break;
+            case 5:
+                grp = &temp_attr_grp;
                 break;
             default:
                 break;
@@ -635,6 +874,9 @@ exit:
             case 4:
             	grp = &bsp_attr_grp;
                 break;
+            case 5:
+                grp = &temp_attr_grp;
+                break;
             default:
                 break;
         }
@@ -658,6 +900,7 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
 
     return 0;
 }
@@ -673,17 +916,20 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    err = platform_device_register(&lpc_dev);
-    if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
-                __func__, __LINE__, err);
-    	return err;
-    }
+    
     err = platform_driver_register(&lpc_drv);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	platform_device_unregister(&lpc_dev);
+    	
+    	return err;
+    }
+        
+    err = platform_device_register(&lpc_dev);
+    if (err) {
+    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
+                __func__, __LINE__, err);
+    	platform_driver_unregister(&lpc_drv);
     	return err;
     }
 

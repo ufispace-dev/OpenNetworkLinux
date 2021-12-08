@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2013 - 2020 Intel Corporation. */
+/* Copyright(c) 2013 - 2021 Intel Corporation. */
 
 #include "i40e.h"
 #include "kcompat.h"
@@ -1741,7 +1741,6 @@ static const unsigned char __maybe_unused pcie_link_speed[] = {
 int __kc_pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
 			       enum pcie_link_width *width)
 {
-	int ret;
 
 	*speed = PCI_SPEED_UNKNOWN;
 	*width = PCIE_LNK_WIDTH_UNKNOWN;
@@ -1750,8 +1749,8 @@ int __kc_pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
 		u16 lnksta;
 		enum pci_bus_speed next_speed;
 		enum pcie_link_width next_width;
+		int ret = pcie_capability_read_word(dev, PCI_EXP_LNKSTA, &lnksta);
 
-		ret = pcie_capability_read_word(dev, PCI_EXP_LNKSTA, &lnksta);
 		if (ret)
 			return ret;
 
@@ -1863,7 +1862,6 @@ int __kc_ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
 {
 	unsigned int start = skb_network_offset(skb) + sizeof(struct ipv6hdr);
 	u8 nexthdr = ipv6_hdr(skb)->nexthdr;
-	unsigned int len;
 	bool found;
 
 #define __KC_IP6_FH_F_FRAG	BIT(0)
@@ -1884,7 +1882,6 @@ int __kc_ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
 		start = *offset + sizeof(struct ipv6hdr);
 		nexthdr = ip6->nexthdr;
 	}
-	len = skb->len - start;
 
 	do {
 		struct ipv6_opt_hdr _hdr, *hp;
@@ -1949,7 +1946,6 @@ int __kc_ipv6_find_hdr(const struct sk_buff *skb, unsigned int *offset,
 
 		if (!found) {
 			nexthdr = hp->nexthdr;
-			len -= hdrlen;
 			start += hdrlen;
 		}
 	} while (!found);
@@ -2625,6 +2621,38 @@ void _kc_ethtool_intersect_link_masks(struct ethtool_link_ksettings *dst,
 #endif /* 4.15.0 */
 
 /*****************************************************************************/
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,16,0))
+#if !(RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,0)) && \
+     !(SLE_VERSION_CODE >= SLE_VERSION(12,5,0) && \
+       SLE_VERSION_CODE < SLE_VERSION(15,0,0) || \
+       SLE_VERSION_CODE >= SLE_VERSION(15,1,0))
+#if BITS_PER_LONG == 64
+/**
+ * bitmap_from_arr32 - copy the contents of u32 array of bits to bitmap
+ * @bitmap: array of unsigned longs, the destination bitmap
+ * @buf: array of u32 (in host byte order), the source bitmap
+ * @nbits: number of bits in @bitmap
+ */
+void bitmap_from_arr32(unsigned long *bitmap, const u32 *buf, unsigned int nbits)
+{
+	unsigned int i, halfwords;
+
+	halfwords = DIV_ROUND_UP(nbits, 32);
+	for (i = 0; i < halfwords; i++) {
+		bitmap[i/2] = (unsigned long) buf[i];
+		if (++i < halfwords)
+			bitmap[i/2] |= ((unsigned long) buf[i]) << 32;
+	}
+
+	/* Clear tail bits in last word beyond nbits. */
+	if (nbits % BITS_PER_LONG)
+		bitmap[(halfwords - 1) / 2] &= BITMAP_LAST_WORD_MASK(nbits);
+}
+#endif /* BITS_PER_LONG == 64 */
+#endif /* !(RHEL >= 8.0) && !(SLES >= 12.5 && SLES < 15.0 || SLES >= 15.1) */
+#endif /* 4.16.0 */
+
+/*****************************************************************************/
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0))
 /* PCIe link information */
 #define PCIE_SPEED2STR(speed) \
@@ -2773,10 +2801,7 @@ void _kc_pcie_print_link_status(struct pci_dev *dev) {
 #endif /* 4.17.0 */
 
 /*****************************************************************************/
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,1,0))
-#if (RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,1)))
-#define HAVE_NDO_FDB_ADD_EXTACK
-#else /* !RHEL || RHEL < 8.1 */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,1,0)) || (RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(8,1)))
 #ifdef HAVE_TC_SETUP_CLSFLOWER
 #define FLOW_DISSECTOR_MATCH(__rule, __type, __out)				\
 	const struct flow_match *__m = &(__rule)->match;			\
@@ -2861,8 +2886,7 @@ void flow_rule_match_ports(const struct flow_rule *rule,
 	FLOW_DISSECTOR_MATCH(rule, FLOW_DISSECTOR_KEY_PORTS, out);
 }
 #endif /* HAVE_TC_SETUP_CLSFLOWER */
-#endif /* !RHEL || RHEL < 8.1 */
-#endif /* 5.1.0 */
+#endif /* 5.1.0 || (RHEL && RHEL < 8.1) */
 
 /*****************************************************************************/
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5,3,0))

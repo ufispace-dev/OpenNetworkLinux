@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2020 Intel Corporation. */
+/* Copyright(c) 2013 - 2021 Intel Corporation. */
 
 #ifndef _I40E_VIRTCHNL_PF_H_
 #define _I40E_VIRTCHNL_PF_H_
@@ -41,7 +41,7 @@ enum i40e_vf_states {
 	I40E_VF_STATE_MC_PROMISC,
 	I40E_VF_STATE_UC_PROMISC,
 	I40E_VF_STATE_PRE_ENABLE,
-	I40E_VF_STATE_LOADED_VF_DRIVER,
+	I40E_VF_STATE_RESOURCES_LOADED,
 };
 
 /* VF capabilities */
@@ -76,6 +76,19 @@ struct i40e_vm_mac {
 	u8 macaddr[ETH_ALEN];
 };
 
+/* used for following share for given traffic class by VF*/
+struct i40e_vf_tc_info {
+	bool applied;
+	u8 applied_tc_share[I40E_MAX_TRAFFIC_CLASS];
+	u8 requested_tc_share[I40E_MAX_TRAFFIC_CLASS];
+	u16 max_tc_tx_rate[I40E_MAX_TRAFFIC_CLASS];
+};
+
+struct i40e_time_mac {
+	unsigned long time_modified;
+	u8 addr[ETH_ALEN];
+};
+
 /* VF information structure */
 struct i40e_vf {
 	struct i40e_pf *pf;
@@ -91,6 +104,7 @@ struct i40e_vf {
 	u16 stag;
 
 	struct virtchnl_ether_addr default_lan_addr;
+	struct i40e_time_mac legacy_last_added_umac; /* keeps last added MAC address */
 	s16 port_vlan_id;
 	bool pf_set_mac;	/* The VMM admin set the VF MAC address */
 	bool trusted;
@@ -117,6 +131,7 @@ struct i40e_vf {
 	bool link_up;		/* only valid if VF link is forced */
 #endif
 	bool mac_anti_spoof;
+	bool vlan_anti_spoof;
 	u16 num_vlan;
 	DECLARE_BITMAP(mirror_vlans, VLAN_N_VID);
 	u16 vlan_rule_id;
@@ -129,12 +144,13 @@ struct i40e_vf {
 	int egress_vlan;
 	DECLARE_BITMAP(trunk_vlans, VLAN_N_VID);
 	bool trunk_set_by_pf;
-	bool allow_untagged;
+	bool allow_untagged; /* update filters, when changing value */
 	bool loopback;
 	bool vlan_stripping;
 	u8 promisc_mode;
 	u8 bw_share;
 	bool bw_share_applied; /* true if config is applied to the device */
+	bool tc_bw_share_req;
 	bool pf_ctrl_disable; /* bool for PF ctrl of VF enable/disable */
 	u8 queue_type;
 	bool allow_bcast;
@@ -148,6 +164,7 @@ struct i40e_vf {
 	struct i40evf_channel ch[I40E_MAX_VF_VSI];
 	struct hlist_head cloud_filter_list;
 	u16 num_cloud_filters;
+	struct i40e_vf_tc_info tc_info;
 };
 
 void i40e_free_vfs(struct i40e_pf *pf);

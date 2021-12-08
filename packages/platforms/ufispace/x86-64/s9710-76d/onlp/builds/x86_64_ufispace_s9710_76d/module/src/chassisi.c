@@ -49,10 +49,27 @@
  *            |----[17] ONLP_THERMAL_ENV_2
  *            |----[18] ONLP_THERMAL_EXT_ENV_1
  *            |----[19] ONLP_THERMAL_EXT_ENV_2 
+ *            |----[20] ONLP_THERMAL_MAC0_PVT2
+ *            |----[21] ONLP_THERMAL_MAC0_PVT3
+ *            |----[22] ONLP_THERMAL_MAC0_PVT4
+ *            |----[23] ONLP_THERMAL_MAC0_PVT6
+ *            |----[24] ONLP_THERMAL_MAC0_HBM0
+ *            |----[25] ONLP_THERMAL_MAC0_HBM1
+ *            |----[26] ONLP_THERMAL_MAC0_PVT2
+ *            |----[27] ONLP_THERMAL_MAC0_PVT3
+ *            |----[28] ONLP_THERMAL_MAC1_PVT4
+ *            |----[29] ONLP_THERMAL_MAC1_PVT6
+ *            |----[30] ONLP_THERMAL_MAC1_HBM0
+ *            |----[31] ONLP_THERMAL_MAC1_HBM1 
+ *            |----[32] ONLP_THERMAL_OP2_0
+ *            |----[33] ONLP_THERMAL_OP2_1
+ *            |----[34] ONLP_THERMAL_OP2_2
+ *            |----[35] ONLP_THERMAL_OP2_3 
  *            |----[01] ONLP_LED_SYS_SYS
  *            |----[02] ONLP_LED_SYS_FAN
  *            |----[03] ONLP_LED_SYS_PSU_0
  *            |----[04] ONLP_LED_SYS_PSU_1
+ *            |----[05] ONLP_LED_SYS_SYNC
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
@@ -67,7 +84,7 @@
  *            |----[08] ONLP_FAN_R_3
  */
  
-static onlp_oid_t __onlp_oid_info[] = {
+static onlp_oid_id_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),        
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
@@ -87,10 +104,27 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_2),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_EXT_ENV_1),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_EXT_ENV_2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_PVT2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_PVT3),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_PVT4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_PVT6),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_HBM0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0_HBM1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_PVT2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_PVT3),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_PVT4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_PVT6),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_HBM0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1_HBM1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_3),    
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_0),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_1),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),    
     ONLP_PSU_ID_CREATE(ONLP_PSU_0),
     ONLP_PSU_ID_CREATE(ONLP_PSU_1),
     ONLP_FAN_ID_CREATE(ONLP_FAN_F_0),
@@ -138,14 +172,14 @@ int onlp_chassisi_sw_denit(void)
  */
 int onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
-    int i;
+    int i = 0;
     ONLP_OID_STATUS_FLAG_SET(hdr, PRESENT);
     ONLP_OID_STATUS_FLAG_SET(hdr, OPERATIONAL);
 
     memcpy(hdr->coids, __onlp_oid_info, sizeof(__onlp_oid_info));
 
     /** Add 2 SFP+ and 76 QSFPDD OIDs after the static table */
-    onlp_oid_t* e = hdr->coids + AIM_ARRAYSIZE(__onlp_oid_info);
+    onlp_oid_id_t* e = hdr->coids + AIM_ARRAYSIZE(__onlp_oid_info);
 
     /* 36 QSFPDD_NIF + 40 QSFPDD_NIF + 2 SFP+ */
     for(i = 1; i <= 78; i++) {
