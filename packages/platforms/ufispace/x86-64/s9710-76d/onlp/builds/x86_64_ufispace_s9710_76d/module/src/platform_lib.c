@@ -157,6 +157,40 @@ int check_file_exist(char *file_path, long *file_time)
     }
 }
 
+/**
+ * @brief check bmc still alive
+ * @returns ONLP_STATUS_OK         : bmc still alive
+ *          ONLP_STATUS_E_INTERNAL : bmc not respond
+ */
+int bmc_check_alive(void)
+{
+    /**
+     *   BMC detect timeout get from "ipmitool mc info" test.
+     *   Test Case: Run 100 times of "ipmitool mc info" command and get the execution times.
+     *              We take 3s as The detect timeout value,
+     *              since the execution times value is between 0.015s - 0.062s.
+     */
+    char* bmc_dect = "timeout 3s ipmitool mc info > /dev/null 2>&1";
+
+    int retry = 0, retry_max = 2;
+    for (retry = 0; retry < retry_max; ++retry) {
+        int ret = 0;
+        if((ret=system(bmc_dect)) != 0) {
+            if (retry == retry_max-1) {
+                AIM_LOG_ERROR("%s() bmc detecting fail, retry=%d, ret=%d",
+                    __func__, retry, ret);
+                return ONLP_STATUS_E_INTERNAL;
+            } else {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 {
     int bmc_cache_expired = 0;
@@ -194,7 +228,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     long file_last_time = 0;
     static int init_cache = 1;
     char* presence_str = "Present";
-    int retry = 0, retry_max = 3;
+    int retry = 0, retry_max = 2;
     char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
     char *line_ptr = NULL;
     char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
@@ -230,10 +264,15 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     //update cache
     if(bmc_cache_expired == 1 || init_cache == 1) {
         if (bmc_cache_expired == 1) {
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
+            // detect bmc status            
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                ONLP_UNLOCK();
+                return ONLP_STATUS_E_INTERNAL;
+            }
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
             for (retry = 0; retry < retry_max; ++retry) {
-                if ((rv=system(ipmi_cmd)) < 0) {
-                    if (retry == retry_max-1) {                        
+                if ((rv=system(ipmi_cmd)) != 0) {
+                    if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d", 
                             __func__, retry, ipmi_cmd, rv);
                         ONLP_UNLOCK();
@@ -337,14 +376,19 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     }
 
     //update cache
-    if(bmc_cache_expired == 1 || fru->init_done == 0) {        
+    if(bmc_cache_expired == 1 || fru->init_done == 0) {
         //get fru from ipmitool and save to cache file
         if(bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                ONLP_UNLOCK();
+                return ONLP_STATUS_E_INTERNAL;
+            }
             char fields[256]="";
-            snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'", 
+            snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
                         BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, fru->bmc_fru_id, fields, fru->cache_files);
-            int retry = 0, retry_max = 3;
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, IPMITOOL_CMD_TIMEOUT, fru->bmc_fru_id, fields, fru->cache_files);
+            int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
                 int rv = 0;
                 if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
@@ -402,7 +446,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
             strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
             strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
             strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s", 
+            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s",
                 local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
             ONLP_UNLOCK();
             return ONLP_STATUS_E_INTERNAL;

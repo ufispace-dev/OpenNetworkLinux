@@ -69,6 +69,12 @@ enum cpld_sysfs_attributes {
     CPLD_VERSION,
     CPLD_BUILD,
     CPLD_ID,
+
+    CPLD_MAJOR_VER,
+    CPLD_MINOR_VER,
+    CPLD_BUILD_VER,
+    CPLD_VERSION_H,
+
     CPLD_MAC_INTR,
     CPLD_PHY_INTR,
     CPLD_CPLDX_INTR,
@@ -190,15 +196,18 @@ static ssize_t read_cpld_callback(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
-static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
+static u8 _read_cpld_reg(struct device *dev, u8 reg, u8 mask);
+static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg, u8 mask);
+static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg, u8 mask);
 static ssize_t read_bsp(char *buf, char *str);
 static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count);
 static ssize_t read_bsp_callback(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_bsp_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-
+static ssize_t read_cpld_version_h(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf);
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
 
@@ -235,15 +244,20 @@ static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, 0x32, 0x33, 0x34, I2
 static SENSOR_DEVICE_ATTR(cpld_board_id_0,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_0);
 static SENSOR_DEVICE_ATTR(cpld_board_id_1,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_1);
 static SENSOR_DEVICE_ATTR(cpld_version,     S_IRUGO, read_cpld_callback, NULL, CPLD_VERSION);
-static SENSOR_DEVICE_ATTR(cpld_build,     S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD);
+static SENSOR_DEVICE_ATTR(cpld_build,       S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD);
 static SENSOR_DEVICE_ATTR(cpld_id,          S_IRUGO, read_cpld_callback, NULL, CPLD_ID);
+
+static SENSOR_DEVICE_ATTR(cpld_major_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_MAJOR_VER);
+static SENSOR_DEVICE_ATTR(cpld_minor_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_MINOR_VER);
+static SENSOR_DEVICE_ATTR(cpld_build_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD_VER);
+static SENSOR_DEVICE_ATTR(cpld_version_h,   S_IRUGO, read_cpld_version_h, NULL, CPLD_VERSION_H);
 
 static SENSOR_DEVICE_ATTR(cpld_mac_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_INTR);
 static SENSOR_DEVICE_ATTR(cpld_phy_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_PHY_INTR);
 static SENSOR_DEVICE_ATTR(cpld_cpldx_intr,  S_IRUGO, read_cpld_callback, NULL, CPLD_CPLDX_INTR);
 static SENSOR_DEVICE_ATTR(cpld_mac_thermal_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_THERMAL_INTR);
 static SENSOR_DEVICE_ATTR(cpld_misc_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_MISC_INTR);
-static SENSOR_DEVICE_ATTR(cpld_cpu_intr, S_IRUGO, read_cpld_callback, NULL, CPLD_CPU_INTR);
+static SENSOR_DEVICE_ATTR(cpld_cpu_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_CPU_INTR);
 
 static SENSOR_DEVICE_ATTR(cpld_mac_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_MASK);
 static SENSOR_DEVICE_ATTR(cpld_phy_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_PHY_MASK);
@@ -329,7 +343,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lpmode_1, S_IWUSR | S_IRUGO, read_cpld_cal
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lpmode_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_LPMODE_2);
 
 //CPLD 2
-static SENSOR_DEVICE_ATTR(cpld_op2_intr, S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_INTR);
+static SENSOR_DEVICE_ATTR(cpld_op2_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_INTR);
 static SENSOR_DEVICE_ATTR(cpld_op2_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_OP2_MASK);
 static SENSOR_DEVICE_ATTR(cpld_op2_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_EVT);
 static SENSOR_DEVICE_ATTR(cpld_op2_reset,  S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_OP2_RESET);
@@ -369,6 +383,11 @@ static struct attribute *cpld1_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
 
     &sensor_dev_attr_cpld_mac_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_phy_intr.dev_attr.attr,
@@ -421,6 +440,11 @@ static struct attribute *cpld2_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
 
     //CPLD 2-5
 
@@ -494,6 +518,11 @@ static struct attribute *cpld3_attributes[] = {
     &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
+    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+
     //CPLD 2-5
 
     &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
@@ -556,6 +585,11 @@ static struct attribute *cpld4_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
+
+    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
 
     //CPLD 2-5
 
@@ -630,6 +664,10 @@ static struct attribute *cpld5_attributes[] = {
     &sensor_dev_attr_cpld_build.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
 
+    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     //CPLD 2-5
 
     &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
@@ -717,6 +755,40 @@ static const struct attribute_group cpld4_group = {
 static const struct attribute_group cpld5_group = {
     .attrs = cpld5_attributes,
 };
+
+/* reg shift */
+static u8 _shift(u8 mask)
+{
+    int i=0, mask_one=1;
+
+    for(i=0; i<8; ++i) {
+        if ((mask & mask_one) == 1)
+            return i;
+        else
+            mask >>= 1;
+    }
+
+    return -1;
+}
+
+/* reg mask and shift */
+static u8 _mask_shift(u8 val, u8 mask)
+{
+    int shift=0;
+
+    shift = _shift(mask);
+
+    return (val & mask) >> shift;
+}
+
+static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
+{
+    if (bit_val == 0)
+        reg_val = reg_val & ~(1 << bit);
+    else
+        reg_val = reg_val | (1 << bit);
+    return reg_val;
+}
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
 {
@@ -833,6 +905,7 @@ static ssize_t read_cpld_callback(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = 0;
+    u8 mask = MASK_ALL;
 
     switch (attr->index) {
         case CPLD_BOARD_ID_0:
@@ -848,7 +921,16 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_ID_REG;
             break;
         case CPLD_BUILD:
+        case CPLD_BUILD_VER:
             reg = CPLD_BUILD_REG;
+            break;
+        case CPLD_MAJOR_VER:
+            reg = CPLD_VERSION_REG;
+            mask = MASK_CPLD_MAJOR_VER;
+            break;
+        case CPLD_MINOR_VER:
+            reg = CPLD_VERSION_REG;
+            mask = MASK_CPLD_MINOR_VER;
             break;
         case CPLD_MAC_INTR:
             reg = CPLD_MAC_INTR_REG;
@@ -1038,7 +1120,7 @@ static ssize_t read_cpld_callback(struct device *dev,
         default:
             return -EINVAL;
     }
-    return read_cpld_reg(dev, buf, reg);
+    return read_cpld_reg(dev, buf, reg, mask);
 }
 
 /* set cpld register value */
@@ -1047,6 +1129,7 @@ static ssize_t write_cpld_callback(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u8 reg = 0;
+    u8 mask = MASK_ALL;
 
     switch (attr->index) {
         case CPLD_MAC_MASK:
@@ -1147,13 +1230,13 @@ static ssize_t write_cpld_callback(struct device *dev,
         default:
             return -EINVAL;
     }
-    return write_cpld_reg(dev, buf, count, reg);
+    return write_cpld_reg(dev, buf, count, reg, mask);
 }
 
 /* get cpld register value */
-static ssize_t read_cpld_reg(struct device *dev,
-                    char *buf,
-                    u8 reg)
+static u8 _read_cpld_reg(struct device *dev,
+                    u8 reg,
+                    u8 mask)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
@@ -1162,9 +1245,27 @@ static ssize_t read_cpld_reg(struct device *dev,
     I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
 
     if (unlikely(reg_val < 0)) {
-        dev_err(dev, "read_cpld_reg() error, return=%d\n", reg_val);
         return reg_val;
     } else {
+        reg_val=_mask_shift(reg_val, mask);
+        return reg_val;
+    }
+}
+
+/* get cpld register value */
+static ssize_t read_cpld_reg(struct device *dev,
+                    char *buf,
+                    u8 reg,
+                    u8 mask)
+{
+    int reg_val;
+
+    reg_val = _read_cpld_reg(dev, reg, mask);
+    if (unlikely(reg_val < 0)) {
+        dev_err(dev, "read_cpld_reg() error, reg_val=%d\n", reg_val);
+        return reg_val;
+    } else {
+        reg_val=_mask_shift(reg_val, mask);
         return sprintf(buf, "0x%02x\n", reg_val);
     }
 }
@@ -1173,15 +1274,28 @@ static ssize_t read_cpld_reg(struct device *dev,
 static ssize_t write_cpld_reg(struct device *dev,
                     const char *buf,
                     size_t count,
-                    u8 reg)
+                    u8 reg,
+                    u8 mask)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg_val;
+    u8 reg_val, reg_val_now, shift;
     int ret;
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
+
+    //apply SINGLE BIT operation if mask is specified, multiple bits are not supported
+    if (mask != MASK_ALL) {
+        reg_val_now = _read_cpld_reg(dev, reg, MASK_ALL);
+        if (unlikely(ret < 0)) {
+            dev_err(dev, "write_cpld_reg() error, reg_val_now=%d\n", reg_val_now);
+            return reg_val_now;
+        } else {
+            shift = _shift(mask);
+            reg_val = _bit_operation(reg_val_now, shift, reg_val);
+        }
+    }
 
     I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                client, reg, reg_val);
@@ -1192,6 +1306,22 @@ static ssize_t write_cpld_reg(struct device *dev,
     }
 
     return count;
+}
+
+/* get qsfp port config register value */
+static ssize_t read_cpld_version_h(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index >= CPLD_VERSION_H) {
+        return sprintf(buf, "%d.%02d.%03d",
+                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MAJOR_VER),
+                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MINOR_VER),
+                _read_cpld_reg(dev, CPLD_BUILD_REG, MASK_ALL));
+    }
+    return -1;
 }
 
 /* add valid cpld client to list */

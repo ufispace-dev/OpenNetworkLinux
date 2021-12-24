@@ -57,7 +57,6 @@
 #define REG_CPU_STATUS_1                  (REG_BASE_CPU + 0x02)
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
-//FIXME
 #define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
@@ -81,6 +80,8 @@
 #define REG_TEMP_BASE                     (REG_BASE_MB + 0xC0)
 
 #define MASK_ALL                          (0xFF)
+#define MASK_CPLD_MAJOR_VER               (0b11000000)
+#define MASK_CPLD_MINOR_VER               (0b00111111)
 #define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
@@ -91,6 +92,11 @@ enum lpc_sysfs_attributes {
     ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_BIOS_BOOT_CFG,
     ATT_CPU_CPLD_BUILD,
+
+    ATT_CPU_CPLD_MAJOR_VER,
+    ATT_CPU_CPLD_MINOR_VER,
+    ATT_CPU_CPLD_BUILD_VER,
+
     //MB CPLD
     ATT_MB_BRD_ID_0,
     ATT_MB_BRD_ID_1,
@@ -104,6 +110,11 @@ enum lpc_sysfs_attributes {
     ATT_MB_BRD_BUILD_ID,
     ATT_MB_BRD_DEPH_ID,
     ATT_MB_MUX_RESET,
+
+    ATT_MB_CPLD_1_MAJOR_VER,
+    ATT_MB_CPLD_1_MINOR_VER,
+    ATT_MB_CPLD_1_BUILD_VER,
+
     //I2C Alert
     ATT_ALERT_STATUS,
 #if CPU_TYPE == CPU_BDE
@@ -386,18 +397,9 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     ssize_t len=0;
-    u16 reg = REG_CPU_CPLD_VERSION;
-    u8 mask = MASK_ALL;
-    u8 mask_major = 0b11000000;
-    u8 mask_minor = 0b00111111;
-    u8 reg_val;
-
-	mutex_lock(&lpc_data->access_lock);
-	reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
-    mutex_unlock(&lpc_data->access_lock);
-
-    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+    len=sprintf(buf, "%d.%02d.%03d", _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MAJOR_VER),
+                                       _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MINOR_VER),
+                                       _read_lpc_reg(REG_CPU_CPLD_BUILD, MASK_ALL));
 
     return len;
 }
@@ -407,18 +409,9 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     ssize_t len=0;
-    u16 reg = REG_MB_CPLD_VERSION;
-    u8 mask = MASK_ALL;
-    u8 mask_major = 0b11000000;
-    u8 mask_minor = 0b00111111;
-    u8 reg_val;
-
-	mutex_lock(&lpc_data->access_lock);
-	reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
-    mutex_unlock(&lpc_data->access_lock);
-
-    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+    len=sprintf(buf, "%d.%02d.%03d", _read_lpc_reg(REG_MB_CPLD_VERSION, MASK_CPLD_MAJOR_VER),
+                                       _read_lpc_reg(REG_MB_CPLD_VERSION, MASK_CPLD_MINOR_VER),
+                                       _read_lpc_reg(REG_MB_CPLD_BUILD, MASK_ALL));
 
     return len;
 }
@@ -445,6 +438,17 @@ static ssize_t read_lpc_callback(struct device *dev,
             mask = 0x80;
             break;
         case ATT_CPU_CPLD_BUILD:
+            reg = REG_CPU_CPLD_BUILD;
+            break;
+        case ATT_CPU_CPLD_MAJOR_VER:
+            reg = REG_CPU_CPLD_VERSION;
+            mask = MASK_CPLD_MAJOR_VER;
+            break;
+        case ATT_CPU_CPLD_MINOR_VER:
+            reg = REG_CPU_CPLD_VERSION;
+            mask = MASK_CPLD_MINOR_VER;
+            break;
+        case ATT_CPU_CPLD_BUILD_VER:
             reg = REG_CPU_CPLD_BUILD;
             break;
         //MB CPLD
@@ -482,6 +486,17 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
+            break;
+        case ATT_MB_CPLD_1_MAJOR_VER:
+            reg = REG_MB_CPLD_VERSION;
+            mask = MASK_CPLD_MAJOR_VER;
+            break;
+        case ATT_MB_CPLD_1_MINOR_VER:
+            reg = REG_MB_CPLD_VERSION;
+            mask = MASK_CPLD_MINOR_VER;
+            break;
+        case ATT_MB_CPLD_1_BUILD_VER:
+            reg = REG_MB_CPLD_BUILD;
             break;
         //I2C Alert
         case ATT_ALERT_STATUS:
@@ -661,6 +676,11 @@ static SENSOR_DEVICE_ATTR(cpu_cpld_version_h, S_IRUGO, read_cpu_cpld_version_h, 
 static SENSOR_DEVICE_ATTR(boot_rom,           S_IRUGO, read_lpc_callback, NULL, ATT_CPU_BIOS_BOOT_ROM);
 static SENSOR_DEVICE_ATTR(boot_cfg,           S_IRUGO, read_lpc_callback, NULL, ATT_CPU_BIOS_BOOT_CFG);
 static SENSOR_DEVICE_ATTR(cpu_cpld_build,     S_IRUGO, read_lpc_callback, NULL, ATT_CPU_CPLD_BUILD);
+
+static SENSOR_DEVICE_ATTR(cpu_cpld_major_ver, S_IRUGO, read_lpc_callback, NULL, ATT_CPU_CPLD_MAJOR_VER);
+static SENSOR_DEVICE_ATTR(cpu_cpld_minor_ver, S_IRUGO, read_lpc_callback, NULL, ATT_CPU_CPLD_MINOR_VER);
+static SENSOR_DEVICE_ATTR(cpu_cpld_build_ver, S_IRUGO, read_lpc_callback, NULL, ATT_CPU_CPLD_BUILD_VER);
+
 //SENSOR_DEVICE_ATTR - MB
 static SENSOR_DEVICE_ATTR(board_id_0,        S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_0);
 static SENSOR_DEVICE_ATTR(board_id_1,        S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_1);
@@ -674,6 +694,11 @@ static SENSOR_DEVICE_ATTR(board_id_type,     S_IRUGO, read_lpc_callback, NULL, A
 static SENSOR_DEVICE_ATTR(board_build_id,    S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_BUILD_ID);
 static SENSOR_DEVICE_ATTR(board_deph_id,     S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_DEPH_ID);
 static SENSOR_DEVICE_ATTR(mux_reset,         S_IWUSR, NULL, write_mux_reset, ATT_MB_MUX_RESET);
+
+static SENSOR_DEVICE_ATTR(mb_cpld_1_major_ver, S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_MAJOR_VER);
+static SENSOR_DEVICE_ATTR(mb_cpld_1_minor_ver, S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_MINOR_VER);
+static SENSOR_DEVICE_ATTR(mb_cpld_1_build_ver, S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_BUILD_VER);
+
 //SENSOR_DEVICE_ATTR - I2C Alert
 static SENSOR_DEVICE_ATTR(alert_status,    S_IRUGO, read_lpc_callback, NULL, ATT_ALERT_STATUS);
 #if CPU_TYPE == CPU_BDE
@@ -705,6 +730,9 @@ static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpu_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpu_cpld_build.dev_attr.attr,
+    &sensor_dev_attr_cpu_cpld_major_ver.dev_attr.attr,
+    &sensor_dev_attr_cpu_cpld_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_cpu_cpld_build_ver.dev_attr.attr,
     NULL,
 };
 
@@ -712,6 +740,9 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_mb_cpld_1_version.dev_attr.attr,
     &sensor_dev_attr_mb_cpld_1_version_h.dev_attr.attr,
     &sensor_dev_attr_mb_cpld_1_build.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld_1_major_ver.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld_1_minor_ver.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld_1_build_ver.dev_attr.attr,
     &sensor_dev_attr_board_id_0.dev_attr.attr,
     &sensor_dev_attr_board_id_1.dev_attr.attr,
     &sensor_dev_attr_board_sku_id.dev_attr.attr,

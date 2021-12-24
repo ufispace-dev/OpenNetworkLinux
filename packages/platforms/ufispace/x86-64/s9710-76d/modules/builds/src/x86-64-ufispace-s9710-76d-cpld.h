@@ -114,6 +114,13 @@ enum cpld_id {
 //CPLD4/5
 #define CPLD_QSFPDD_FAB_LED_BASE_REG        0x80
 
+//MASK
+#define MASK_ALL                           (0xFF)
+#define MASK_HB                            (0b11110000)
+#define MASK_LB                            (0b00001111)
+#define MASK_CPLD_MAJOR_VER                (0b11000000)
+#define MASK_CPLD_MINOR_VER                (0b00111111)
+
 /* common manipulation */
 #define INVALID(i, min, max)    ((i < min) || (i > max) ? 1u : 0u)
 

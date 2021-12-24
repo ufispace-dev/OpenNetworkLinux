@@ -259,7 +259,7 @@ int onlp_ledi_id_validate(onlp_oid_id_t id)
  * @param id The LED OID
  * @param[out] rv  Receives the header.
  */
-int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_ledi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);

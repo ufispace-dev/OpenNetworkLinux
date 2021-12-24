@@ -1236,10 +1236,13 @@ function _show_system_led_sysfs {
     if [[ $MODEL_NAME == *"NCP3"* ]]; then
         _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_system_led_0"
         _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_system_led_1"
+        _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_system_led_2"
         system_led0=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_system_led_0 ${LOG_REDIRECT}")
         system_led1=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_system_led_1 ${LOG_REDIRECT}")
+        system_led2=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_system_led_2 ${LOG_REDIRECT}")
         _echo "[System LED0]: ${system_led0}"
         _echo "[System LED1]: ${system_led1}"
+        _echo "[System LED2]: ${system_led2}"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1

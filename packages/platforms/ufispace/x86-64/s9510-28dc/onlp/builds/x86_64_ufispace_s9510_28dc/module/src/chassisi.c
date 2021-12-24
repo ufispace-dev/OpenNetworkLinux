@@ -70,7 +70,7 @@
  *            |----[05] ONLP_FAN_4
  */
 
-static onlp_oid_t __onlp_oid_info[] = {
+static onlp_oid_id_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
@@ -152,7 +152,7 @@ int onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
     memcpy(hdr->coids, __onlp_oid_info, sizeof(__onlp_oid_info));
 
     /** Add 2 QSFPDD, 2QSFP and 24 SFP+ OIDs after the static table */
-    onlp_oid_t* e = hdr->coids + AIM_ARRAYSIZE(__onlp_oid_info);
+    onlp_oid_id_t* e = hdr->coids + AIM_ARRAYSIZE(__onlp_oid_info);
 
     /* 2 QSFPDD + 40 2QSFP + 24 SFP+ */
     for(i = 1; i <= 28; i++) {

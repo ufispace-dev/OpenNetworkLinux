@@ -493,7 +493,7 @@ int onlp_thermali_id_validate(onlp_oid_id_t id)
  * @param id The thermal oid.
  * @param[out] hdr Receives the header.
  */
-int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_thermali_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int local_id = ONLP_OID_ID_GET(id);
 
@@ -511,7 +511,7 @@ int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
         }
 
         int psu_present = 0;
-        ONLP_TRY(get_psu_present_status(&psu_present, psu_local_id));
+        ONLP_TRY(get_psu_present_status(psu_local_id, &psu_present));
         if (psu_present == 0) {
             hdr->status = ONLP_OID_STATUS_FLAG_UNPLUGGED;
         } else if (psu_present == 1) {

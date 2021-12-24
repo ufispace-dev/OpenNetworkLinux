@@ -34,19 +34,30 @@
  * Get the information for the given LED OID.
  * 
  * [01] CHASSIS
- *            |----[01] ONLP_LED_SYS_SYS
- *            |----[02] ONLP_LED_SYS_FAN
- *            |----[03] ONLP_LED_SYS_PSU_0
- *            |----[04] ONLP_LED_SYS_PSU_1
- *            |----[05] ONLP_LED_SYS_SYNC
+ *            |----[01] ONLP_LED_SYS_SYNC
+ *            |----[02] ONLP_LED_SYS_SYS
+ *            |----[03] ONLP_LED_SYS_FAN
+ *            |----[04] ONLP_LED_SYS_PSU_0
+ *            |----[05] ONLP_LED_SYS_PSU_1
+ 
  */
 static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
 {
     { }, /* Not used */
     {
         .hdr = {
+            .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+            .description = "Chassis LED 1 (SYNC LED)",
+            .poid = ONLP_OID_CHASSIS,
+            .status = ONLP_OID_STATUS_FLAG_PRESENT,
+        },
+        .caps = ONLP_LED_CAPS_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
+                ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING,
+    },
+    {
+        .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
-            .description = "Chassis LED 1 (SYS LED)",
+            .description = "Chassis LED 2 (SYS LED)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -56,7 +67,7 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
     {
         .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
-            .description = "Chassis LED 2 (FAN LED)",
+            .description = "Chassis LED 3 (FAN LED)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -66,7 +77,7 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
     {
         .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_0),
-            .description = "Chassis LED 3 (PSU0 LED)",
+            .description = "Chassis LED 4 (PSU0 LED)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -76,17 +87,7 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
     {
         .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_1),
-            .description = "Chassis LED 4 (PSU1 LED)",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_LED_CAPS_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
-                ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING,
-    },
-    {
-        .hdr = {
-            .id = ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
-            .description = "Chassis LED 5 (SYNC LED)",
+            .description = "Chassis LED 5 (PSU1 LED)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -103,19 +104,17 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
 static int update_ledi_info(int local_id, onlp_led_info_t* info)
 {
     int value = 0;
-    int sysfs_index = 0;
-    int shift = 0, led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
-
-    if (local_id < ONLP_LED_MAX) {        
-        sysfs_index=(local_id-ONLP_LED_SYS_SYS)/2;
-        shift = ((local_id-ONLP_LED_SYS_SYS)%2)*4;    
-    } else {
-        return ONLP_STATUS_E_INTERNAL;
+    int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
+    int sysfs_index[ONLP_LED_MAX] = {-1, 2, 0, 0, 1, 1};
+    int shift[ONLP_LED_MAX] = {-1, 0, 0, 4, 0, 4};
+    
+    if (local_id <= ONLP_LED_RESERVED || local_id >= ONLP_LED_MAX) {
+        return ONLP_STATUS_E_PARAM;
     }
     
-    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index));
+    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index[local_id]));
     
-    led_val = (value >> shift);
+    led_val = (value >> shift[local_id]);
     led_val_color = (led_val >> 0) & 1;
     led_val_blink = (led_val >> 2) & 1;
     led_val_onoff = (led_val >> 3) & 1;

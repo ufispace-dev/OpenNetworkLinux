@@ -40,7 +40,6 @@
 #define PSU_STATUS_POWER_GOOD  1
 
 #define SYSFS_PSU_STATUS        LPC_FMT "psu_status"
-#define CMD_FRU_INFO_GET        "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 
 /**
  * Get all information about the given PSU oid.
@@ -89,10 +88,10 @@ static onlp_psu_info_t __onlp_psu_info[] = {
 
 /**
  * @brief get psu presnet status
- * @param[out] pw_present: psu present status(0: absence, 1: presence)
  * @param local_id: psu id
+ * @param[out] pw_present: psu present status(0: absence, 1: presence)
  */
-int get_psu_present_status(int *pw_present, int local_id)
+int get_psu_present_status(int local_id, int *pw_present)
 {
     int psu_reg_value = 0;
     int mask;
@@ -117,10 +116,10 @@ int get_psu_present_status(int *pw_present, int local_id)
 
 /**
  * @brief get psu pwgood status
- * @param[out] psu_pwgood: psu power good status (0: not good, 1: good)
  * @param local_id: psu id
+ * @param[out] psu_pwgood: psu power good status (0: not good, 1: good)
  */
-static int get_psu_pwgood_status(int *psu_pwgood, int local_id)
+static int get_psu_pwgood_status(int local_id, int *psu_pwgood)
 {
     int psu_reg_value = 0;
     int mask;
@@ -144,6 +143,40 @@ static int get_psu_pwgood_status(int *psu_pwgood, int local_id)
 }
 
 /**
+ * @brief get psu type
+ * @param local_id: psu id
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
+ * @param fru_in: input fru node. we will use the input node informations to get psu type
+ */
+int get_psu_type( int local_id, int *psu_type, bmc_fru_t *fru_in)
+{
+    bmc_fru_t *fru = NULL;
+    bmc_fru_t fru_tmp = {0};
+
+    if(psu_type == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if(fru_in == NULL) {
+        fru = &fru_tmp;
+        ONLP_TRY(bmc_fru_read(local_id, fru));
+    } else {
+        fru = fru_in;
+    } 
+
+    if(strcmp(fru->name.val, "VICTO451AM") == 0) {
+        *psu_type = ONLP_PSU_TYPE_AC;
+    } else if (strcmp(fru->name.val, "YNEB0450AM") == 0) {
+        *psu_type = ONLP_PSU_TYPE_DC48;
+    } else {
+        *psu_type = ONLP_PSU_TYPE_INVALID;
+        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Update the status of PSU's oid header.
  * @param id The PSU ID.
  * @param[out] hdr Receives the header.
@@ -155,7 +188,7 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
     hdr->status = 0;
 
     /* get psu present status */
-    ONLP_TRY(get_psu_present_status(&psu_presence, local_id));
+    ONLP_TRY(get_psu_present_status(local_id, &psu_presence));
     if (psu_presence == 0) {
         ONLP_OID_STATUS_FLAG_SET(hdr, UNPLUGGED);
     } else if (psu_presence == 1) {
@@ -165,7 +198,7 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
     }
 
     /* get psu power good status */
-    ONLP_TRY(get_psu_pwgood_status(&psu_pwgood, local_id));
+    ONLP_TRY(get_psu_pwgood_status(local_id, &psu_pwgood));
     if (psu_pwgood == 0) {
         ONLP_OID_STATUS_FLAG_SET(hdr, FAILED);
     } else if (psu_pwgood == 1) {
@@ -179,59 +212,26 @@ static int update_psui_status(int local_id, onlp_oid_hdr_t* hdr) {
 
 /**
  * @brief Update the information of Model and Serial from PSU EEPROM
- * @param id The PSU Local ID
+ * @param local_id The PSU Local ID
  * @param[out] info Receives the PSU information (model and serial).
  */
 static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
-    char cmd[256];
-    char cmd_out[64];
-    char fru_model[] = "Product Name";  //only Product Name can identify AC/DC  //FIXME
-    char fru_serial[] = "Product Serial";
+    bmc_fru_t fru = {0};
 
+    //read fru data
+    ONLP_TRY(bmc_fru_read(local_id, &fru));
 
-    //FRU (model)
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
+    //update FRU model
     memset(info->model, 0, sizeof(info->model));
-    // FIXME correct fru id
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_model);
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
 
-
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
-
-    //FRU (serial)
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
+    //update FRU serial
     memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_serial);
-
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->serial, sizeof(info->serial), "%s", cmd_out);
+    //update FRU type
+    ONLP_TRY(get_psu_type(local_id, &info->type, &fru));
 
     return ONLP_STATUS_OK;
 }
@@ -340,7 +340,7 @@ int onlp_psui_id_validate(onlp_oid_id_t id)
  * @param id The PSU OID.
  * @param[out] rv Receives the header.
  */
-int onlp_psui_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_psui_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);

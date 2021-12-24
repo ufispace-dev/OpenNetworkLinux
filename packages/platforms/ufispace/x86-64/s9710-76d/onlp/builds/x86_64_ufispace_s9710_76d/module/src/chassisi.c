@@ -65,11 +65,11 @@
  *            |----[33] ONLP_THERMAL_OP2_1
  *            |----[34] ONLP_THERMAL_OP2_2
  *            |----[35] ONLP_THERMAL_OP2_3 
- *            |----[01] ONLP_LED_SYS_SYS
- *            |----[02] ONLP_LED_SYS_FAN
- *            |----[03] ONLP_LED_SYS_PSU_0
- *            |----[04] ONLP_LED_SYS_PSU_1
- *            |----[05] ONLP_LED_SYS_SYNC
+ *            |----[01] ONLP_LED_SYS_SYNC
+ *            |----[02] ONLP_LED_SYS_SYS
+ *            |----[03] ONLP_LED_SYS_FAN
+ *            |----[04] ONLP_LED_SYS_PSU_0
+ *            |----[05] ONLP_LED_SYS_PSU_1
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
@@ -120,11 +120,11 @@ static onlp_oid_id_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_1),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_2),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_3),    
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_0),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_1),
-    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),    
     ONLP_PSU_ID_CREATE(ONLP_PSU_0),
     ONLP_PSU_ID_CREATE(ONLP_PSU_1),
     ONLP_FAN_ID_CREATE(ONLP_FAN_F_0),

@@ -46,12 +46,19 @@
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-#define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
-#define FAN_CACHE_TIME          5
-#define PSU_CACHE_TIME          5
-#define THERMAL_CACHE_TIME  10
+#define FAN_CACHE_TIME          10
+#define PSU_CACHE_TIME          30
+#define THERMAL_CACHE_TIME      10
 
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get "\
+/*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
+ *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value 
+ *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
+ *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
+ */
+
+#define IPMITOOL_CMD_TIMEOUT        10
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_MAC "\
                                     "TEMP_DDR4 "\
                                     "TEMP_BMC "\
@@ -85,6 +92,19 @@
                                     "PSU1_STBVOUT "\
                                     "PSU1_STBIOUT "\
                                     "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
+#define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
+#define BMC_FRU_KEY_NAME            "Product Name"
+#define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
+#define BMC_FRU_KEY_SERIAL          "Product Serial"
+
+#define CMD_FRU_CACHE_SET "timeout %ds ipmitool fru print %d " \
+                           IPMITOOL_REDIRECT_ERR \
+                          " | grep %s" \
+                          " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
+                          " > %s"
 
 enum sensor
 {
@@ -193,6 +213,23 @@ typedef struct bmc_info_s
     float data;
 } bmc_info_t;
 
+typedef struct bmc_fru_attr_s
+{
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+}bmc_fru_attr_t;
+
+typedef struct bmc_fru_s
+{
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+}bmc_fru_t;
+
 int read_ioport(int addr, int *reg_val);
 
 int exec_cmd(char *cmd, char* out, int size);
@@ -203,7 +240,9 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs);
 
 void lock_init();
 
+int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 
 void check_and_do_i2c_mux_reset(int port);
 
@@ -215,6 +254,6 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 int get_hw_rev_id(void);
 
-int get_psu_present_status(int *pw_present, int local_id);
+int get_psu_present_status(int local_id, int *pw_present);
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 #endif  /* __PLATFORM_LIB_H__ */
-

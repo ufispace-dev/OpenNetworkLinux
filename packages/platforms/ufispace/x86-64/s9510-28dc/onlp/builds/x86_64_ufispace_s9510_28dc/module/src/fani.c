@@ -28,7 +28,8 @@
 #include "platform_lib.h"
 
 #define SYS_FAN_RPM_MAX 25000
-#define PSU_FAN_RPM_MAX 20000
+#define PSU_FAN_RPM_MAX_AC 20000
+#define PSU_FAN_RPM_MAX_DC 18000
 
 /**
  * Get all information about the given FAN oid.
@@ -154,9 +155,9 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
         }
     } else {
         if(local_id == ONLP_PSU_0_FAN) {
-            ONLP_TRY(get_psu_present_status(&presence, ONLP_PSU_0));
+            ONLP_TRY(get_psu_present_status(ONLP_PSU_0, &presence));
         } else if(local_id == ONLP_PSU_1_FAN) {
-            ONLP_TRY(get_psu_present_status(&presence, ONLP_PSU_1));
+            ONLP_TRY(get_psu_present_status(ONLP_PSU_1, &presence));
         } else {
             AIM_LOG_ERROR("unknown fan id (%d), func=%s\n", local_id, __FUNCTION__);
             return ONLP_STATUS_E_PARAM;
@@ -183,7 +184,7 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     int rpm=0, percentage=0;
     float data=0;
     int sys_max_fan_speed = SYS_FAN_RPM_MAX;
-    int psu_max_fan_speed = PSU_FAN_RPM_MAX;
+    int psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
 
     switch(local_id)
@@ -228,7 +229,25 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
         percentage = (info->rpm*100)/sys_max_fan_speed;
         info->percentage = (percentage >= 100) ? 100:percentage;
         info->hdr.status |= (rpm == 0) ? ONLP_OID_STATUS_FLAG_FAILED : ONLP_OID_STATUS_FLAG_OPERATIONAL;
-    } else if (local_id >= ONLP_PSU_0_FAN && local_id <= ONLP_PSU_1_FAN) {
+    } else {
+        int psu_type = ONLP_PSU_TYPE_AC;
+        if(local_id == ONLP_PSU_0_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
+        } else if(local_id == ONLP_PSU_1_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_1, &psu_type, NULL));
+        } else {
+            AIM_LOG_ERROR("unknown fan id (%d), func=%s", local_id, __FUNCTION__);
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        if(psu_type == ONLP_PSU_TYPE_AC) {
+            psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
+        }else if(psu_type == ONLP_PSU_TYPE_DC48) {
+            psu_max_fan_speed = PSU_FAN_RPM_MAX_DC;
+        }else {
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
         percentage = (info->rpm*100)/psu_max_fan_speed;
         info->percentage = (percentage >= 100) ? 100:percentage;
         info->hdr.status |= (rpm == 0) ? ONLP_OID_STATUS_FLAG_FAILED : ONLP_OID_STATUS_FLAG_OPERATIONAL;
@@ -281,7 +300,7 @@ int onlp_fani_id_validate(onlp_oid_id_t id)
  * @param id The fan id.
  * @param[out] hdr Receives the OID header.
  */
-int onlp_fani_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
+int onlp_fani_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);
