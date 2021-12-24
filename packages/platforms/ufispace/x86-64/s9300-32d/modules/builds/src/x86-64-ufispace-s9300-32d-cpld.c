@@ -75,6 +75,7 @@ enum s9300_cpld_sysfs_attributes {
     CPLD_MAJOR_VER,
     CPLD_MINOR_VER,
     CPLD_BUILD_VER,
+    CPLD_VERION_H,
     CPLD_ID,
     CPLD_MAC_INTR,
     CPLD_10G_PHY_INTR,
@@ -170,7 +171,7 @@ enum s9300_cpld_sysfs_attributes {
     CPLD_PORT_INT_STATUS,
 
     //BSP DEBUG
-    BSP_DEBUG   
+    BSP_DEBUG
 };
 
 enum bsp_log_types {
@@ -202,6 +203,8 @@ static ssize_t read_cpld_callback(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
+static ssize_t read_cpld_version_h_cb(struct device *dev,
+        struct device_attribute *da, char *buf);
 // cpld access api
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
@@ -266,6 +269,8 @@ static SENSOR_DEVICE_ATTR(cpld_minor_ver, S_IRUGO, \
         read_cpld_version_cb, NULL, CPLD_MINOR_VER);
 static SENSOR_DEVICE_ATTR(cpld_build_ver, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_BUILD_VER);
+static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO, \
+        read_cpld_version_h_cb, NULL, CPLD_VERION_H);
 static SENSOR_DEVICE_ATTR(cpld_id, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_ID);
 static SENSOR_DEVICE_ATTR(cpld_mac_intr, S_IRUGO, \
@@ -484,6 +489,7 @@ static struct attribute *s9300_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_mac_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_10g_phy_intr.dev_attr.attr,
@@ -530,6 +536,7 @@ static struct attribute *s9300_cpld2_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_mod_int_g0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_mod_int_g1.dev_attr.attr,
@@ -598,6 +605,7 @@ static struct attribute *s9300_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     NULL
 };
@@ -1188,6 +1196,30 @@ static ssize_t read_cpld_version_cb(struct device *dev,
     return sprintf(buf, "0x%02x\n", res);
 }
 
+/* handle read human-readable string for cpld_version attributes */
+static ssize_t read_cpld_version_h_cb(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    u8 reg = CPLD_VERSION_REG;
+    u8 reg_val = 0;
+    int errno = 0;
+    u8 major, minor, build;
+
+    //get major/minor register value
+    if(!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
+    CPLD_MAJOR_VERSION_GET(reg_val, major);
+    CPLD_MINOR_VERSION_GET(reg_val, minor);
+
+    //get build register value
+    reg = CPLD_BUILD_VER_REG;
+    if(!read_cpld_reg_raw_byte(dev, reg, &build, &errno))
+        return errno;
+
+    //version string format : xx.xx.xxx
+    return sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
+}
+
 /* handle write for attributes */
 static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
@@ -1456,7 +1488,7 @@ static int s9300_cpld_probe(struct i2c_client *client,
         status = sysfs_create_group(&client->dev.kobj,
                     &s9300_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &s9300_cpld2_group);
         break;
@@ -1482,7 +1514,7 @@ exit:
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &s9300_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
     	  sysfs_remove_group(&client->dev.kobj, &s9300_cpld2_group);
         break;
     case cpld3:

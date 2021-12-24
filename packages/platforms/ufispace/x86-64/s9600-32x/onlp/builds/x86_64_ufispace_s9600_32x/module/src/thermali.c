@@ -51,11 +51,11 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {65000, 70000, 80000}
     },
-    { { THERMAL_OID_PSU0, "PSU 1 - Thermal Sensor 1", 0},
+    { { THERMAL_OID_PSU0, "PSU 0 - Thermal Sensor 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {65000, 70000, 75000}
     },
-    { { THERMAL_OID_PSU1, "PSU 2 - Thermal Sensor 1", 0},
+    { { THERMAL_OID_PSU1, "PSU 1 - Thermal Sensor 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {65000, 70000, 75000}
     },
@@ -116,15 +116,13 @@ static onlp_thermal_info_t thermal_info[] = {
 /**
  * @brief Initialize the thermal subsystem.
  */
-int
-onlp_thermali_init(void)
+int onlp_thermali_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
@@ -149,8 +147,7 @@ cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_thermal_info_get(onlp_thermal_info_t* info, int id)
+int psu_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
 
@@ -166,8 +163,7 @@ psu_thermal_info_get(onlp_thermal_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-static int
-cpu_board_thermal_info_get(onlp_thermal_info_t* info)
+static int cpu_board_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
@@ -196,8 +192,7 @@ cpu_board_thermal_info_get(onlp_thermal_info_t* info)
  * @param id The Thermal OID
  * @param rv [out] Receives the thermal information.
  */
-int
-onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
+int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
 {
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);

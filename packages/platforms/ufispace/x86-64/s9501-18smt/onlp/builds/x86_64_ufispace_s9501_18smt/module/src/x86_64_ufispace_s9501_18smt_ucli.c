@@ -73,8 +73,7 @@ x86_64_ufispace_s9501_18smt_ucli_node_create(void)
 }
 
 #else
-void*
-x86_64_ufispace_s9501_18smt_ucli_node_create(void)
+void* x86_64_ufispace_s9501_18smt_ucli_node_create(void)
 {
     return NULL;
 }

@@ -25,10 +25,10 @@
 #include <onlp/platformi/sysi.h>
 #include "platform_lib.h"
 
-#define CMD_BIOS_VER  "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
-#define CMD_BMC_VER_1 "expr `ipmitool mc info 2> /dev/null | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
-#define CMD_BMC_VER_2 "expr `ipmitool mc info 2> /dev/null | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3 "echo $((`ipmitool mc info 2> /dev/null | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
+#define SYSFS_BIOS_VER  "/sys/class/dmi/id/bios_version"
+#define CMD_BMC_VER_1   "expr `ipmitool mc info" IPMITOOL_REDIRECT_FIRST_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_2   "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
+#define CMD_BMC_VER_3   "echo $((`ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
 /* This is definitions for x86-64-ufispace-s9300-32db */
 /* OID map*/
@@ -75,9 +75,6 @@
  */
 
 /* SYSFS */
-#define LPC_PATH                    "/sys/devices/platform/x86_64_ufispace_s9300_32db_lpc"
-#define LPC_CPU_CPLD_PATH           LPC_PATH"/cpu_cpld"
-#define LPC_MB_CPLD_PATH            LPC_PATH"/mb_cpld"
 #define LPC_CPU_CPLD_VERSION_ATTR   "cpu_cpld_version"
 #define LPC_CPU_CPLD_BUILD_ATTR     "cpu_cpld_build"
 #define LPC_MB_SKUID_ATTR           "board_sku_id"
@@ -134,10 +131,11 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     int cpu_cpld_ver, cpu_cpld_build;
     int cpld_ver_major, cpld_ver_minor, cpld_ver_build;
     char mb_cpld_ver_h[CPLD_MAX][16];
-    char bios_ver_h[32];
+    uint8_t bios_ver_h[32];
     char bmc_ver[3][16];
     int sku_id, hw_id, id_type, build_id, deph_id;
     int i;
+    int size;
 
     memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
@@ -145,17 +143,17 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     memset(bmc_ver, 0, sizeof(bmc_ver));
 
     //get CPU CPLD version readable string
-    ONLP_TRY(file_read_hex(&cpu_cpld_ver, LPC_CPU_CPLD_PATH"/"LPC_CPU_CPLD_VERSION_ATTR));
-    ONLP_TRY(file_read_hex(&cpu_cpld_build, LPC_CPU_CPLD_PATH"/"LPC_CPU_CPLD_BUILD_ATTR));
+    ONLP_TRY(file_read_hex(&cpu_cpld_ver, LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VERSION_ATTR));
+    ONLP_TRY(file_read_hex(&cpu_cpld_build, LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_BUILD_ATTR));
 
     snprintf(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), "%d.%02d build %03d",
             cpu_cpld_ver >> 6, cpu_cpld_ver & 0b00111111, cpu_cpld_build);
 
     //get MB CPLD version from CPLD sysfs
     for(i=0; i<CPLD_MAX; ++i) {
-        ONLP_TRY(file_read_hex(&cpld_ver_major, SYS_DEV"/2-00%02x/cpld_major_ver", CPLD_BASE_ADDR[i]));
-        ONLP_TRY(file_read_hex(&cpld_ver_minor, SYS_DEV"/2-00%02x/cpld_minor_ver", CPLD_BASE_ADDR[i]));
-        ONLP_TRY(file_read_hex(&cpld_ver_build, SYS_DEV"/2-00%02x/cpld_build_ver", CPLD_BASE_ADDR[i]));
+        ONLP_TRY(file_read_hex(&cpld_ver_major, SYS_DEV "/2-00%02x/cpld_major_ver", CPLD_BASE_ADDR[i]));
+        ONLP_TRY(file_read_hex(&cpld_ver_minor, SYS_DEV "/2-00%02x/cpld_minor_ver", CPLD_BASE_ADDR[i]));
+        ONLP_TRY(file_read_hex(&cpld_ver_build, SYS_DEV "/2-00%02x/cpld_build_ver", CPLD_BASE_ADDR[i]));
 
         snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d build %03d",
                 cpld_ver_major, cpld_ver_minor, cpld_ver_build);
@@ -173,15 +171,20 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         mb_cpld_ver_h[2]);
 
     //Get HW Build Version
-    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH"/"LPC_MB_SKUID_ATTR));
-    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH"/"LPC_MB_HWID_ATTR));
-    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH"/"LPC_MB_IDTYPE_ATTR));
-    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH"/"LPC_MB_BUILDID_ATTR));
-    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH"/"LPC_MB_DEPHID_ATTR));
+    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKUID_ATTR));
+    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH "/" LPC_MB_HWID_ATTR));
+    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH "/" LPC_MB_IDTYPE_ATTR));
+    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH "/" LPC_MB_BUILDID_ATTR));
+    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPHID_ATTR));
 
     //Get BIOS version
-    if(exec_cmd(CMD_BIOS_VER, bios_ver_h, sizeof(bios_ver_h)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
+    ONLP_TRY(onlp_file_read(bios_ver_h, sizeof(bios_ver_h), &size, SYSFS_BIOS_VER));
+    //trim new line
+    bios_ver_h[strcspn((char *)bios_ver_h, "\n" )] = '\0';
+
+    // Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -281,7 +284,7 @@ int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
     uint8_t* rdata = aim_zmalloc(512);
 
-    if(onlp_file_read(rdata, 512, size, "/sys/bus/i2c/devices/0-0057/eeprom") == ONLP_STATUS_OK) {
+    if(onlp_file_read(rdata, 512, size, SYS_DEV "/0-0057/eeprom") == ONLP_STATUS_OK) {
         if(*size == 512) {
             *data = rdata;
             return ONLP_STATUS_OK;

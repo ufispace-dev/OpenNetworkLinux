@@ -130,7 +130,8 @@ int get_shift(int mask) {
     return -1;
 }
 
-int mask_shift(int val, int mask) {
+int mask_shift(int val, int mask)
+{
     return (val & mask) >> get_shift(mask);
 }
 
@@ -369,20 +370,17 @@ int bmc_fru_read(onlp_psu_info_t* info, int id)
     return rv;
 }
 
-int
-psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
+int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_fan_info_get(onlp_fan_info_t* info, int id)
+int psu_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_vin_get(onlp_psu_info_t* info, int id)
+int psu_vin_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -431,8 +429,7 @@ psu_vin_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_vout_get(onlp_psu_info_t* info, int id)
+int psu_vout_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -481,8 +478,7 @@ psu_vout_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_stbvout_get(int* stbmvout, int id)
+int psu_stbvout_get(int* stbmvout, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -530,8 +526,7 @@ psu_stbvout_get(int* stbmvout, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_iin_get(onlp_psu_info_t* info, int id)
+int psu_iin_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -580,8 +575,7 @@ psu_iin_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_iout_get(onlp_psu_info_t* info, int id)
+int psu_iout_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -630,8 +624,7 @@ psu_iout_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_stbiout_get(int* stbmiout, int id)
+int psu_stbiout_get(int* stbmiout, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -679,26 +672,22 @@ psu_stbiout_get(int* stbmiout, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_eeprom_get(onlp_psu_info_t* info, int id)
+int psu_eeprom_get(onlp_psu_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_fru_get(onlp_psu_info_t* info, int id)
+int psu_fru_get(onlp_psu_info_t* info, int id)
 {
     char cmd[256];
     char cmd_out[64];
@@ -752,8 +741,7 @@ psu_fru_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_present_get(int *pw_present, int id)
+int psu_present_get(int *pw_present, int id)
 {
     int rc;
     int mask;
@@ -778,8 +766,7 @@ psu_present_get(int *pw_present, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_pwgood_get(int *pw_good, int id)
+int psu_pwgood_get(int *pw_good, int id)
 {
     int rc;
     int mask;
@@ -834,78 +821,55 @@ int sfp_present_get(int port, int *val)
     return ONLP_STATUS_OK;
 }
 
-int
-system_led_set(onlp_led_mode_t mode)
+int system_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-fan_led_set(onlp_led_mode_t mode)
+int fan_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu1_led_set(onlp_led_mode_t mode)
+int psu1_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu2_led_set(onlp_led_mode_t mode)
+int psu2_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
+int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int read_ioport(int addr, int *reg_val) {
-    int ret;
-
+int read_ioport(int addr, int *reg_val)
+{
     /*set r/w permission of all 65536 ports*/
-    ret = iopl(3);
-    if(ret < 0){
-        AIM_LOG_ERROR("read_ioport() iopl enable error %d\n", ret);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(iopl(3));
     *reg_val = inb(addr);
 
     /*set r/w permission of  all 65536 ports*/
-    ret = iopl(0);
-    if(ret < 0){
-        AIM_LOG_ERROR("read_ioport(), iopl disable error %d\n", ret);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(iopl(0));
     return ONLP_STATUS_OK;
 }
 
-int write_ioport(int addr, int reg_val) {
-    int ret;
-
+int write_ioport(int addr, int reg_val)
+{
     /*enable io port*/
-    ret = iopl(3);
-    if(ret < 0){
-        AIM_LOG_ERROR("read_ioport() iopl enable error %d\n", ret);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(iopl(3));
     outb(addr, reg_val);
 
     /*disable io port*/
-    ret = iopl(0);
-    if(ret < 0){
-        AIM_LOG_ERROR("read_ioport(), iopl disable error %d\n", ret);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(iopl(0));
     return ONLP_STATUS_OK;
 }
 
-int
-exec_cmd(char *cmd, char* out, int size) {
+int exec_cmd(char *cmd, char* out, int size)
+{
     FILE *fp;
 
     /* Open the command for reading. */
@@ -925,8 +889,8 @@ exec_cmd(char *cmd, char* out, int size) {
     return ONLP_STATUS_OK;
 }
 
-int
-get_ipmitool_len(char *ipmitool_out){
+int get_ipmitool_len(char *ipmitool_out)
+{
     size_t str_len=0, ipmitool_len=0;
     str_len = strlen(ipmitool_out);
     if (str_len>0) {
@@ -935,8 +899,8 @@ get_ipmitool_len(char *ipmitool_out){
     return ipmitool_len;
 }
 
-int
-parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len){
+int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len)
+{
     int i=0;
     char data[3];
 
@@ -951,8 +915,7 @@ parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len){
     return ONLP_STATUS_OK;
 }
 
-int
-sysi_platform_info_get(onlp_platform_info_t* pi)
+int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
     int mb_cpld1_addr = CPLD_REG_BASE, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
@@ -964,7 +927,6 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     char ucd_date[8];
     int ucd_len=0;
     //int ucd_date_len=6;
-    int rc=0;
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -976,9 +938,7 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
 
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {
-        if ((rc = read_ioport(CPLD_REG_BASE+CPLD_REG_VER, &cpld_ver[i])) != ONLP_STATUS_OK) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(read_ioport(CPLD_REG_BASE+CPLD_REG_VER, &cpld_ver[i]));
         if (cpld_ver[i] < 0) {
 	        AIM_LOG_ERROR("unable to read MB CPLD version\n");
             return ONLP_STATUS_E_INTERNAL;
@@ -994,18 +954,13 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
         cpld_ver_major[0], cpld_ver_minor[0]);
 
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
+
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 4 & 0x03));
     mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) >> 6 & 0x03));
 
     //Get BIOS version
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
@@ -1072,8 +1027,7 @@ onlp_sysi_bmc_en_get(void)
    return true;
 }
 
-int
-parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
+int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx)
 {
@@ -1109,8 +1063,7 @@ parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
     return ONLP_STATUS_OK;
 }
 
-int
-bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
+int bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rc=0;
     float data=0;
@@ -1125,8 +1078,7 @@ bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     return rc;
 }
 
-int
-bmc_fan_info_get(onlp_fan_info_t* info, int id)
+int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int rv=0, rpm=0, percentage=0;
     float data=0;
@@ -1174,10 +1126,9 @@ bmc_fan_info_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-file_read_hex(int* value, const char* fmt, ...)
+int file_read_hex(int* value, const char* fmt, ...)
 {
-    int rv;
+    int rv = 0;
     va_list vargs;
     va_start(vargs, fmt);
     rv = file_vread_hex(value, fmt, vargs);
@@ -1185,16 +1136,13 @@ file_read_hex(int* value, const char* fmt, ...)
     return rv;
 }
 
-int
-file_vread_hex(int* value, const char* fmt, va_list vargs)
+int file_vread_hex(int* value, const char* fmt, va_list vargs)
 {
-    int rv;
     uint8_t data[32];
-    int len;
-    rv = onlp_file_vread(data, sizeof(data), &len, fmt, vargs);
-    if(rv < 0) {
-        return rv;
-    }
+    int len = 0;
+
+    ONLP_TRY(onlp_file_vread(data, sizeof(data), &len, fmt, vargs));
+
     //hex to int
     *value = (int) strtol((char *)data, NULL, 0);
     return 0;
@@ -1223,8 +1171,7 @@ void check_and_do_i2c_mux_reset(int port)
 
 }
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id)
+int sys_led_info_get(onlp_led_info_t* info, int id)
 {
     int rc;
     int reg, reg_val_ctrl, reg_val_blnk;

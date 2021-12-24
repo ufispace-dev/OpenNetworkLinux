@@ -222,15 +222,22 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     ssize_t len=0;
-    u16 reg = REG_CPU_CPLD_VERSION;
+    u16 cpld_version_reg = REG_CPU_CPLD_VERSION;
+    u16 cpld_build_reg = REG_CPU_CPLD_BUILD;
     u8 mask = MASK_ALL;
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
-    u8 reg_val;
+    u8 version_reg_val = 0, build_reg_val = 0;
 
 	mutex_lock(&lpc_data->access_lock);
-	reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+	//CPU CPLD Version
+	version_reg_val=_mask_shift(inb(cpld_version_reg), mask);
+	//CPU CPLD Build
+	build_reg_val=inb(cpld_build_reg);
+
+    len=sprintf(buf, "%d.%02d.%03d\n", _mask_shift(version_reg_val, mask_major),
+                                  _mask_shift(version_reg_val, mask_minor),
+                                  build_reg_val);
     mutex_unlock(&lpc_data->access_lock);
 
     return len;
@@ -241,15 +248,21 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     ssize_t len=0;
-    u16 reg = REG_MB_CPLD_VERSION;
+    u16 cpld_version_reg = REG_MB_CPLD_VERSION;
+    u16 cpld_build_reg = REG_MB_CPLD_BUILD;
     u8 mask = MASK_ALL;
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
-    u8 reg_val;
+    u8 version_reg_val = 0, build_reg_val = 0;
 
 	mutex_lock(&lpc_data->access_lock);
-	reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+	//MB CPLD Version
+	version_reg_val=_mask_shift(inb(cpld_version_reg), mask);
+	//CPU CPLD Build
+	build_reg_val=inb(cpld_build_reg);
+    len=sprintf(buf, "%d.%02d.%03d\n", _mask_shift(version_reg_val, mask_major),
+                                  _mask_shift(version_reg_val, mask_minor),
+                                  build_reg_val);
     mutex_unlock(&lpc_data->access_lock);
 
     return len;

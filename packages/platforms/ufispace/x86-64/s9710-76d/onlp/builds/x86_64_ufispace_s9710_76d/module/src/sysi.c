@@ -48,11 +48,11 @@
  *            |----[17] ONLP_THERMAL_ENV_2
  *            |----[18] ONLP_THERMAL_EXT_ENV_1
  *            |----[19] ONLP_THERMAL_EXT_ENV_2 
- *            |----[01] ONLP_LED_SYS_SYS
- *            |----[02] ONLP_LED_SYS_FAN
- *            |----[03] ONLP_LED_SYS_PSU_0
- *            |----[04] ONLP_LED_SYS_PSU_1
-  *           |----[05] ONLP_LED_SYS_SYNC
+ *            |----[01] ONLP_LED_SYS_SYNC
+ *            |----[02] ONLP_LED_SYS_SYS
+ *            |----[03] ONLP_LED_SYS_FAN
+ *            |----[04] ONLP_LED_SYS_PSU_0
+ *            |----[05] ONLP_LED_SYS_PSU_1
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
@@ -70,20 +70,23 @@
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/0-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 
-#define CMD_BIOS_VER       "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
+#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\r\n'"
+#define SYSFS_BIOS_VER "/sys/class/dmi/id/bios_version"
+
+#define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/cpu_cpld_version_h"
+#define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
+
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
+#define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpu_cpld_addr = 0x600;
-    int cpu_cpld_build_addr = 0x6e0;
-    int cpu_cpld_ver = 0, cpu_cpld_ver_major = 0, cpu_cpld_ver_minor = 0, cpu_cpld_ver_build = 0;
-    int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX], cpld_build[CPLD_MAX];
+    char cpu_cpld_ver_out[ONLP_CONFIG_INFO_STR_MAX];
+    char mb_cpld_ver_out[CPLD_MAX][ONLP_CONFIG_INFO_STR_MAX];
     int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
-    int i = 0;
-    char bios_out[32];
+    int i = 0, len = 0;
+    char bios_out[ONLP_CONFIG_INFO_STR_MAX] = "";
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
 
     memset(bios_out, 0, sizeof(bios_out));
@@ -92,63 +95,55 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     memset(bmc_out3, 0, sizeof(bmc_out3));
 
     //get CPU CPLD version
-    ONLP_TRY(read_ioport(cpu_cpld_addr, &cpu_cpld_ver));
-    cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x03));
-    cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
+    ONLP_TRY(onlp_file_read((uint8_t*)&cpu_cpld_ver_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_CPU_CPLD_VER));
 
-    //get CPU CPLD build version
-    ONLP_TRY(read_ioport(cpu_cpld_build_addr, &cpu_cpld_ver_build));
-    
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {
-        ONLP_TRY(file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_version",
-                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
-        if (cpld_ver[i] < 0) {            
-            AIM_LOG_ERROR("unable to read MB CPLD version\n");
-            return ONLP_STATUS_E_INTERNAL;             
-        }
-       
-        cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x03));
-        cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
-
-        ONLP_TRY(file_read_hex(&cpld_build[i], "/sys/bus/i2c/devices/%d-00%02x/cpld_build",
-                                 CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
-        if (cpld_build[i] < 0) {            
-            AIM_LOG_ERROR("unable to read MB CPLD build\n");
-            return ONLP_STATUS_E_INTERNAL;             
-        }        
+        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER, 
+                                             CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
     }
-
+    
     pi->cpld_versions = aim_fstrdup(            
         "\n"
-        "[CPU CPLD] %d.%02d.%d\n"
-        "[MB CPLD1] %d.%02d.%d\n"
-        "[MB CPLD2] %d.%02d.%d\n"
-        "[MB CPLD3] %d.%02d.%d\n"
-        "[MB CPLD4] %d.%02d.%d\n" 
-        "[MB CPLD5] %d.%02d.%d\n", 
-        cpu_cpld_ver_major, cpu_cpld_ver_minor, cpu_cpld_ver_build, 
-        cpld_ver_major[0], cpld_ver_minor[0], cpld_build[0],
-        cpld_ver_major[1], cpld_ver_minor[1], cpld_build[1],
-        cpld_ver_major[2], cpld_ver_minor[2], cpld_build[2],
-        cpld_ver_major[3], cpld_ver_minor[3], cpld_build[3],
-        cpld_ver_major[4], cpld_ver_minor[4], cpld_build[4]);
+        "[CPU CPLD] %s\n"
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n"
+        "[MB CPLD4] %s\n" 
+        "[MB CPLD5] %s\n", 
+        cpu_cpld_ver_out, 
+        mb_cpld_ver_out[0],
+        mb_cpld_ver_out[1],
+        mb_cpld_ver_out[2],
+        mb_cpld_ver_out[3],
+        mb_cpld_ver_out[4]);    
     
     //Get HW Build Version
     ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
     
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 0 & 0x03));
     mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
-    
-    //Get BIOS version 
-    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
+    //Get BIOS version
+    ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_BIOS_VER));
+
+    //replace tailing new line in bios_out
+    if (len > 0 && bios_out[len-1] == '\n') {
+        bios_out[len-1] = '\0';
+    }
+
+    // Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
         exec_cmd(CMD_BMC_VER_3, bmc_out3, sizeof(bmc_out3))) {
             AIM_LOG_ERROR("unable to read BMC version\n");
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
     }
 
     pi->other_versions = aim_fstrdup(
@@ -293,7 +288,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     }    
 
     /* LED */
-    for (i = ONLP_LED_SYS_SYS; i < ONLP_LED_MAX; i++) {
+    for (i = ONLP_LED_SYS_SYNC; i < ONLP_LED_MAX; i++) {
         *e++ = ONLP_LED_ID_CREATE(i);
     }
 

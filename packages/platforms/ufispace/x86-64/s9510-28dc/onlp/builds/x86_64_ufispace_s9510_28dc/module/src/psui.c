@@ -33,7 +33,6 @@
 #define PSU_STATUS_POWER_GOOD  1
 
 #define SYSFS_PSU_STATUS     LPC_FMT "psu_status"
-#define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 
 #define VALIDATE(_id)                           \
     do {                                        \

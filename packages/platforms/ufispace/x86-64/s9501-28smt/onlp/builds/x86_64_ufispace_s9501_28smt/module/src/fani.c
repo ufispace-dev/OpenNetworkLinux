@@ -69,27 +69,23 @@ onlp_fan_info_t fan_info[] = {
 /*
  * This function will be called prior to all of onlp_fani_* functions.
  */
-int
-onlp_fani_init(void)
+int onlp_fani_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int 
-sys_fan_info_get(onlp_fan_info_t* info, int id)
+int sys_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-sys_fan_rpm_percent_set(int perc)
+int sys_fan_rpm_percent_set(int perc)
 {  
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-onlp_fani_rpm_set(onlp_oid_t id, int rpm)
+int onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -102,14 +98,12 @@ onlp_fani_rpm_set(onlp_oid_t id, int rpm)
  *
  * It is optional if you have no fans at all with this feature.
  */
-int
-onlp_fani_percentage_set(onlp_oid_t id, int percentage)
+int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 {
     return ONLP_STATUS_E_UNSUPPORTED;  
 }
 
-int
-onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
+int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id ,rc;
         

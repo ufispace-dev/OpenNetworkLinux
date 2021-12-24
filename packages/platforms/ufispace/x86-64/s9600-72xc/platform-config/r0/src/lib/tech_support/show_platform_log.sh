@@ -413,22 +413,13 @@ function _cpld_version_sysfs {
     if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         # MB CPLD
         mb_cpld_base_addr=30
-        major_attr="cpld_major_ver"
-        minor_attr="cpld_minor_ver"
-        build_attr="cpld_build_ver"
+        cpld_ver_h_attr="cpld_version_h"
 
         for (( i=0; i<MAX_CPLD; i++ )); do
             sysfs_path="/sys/bus/i2c/devices/1-00$(($mb_cpld_base_addr+$i))"
-            _check_filepath "$sysfs_path/$major_attr"
-            _check_filepath "$sysfs_path/$minor_attr"
-            _check_filepath "$sysfs_path/$build_attr"
-            major_str=$(eval "cat $sysfs_path/$major_attr ${LOG_REDIRECT}")
-            minor_str=$(eval "cat $sysfs_path/$minor_attr ${LOG_REDIRECT}")
-            build_str=$(eval "cat $sysfs_path/$build_attr ${LOG_REDIRECT}")
-            major_val=$( printf "%d" $major_str )
-            minor_val=$( printf "%02d" $minor_str )
-            build_val=$( printf "%03d" $build_str )
-            _echo "[MB CPLD$(( $i+1 )) Version]: $major_val.$minor_val.$build_val"
+            _check_filepath "$sysfs_path/$cpld_ver_h_attr"
+            version_str=$(eval "cat $sysfs_path/$cpld_ver_h_attr ${LOG_REDIRECT}")
+            _echo "[MB CPLD$(( $i+1 )) Version]: $version_str"
         done 
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1022,8 +1013,6 @@ function _show_mgmt_sfp_status {
         _show_mgmt_sfp_status_sysfs
     fi
 }
-
-# continue from here
 
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"

@@ -41,6 +41,7 @@
 #include "platform_lib.h"
 
 const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
+const int CPLD_I2C_BUS[] = {1, 1, 1};
 
 const char * thermal_id_str[] = {
     "",
@@ -174,7 +175,8 @@ int get_shift(int mask) {
     return -1;
 }
 
-int mask_shift(int val, int mask) {
+int mask_shift(int val, int mask)
+{
     return (val & mask) >> get_shift(mask);
 }
 
@@ -336,20 +338,17 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     return rv;
 }
 
-int
-psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
+int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_fan_info_get(onlp_fan_info_t* info, int id)
+int psu_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_vin_get(onlp_psu_info_t* info, int id)
+int psu_vin_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -398,8 +397,7 @@ psu_vin_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_vout_get(onlp_psu_info_t* info, int id)
+int psu_vout_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -448,8 +446,7 @@ psu_vout_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_stbvout_get(int* stbmvout, int id)
+int psu_stbvout_get(int* stbmvout, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -497,8 +494,7 @@ psu_stbvout_get(int* stbmvout, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_iin_get(onlp_psu_info_t* info, int id)
+int psu_iin_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -547,8 +543,7 @@ psu_iin_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_iout_get(onlp_psu_info_t* info, int id)
+int psu_iout_get(onlp_psu_info_t* info, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -597,8 +592,7 @@ psu_iout_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_stbiout_get(int* stbmiout, int id)
+int psu_stbiout_get(int* stbmiout, int id)
 {
     int i=0, token_idx=1, token_val=0;
 
@@ -645,27 +639,22 @@ psu_stbiout_get(int* stbmiout, int id)
 
     return ONLP_STATUS_OK;
 }
-
-int
-psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
+int psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_eeprom_get(onlp_psu_info_t* info, int id)
+int psu_eeprom_get(onlp_psu_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_fru_get(onlp_psu_info_t* info, int id)
+int psu_fru_get(onlp_psu_info_t* info, int id)
 {
     char cmd[256];
     char cmd_out[64];
@@ -719,8 +708,7 @@ psu_fru_get(onlp_psu_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_present_get(int *pw_present, int id)
+int psu_present_get(int *pw_present, int id)
 {
     int reg_val, rc;
     int mask;
@@ -743,8 +731,7 @@ psu_present_get(int *pw_present, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_pwgood_get(int *pw_good, int id)
+int psu_pwgood_get(int *pw_good, int id)
 {
     int reg_val, rc;
     int mask;
@@ -767,8 +754,7 @@ psu_pwgood_get(int *pw_good, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-qsfp_present_get(int port, int *pres_val)
+int qsfp_present_get(int port, int *pres_val)
 {
     int status, rc;
     int cpld_addr, sysfs_attr_offset;
@@ -850,32 +836,27 @@ int sfp_present_get(int port, int *pres_val)
     return ONLP_STATUS_OK;
 }
 
-int
-system_led_set(onlp_led_mode_t mode)
+int system_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-fan_led_set(onlp_led_mode_t mode)
+int fan_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu1_led_set(onlp_led_mode_t mode)
+int psu1_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu2_led_set(onlp_led_mode_t mode)
+int psu2_led_set(onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
+int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -900,8 +881,7 @@ int read_ioport(int addr, int *reg_val) {
     return ONLP_STATUS_OK;
 }
 
-int
-exec_cmd(char *cmd, char* out, int size) {
+int exec_cmd(char *cmd, char* out, int size) {
     FILE *fp;
 
     /* Open the command for reading. */
@@ -921,8 +901,7 @@ exec_cmd(char *cmd, char* out, int size) {
     return ONLP_STATUS_OK;
 }
 
-int
-get_ipmitool_len(char *ipmitool_out){
+int get_ipmitool_len(char *ipmitool_out){
     size_t str_len=0, ipmitool_len=0;
     str_len = strlen(ipmitool_out);
     if (str_len>0) {
@@ -931,75 +910,62 @@ get_ipmitool_len(char *ipmitool_out){
     return ipmitool_len;
 }
 
-int
-sysi_platform_info_get(onlp_platform_info_t* pi)
+int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpu_cpld_addr = 0x600, cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor;
-    int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
-    int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
-    int rc=0;
+    uint8_t cpu_cpld_ver_h[32];
+    uint8_t mb_cpld_ver_h[CPLD_MAX][16];
+    int data_len = 0;
+    int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG;
+    int mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
+
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
     memset(bmc_out2, 0, sizeof(bmc_out2));
     memset(bmc_out3, 0, sizeof(bmc_out3));
+    memset(bmc_out3, 0, sizeof(bmc_out3));
+    memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
+    memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
 
-    //get CPU CPLD version
-    if (read_ioport(cpu_cpld_addr, &cpu_cpld_ver) < 0) {
-        AIM_LOG_ERROR("unable to read CPU CPLD version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
-    cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x01));
-    cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
+    //get CPU CPLD version readable string
+    ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len,
+                    LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VER_ATTR));
+    //trim new line
+    cpu_cpld_ver_h[strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
 
-    //get MB CPLD version
+    //get MB CPLD version readable string
     for(i=0; i<CPLD_MAX; ++i) {
-        if ((rc = file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/1-00%02x/cpld_version",
-                                 CPLD_BASE_ADDR[i])) != ONLP_STATUS_OK) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
-        if (cpld_ver[i] < 0) {
-            AIM_LOG_ERROR("unable to read MB CPLD version\n");
-            return ONLP_STATUS_E_INTERNAL;
-        }
-
-        cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x11));
-        cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
+        ONLP_TRY(onlp_file_read(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), &data_len,
+        SYS_FMT, CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i], "/cpld_version_h"));
+        //trim new line
+        mb_cpld_ver_h[i][strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
     }
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[CPU CPLD] %d.%02d\n"
-        "[MB CPLD1] %d.%02d\n"
-        "[MB CPLD2] %d.%02d\n"
-        "[MB CPLD3] %d.%02d\n"
-        "[MB CPLD4] %d.%02d\n"
-        "[MB CPLD5] %d.%02d\n",
-        cpu_cpld_ver_major, cpu_cpld_ver_minor,
-        cpld_ver_major[0], cpld_ver_minor[0],
-        cpld_ver_major[1], cpld_ver_minor[1],
-        cpld_ver_major[2], cpld_ver_minor[2],
-        cpld_ver_major[3], cpld_ver_minor[3],
-        cpld_ver_major[4], cpld_ver_minor[4]);
+        "[CPU CPLD] %s\n"
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n",
+        cpu_cpld_ver_h,
+        mb_cpld_ver_h[0],
+        mb_cpld_ver_h[1],
+        mb_cpld_ver_h[2],
+        mb_cpld_ver_h[3]);
 
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
+
     mb_cpld1_hw_rev = ((mb_cpld1_board_type_rev) & 0x03);
     //FIXME: check build_rev bits
     //mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
     mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
 
     //Get BIOS version
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
@@ -1023,14 +989,12 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     return ONLP_STATUS_OK;
 }
 
-bool
-onlp_sysi_bmc_en_get(void)
+bool onlp_sysi_bmc_en_get(void)
 {
    return true;
 }
 
-int
-qsfp_port_to_cpld_addr(int port)
+int qsfp_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
     int cpld_num = ((port % PORT_PER_CPLD) / 8) + 1;
@@ -1040,8 +1004,7 @@ qsfp_port_to_cpld_addr(int port)
     return cpld_addr;
 }
 
-int
-qsfp_port_to_sysfs_attr_offset(int port)
+int qsfp_port_to_sysfs_attr_offset(int port)
 {
     int sysfs_attr_offset = 0;
 
@@ -1050,8 +1013,7 @@ qsfp_port_to_sysfs_attr_offset(int port)
     return sysfs_attr_offset;
 }
 
-int
-parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
+int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx)
 {
@@ -1087,8 +1049,7 @@ parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
     return ONLP_STATUS_OK;
 }
 
-int
-bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
+int bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rc=0;
     float data=0;
@@ -1103,8 +1064,7 @@ bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     return rc;
 }
 
-int
-bmc_fan_info_get(onlp_fan_info_t* info, int id)
+int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int rv=0, rpm=0, percentage=0;
     int presence=0;
@@ -1161,8 +1121,7 @@ bmc_fan_info_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-file_read_hex(int* value, const char* fmt, ...)
+int file_read_hex(int* value, const char* fmt, ...)
 {
     int rv;
     va_list vargs;
@@ -1172,8 +1131,7 @@ file_read_hex(int* value, const char* fmt, ...)
     return rv;
 }
 
-int
-file_vread_hex(int* value, const char* fmt, va_list vargs)
+int file_vread_hex(int* value, const char* fmt, va_list vargs)
 {
     int rv;
     uint8_t data[32];
@@ -1212,8 +1170,41 @@ void check_and_do_i2c_mux_reset(int port)
     }
 }
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id)
+/* reg shift */
+uint8_t ufi_shift(uint8_t mask)
+{
+    int i = 0, mask_one = 1;
+
+    for(i=0; i<8; ++i) {
+        if ((mask & mask_one) == 1)
+            return i;
+        else
+            mask >>= 1;
+    }
+
+    return -1;
+}
+
+/* reg mask and shift */
+uint8_t ufi_mask_shift(uint8_t val, uint8_t mask)
+{
+    int shift = 0;
+
+    shift = ufi_shift(mask);
+
+    return (val & mask) >> shift;
+}
+
+uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
+{
+    if (bit_val == 0)
+        reg_val = reg_val & ~(1 << bit);
+    else
+        reg_val = reg_val | (1 << bit);
+    return reg_val;
+}
+
+int sys_led_info_get(onlp_led_info_t* info, int id)
 {
     int value, rc;
     int sysfs_index;

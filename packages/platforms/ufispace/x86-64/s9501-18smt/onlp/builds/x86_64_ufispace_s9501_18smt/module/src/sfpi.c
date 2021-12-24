@@ -52,15 +52,13 @@ static int ufi_port_to_eeprom_bus(int port)
     return bus;
 }
 
-int
-onlp_sfpi_init(void)
+int onlp_sfpi_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
+int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
     for(p = SFP_START_NUM; p < PORT_NUM; p++) {
@@ -69,8 +67,7 @@ onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_is_present(int port)
+int onlp_sfpi_is_present(int port)
 {
     int status=1;
 
@@ -89,8 +86,7 @@ onlp_sfpi_is_present(int port)
     return status;
 }
 
-int
-onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int p = 0;
     int rc = 0;
@@ -107,8 +103,7 @@ onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
  */
-int
-onlp_sfpi_eeprom_read(int port, uint8_t data[256])
+int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0;
     int bus = -1;
@@ -415,24 +410,19 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
+int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
-    int i=0, value=0, rc=0;
+    int i=0, value=0;
 
     /* Populate bitmap - SFP and SFP+ ports*/
     for(i = SFP_START_NUM; i < PORT_NUM; i++) {
-        if ((rc=onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)) != ONLP_STATUS_OK) {
-            return ONLP_STATUS_E_INTERNAL;
-        } else {
-            AIM_BITMAP_MOD(dst, i, value);
-        }
+        ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
+        AIM_BITMAP_MOD(dst, i, value);
     }
     return ONLP_STATUS_OK;
 }
 
-int
-onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
+int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     int rc, gpio_num=0;
     char sysfs[48];
@@ -499,8 +489,7 @@ onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     return rc;
 }
 
-int
-onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
+int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
     int rc, gpio_num;
     char sysfs[48];
@@ -571,8 +560,7 @@ onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 /*
  * De-initialize the SFPI subsystem.
  */
-int
-onlp_sfpi_denit(void)
+int onlp_sfpi_denit(void)
 {
     return ONLP_STATUS_OK;
 }

@@ -27,8 +27,7 @@
 
 #include "x86_64_ufispace_s9501_28smt_log.h"
 
-static int
-datatypes_init__(void)
+static int datatypes_init__(void)
 {
 #define UFISPACE_S9501_28SMT_ENUMERATION_ENTRY(_enum_name, _desc)     AIM_DATATYPE_MAP_REGISTER(_enum_name, _enum_name##_map, _desc,                               AIM_LOG_INTERNAL);
 #include <x86_64_ufispace_s9501_28smt/x86_64_ufispace_s9501_28smt.x>

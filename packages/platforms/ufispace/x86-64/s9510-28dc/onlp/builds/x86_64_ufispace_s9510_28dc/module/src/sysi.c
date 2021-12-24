@@ -120,7 +120,7 @@ static onlp_oid_t __onlp_oid_info[] = {
 #define CMD_BIOS_VER       "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
+#define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
@@ -152,6 +152,12 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     //Get BIOS version
     if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
         AIM_LOG_ERROR("unable to read BIOS version\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
 

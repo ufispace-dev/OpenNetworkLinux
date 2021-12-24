@@ -46,162 +46,46 @@
  *            |----[02] ONLP_PSU_1----[14] ONLP_PSU1_FAN1
  */
 
-static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
+#define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
+#define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
+#define VALIDATE(_id)                           \
+    do {                                        \
+        if(!ONLP_OID_IS_FAN(_id)) {             \
+            return ONLP_STATUS_E_INVALID;       \
+        }                                       \
+    } while(0)
+
+#define CHASSIS_INFO(id, des)                   \
+    {                                           \
+        { ONLP_FAN_ID_CREATE(id), des, POID_0}, \
+        FAN_STATUS,                             \
+        FAN_CAPS,                               \
+        0,                                      \
+        0,                                      \
+        ONLP_FAN_MODE_INVALID,                  \
+    }
+#define FAN_FRONT_MAX_RPM   36200
+#define FAN_REAR_MAX_RPM    32000
+#define PSU_FAN_MAX_RPM     27000
+/* if FAN_DIR_EN is defined , support fan driection detect */
+//#define FAN_DIR_EN 1
+
+static onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN1_F),
-            .description = "Chassis Fan - 1 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN1_R),
-            .description = "Chassis Fan - 1 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN2_F),
-            .description = "Chassis Fan - 2 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN2_R),
-            .description = "Chassis Fan - 2 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN3_F),
-            .description = "Chassis Fan - 3 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN3_R),
-            .description = "Chassis Fan - 3 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN4_F),
-            .description = "Chassis Fan - 4 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN4_R),
-            .description = "Chassis Fan - 4 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN5_F),
-            .description = "Chassis Fan - 5 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN5_R),
-            .description = "Chassis Fan - 5 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN6_F),
-            .description = "Chassis Fan - 6 Front",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN6_R),
-            .description = "Chassis Fan - 6 Rear",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN1),
-            .description = "PSU 0 - Fan 1",
-            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU0),
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN1),
-            .description = "PSU 1 - Fan 1",
-            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU1),
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
+    CHASSIS_INFO(ONLP_FAN1_F    , "Chassis Fan - 1 Front"),
+    CHASSIS_INFO(ONLP_FAN1_R    , "Chassis Fan - 1 Rear"),
+    CHASSIS_INFO(ONLP_FAN2_F    , "Chassis Fan - 2 Front"),
+    CHASSIS_INFO(ONLP_FAN2_R    , "Chassis Fan - 2 Rear"),
+    CHASSIS_INFO(ONLP_FAN3_F    , "Chassis Fan - 3 Front"),
+    CHASSIS_INFO(ONLP_FAN3_R    , "Chassis Fan - 3 Rear"),
+    CHASSIS_INFO(ONLP_FAN4_F    , "Chassis Fan - 4 Front"),
+    CHASSIS_INFO(ONLP_FAN4_R    , "Chassis Fan - 4 Rear"),
+    CHASSIS_INFO(ONLP_FAN5_F    , "Chassis Fan - 5 Front"),
+    CHASSIS_INFO(ONLP_FAN5_R    , "Chassis Fan - 5 Rear"),
+    CHASSIS_INFO(ONLP_FAN6_F    , "Chassis Fan - 6 Front"),
+    CHASSIS_INFO(ONLP_FAN6_R    , "Chassis Fan - 6 Rear"),
+    CHASSIS_INFO(ONLP_PSU0_FAN1 , "PSU 0 - Fan 1"),
+    CHASSIS_INFO(ONLP_PSU1_FAN1 , "PSU 1 - Fan 1"),
 };
 
 /**
@@ -214,10 +98,7 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     int ret = ONLP_STATUS_OK;
     int rpm = 0, percentage = 0;
     float data = 0;
-    int sys_max_fan_f_speed = 36200; //front fan max speed
-    int sys_max_fan_r_speed = 32000; //rear  fan max speed
     int sys_max_fan_speed = 0;
-    int psu_max_fan1_speed = 27000;
     int max_fan_speed = 0;
     int attr_id = -1;
 
@@ -229,59 +110,59 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     /* set bmc attr id */
     if(local_id == ONLP_FAN1_F) {
         attr_id = BMC_ATTR_ID_FAN0_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN1_R) {
         attr_id = BMC_ATTR_ID_FAN0_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_FAN2_F) {
         attr_id = BMC_ATTR_ID_FAN1_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN2_R) {
         attr_id = BMC_ATTR_ID_FAN1_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_FAN3_F) {
         attr_id = BMC_ATTR_ID_FAN2_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN3_R) {
         attr_id = BMC_ATTR_ID_FAN2_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_FAN4_F) {
         attr_id = BMC_ATTR_ID_FAN3_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN4_R) {
         attr_id = BMC_ATTR_ID_FAN3_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_FAN5_F) {
         attr_id = BMC_ATTR_ID_FAN4_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN5_R) {
         attr_id = BMC_ATTR_ID_FAN4_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_FAN6_F) {
         attr_id = BMC_ATTR_ID_FAN5_RPM_F;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_FAN6_R) {
         attr_id = BMC_ATTR_ID_FAN5_RPM_R;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else if(local_id == ONLP_PSU0_FAN1) {
         attr_id = BMC_ATTR_ID_PSU0_FAN1;
-        sys_max_fan_speed = sys_max_fan_f_speed;
+        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
 
     } else if(local_id == ONLP_PSU1_FAN1) {
         attr_id = BMC_ATTR_ID_PSU1_FAN1;
-        sys_max_fan_speed = sys_max_fan_r_speed;
+        sys_max_fan_speed = FAN_REAR_MAX_RPM;
 
     } else {
         AIM_LOG_ERROR("unknown id, func=%s, local_id=%d\n", __FUNCTION__, local_id);
@@ -307,7 +188,7 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if(local_id >= ONLP_PSU0_FAN1 && local_id <= ONLP_PSU1_FAN1) {
-        max_fan_speed = psu_max_fan1_speed;
+        max_fan_speed = PSU_FAN_MAX_RPM;
         percentage = (info->rpm * 100) / max_fan_speed;
         percentage = (percentage > 100) ? 100 : percentage;
         info->percentage = percentage;
@@ -337,7 +218,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* info)
 
     /* Set the onlp_fan_info_t */
     memset(info, 0, sizeof(onlp_fan_info_t));
-    *info = __onlp_fan_info[local_id];
+    *info = fan_info[local_id];
     ONLP_TRY(onlp_fani_hdr_get(id, &info->hdr));
 
     /* Update onlp fani status */
@@ -367,7 +248,7 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
     int psu_presence = 0;
     float data = 0;
     int attr_id_presence = -1;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
     int attr_id_direction = -1;
     int dir = 0;
 #endif
@@ -381,40 +262,34 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         /* set bmc attr id */
         if(local_id == ONLP_FAN1_F || local_id == ONLP_FAN1_R) {
             attr_id_presence = BMC_ATTR_ID_FAN0_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN0_DIR;
 #endif
-
         } else if(local_id == ONLP_FAN2_F || local_id == ONLP_FAN2_R) {
             attr_id_presence = BMC_ATTR_ID_FAN1_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN1_DIR;
 #endif
-
         } else if(local_id == ONLP_FAN3_F || local_id == ONLP_FAN3_R) {
             attr_id_presence = BMC_ATTR_ID_FAN2_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN2_DIR;
 #endif
-
         } else if(local_id == ONLP_FAN4_F || local_id == ONLP_FAN4_R) {
             attr_id_presence = BMC_ATTR_ID_FAN3_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN3_DIR;
 #endif
-
         } else if(local_id == ONLP_FAN5_F || local_id == ONLP_FAN5_R) {
             attr_id_presence = BMC_ATTR_ID_FAN4_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN4_DIR;
 #endif
-
         } else if(local_id == ONLP_FAN6_F || local_id == ONLP_FAN6_R) {
             attr_id_presence = BMC_ATTR_ID_FAN5_PSNT_L;
-#if (UFI_BMC_FAN_DIR == 1)
+#ifdef FAN_DIR_EN
             attr_id_direction = BMC_ATTR_ID_FAN5_DIR;
 #endif
-
         } else {
             AIM_LOG_ERROR("unknown id, func=%s, local_id=%d\n", __FUNCTION__, local_id);
             return ONLP_STATUS_E_INTERNAL;
@@ -424,92 +299,61 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         /* get fan present status from BMC */
         ONLP_TRY(bmc_sensor_read(attr_id_presence, FAN_SENSOR, &data));
 
-        fan_presence = (int) data;
-        if( fan_presence == 1 ) {
+        fan_presence = (int)data;
+        if(fan_presence == 1) {
             *status |= ONLP_FAN_STATUS_PRESENT;
             *status |= ONLP_FAN_STATUS_F2B;
         } else {
             *status &= ~ONLP_FAN_STATUS_PRESENT;
         }
 
-#if (UFI_BMC_FAN_DIR == 1)
-        /* if UFI_BMC_FAN_DIR is not defined as 1, do nothing (BMC does not support!!) */
-        /* get fan direction status from BMC */
-        ONLP_TRY(bmc_sensor_read(attr_id_direction, FAN_SENSOR, &data));
-
-        dir = (int) data;
-        if(dir == FAN_DIR_B2F) {
-            /* B2F */
-            *status |= ONLP_FAN_STATUS_B2F;
-            *status &= ~ONLP_FAN_STATUS_F2B;
-        } else {
-            /* F2B */
-            *status |= ONLP_FAN_STATUS_F2B;
-            *status &= ~ONLP_FAN_STATUS_B2F;
-        }
-#endif
-
     } else if(local_id == ONLP_PSU0_FAN1) {
+#ifdef FAN_DIR_EN
+        attr_id_direction = BMC_ATTR_ID_PSU0_FAN1_DIR;
+#endif
         /* get psu0 fan present status */
         ONLP_TRY(get_psui_present_status(ONLP_PSU0, &psu_presence));
         if(psu_presence == 0) {
             *status &= ~ONLP_FAN_STATUS_PRESENT;
         } else if(psu_presence == 1) {
             *status |= ONLP_FAN_STATUS_PRESENT;
-            *status |= ONLP_FAN_STATUS_F2B;
         } else {
             return ONLP_STATUS_E_INTERNAL;
         }
-
-#if (UFI_BMC_FAN_DIR == 1)
-        /* if UFI_BMC_FAN_DIR is not defined as 1, do nothing (BMC does not support!!) */
-        /* get psu0 fan direction status from BMC */
-        ONLP_TRY(bmc_sensor_read(attr_id_direction, FAN_SENSOR, &data));
-
-        dir = (int) data;
-        if(dir == FAN_DIR_B2F) {
-            /* B2F */
-            *status |= ONLP_FAN_STATUS_B2F;
-            *status &= ~ONLP_FAN_STATUS_F2B;
-        } else {
-            /* F2B */
-            *status |= ONLP_FAN_STATUS_F2B;
-            *status &= ~ONLP_FAN_STATUS_B2F;
-        }
-#endif
-
     } else if(local_id == ONLP_PSU1_FAN1) {
+#ifdef FAN_DIR_EN
+        attr_id_direction = BMC_ATTR_ID_PSU1_FAN1_DIR;
+#endif
         /* get psu1 fan present status */
         ONLP_TRY(get_psui_present_status(ONLP_PSU1, &psu_presence));
         if(psu_presence == 0) {
             *status &= ~ONLP_FAN_STATUS_PRESENT;
         } else if(psu_presence == 1) {
             *status |= ONLP_FAN_STATUS_PRESENT;
-            *status |= ONLP_FAN_STATUS_F2B;
         } else {
             return ONLP_STATUS_E_INTERNAL;
         }
-
-#if (UFI_BMC_FAN_DIR == 1)
-        /* get psu1 fan direction status from BMC */
-        ONLP_TRY(bmc_sensor_read(attr_id_direction, FAN_SENSOR, &data));
-
-        dir = (int) data;
-        if(dir == FAN_DIR_B2F) {
-            /* B2F */
-            *status |= ONLP_FAN_STATUS_B2F;
-            *status &= ~ONLP_FAN_STATUS_F2B;
-        } else {
-            /* F2B */
-            *status |= ONLP_FAN_STATUS_F2B;
-            *status &= ~ONLP_FAN_STATUS_B2F;
-        }
-#endif
 
     } else {
         AIM_LOG_ERROR("unknown fan id (%d), func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
     }
+
+#ifdef FAN_DIR_EN
+    /* get fan direction status from BMC */
+    ONLP_TRY(bmc_fan_dir_read(attr_id_direction, &data));
+
+    dir = (int)data;
+    if(dir == FAN_DIR_B2F) {
+        /* B2F */
+        *status |= ONLP_FAN_STATUS_B2F;
+        *status &= ~ONLP_FAN_STATUS_F2B;
+    } else {
+        /* F2B */
+        *status |= ONLP_FAN_STATUS_F2B;
+        *status &= ~ONLP_FAN_STATUS_B2F;
+    }
+#endif
 
     return ONLP_STATUS_OK;
 }
@@ -524,7 +368,7 @@ int onlp_fani_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
     int local_id = ONLP_OID_ID_GET(id);
 
     /* Set the onlp_fan_info_t */
-    *hdr = __onlp_fan_info[local_id].hdr;
+    *hdr = fan_info[local_id].hdr;
 
     return ONLP_STATUS_OK;
 }

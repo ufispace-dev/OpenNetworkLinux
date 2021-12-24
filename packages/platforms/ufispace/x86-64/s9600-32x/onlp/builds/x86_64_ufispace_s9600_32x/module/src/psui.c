@@ -57,15 +57,13 @@ static onlp_psu_info_t pinfo[] =
 /**
  * @brief Initialize the PSU subsystem.
  */
-int
-onlp_psui_init(void)
+int onlp_psui_init(void)
 {   
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int 
-psu_status_info_get(int id, onlp_psu_info_t *info)
+int psu_status_info_get(int id, onlp_psu_info_t *info)
 {   
     int rc, pw_present, pw_good;    
     int stbmvout, stbmiout;
@@ -166,8 +164,7 @@ psu_status_info_get(int id, onlp_psu_info_t *info)
  * @param id The PSU OID
  * @param rv [out] Receives the PSU information.
  */
-int
-onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
+int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
 {        
     int pid;
     

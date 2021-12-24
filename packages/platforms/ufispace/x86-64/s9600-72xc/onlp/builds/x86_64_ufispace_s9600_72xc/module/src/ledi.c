@@ -50,11 +50,12 @@
 static onlp_led_info_t led_info[] =
 {
     { }, //Not used *
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 1 (SYS LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 2 (FAN LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU0, "Chassis LED 3 (PSU0 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU1, "Chassis LED 4 (PSU1 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 5 (SYNC LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 1 (SYNC LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 2 (SYS LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 3 (FAN LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU0, "Chassis LED 4 (PSU0 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU1, "Chassis LED 5 (PSU1 LED)"),
+
 };
 
 int ufi_sys_led_info_get(onlp_led_info_t* info, int local_id)

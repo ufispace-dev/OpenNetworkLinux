@@ -631,8 +631,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
             return ONLP_STATUS_E_UNSUPPORTED;
         }
 
-        ret = system(command);
-        if(ret != 0) {
+        if((ret = system(command)) != 0) {
             AIM_LOG_ERROR("Unable to read sfp eeprom (port_id=%d), func=%s\n", port_id, __FUNCTION__);
             return ONLP_STATUS_E_INTERNAL;
         }

@@ -75,6 +75,7 @@ enum s9600_cpld_sysfs_attributes {
     CPLD_MAJOR_VER,
     CPLD_MINOR_VER,
     CPLD_BUILD_VER,
+    CPLD_VERION_H,
     CPLD_ID,
     CPLD_MAC_OP2_INTR,
     CPLD_10GPHY_INTR,
@@ -210,6 +211,8 @@ static ssize_t read_cpld_version_cb(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_cpld_cb(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
+static ssize_t read_cpld_version_h_cb(struct device *dev,
+        struct device_attribute *da, char *buf);
 // cpld access api
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
@@ -274,6 +277,8 @@ static SENSOR_DEVICE_ATTR(cpld_minor_ver, S_IRUGO, \
         read_cpld_version_cb, NULL, CPLD_MINOR_VER);
 static SENSOR_DEVICE_ATTR(cpld_build_ver, S_IRUGO, \
         read_cpld_cb, NULL, CPLD_BUILD_VER);
+static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO, \
+        read_cpld_version_h_cb, NULL, CPLD_VERION_H);
 static SENSOR_DEVICE_ATTR(cpld_id, S_IRUGO, \
         read_cpld_cb, NULL, CPLD_ID);
 static SENSOR_DEVICE_ATTR(cpld_mac_op2_intr, S_IRUGO, \
@@ -493,6 +498,7 @@ static struct attribute *s9600_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_mac_op2_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_10gphy_intr.dev_attr.attr,
@@ -548,6 +554,7 @@ static struct attribute *s9600_cpld2_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_0_7_pres.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_8_15_pres.dev_attr.attr,
@@ -583,6 +590,7 @@ static struct attribute *s9600_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_16_23_pres.dev_attr.attr,
     &sensor_dev_attr_cpld_sfp_port_24_31_pres.dev_attr.attr,
@@ -618,6 +626,7 @@ static struct attribute *s9600_cpld4_attributes[] = {
     &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
     &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_64_71_intr.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_64_71_pres.dev_attr.attr,
@@ -1246,6 +1255,30 @@ static ssize_t read_cpld_version_cb(struct device *dev,
             return -EINVAL;
     }
     return sprintf(buf, "0x%02x\n", res);
+}
+
+/* handle read human-readable string for cpld_version attributes */
+static ssize_t read_cpld_version_h_cb(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    u8 reg = CPLD_VERSION_REG;
+    u8 reg_val = 0;
+    int errno = 0;
+    u8 major, minor, build;
+
+    //get major/minor register value
+    if(!read_cpld_reg_raw_byte(dev, reg, &reg_val, &errno))
+        return errno;
+    CPLD_MAJOR_VERSION_GET(reg_val, major);
+    CPLD_MINOR_VERSION_GET(reg_val, minor);
+
+    //get build register value
+    reg = CPLD_SUB_VERSION_REG;
+    if(!read_cpld_reg_raw_byte(dev, reg, &build, &errno))
+        return errno;
+
+    //version string format : xx.xx.xxx
+    return sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
 }
 
 /* handle write for attributes */

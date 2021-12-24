@@ -94,8 +94,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_FRONT),
-            .description = "TEMP_MAC_FRONT",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_ENV),
+            .description = "TEMP_MAC_ENV",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -122,8 +122,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_0x48),
-            .description = "TEMP_0x48",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_FRONT),
+            .description = "TEMP_ENV_FRONT",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -136,8 +136,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_0x49),
-            .description = "TEMP_0x49",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_REAR),
+            .description = "TEMP_ENV_REAR",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -383,10 +383,10 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
         case ONLP_THERMAL_CPU_PECI:
         case ONLP_THERMAL_CPU_ENV:
         case ONLP_THERMAL_CPU_ENV_2:
-        case ONLP_THERMAL_MAC_FRONT:
+        case ONLP_THERMAL_MAC_ENV:
         case ONLP_THERMAL_MAC_DIE:
-        case ONLP_THERMAL_0x48:
-        case ONLP_THERMAL_0x49:
+        case ONLP_THERMAL_ENV_FRONT:
+        case ONLP_THERMAL_ENV_REAR:
         case ONLP_THERMAL_PSU0:
         case ONLP_THERMAL_PSU1:
             ONLP_TRY(ufi_bmc_thermal_info_get(rv, local_id));

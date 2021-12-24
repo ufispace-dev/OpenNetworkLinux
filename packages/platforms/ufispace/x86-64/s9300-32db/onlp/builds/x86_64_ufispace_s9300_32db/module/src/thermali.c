@@ -60,6 +60,21 @@
     ERROR_DEFAULT,                                                                    \
     SHUTDOWN_DEFAULT,                                                                 \
 }
+/* Threshold */
+#define THERMAL_SHUTDOWN_DEFAULT    105000
+#define THERMAL_ERROR_DEFAULT       95000
+#define THERMAL_WARNING_DEFAULT     77000
+
+/* Shortcut for CPU thermal threshold value. */
+#define CPU_THERMAL_THRESHOLD_INIT_DEFAULTS  \
+    { THERMAL_WARNING_DEFAULT, \
+      THERMAL_ERROR_DEFAULT,   \
+      THERMAL_SHUTDOWN_DEFAULT }
+
+/* SYSFS */
+#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
+#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+
 
 static onlp_thermal_info_t __onlp_thermal_info[] = {
     { }, /* Not used */
@@ -160,7 +175,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -171,7 +186,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -182,7 +197,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -193,7 +208,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -204,7 +219,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -215,7 +230,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -226,7 +241,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -237,7 +252,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     },
     {
         .hdr = {
@@ -248,7 +263,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
+        .thresholds = CPU_THERMAL_THRESHOLD_INIT_DEFAULTS
     }
 };
 
@@ -335,9 +350,9 @@ static int update_thermali_cpu_info(int local_id, onlp_thermal_info_t* info)
         return ONLP_STATUS_E_PARAM;
     }
 
-    ret = onlp_file_read_int(&temperature, "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp%d_input", sysfs_index);
+    ret = onlp_file_read_int(&temperature, SYS_CPU_CORETEMP_PREFIX "/temp%d_input", sysfs_index);
     if(ret != ONLP_STATUS_OK) {
-        ONLP_TRY(onlp_file_read_int(&temperature, "/sys/devices/platform/coretemp.0/temp%d_input", sysfs_index));
+        ONLP_TRY(onlp_file_read_int(&temperature, SYS_CPU_CORETEMP_PREFIX2 "/temp%d_input", sysfs_index));
     }
 
     info->mcelsius = temperature;

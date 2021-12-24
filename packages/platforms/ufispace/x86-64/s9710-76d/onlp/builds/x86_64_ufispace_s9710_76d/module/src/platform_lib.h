@@ -51,7 +51,7 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get "\
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "ADC_CPU_TEMP "\
                                     "TEMP_CPU_PECI "\
                                     "TEMP_MAC_ENV_1 "\
@@ -115,7 +115,7 @@
 #define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
 #define BMC_FRU_KEY_SERIAL          "Product Serial"
 
-#define CMD_FRU_CACHE_SET "ipmitool fru print %d " \
+#define CMD_FRU_CACHE_SET "timeout %ds ipmitool fru print %d " \
                            IPMITOOL_REDIRECT_ERR \
                           " | grep %s" \
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
@@ -133,6 +133,7 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
+#define IPMITOOL_CMD_TIMEOUT    10
 
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
@@ -232,11 +233,11 @@ enum onlp_fan_id {
 
 /* led_id */
 enum onlp_led_id {
-    ONLP_LED_SYS_SYS = 1,    
+    ONLP_LED_SYS_SYNC = 1,
+    ONLP_LED_SYS_SYS,
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PSU_0,
-    ONLP_LED_SYS_PSU_1,
-    ONLP_LED_SYS_SYNC,    
+    ONLP_LED_SYS_PSU_1,    
     ONLP_LED_MAX
 };
 
@@ -347,6 +348,7 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 void lock_init();
 
+int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 int bmc_fru_read(int local_id, bmc_fru_t *data);
 void check_and_do_i2c_mux_reset(int port);

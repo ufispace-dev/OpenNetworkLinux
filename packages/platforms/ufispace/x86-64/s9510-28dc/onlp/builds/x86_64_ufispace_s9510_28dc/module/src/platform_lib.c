@@ -130,6 +130,40 @@ int check_file_exist(char *file_path, long *file_time)
     }
 }
 
+/**
+ * @brief check bmc still alive
+ * @returns ONLP_STATUS_OK         : bmc still alive
+ *          ONLP_STATUS_E_INTERNAL : bmc not respond
+ */
+int bmc_check_alive(void)
+{
+    /**
+     *   BMC detect timeout get from "ipmitool mc info" test.
+     *   Test Case: Run 100 times of "ipmitool mc info" command and get the execution times.
+     *              We take 3s as The detect timeout value,
+     *              since the execution times value is between 0.015s - 0.062s.
+     */
+    char* bmc_dect = "timeout 3s ipmitool mc info > /dev/null 2>&1";
+
+    int retry = 0, retry_max = 2;
+    for (retry = 0; retry < retry_max; ++retry) {
+        int ret = 0;
+        if((ret=system(bmc_dect)) != 0) {
+            if (retry == retry_max-1) {
+                AIM_LOG_ERROR("%s() bmc detecting fail, retry=%d, ret=%d",
+                    __func__, retry, ret);
+                return ONLP_STATUS_E_INTERNAL;
+            } else {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 {
     int bmc_cache_expired = 0;
@@ -190,12 +224,19 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     //update cache
     if(bmc_cache_expired == 1 || init_cache == 1) {
         if(bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
+            }
+
+            // get bmc data
             char ipmi_cmd[1024] = {0};
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
-            int retry = 0, retry_max = 3;
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
+            int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
                 int ret = 0;
-                if((ret=system(ipmi_cmd)) < 0) {
+                if((ret=system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d",
                             __func__, retry, ipmi_cmd, ret);
@@ -235,7 +276,17 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             //save bmc_cache from fields
             for(i=0; i<BMC_ATTR_ID_MAX; ++i) {
                 if(strcmp(line_fields[0], bmc_cache[i].name) == 0) {
-                    bmc_cache[i].data = atof(line_fields[1]);
+                    if(0) {
+                        /* fan present, got from bmc */
+                        if( strstr(line_fields[4], "Present") != NULL ) {
+                            bmc_cache[i].data = 1;
+                        } else {
+                            bmc_cache[i].data = 0;
+                        }
+                    } else {
+                        /* other attribut, got from bmc */
+                        bmc_cache[i].data = atof(line_fields[1]);
+                    }
                     break;
                 }
             }
@@ -260,7 +311,6 @@ done:
 int bmc_fru_read(int local_id, bmc_fru_t *data)
 {
     struct timeval new_tv;
-    char ipmi_cmd[400] = {0};
     int cache_time = PSU_CACHE_TIME;
     int bmc_cache_expired = 0;
     long file_last_time = 0;
@@ -289,15 +339,23 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     if(bmc_cache_expired == 1 || fru->init_done == 0) {
         //get fru from ipmitool and save to cache file
         if(bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
+            }
+
+            // get bmc data
+            char ipmi_cmd[400] = {0};
             char fields[256]="";
             snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
                         BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);
 
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, fru->bmc_fru_id, fields, fru->cache_files);
-            int retry = 0, retry_max = 3;
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, IPMITOOL_CMD_TIMEOUT, fru->bmc_fru_id, fields, fru->cache_files);
+            int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
                 int ret = 0;
-                if ((ret = system(ipmi_cmd)) < 0) {
+                if ((ret = system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
                             __func__, retry, ipmi_cmd, ret);

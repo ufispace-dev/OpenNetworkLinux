@@ -26,39 +26,42 @@
 #include "platform_lib.h"
 
 /* EEPROM */
-#define SYS_EEPROM_PATH         SYS_DEV"0-0057/eeprom"
+#define SYS_EEPROM_PATH         SYS_DEV "0-0057/eeprom"
 #define SYS_EEPROM_SIZE         512
 /* CPLD */
 #define CPLD_MAX                4
-#define CPLD_BASE_ADDR          0x30
-#define MB_CPLDX_SYSFS_PATH_FMT SYS_DEV"1-00%02x"
+#define MB_CPLDX_SYSFS_PATH_FMT SYS_DEV "1-00%02x"
 /* SYSFS ATTR */
 #define MB_CPLD_MAJOR_VER_ATTR  "cpld_major_ver"
 #define MB_CPLD_MINOR_VER_ATTR  "cpld_minor_ver"
 #define MB_CPLD_BUILD_VER_ATTR  "cpld_build_ver"
+#define MB_CPLD_VER_ATTR        "cpld_version_h"
 #define LPC_MB_SKU_ID_ATTR      "board_sku_id"
 #define LPC_MB_HW_ID_ATTR       "board_hw_id"
 #define LPC_MB_ID_TYPE_ATTR     "board_id_type"
 #define LPC_MB_BUILD_ID_ATTR    "board_build_id"
 #define LPC_MB_DEPH_ID_ATTR     "board_deph_id"
 #define LPC_CPU_CPLD_VER_ATTR   "cpu_cpld_version_h"
-/* CMD */
-#define CMD_BIOS_VER            "dmidecode -s bios-version | tail -1 | tr -d '\\r\\n'"
-#define CMD_BMC_VER_1           "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
-#define CMD_BMC_VER_2           "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3           "echo $((`ipmitool mc info | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
 
-/* This is definitions for x86-64-ufispace-s9600-72xc*/
+#define SYSFS_BIOS_VER          "/sys/class/dmi/id/bios_version"
+/* CMD */
+#define CMD_BMC_VER_1           "expr `ipmitool mc info" IPMITOOL_REDIRECT_FIRST_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_2           "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
+#define CMD_BMC_VER_3           "echo $((`ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
+
+const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32, 0x33};
+
+/* This is definitions for x86-64-ufispace-s9600-72xc */
 /* OID map*/
 /*
  * [01] CHASSIS
  *            |----[01] ONLP_THERMAL_CPU_PECI
  *            |----[02] ONLP_THERMAL_CPU_ENV
  *            |----[03] ONLP_THERMAL_CPU_ENV_2
- *            |----[04] ONLP_THERMAL_MAC_FRONT
+ *            |----[04] ONLP_THERMAL_MAC_ENV
  *            |----[05] ONLP_THERMAL_MAC_DIE
- *            |----[06] ONLP_THERMAL_0x48
- *            |----[07] ONLP_THERMAL_0x49
+ *            |----[06] ONLP_THERMAL_ENV_FRONT
+ *            |----[07] ONLP_THERMAL_ENV_REAR
  *            |----[08] ONLP_THERMAL_PSU0
  *            |----[09] ONLP_THERMAL_PSU1
  *            |----[10] ONLP_THERMAL_CPU_PKG
@@ -71,11 +74,11 @@
  *            |----[17] ONLP_THERMAL_CPU7
  *            |----[18] ONLP_THERMAL_CPU8
  *            |
- *            |----[01] ONLP_LED_SYS_SYS
- *            |----[02] ONLP_LED_SYS_FAN
- *            |----[03] ONLP_LED_SYS_PSU0
- *            |----[04] ONLP_LED_SYS_PSU1
- *            |----[05] ONLP_LED_SYS_SYNC
+ *            |----[01] ONLP_LED_SYS_SYNC
+ *            |----[02] ONLP_LED_SYS_SYS
+ *            |----[03] ONLP_LED_SYS_FAN
+ *            |----[04] ONLP_LED_SYS_PSU0
+ *            |----[05] ONLP_LED_SYS_PSU1
  *            |
  *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU0
  *            |                  |----[05] ONLP_PSU_0_FAN
@@ -92,10 +95,10 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_ENV),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_ENV_2),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_FRONT),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_ENV),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_DIE),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_0x48),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_0x49),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_FRONT),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_REAR),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
@@ -108,12 +111,11 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU7),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU8),
 
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU0),
-    ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU1),
-    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
 
     ONLP_PSU_ID_CREATE(ONLP_PSU_0),
     ONLP_PSU_ID_CREATE(ONLP_PSU_1),
@@ -128,45 +130,33 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    char sysfs[128];
     uint8_t cpu_cpld_ver_h[32];
-    int cpld_major_ver, cpld_minor_ver, cpld_build_ver;
-    char mb_cpld_ver_h[CPLD_MAX][16];
-    char bios_ver_h[32];
+    uint8_t mb_cpld_ver_h[CPLD_MAX][16];
+    uint8_t bios_ver_h[32];
     char bmc_ver[3][16];
     int sku_id, hw_id, id_type, build_id, deph_id;
     int data_len;
     int i;
+    int size;
 
-    memset(sysfs, 0, sizeof(sysfs));
     memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
     memset(bios_ver_h, 0, sizeof(bios_ver_h));
     memset(bmc_ver, 0, sizeof(bmc_ver));
 
     //get CPU CPLD version readable string
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_CPU_CPLD_SYSFFS_PATH, LPC_CPU_CPLD_VER_ATTR);
-    ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len, sysfs));
+    ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len,
+                    LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VER_ATTR));
     //trim new line
     cpu_cpld_ver_h[strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
 
     //get MB CPLD version from CPLD sysfs
     for(i=0; i<CPLD_MAX; ++i) {
-        snprintf(sysfs, sizeof(sysfs),
-                    MB_CPLDX_SYSFS_PATH_FMT"/"MB_CPLD_MAJOR_VER_ATTR, CPLD_BASE_ADDR+i);
-        ONLP_TRY(file_read_hex(&cpld_major_ver, sysfs));
 
-        snprintf(sysfs, sizeof(sysfs),
-                    MB_CPLDX_SYSFS_PATH_FMT"/"MB_CPLD_MINOR_VER_ATTR, CPLD_BASE_ADDR+i);
-        ONLP_TRY(file_read_hex(&cpld_minor_ver, sysfs));
-
-        snprintf(sysfs, sizeof(sysfs),
-                    MB_CPLDX_SYSFS_PATH_FMT"/"MB_CPLD_BUILD_VER_ATTR, CPLD_BASE_ADDR+i);
-        ONLP_TRY(file_read_hex(&cpld_build_ver, sysfs));
-
-        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d build %03d",
-                    cpld_major_ver, cpld_minor_ver, cpld_build_ver);
+        ONLP_TRY(onlp_file_read(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), &data_len,
+                MB_CPLDX_SYSFS_PATH_FMT "/" MB_CPLD_VER_ATTR, CPLD_BASE_ADDR[i]));
+        //trim new line
+        mb_cpld_ver_h[i][strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
     }
 
     pi->cpld_versions = aim_fstrdup(
@@ -183,29 +173,20 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         mb_cpld_ver_h[3]);
 
     //get HW Build Version
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_MB_CPLD_SYFSFS_PATH, LPC_MB_SKU_ID_ATTR);
-    ONLP_TRY(file_read_hex(&sku_id, sysfs));
-
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_MB_CPLD_SYFSFS_PATH, LPC_MB_HW_ID_ATTR);
-    ONLP_TRY(file_read_hex(&hw_id, sysfs));
-
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_MB_CPLD_SYFSFS_PATH, LPC_MB_ID_TYPE_ATTR);
-    ONLP_TRY(file_read_hex(&id_type, sysfs));
-
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_MB_CPLD_SYFSFS_PATH, LPC_MB_BUILD_ID_ATTR);
-    ONLP_TRY(file_read_hex(&build_id, sysfs));
-
-    snprintf(sysfs, sizeof(sysfs), "%s/%s",
-                    LPC_MB_CPLD_SYFSFS_PATH, LPC_MB_DEPH_ID_ATTR);
-    ONLP_TRY(file_read_hex(&deph_id, sysfs));
+    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKU_ID_ATTR));
+    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH "/" LPC_MB_HW_ID_ATTR));
+    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH "/" LPC_MB_ID_TYPE_ATTR));
+    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH "/" LPC_MB_BUILD_ID_ATTR));
+    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPH_ID_ATTR));
 
     //get BIOS version
-    if(exec_cmd(CMD_BIOS_VER, bios_ver_h, sizeof(bios_ver_h)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
+    ONLP_TRY(onlp_file_read(bios_ver_h, sizeof(bios_ver_h), &size, SYSFS_BIOS_VER));
+    //trim new line
+    bios_ver_h[strcspn((char *)bios_ver_h, "\n" )] = '\0';
+
+    // Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -257,7 +238,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
  */
 const char* onlp_sysi_platform_get(void)
 {
-    return "x86-64-ufispace-s9310-32d-r0";
+    return "x86-64-ufispace-s9600-72xc-r0";
 }
 
 /**
@@ -372,13 +353,12 @@ int onlp_sysi_ioctl(int code, va_list vargs)
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-
 /**
  * @brief Platform management initialization.
  */
 int onlp_sysi_platform_manage_init(void)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -406,9 +386,7 @@ int onlp_sysi_platform_manage_leds(void)
  */
 int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
 {
-    if(ufi_sysi_platform_info_get(info) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(ufi_sysi_platform_info_get(info));
 
     return ONLP_STATUS_OK;
 }
@@ -434,4 +412,3 @@ int onlp_sysi_debug(aim_pvs_t* pvs, int argc, char** argv)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-

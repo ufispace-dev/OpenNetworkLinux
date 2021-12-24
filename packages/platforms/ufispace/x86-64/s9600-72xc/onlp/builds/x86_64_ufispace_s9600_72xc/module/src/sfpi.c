@@ -220,6 +220,8 @@ int qsfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control, int
         case ONLP_SFP_CONTROL_RESET:
             snprintf(sysfs, sizeof(sysfs), "%s/%s", cpld_sysfs_path,
                 MB_CPLD_QSFP_RESET_ATTR);
+            //0 for reset, 1 for out of reset, reverse the value
+            value = (value) ? 0:1;
             break;
         case ONLP_SFP_CONTROL_LP_MODE:
             snprintf(sysfs, sizeof(sysfs), "%s/%s", cpld_sysfs_path,
@@ -357,7 +359,7 @@ int qsfp_control_get(port_type_info_t port_info, onlp_sfp_control_t control, int
                 MB_CPLD_QSFP_RESET_ATTR);
             ONLP_TRY(file_read_hex(&reg_val, sysfs));
             //0 for reset, 1 for out of reset
-            *value = ~(READ_BIT(reg_val, port_info.port_index));
+            *value = (READ_BIT(reg_val, port_info.port_index)) ? 0:1;
             break;
         case ONLP_SFP_CONTROL_LP_MODE:
             snprintf(sysfs, sizeof(sysfs), "%s/%s", cpld_sysfs_path,

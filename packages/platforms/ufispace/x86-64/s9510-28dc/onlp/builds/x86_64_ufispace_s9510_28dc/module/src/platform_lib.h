@@ -59,7 +59,15 @@
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
 
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get "\
+/*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
+ *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value 
+ *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
+ *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
+ */
+
+#define IPMITOOL_CMD_TIMEOUT        10
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_MAC "\
                                     "TEMP_DDR4 "\
                                     "TEMP_BMC "\
@@ -101,7 +109,7 @@
 #define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
 #define BMC_FRU_KEY_SERIAL          "Product Serial"
 
-#define CMD_FRU_CACHE_SET "ipmitool fru print %d " \
+#define CMD_FRU_CACHE_SET "timeout %ds ipmitool fru print %d " \
                            IPMITOOL_REDIRECT_ERR \
                           " | grep %s" \
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
@@ -251,6 +259,7 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs);
 
 void lock_init();
 
+int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 int bmc_fru_read(int local_id, bmc_fru_t *data);
 

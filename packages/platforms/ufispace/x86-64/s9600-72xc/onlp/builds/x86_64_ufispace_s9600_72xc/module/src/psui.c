@@ -59,6 +59,8 @@ static onlp_psu_info_t psu_info[] =
     PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1),
 };
 
+static char *vendors[] = {"DELTA", "FSPGROUP"};
+
 int psu_present_get(int *pw_present, int local_id)
 {
     int status;
@@ -107,6 +109,97 @@ int psu_pwgood_get(int *pw_good, int local_id)
     return ONLP_STATUS_OK;
 }
 
+/**
+ * @brief get psu type
+ * @param local_id: psu id
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
+ * @param fru_in: input fru node. we will use the input node informations to get psu type
+ */
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
+{
+    bmc_fru_t *fru = NULL;
+    bmc_fru_t fru_tmp = {0};
+
+    if(psu_type == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if(fru_in == NULL) {
+        fru = &fru_tmp;
+        ONLP_TRY(bmc_fru_read(local_id, fru));
+    } else {
+        fru = fru_in;
+    }
+
+    if (strncmp(fru->vendor.val, vendors[0], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //Delta
+        //read from part_num
+        if (fru->part_num.val[7] == 'A') {
+            *psu_type = ONLP_PSU_TYPE_AC;
+        } else if (fru->part_num.val[7] == 'D') {
+            *psu_type = ONLP_PSU_TYPE_DC48;
+        } else {
+            AIM_LOG_ERROR("unknown PSU type, vendor=%d, model=%s, func=%s\n", fru->vendor.val, fru->part_num.val, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+    } else if (strncmp(fru->vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //FSP FIXME: check rule
+        //read from name
+        if (strstr(fru->name.val, "AM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_AC;
+        } else if (strstr(fru->name.val, "EM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_DC48;
+        } else {
+            AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+    } else {
+        *psu_type = ONLP_PSU_TYPE_INVALID;
+        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Update the information of Model and Serial from PSU EEPROM
+ * @param id The PSU Local ID
+ * @param[out] info Receives the PSU information (model and serial).
+ */
+static int update_psui_fru_info(int id, onlp_psu_info_t* info)
+{
+    bmc_fru_t fru = {0};
+    int psu_type = ONLP_PSU_TYPE_AC;
+
+    //read fru data
+    ONLP_TRY(bmc_fru_read(id, &fru));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    if (strncmp(fru.vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) {
+        //read product name for FSP
+        snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+    } else {
+        //read part num for others
+        snprintf(info->model, sizeof(info->model), "%s", fru.part_num.val);
+    }
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    //update FRU type
+    ONLP_TRY(get_psu_type(id, &psu_type, &fru));
+    if(psu_type == ONLP_PSU_TYPE_AC) {
+        info->caps |= ONLP_PSU_CAPS_AC;
+        info->caps &= ~ONLP_PSU_CAPS_DC48;
+    } else if(psu_type == ONLP_PSU_TYPE_DC48){
+        info->caps &= ~ONLP_PSU_CAPS_AC;
+        info->caps |= ONLP_PSU_CAPS_DC48;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 static int ufi_psu_status_info_get(int local_id, onlp_psu_info_t *info)
 {
     int stbmvout, stbmiout;
@@ -118,31 +211,31 @@ static int ufi_psu_status_info_get(int local_id, onlp_psu_info_t *info)
     }
 
     /* Get power vin status */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_VIN + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_VIN + index_offset, PSU_SENSOR, &data));
     info->mvin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VIN;
 
     /* Get power vout status */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_VOUT + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_VOUT + index_offset, PSU_SENSOR, &data));
     info->mvout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VOUT;
 
     /* Get power iin status */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_IIN + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_IIN + index_offset, PSU_SENSOR, &data));
     info->miin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IIN;
 
     /* Get power iout status */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_IOUT + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_IOUT + index_offset, PSU_SENSOR, &data));
     info->miout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IOUT;
 
     /* Get standby power vout */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_STBVOUT + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_STBVOUT + index_offset, PSU_SENSOR, &data));
     stbmvout = (int) (data*1000);
 
     /* Get standby power iout */
-    ONLP_TRY(bmc_sensor_read(ID_PSU0_STBIOUT + index_offset, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(BMC_ATTR_ID_PSU0_STBIOUT + index_offset, PSU_SENSOR, &data));
     stbmiout = (int) (data*1000);
 
     /* Get power in and out */
@@ -150,8 +243,8 @@ static int ufi_psu_status_info_get(int local_id, onlp_psu_info_t *info)
     info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
 
-    /* Get FRU (model/serial) */
-    ONLP_TRY(bmc_fru_read(info, local_id));
+    /* Update FRU (model/serial) */
+    ONLP_TRY(update_psui_fru_info(local_id, info));
 
     return ONLP_STATUS_OK;
 }

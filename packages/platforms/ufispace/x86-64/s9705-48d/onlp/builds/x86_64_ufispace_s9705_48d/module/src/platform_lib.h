@@ -66,6 +66,9 @@
  *            |----[04] ONLP_FAN_4
  */
 
+#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+
 #define ONLP_TRY(_expr)                                                 \
     do {                                                                \
         int _rv = (_expr);                                              \
@@ -104,21 +107,22 @@ enum onlp_thermal_id {
 #define ONLP_THERMAL_COUNT ONLP_THERMAL_MAX /*include "reserved"*/
 
 
-/* Fan definitions*/
-enum onlp_fan_id {
-    ONLP_FAN_RESERVED = 0,
-    ONLP_FAN_1        = 1,
-    ONLP_FAN_2        = 2,
-    ONLP_FAN_3        = 3,
-    ONLP_FAN_4        = 4,
-    ONLP_PSU0_FAN_1   = 5,
-    ONLP_PSU0_FAN_2   = 6,
-    ONLP_PSU1_FAN_1   = 7,
-    ONLP_PSU1_FAN_2   = 8,
-    ONLP_FAN_MAX      = ONLP_PSU1_FAN_2+1,
+/* LED definitions*/
+enum onlp_led_id {
+    ONLP_LED_RESERVED  = 0,
+    ONLP_LED_SYSTEM    = 1,
+    ONLP_LED_PSU0      = 2,
+    ONLP_LED_PSU1      = 3,
+    ONLP_LED_FAN       = 4,
+    //ONLP_LED_FAN_TRAY1 = 5,
+    //ONLP_LED_FAN_TRAY2 = 6,
+    //ONLP_LED_FAN_TRAY3 = 7,
+    //ONLP_LED_FAN_TRAY4 = 8,
+    ONLP_LED_MAX       = ONLP_LED_FAN+1,
 };
 
-#define ONLP_FAN_COUNT ONLP_FAN_MAX /*include "reserved"*/
+#define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
+
 
 /* PSU definitions*/
 enum onlp_psu_id {
@@ -143,22 +147,21 @@ enum onlp_psu_id {
 #define ONLP_PSU_COUNT ONLP_PSU_MAX /*include "reserved"*/
 
 
-/* LED definitions*/
-enum onlp_led_id {
-    ONLP_LED_RESERVED  = 0,
-    ONLP_LED_SYSTEM    = 1,
-    ONLP_LED_PSU0      = 2,
-    ONLP_LED_PSU1      = 3,
-    ONLP_LED_FAN       = 4,
-    //ONLP_LED_FAN_TRAY1 = 5,
-    //ONLP_LED_FAN_TRAY2 = 6,
-    //ONLP_LED_FAN_TRAY3 = 7,
-    //ONLP_LED_FAN_TRAY4 = 8,
-    ONLP_LED_MAX       = ONLP_LED_FAN+1,
+/* Fan definitions*/
+enum onlp_fan_id {
+    ONLP_FAN_RESERVED = 0,
+    ONLP_FAN_1        = 1,
+    ONLP_FAN_2        = 2,
+    ONLP_FAN_3        = 3,
+    ONLP_FAN_4        = 4,
+    ONLP_PSU0_FAN_1   = 5,
+    ONLP_PSU0_FAN_2   = 6,
+    ONLP_PSU1_FAN_1   = 7,
+    ONLP_PSU1_FAN_2   = 8,
+    ONLP_FAN_MAX      = ONLP_PSU1_FAN_2+1,
 };
 
-#define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
-
+#define ONLP_FAN_COUNT ONLP_FAN_MAX /*include "reserved"*/
 
 #define CPLD_MAX 4  //Number of MB CPLD
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
@@ -199,6 +202,19 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_IOUT         = 31,
     BMC_ATTR_ID_PSU1_STBVOUT      = 32,
     BMC_ATTR_ID_PSU1_STBIOUT      = 33,
+    BMC_ATTR_ID_MAX               = 34,
+};
+
+enum fru_attr_id {
+    FRU_ATTR_ID_PSU0_VENDOR,
+    FRU_ATTR_ID_PSU0_NAME,
+    FRU_ATTR_ID_PSU0_MODEL,
+    FRU_ATTR_ID_PSU0_SERIAL,
+    FRU_ATTR_ID_PSU1_VENDOR,
+    FRU_ATTR_ID_PSU1_NAME,
+    FRU_ATTR_ID_PSU1_MODEL,
+    FRU_ATTR_ID_PSU1_SERIAL,
+    FRU_ATTR_ID_MAX
 };
 
 enum sensor {
@@ -212,11 +228,29 @@ typedef struct bmc_info_s {
     float data;
 } bmc_info_t;
 
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+typedef struct bmc_fru_attr_s {
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+} bmc_fru_attr_t;
+
+typedef struct bmc_fru_s {
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+} bmc_fru_t;
+
 
 void lock_init();
 int check_file_exist(char *file_path, long *file_time);
+int bmc_check_alive(void);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
 int get_ipmitool_len(char *ipmitool_out) ;

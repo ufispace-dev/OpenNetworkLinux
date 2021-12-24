@@ -34,6 +34,16 @@
 #include "x86_64_ufispace_s9600_32x_log.h"
 
 #include <x86_64_ufispace_s9600_32x/x86_64_ufispace_s9600_32x_config.h>
+
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
@@ -42,6 +52,12 @@
 #define SYS_CORE_TEMP_PREFIX        "/sys/class/hwmon/hwmon2/"
 #define SYS_CPU_BOARD_TEMP_PREFIX   "/sys/bus/i2c/devices/0-004f/hwmon/hwmon1/"
 #define SYS_CPU_BOARD_TEMP_PREFIX2   "/sys/bus/i2c/devices/0-004f/"
+
+/* LPC ATTR */
+#define SYS_LPC                 "/sys/devices/platform/x86_64_ufispace_s9600_32x_lpc"
+#define LPC_MB_CPLD_PATH        SYS_LPC "/mb_cpld"
+#define LPC_CPU_CPLD_PATH       SYS_LPC "/cpu_cpld"
+#define LPC_CPU_CPLD_VER_ATTR   "cpu_cpld_version_h"
 
 #define SYS_FAN_PREFIX              "/sys/class/hwmon/hwmon1/device/"
 #define SYS_EEPROM_PATH             "/sys/bus/i2c/devices/0-0057/eeprom"
@@ -399,25 +415,25 @@ int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx);
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id);
+int sys_led_info_get(onlp_led_info_t* info, int id);
 
-int
-psu_fru_get(onlp_psu_info_t* info, int id);
+int psu_fru_get(onlp_psu_info_t* info, int id);
 
-int
-psu_stbiout_get(int* stbiout, int id);
+int psu_stbiout_get(int* stbiout, int id);
 
-int
-psu_stbvout_get(int* stbvout, int id);
+int psu_stbvout_get(int* stbvout, int id);
 
-void
-lock_init();
+void lock_init();
 
-int
-bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 
 void check_and_do_i2c_mux_reset(int port);
+
+uint8_t ufi_shift(uint8_t mask);
+
+uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
+
+uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 extern bool bmc_enable;
 #endif  /* __PLATFORM_LIB_H__ */

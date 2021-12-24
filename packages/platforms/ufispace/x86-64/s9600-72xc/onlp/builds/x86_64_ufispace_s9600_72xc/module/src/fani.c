@@ -72,7 +72,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int local_id)
     int max_fan_speed = 0;
 
     //get fan rpm
-    ONLP_TRY(bmc_sensor_read(local_id + ID_FAN0_RPM - 1, FAN_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(local_id + BMC_ATTR_ID_FAN0_RPM - 1, FAN_SENSOR, &data));
     rpm = (int) data;
 
     //set rpm field
@@ -149,7 +149,7 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* rv)
 
     //check presence for fantray 1-4
     if(local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {
-        ONLP_TRY(bmc_sensor_read(local_id + ID_FAN0_PSNT_L - 1, FAN_SENSOR, &data));
+        ONLP_TRY(bmc_sensor_read(local_id + BMC_ATTR_ID_FAN0_PSNT_L - 1, FAN_SENSOR, &data));
         presence = (int)data;
         if(presence == 1) {
             *rv |= ONLP_FAN_STATUS_PRESENT;
@@ -204,7 +204,6 @@ int onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-
 
 /**
  * @brief Set the fan speed in percentage.

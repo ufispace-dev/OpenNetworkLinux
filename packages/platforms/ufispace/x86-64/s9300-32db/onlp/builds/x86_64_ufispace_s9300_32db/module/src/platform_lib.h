@@ -83,15 +83,24 @@
             return _rv;                                                 \
         }                                                               \
     } while(0)
-
+#define POID_0                  0
 /* SYSFS */
 #define SYS_DEV                 "/sys/bus/i2c/devices/"
-#define CPLD1_SYSFS_PATH        SYS_DEV"2-0030"
-#define CPLD2_SYSFS_PATH        SYS_DEV"2-0031"
-#define CPLD3_SYSFS_PATH        SYS_DEV"2-0032"
+#define CPLD1_SYSFS_PATH        SYS_DEV "2-0030"
+#define CPLD2_SYSFS_PATH        SYS_DEV "2-0031"
+#define CPLD3_SYSFS_PATH        SYS_DEV "2-0032"
+#define LPC_PATH                "/sys/devices/platform/x86_64_ufispace_s9300_32db_lpc"
+#define LPC_CPU_CPLD_PATH       LPC_PATH "/cpu_cpld"
+#define LPC_MB_CPLD_PATH        LPC_PATH "/mb_cpld"
 /* FAN DIR */
 #define FAN_DIR_B2F             1
 #define FAN_DIR_F2B             2
+/* LENGTH */
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE 256
+#define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
+/* error redirect */
+#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR   " 2>>/tmp/ipmitool_err_msg"
 
 /* Thermal definitions*/
 enum onlp_thermal_id {
@@ -128,9 +137,6 @@ enum onlp_led_id {
     ONLP_LED_FAN       = 4,
     ONLP_LED_MAX       = ONLP_LED_FAN+1,
 };
-
-#define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
-
 
 /* PSU definitions*/
 enum onlp_psu_id {
@@ -239,34 +245,48 @@ enum sensor {
     THERMAL_SENSOR,
 };
 
+enum onlp_psu_type_e {
+  ONLP_PSU_TYPE_AC,
+  ONLP_PSU_TYPE_DC12,
+  ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_COUNT,
+  ONLP_PSU_TYPE_INVALID = -1
+};
+
 typedef struct bmc_info_s {
     char name[20];
     float data;
 } bmc_info_t;
 
-enum bmc_fru_attr_id {
-    BMC_FRU_ATTR_ID_PSU0_MODEL  = 0,
-    BMC_FRU_ATTR_ID_PSU0_SERIAL = 1,
-    BMC_FRU_ATTR_ID_PSU1_MODEL  = 2,
-    BMC_FRU_ATTR_ID_PSU1_SERIAL = 3,
-    BMC_FRU_ATTR_ID_MAX         = 4,
-};
+typedef struct bmc_fru_attr_s {
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+} bmc_fru_attr_t;
 
-typedef struct bmc_fru_info_s {
-    char name[20];
-    char data[128];
-} bmc_fru_info_t;
+typedef struct bmc_fru_s {
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+} bmc_fru_t;
 
 void lock_init();
 int check_file_exist(char *file_path, long *file_time);
+int bmc_check_alive(void);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
+int bmc_fan_dir_read(int bmc_cache_index, float *data);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-int bmc_fru_read(onlp_psu_info_t* info, int fru_id);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
 int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psui_present_status(int local_id, int *status);
 void check_and_do_i2c_mux_reset(int port);
+int bmc_check_alive(void);
 
 #endif  /* __PLATFORM_LIB_H__ */

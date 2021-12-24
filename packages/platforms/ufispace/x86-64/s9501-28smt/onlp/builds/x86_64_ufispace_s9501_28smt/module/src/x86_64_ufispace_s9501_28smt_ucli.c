@@ -62,8 +62,7 @@ x86_64_ufispace_s9501_28smt_ucli_module__ =
         NULL,
     };
 
-ucli_node_t*
-x86_64_ufispace_s9501_28smt_ucli_node_create(void)
+ucli_node_t* x86_64_ufispace_s9501_28smt_ucli_node_create(void)
 {
     ucli_node_t* n;
     ucli_module_init(&x86_64_ufispace_s9501_28smt_ucli_module__);
@@ -73,8 +72,7 @@ x86_64_ufispace_s9501_28smt_ucli_node_create(void)
 }
 
 #else
-void*
-x86_64_ufispace_s9501_28smt_ucli_node_create(void)
+void* x86_64_ufispace_s9501_28smt_ucli_node_create(void)
 {
     return NULL;
 }

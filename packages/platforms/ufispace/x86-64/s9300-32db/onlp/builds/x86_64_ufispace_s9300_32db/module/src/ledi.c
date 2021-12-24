@@ -34,59 +34,37 @@
  *            |----[04] ONLP_LED_FAN
  */
 
-/* SYSFS */
-#define LED_STATUS_1_ATTR       "cpld_sys_led_ctrl_1"
-#define LED_STATUS_2_ATTR       "cpld_sys_led_ctrl_2"
+#define LED_STATUS ONLP_LED_STATUS_PRESENT
+#define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
+                   ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
+#define LED_MODE   ONLP_LED_MODE_OFF
+#define VALIDATE(_id)                           \
+    do {                                        \
+        if(!ONLP_OID_IS_LED(_id)) {             \
+            return ONLP_STATUS_E_INVALID;       \
+        }                                       \
+    } while(0)
 
-static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
+#define CHASSIS_LED_INFO(id, desc)              \
+    {                                           \
+        { ONLP_LED_ID_CREATE(id), desc, POID_0},\
+        LED_STATUS,                             \
+        LED_CAPS,                               \
+        LED_MODE,                               \
+    }
+
+/* SYSFS */
+#define LED_STATUS_1_ATTR   "cpld_sys_led_ctrl_1"
+#define LED_STATUS_2_ATTR   "cpld_sys_led_ctrl_2"
+
+static onlp_led_info_t led_info[] =
 {
     { }, /* Not used */
-    {
-        .hdr = {
-            .id = ONLP_LED_ID_CREATE(ONLP_LED_SYSTEM),
-            .description = "Chassis LED 1 (SYS LED)",
-            .poid = 0,
-        },
-        .status = ONLP_LED_STATUS_PRESENT,
-        .caps = (ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
-                 ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING),
-        .mode = ONLP_LED_MODE_OFF,
-    },
-    {
-        .hdr = {
-            .id = ONLP_LED_ID_CREATE(ONLP_LED_PSU0),
-            .description = "Chassis LED 2 (PSU0 LED)",
-            .poid = 0,
-        },
-        .status = ONLP_LED_STATUS_PRESENT,
-        .caps = (ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
-                 ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING),
-        .mode = ONLP_LED_MODE_OFF,
-    },
-    {
-        .hdr = {
-            .id = ONLP_LED_ID_CREATE(ONLP_LED_PSU1),
-            .description = "Chassis LED 3 (PSU1 LED)",
-            .poid = 0,
-        },
-        .status = ONLP_LED_STATUS_PRESENT,
-        .caps = (ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
-                 ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING),
-        .mode = ONLP_LED_MODE_OFF,
-    },
-    {
-        .hdr = {
-            .id = ONLP_LED_ID_CREATE(ONLP_LED_FAN),
-            .description = "Chassis LED 4 (FAN LED)",
-            .poid = 0,
-        },
-        .status = ONLP_LED_STATUS_PRESENT,
-        .caps = (ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
-                 ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING),
-        .mode = ONLP_LED_MODE_OFF,
-    },
+    CHASSIS_LED_INFO(ONLP_LED_SYSTEM, "Chassis LED 1 (SYS LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_PSU0,   "Chassis LED 2 (PSU0 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_PSU1,   "Chassis LED 3 (PSU1 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_FAN,    "Chassis LED 4 (FAN LED)"),
 };
-
 
 /**
  * @brief Update the information structure for the given LED
@@ -99,22 +77,22 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
     int led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
 
     if(local_id == ONLP_LED_SYSTEM) {
-        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH"/"LED_STATUS_1_ATTR));
+        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH "/" LED_STATUS_1_ATTR));
         led_val_color = (led_reg_value & 0b00010000) >> 4; //1: Green,    0: Yellow
         led_val_blink = (led_reg_value & 0b01000000) >> 6; //1: Blinking, 0: Solid
         led_val_onoff = (led_reg_value & 0b10000000) >> 7; //1: On,       0: Off
     } else if(local_id == ONLP_LED_PSU0) {
-        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH"/"LED_STATUS_2_ATTR));
+        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH "/" LED_STATUS_2_ATTR));
         led_val_color = (led_reg_value & 0b00000001) >> 0; //1: Green, 0: Yellow
         led_val_blink = (led_reg_value & 0b00000100) >> 2; //1: Blinking, 0: Solid
         led_val_onoff = (led_reg_value & 0b00001000) >> 3; //1: On,       0: Off
     } else if(local_id == ONLP_LED_PSU1) {
-        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH"/"LED_STATUS_2_ATTR));
+        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH "/" LED_STATUS_2_ATTR));
         led_val_color = (led_reg_value & 0b00010000) >> 4; //1: Green, 0: Yellow
         led_val_blink = (led_reg_value & 0b01000000) >> 6; //1: Blinking, 0: Solid
         led_val_onoff = (led_reg_value & 0b10000000) >> 7; //1: On,       0: Off
     } else if(local_id == ONLP_LED_FAN) {
-        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH"/"LED_STATUS_1_ATTR));
+        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH "/" LED_STATUS_1_ATTR));
         led_val_color = (led_reg_value & 0b00000001) >> 0; //1: Green, 0: Yellow
         led_val_blink = (led_reg_value & 0b00000100) >> 2; //1: Blinking, 0: Solid
         led_val_onoff = (led_reg_value & 0b00001000) >> 3; //1: On,       0: Off
@@ -167,7 +145,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
 
     /* Set the onlp_led_info_t */
     memset(info, 0, sizeof(onlp_led_info_t));
-    *info = __onlp_led_info[local_id];
+    *info = led_info[local_id];
     ONLP_TRY(onlp_ledi_hdr_get(id, &info->hdr));
 
     /* Update ledi onlp_led_info_t status */
@@ -202,7 +180,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
     int local_id = ONLP_OID_ID_GET(id);
 
     /* Set the onlp_led_info_t */
-    *hdr = __onlp_led_info[local_id].hdr;
+    *hdr = led_info[local_id].hdr;
 
     return ONLP_STATUS_OK;
 }

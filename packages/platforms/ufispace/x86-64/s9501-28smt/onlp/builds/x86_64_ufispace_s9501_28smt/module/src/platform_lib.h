@@ -34,6 +34,15 @@
 #include "x86_64_ufispace_s9501_28smt_log.h"
 #include <x86_64_ufispace_s9501_28smt/x86_64_ufispace_s9501_28smt_config.h>
 
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
@@ -352,31 +361,23 @@ int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx);
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id);
+int sys_led_info_get(onlp_led_info_t* info, int id);
 
-int
-psu_fru_get(onlp_psu_info_t* info, int id);
+int psu_fru_get(onlp_psu_info_t* info, int id);
 
-int
-psu_stbiout_get(int* stbiout, int id);
+int psu_stbiout_get(int* stbiout, int id);
 
-int
-psu_stbvout_get(int* stbvout, int id);
+int psu_stbvout_get(int* stbvout, int id);
 
-void
-lock_init();
+void lock_init();
 
-int
-bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 
-int
-bmc_fru_read(onlp_psu_info_t* info, int id);
+int bmc_fru_read(onlp_psu_info_t* info, int id);
 
 void check_and_do_i2c_mux_reset(int port);
 
-int
-sys_fan_present_get(onlp_fan_info_t* info, int id);
+int sys_fan_present_get(onlp_fan_info_t* info, int id);
 
 extern bool bmc_enable;
 #endif  /* __PLATFORM_LIB_H__ */

@@ -49,29 +49,27 @@
 static onlp_led_info_t led_info[] =
 {
     { }, // Not used *
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 1 (SYS LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 2 (FAN LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 3 (PSU0 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 4 (PSU1 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 5 (SYNC LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 1 (SYNC LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 2 (SYS LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 3 (FAN LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 4 (PSU0 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 5 (PSU1 LED)"),    
 };
 
 static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
 {
     int value = 0;
-    int sysfs_index = 0;
-    int shift = 0, led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
-
-    if (id < ONLP_LED_MAX) {        
-        sysfs_index=(id-ONLP_LED_SYS_SYS)/2;
-        shift = ((id-ONLP_LED_SYS_SYS)%2)*4;    
-    } else {
-        return ONLP_STATUS_E_INTERNAL;
+    int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
+    int sysfs_index[ONLP_LED_MAX] = {-1, 2, 0, 0, 1, 1};
+    int shift[ONLP_LED_MAX] = {-1, 0, 0, 4, 0, 4};
+    
+    if (id <= 0 || id >= ONLP_LED_MAX) {
+        return ONLP_STATUS_E_PARAM;
     }
 
-    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index));
+    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index[id]));
 
-    led_val = (value >> shift);
+    led_val = (value >> shift[id]);
     led_val_color = (led_val >> 0) & 1;
     led_val_blink = (led_val >> 2) & 1;
     led_val_onoff = (led_val >> 3) & 1;
@@ -118,7 +116,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
     *rv = led_info[led_id];
 
     switch (led_id) {        
-        case ONLP_LED_SYS_SYS ... ONLP_LED_SYS_SYNC:
+        case ONLP_LED_SYS_SYNC ... ONLP_LED_SYS_PSU_1:
             rc = ufi_sys_led_info_get(led_id, rv);
             break;        
         default:            

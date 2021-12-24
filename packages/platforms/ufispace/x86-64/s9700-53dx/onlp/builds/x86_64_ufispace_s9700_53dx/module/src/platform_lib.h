@@ -67,6 +67,9 @@
  *            |----[04] ONLP_FAN_4
  */
 
+#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+
 #define ONLP_TRY(_expr)                                                 \
     do {                                                                \
         int _rv = (_expr);                                              \
@@ -203,6 +206,19 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_IOUT      = 32,
     BMC_ATTR_ID_PSU1_STBVOUT   = 33,
     BMC_ATTR_ID_PSU1_STBIOUT   = 34,
+    BMC_ATTR_ID_MAX            = 35,
+};
+
+enum fru_attr_id {
+    FRU_ATTR_ID_PSU0_VENDOR,
+    FRU_ATTR_ID_PSU0_NAME,
+    FRU_ATTR_ID_PSU0_MODEL,
+    FRU_ATTR_ID_PSU0_SERIAL,
+    FRU_ATTR_ID_PSU1_VENDOR,
+    FRU_ATTR_ID_PSU1_NAME,
+    FRU_ATTR_ID_PSU1_MODEL,
+    FRU_ATTR_ID_PSU1_SERIAL,
+    FRU_ATTR_ID_MAX
 };
 
 enum sensor {
@@ -216,11 +232,29 @@ typedef struct bmc_info_s {
     float data;
 } bmc_info_t;
 
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+typedef struct bmc_fru_attr_s {
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+} bmc_fru_attr_t;
+
+typedef struct bmc_fru_s {
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+} bmc_fru_t;
+
 
 void lock_init();
 int check_file_exist(char *file_path, long *file_time);
+int bmc_check_alive(void);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
 int get_ipmitool_len(char *ipmitool_out) ;

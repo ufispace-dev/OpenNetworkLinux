@@ -135,6 +135,7 @@ enum cpld_sysfs_attributes {
     CPLD_HBM_PWR_EN,
     CPLD_BUILD,
     CPLDX_BUILD,
+    CPLD_VERION_H,
 	CPLD_MAX
 };
 
@@ -145,6 +146,8 @@ static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg);
+static ssize_t read_cpld_version_h_callback(struct device *dev,
+        struct device_attribute *da, char *buf);
 
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
@@ -336,6 +339,8 @@ static SENSOR_DEVICE_ATTR(cpld_build, S_IRUGO,
         read_cpld_callback, NULL, CPLD_BUILD);
 static SENSOR_DEVICE_ATTR(cpldx_build, S_IRUGO,
         read_cpld_callback, NULL, CPLDX_BUILD);
+static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO, \
+        read_cpld_version_h_callback, NULL, CPLD_VERION_H);
 /* define support attributes of cpldx */
 
 /* cpld 1 */
@@ -382,6 +387,7 @@ static struct attribute *cpld1_attributes[] = {
     &sensor_dev_attr_cpld_phy_pg.dev_attr.attr,
     &sensor_dev_attr_cpld_hbm_pwr_en.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     NULL
 };
 
@@ -390,6 +396,7 @@ static struct attribute *cpld2_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpldx_build.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_led_mask.dev_attr.attr,
     &sensor_dev_attr_cpldx_intr_mask.dev_attr.attr,
 	&sensor_dev_attr_cpldx_plug_evt_0.dev_attr.attr,
@@ -434,6 +441,7 @@ static struct attribute *cpld2_attributes[] = {
 static struct attribute *cpld345_attributes[] = {
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpldx_build.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_led_mask.dev_attr.attr,
     &sensor_dev_attr_cpldx_intr_mask.dev_attr.attr,
@@ -823,6 +831,38 @@ static ssize_t write_cpld_reg(struct device *dev,
     }
 
     return count;
+}
+
+/* handle read human-readable string for cpld_version attributes */
+static ssize_t read_cpld_version_h_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    int cpld_build_reg = 0;
+    int cpld_version = 0, cpld_ver_major = 0, cpld_ver_minor = 0, cpld_ver_build = 0;
+
+    switch (data->index) {
+        case cpld1:
+            cpld_build_reg = CPLD_BUILD_REG;
+            break;
+        case cpld2:
+        case cpld3:
+            cpld_build_reg = CPLDX_BUILD_REG;
+            break;
+    }
+
+    I2C_READ_BYTE_DATA(cpld_version, &data->access_lock, client, CPLD_VERSION_REG);
+    if (cpld_version < 0)
+        return -1;
+    cpld_ver_major = (((cpld_version) >> 6 & 0x03));
+    cpld_ver_minor = (((cpld_version) & 0x3F));
+
+    I2C_READ_BYTE_DATA(cpld_ver_build, &data->access_lock, client, cpld_build_reg);
+    if (cpld_ver_build < 0)
+        return -1;
+
+    return sprintf(buf, "%d.%02d.%03d\n", cpld_ver_major, cpld_ver_minor, cpld_ver_build);
 }
 
 /* add valid cpld client to list */

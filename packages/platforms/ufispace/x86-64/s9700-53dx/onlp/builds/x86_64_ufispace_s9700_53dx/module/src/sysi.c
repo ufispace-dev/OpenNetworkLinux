@@ -37,9 +37,9 @@
 #include "platform_lib.h"
 
 #define CMD_BIOS_VER  "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
-#define CMD_BMC_VER_1 "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
-#define CMD_BMC_VER_2 "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3 "echo $((`ipmitool mc info | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
+#define CMD_BMC_VER_1 "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_2 "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
+#define CMD_BMC_VER_3 "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 #define CMD_UCD_VER   "ipmitool raw 0x3c 0x08"
 
 /* This is definitions for x86-64-ufispace-s9700-53dx*/
@@ -193,6 +193,12 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
 
     //Get BIOS version 
     ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
+
+    //Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
 
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||

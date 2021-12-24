@@ -31,9 +31,6 @@
 
 #include "platform_lib.h"
 
-#define CMD_FRU_INFO_GET        "ipmitool fru print %d | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
-
-
 /**
  * Get all information about the given PSU oid.
  *
@@ -118,58 +115,22 @@ static int get_psui_pwgood_status(int local_id, int *status)
  */
 static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
-    char cmd[100];
-    char cmd_out[64];
-    char fru_model[] = "Product Name";  //only Product Name can identify AC/DC
-    char fru_serial[] = "Product Serial";
+    bmc_fru_t fru = {0};
 
-    //FRU (model)
+    //read fru data
+    ONLP_TRY(bmc_fru_read(local_id, &fru));
 
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
+    //update FRU model
     memset(info->model, 0, sizeof(info->model));
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
 
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_model);
-
-    //Get psu fru info (model) from BMC 
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct    
-    if (strnlen(cmd_out, sizeof(cmd_out)) == 0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, cmd_out is empty, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
-
-    //FRU (serial) 
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
+    //update FRU serial
     memset(info->serial, 0, sizeof(info->serial));
-
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, local_id, fru_serial);
-
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, cmd_out is empty, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out)) == 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", local_id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->serial, sizeof(info->serial), "%s", cmd_out);
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
     return ONLP_STATUS_OK;
 }
 
-#if 0
 /**
  * @brief Update the information of PSU Type from PSU Model (AC/DC)
  * @param id The PSU Local ID
@@ -178,9 +139,11 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 static int update_psui_psu_type(int local_id, onlp_psu_info_t* info)
 {
     if (strstr(info->model, "AM") > 0) {
-        info->type = ONLP_PSU_TYPE_AC;
+        info->caps |= ONLP_PSU_CAPS_AC;
+        info->caps &= ~ONLP_PSU_CAPS_DC48;
     } else if (strstr(info->model, "EM") > 0) {
-        info->type = ONLP_PSU_TYPE_DC48;
+        info->caps &= ~ONLP_PSU_CAPS_AC;
+        info->caps |= ONLP_PSU_CAPS_DC48;
     } else {
         AIM_LOG_ERROR("unknown PSU type, model=%s, func=%s\n", info->model, __FUNCTION__);
         return ONLP_STATUS_E_INTERNAL;
@@ -188,7 +151,6 @@ static int update_psui_psu_type(int local_id, onlp_psu_info_t* info)
 
     return ONLP_STATUS_OK;
 }
-#endif
 
 /**
  * @brief Update the information structure for the given PSU
@@ -264,10 +226,8 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
     /* Update FRU (model/serial) */
     ONLP_TRY(update_psui_fru_info(local_id, info));
 
-#if 0
     /* Update PSU Type AC/DC */
     ONLP_TRY(update_psui_psu_type(local_id, info));
-#endif
 
     return ONLP_STATUS_OK;
 }
