@@ -30,10 +30,10 @@
 /**
  * Get all information about the given FAN oid.
  *
- * [01] CHASSIS----[01] ONLP_FAN_1
- *            |----[02] ONLP_FAN_2
- *            |----[03] ONLP_FAN_3
- *            |----[04] ONLP_FAN_4
+ * [01] CHASSIS----[01] ONLP_FAN_0
+ *            |----[02] ONLP_FAN_1
+ *            |----[03] ONLP_FAN_2
+ *            |----[04] ONLP_FAN_3
  *            |
  *            |----[01] ONLP_PSU_0----[05] ONLP_PSU0_FAN_1
  *            |                  |----[06] ONLP_PSU0_FAN_2
@@ -43,6 +43,17 @@
  */
 static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     { }, /* Not used */
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0),
+            .description = "Chassis Fan - 0",
+            .poid = 0,
+        },
+        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
+        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
+        .model = "",
+        .serial = "",
+    },
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1),
@@ -62,24 +73,13 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
-    },
-    {
-        .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3),
-            .description = "Chassis Fan - 3",
-            .poid = 0,
-        },
-        .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
-        .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
         .model = "", 
         .serial = "", 
     },
     {   
         .hdr = { 
-            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_4),
-            .description = "Chassis Fan - 4",
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3),
+            .description = "Chassis Fan - 3",
             .poid = 0,
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -155,13 +155,13 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     }
 
     /* set bmc attr id */
-    if (local_id == ONLP_FAN_1) {
+    if (local_id == ONLP_FAN_0) {
         attr_id = BMC_ATTR_ID_FAN0_RPM;
-    } else if (local_id == ONLP_FAN_2) {
+    } else if (local_id == ONLP_FAN_1) {
         attr_id = BMC_ATTR_ID_FAN1_RPM;
-    } else if (local_id == ONLP_FAN_3) {
+    } else if (local_id == ONLP_FAN_2) {
         attr_id = BMC_ATTR_ID_FAN2_RPM;
-    } else if (local_id == ONLP_FAN_4) {
+    } else if (local_id == ONLP_FAN_3) {
         attr_id = BMC_ATTR_ID_FAN3_RPM;
     } else if (local_id == ONLP_PSU0_FAN_1) {
         attr_id = BMC_ATTR_ID_PSU0_FAN1;
@@ -183,10 +183,10 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     //set rpm field
     info->rpm = rpm;
 
-    if (local_id >= ONLP_FAN_1 && local_id <= ONLP_FAN_4) {
+    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {
         percentage = (info->rpm * 100) / sys_max_fan_speed;
-        info->percentage = percentage;
         percentage = (percentage > 100) ? 100 : percentage;
+        info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (local_id >= ONLP_PSU0_FAN_1 && local_id <= ONLP_PSU1_FAN_2) {
         if (local_id == ONLP_PSU0_FAN_1 || local_id == ONLP_PSU1_FAN_1 ) {
@@ -229,7 +229,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* info)
     /* Update onlp fani status */
     ONLP_TRY(onlp_fani_status_get(id, &info->status));
 
-    if (local_id >= ONLP_FAN_1 && local_id <= ONLP_PSU1_FAN_2) {
+    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_PSU1_FAN_2) {
         ONLP_TRY(update_fani_info(local_id, info));
     } else {
         AIM_LOG_ERROR("unknown FAN id (%d), func=%s\n", local_id, __FUNCTION__);
@@ -257,15 +257,15 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
     /* clear FAN status */
     *status = 0;
 
-    if (local_id >= ONLP_FAN_1 && local_id <= ONLP_FAN_4) {
+    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {
         *status = 0;
         
         /* set bmc attr id */
-        if (local_id == ONLP_FAN_1) {
+        if (local_id == ONLP_FAN_0) {
             attr_id = BMC_ATTR_ID_FAN0_PRSNT_H;
-        } else if (local_id == ONLP_FAN_2) {
+        } else if (local_id == ONLP_FAN_1) {
             attr_id = BMC_ATTR_ID_FAN1_PRSNT_H;
-        } else if (local_id == ONLP_FAN_3) {
+        } else if (local_id == ONLP_FAN_2) {
             attr_id = BMC_ATTR_ID_FAN2_PRSNT_H;
         } else {
             attr_id = BMC_ATTR_ID_FAN3_PRSNT_H;

@@ -34,6 +34,15 @@
 #include "x86_64_ufispace_s9600_64x_log.h"
 
 #include <x86_64_ufispace_s9600_64x/x86_64_ufispace_s9600_64x_config.h>
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
@@ -42,6 +51,12 @@
 #define SYS_CORE_TEMP_PREFIX        "/sys/class/hwmon/hwmon2/"
 #define SYS_CPU_BOARD_TEMP_PREFIX   "/sys/bus/i2c/devices/0-004f/hwmon/hwmon1/"
 #define SYS_CPU_BOARD_TEMP_PREFIX2   "/sys/bus/i2c/devices/0-004f/"
+
+/* LPC ATTR */
+#define SYS_LPC                 "/sys/devices/platform/x86_64_ufispace_s9600_64x_lpc"
+#define LPC_MB_CPLD_PATH        SYS_LPC "/mb_cpld"
+#define LPC_CPU_CPLD_PATH       SYS_LPC "/cpu_cpld"
+#define LPC_CPU_CPLD_VER_ATTR   "cpu_cpld_version_h"
 
 #define SYS_FAN_PREFIX              "/sys/class/hwmon/hwmon1/device/"
 #define SYS_EEPROM_PATH             "/sys/bus/i2c/devices/0-0057/eeprom"
@@ -55,13 +70,36 @@
 #define CMD_BIOS_VER                "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1               "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2               "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
-#define CMD_BMC_VER_3               "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
-#define CMD_BMC_SENSOR_CACHE        "ipmitool sdr -c get TEMP_CPU_PECI TEMP_Q2CL_ENV TEMP_Q2CL_DIE TEMP_Q2CR_ENV TEMP_Q2CR_DIE TEMP_REAR_ENV_1 TEMP_REAR_ENV_2 PSU0_TEMP PSU1_TEMP FAN0_RPM FAN1_RPM FAN2_RPM FAN3_RPM PSU0_FAN PSU1_FAN FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
-#define CMD_BMC_SDR_GET             "ipmitool sdr -c get %s"IPMITOOL_REDIRECT_ERR
-#define CMD_FRU_INFO_GET            "ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
+#define CMD_BMC_VER_3               "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get TEMP_CPU_PECI TEMP_Q2CL_ENV TEMP_Q2CL_DIE TEMP_Q2CR_ENV TEMP_Q2CR_DIE TEMP_REAR_ENV_1 TEMP_REAR_ENV_2 PSU0_TEMP PSU1_TEMP FAN0_RPM FAN1_RPM FAN2_RPM FAN3_RPM PSU0_FAN PSU1_FAN FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_SDR_GET             "timeout %ds ipmitool sdr -c get %s"IPMITOOL_REDIRECT_ERR
+#define CMD_FRU_INFO_GET            "timeout %ds ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
 #define CMD_BMC_CACHE_GET           "cat "BMC_SENSOR_CACHE" | grep %s | awk -F',' '{print $%d}'"
+#define BMC_FRU_LINE_SIZE            256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  ONLP_CONFIG_INFO_STR_MAX
+#define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
+#define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
+#define BMC_FRU_KEY_NAME            "Product Name"
+#define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
+#define BMC_FRU_KEY_SERIAL          "Product Serial"
+
+#define CMD_FRU_CACHE_SET "timeout %ds ipmitool fru print %d " \
+                           IPMITOOL_REDIRECT_ERR \
+                          " | grep %s" \
+                          " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
+                          " > %s"
+
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9600_64x_lpc/mb_cpld/mux_reset"
+
+/*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
+ *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value
+ *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
+ *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
+ */
+
+#define IPMITOOL_CMD_TIMEOUT        10
 
 #define PSU_STATUS_PRESENT          1
 #define PSU_STATUS_POWER_GOOD       1
@@ -187,7 +225,7 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 /* BMC CMD */
 #define BMC_CACHE_EN            1
 #define BMC_CACHE_CYCLE         30
-#define BMC_CMD_SDR_SIZE        48
+#define BMC_CMD_SDR_SIZE        ONLP_CONFIG_INFO_STR_MAX
 #define BMC_TOKEN_SIZE          20
 
 #define FAN_CACHE_TIME          5
@@ -205,6 +243,40 @@ enum sensor
     THERMAL_SENSOR,
 };
 
+enum bmc_attr_id {
+    BMC_ATTR_ID_TEMP_CPU_PECI,
+    BMC_ATTR_ID_TEMP_Q2CL_ENV,
+    BMC_ATTR_ID_TEMP_Q2CL_DIE,
+    BMC_ATTR_ID_TEMP_Q2CR_ENV,
+    BMC_ATTR_ID_TEMP_Q2CR_DIE,
+    BMC_ATTR_ID_TEMP_REAR_ENV_1,
+    BMC_ATTR_ID_TEMP_REAR_ENV_2,
+    BMC_ATTR_ID_PSU0_TEMP,
+    BMC_ATTR_ID_PSU1_TEMP,
+    BMC_ATTR_ID_FAN0_RPM,
+    BMC_ATTR_ID_FAN1_RPM,
+    BMC_ATTR_ID_FAN2_RPM,
+    BMC_ATTR_ID_FAN3_RPM,
+    BMC_ATTR_ID_PSU0_FAN,
+    BMC_ATTR_ID_PSU1_FAN,
+    BMC_ATTR_ID_FAN0_PRSNT_H,
+    BMC_ATTR_ID_FAN1_PRSNT_H,
+    BMC_ATTR_ID_FAN2_PRSNT_H,
+    BMC_ATTR_ID_FAN3_PRSNT_H,
+    BMC_ATTR_ID_PSU0_VIN,
+    BMC_ATTR_ID_PSU0_VOUT,
+    BMC_ATTR_ID_PSU0_IIN,
+    BMC_ATTR_ID_PSU0_IOUT,
+    BMC_ATTR_ID_PSU0_STBVOUT,
+    BMC_ATTR_ID_PSU0_STBIOUT,
+    BMC_ATTR_ID_PSU1_VIN,
+    BMC_ATTR_ID_PSU1_VOUT,
+    BMC_ATTR_ID_PSU1_IIN,
+    BMC_ATTR_ID_PSU1_IOUT,
+    BMC_ATTR_ID_PSU1_STBVOUT,
+    BMC_ATTR_ID_PSU1_STBIOUT,
+    BMC_ATTR_ID_MAX
+};
 typedef struct bmc_info_s
 {
     char name[20];
@@ -264,6 +336,13 @@ typedef enum thermal_oid_e {
     THERMAL_OID_FRONT_ENV = ONLP_THERMAL_ID_CREATE(21),
 } thermal_oid_t;
 
+/* psu_id */
+enum onlp_psu_id {
+    ONLP_PSU_0 = 1,
+    ONLP_PSU_1,
+    ONLP_PSU_MAX,
+};
+
 /** thermal_id */
 typedef enum thermal_id_e {
     THERMAL_ID_CPU_PECI = 1,
@@ -290,6 +369,16 @@ typedef enum thermal_id_e {
     THERMAL_ID_CPU_BOARD = 22,
     THERMAL_ID_MAX = 23,
 } thermal_id_t;
+
+/** onlp_psu_type */
+typedef enum onlp_psu_type_e {
+    ONLP_PSU_TYPE_AC,
+    ONLP_PSU_TYPE_DC12,
+    ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_COUNT,
+    ONLP_PSU_TYPE_INVALID = -1,
+} onlp_psu_type_t;
 
 /* Shortcut for CPU thermal threshold value. */
 #define THERMAL_THRESHOLD_INIT_DEFAULTS  \
@@ -343,37 +432,28 @@ typedef enum psu_id_e {
     PSU_ID_MAX = 15,
 } psu_id_t;
 
+typedef struct bmc_fru_attr_s
+{
+    char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+}bmc_fru_attr_t;
+
+typedef struct bmc_fru_s
+{
+    int bmc_fru_id;
+    char init_done;
+    char cache_files[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    bmc_fru_attr_t vendor;
+    bmc_fru_attr_t name;
+    bmc_fru_attr_t part_num;
+    bmc_fru_attr_t serial;
+}bmc_fru_t;
+
 int psu_thermal_get(onlp_thermal_info_t* info, int id);
-
-int psu_fan_info_get(onlp_fan_info_t* info, int id);
-
-int psu_vin_get(onlp_psu_info_t* info, int id);
-
-int psu_vout_get(onlp_psu_info_t* info, int id);
-
-int psu_iin_get(onlp_psu_info_t* info, int id);
-
-int psu_iout_get(onlp_psu_info_t* info, int id);
-
-int psu_pout_get(onlp_psu_info_t* info, int id);
-
-int psu_pin_get(onlp_psu_info_t* info, int id);
-
-int psu_eeprom_get(onlp_psu_info_t* info, int id);
 
 int psu_present_get(int *pw_present, int id);
 
 int psu_pwgood_get(int *pw_good, int id);
-
-int psu2_led_set(onlp_led_mode_t mode);
-
-int psu1_led_set(onlp_led_mode_t mode);
-
-int fan_led_set(onlp_led_mode_t mode);
-
-int system_led_set(onlp_led_mode_t mode);
-
-int fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 
@@ -405,25 +485,23 @@ int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx);
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id);
+int sys_led_info_get(onlp_led_info_t* info, int id);
 
-int
-psu_fru_get(onlp_psu_info_t* info, int id);
+void lock_init();
 
-int
-psu_stbiout_get(int* stbiout, int id);
+int bmc_check_alive(void);
 
-int
-psu_stbvout_get(int* stbvout, int id);
+int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 
-void
-lock_init();
-
-int
-bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data);
 
 void check_and_do_i2c_mux_reset(int port);
+
+uint8_t ufi_shift(uint8_t mask);
+
+uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
+
+uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 extern bool bmc_enable;
 #endif  /* __PLATFORM_LIB_H__ */

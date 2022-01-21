@@ -366,14 +366,20 @@ function _cpld_version_i2c {
             mb_cpld3_ver=$(eval "i2cget -y -f 0 0x32 0x2 ${LOG_REDIRECT}")            
             mb_cpld4_ver=$(eval "i2cget -y -f 0 0x33 0x2 ${LOG_REDIRECT}")
             mb_cpld5_ver=$(eval "i2cget -y -f 0 0x34 0x2 ${LOG_REDIRECT}")
+            mb_cpld1_build=$(eval "i2cget -y -f 0 0x30 0x80 ${LOG_REDIRECT}")
+            mb_cpld2_build=$(eval "i2cget -y -f 0 0x31 0x04 ${LOG_REDIRECT}")
+            mb_cpld3_build=$(eval "i2cget -y -f 0 0x32 0x04 ${LOG_REDIRECT}")
+            mb_cpld4_build=$(eval "i2cget -y -f 0 0x33 0x04 ${LOG_REDIRECT}")
+            mb_cpld5_build=$(eval "i2cget -y -f 0 0x34 0x04 ${LOG_REDIRECT}")
+
             i2cset -y 0 0x75 0x0
         fi
 
-        _echo "[MB CPLD1 Version]: $(( (mb_cpld1_ver & 2#11000000) >> 6)).$(( mb_cpld1_ver & 2#00111111 ))"
-        _echo "[MB CPLD2 Version]: $(( (mb_cpld2_ver & 2#11000000) >> 6)).$(( mb_cpld2_ver & 2#00111111 ))"
-        _echo "[MB CPLD3 Version]: $(( (mb_cpld3_ver & 2#11000000) >> 6)).$(( mb_cpld3_ver & 2#00111111 ))"
-        _echo "[MB CPLD4 Version]: $(( (mb_cpld4_ver & 2#11000000) >> 6)).$(( mb_cpld4_ver & 2#00111111 ))"
-        _echo "[MB CPLD5 Version]: $(( (mb_cpld5_ver & 2#11000000) >> 6)).$(( mb_cpld5_ver & 2#00111111 ))"
+        _echo "[MB CPLD1 Version]: $(( (mb_cpld1_ver & 2#11000000) >> 6)).$(( mb_cpld1_ver & 2#00111111 )).`printf "%03d" ${mb_cpld1_build}`"
+        _echo "[MB CPLD2 Version]: $(( (mb_cpld2_ver & 2#11000000) >> 6)).$(( mb_cpld2_ver & 2#00111111 )).`printf "%03d" ${mb_cpld2_build}`"
+        _echo "[MB CPLD3 Version]: $(( (mb_cpld3_ver & 2#11000000) >> 6)).$(( mb_cpld3_ver & 2#00111111 )).`printf "%03d" ${mb_cpld3_build}`"
+        _echo "[MB CPLD4 Version]: $(( (mb_cpld4_ver & 2#11000000) >> 6)).$(( mb_cpld4_ver & 2#00111111 )).`printf "%03d" ${mb_cpld4_build}`"
+        _echo "[MB CPLD5 Version]: $(( (mb_cpld5_ver & 2#11000000) >> 6)).$(( mb_cpld5_ver & 2#00111111 )).`printf "%03d" ${mb_cpld5_build}`"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -385,35 +391,37 @@ function _cpld_version_sysfs {
 
     # CPU CPLD
     cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_build=`${IOGET} 0x6e0`
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
+        cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
     else
         _echo "Get CPU CPLD version info failed ($ret), Exit!!"
         exit $ret
     fi
 
-    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} " 
-    _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))" 
+    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info}.${cpu_cpld_build} "
+    _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 )).`printf "%03d" ${cpu_cpld_build}`"
 
     if [ "${MODEL_NAME}" == "S9600-64X" ]; then
         # MB CPLD S9600-64X
-        _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0031/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0032/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0033/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0034/cpld_version"
-        mb_cpld1_ver=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_version ${LOG_REDIRECT}")
-        mb_cpld2_ver=$(eval "cat /sys/bus/i2c/devices/1-0031/cpld_version ${LOG_REDIRECT}")
-        mb_cpld3_ver=$(eval "cat /sys/bus/i2c/devices/1-0032/cpld_version ${LOG_REDIRECT}")
-        mb_cpld4_ver=$(eval "cat /sys/bus/i2c/devices/1-0033/cpld_version ${LOG_REDIRECT}")
-        mb_cpld5_ver=$(eval "cat /sys/bus/i2c/devices/1-0034/cpld_version ${LOG_REDIRECT}")
+        _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0031/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0032/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0033/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0034/cpld_version_h"
+        mb_cpld1_ver=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_version_h ${LOG_REDIRECT}")
+        mb_cpld2_ver=$(eval "cat /sys/bus/i2c/devices/1-0031/cpld_version_h ${LOG_REDIRECT}")
+        mb_cpld3_ver=$(eval "cat /sys/bus/i2c/devices/1-0032/cpld_version_h ${LOG_REDIRECT}")
+        mb_cpld4_ver=$(eval "cat /sys/bus/i2c/devices/1-0033/cpld_version_h ${LOG_REDIRECT}")
+        mb_cpld5_ver=$(eval "cat /sys/bus/i2c/devices/1-0034/cpld_version_h ${LOG_REDIRECT}")
 
-        _echo "[MB CPLD1 Version]: $(( (mb_cpld1_ver & 2#11000000) >> 6)).$(( mb_cpld1_ver & 2#00111111 ))"
-        _echo "[MB CPLD2 Version]: $(( (mb_cpld2_ver & 2#11000000) >> 6)).$(( mb_cpld2_ver & 2#00111111 ))"
-        _echo "[MB CPLD3 Version]: $(( (mb_cpld3_ver & 2#11000000) >> 6)).$(( mb_cpld3_ver & 2#00111111 ))"
-        _echo "[MB CPLD4 Version]: $(( (mb_cpld4_ver & 2#11000000) >> 6)).$(( mb_cpld4_ver & 2#00111111 ))"
-        _echo "[MB CPLD5 Version]: $(( (mb_cpld5_ver & 2#11000000) >> 6)).$(( mb_cpld5_ver & 2#00111111 ))"
+        _echo "[MB CPLD1 Version]: ${mb_cpld1_ver}"
+        _echo "[MB CPLD2 Version]: ${mb_cpld2_ver}"
+        _echo "[MB CPLD3 Version]: ${mb_cpld3_ver}"
+        _echo "[MB CPLD4 Version]: ${mb_cpld4_ver}"
+        _echo "[MB CPLD5 Version]: ${mb_cpld5_ver}"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1

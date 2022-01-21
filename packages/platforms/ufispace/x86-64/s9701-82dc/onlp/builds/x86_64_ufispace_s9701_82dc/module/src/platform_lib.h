@@ -57,7 +57,8 @@
 #define LPC_MB_CPLD_PATH        SYS_LPC "/mb_cpld"
 #define LPC_CPU_CPLD_PATH       SYS_LPC "/cpu_cpld"
 /* LENGTH */
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE 256
+#define BMC_FRU_LINE_SIZE           256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 /* error redirect */
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"

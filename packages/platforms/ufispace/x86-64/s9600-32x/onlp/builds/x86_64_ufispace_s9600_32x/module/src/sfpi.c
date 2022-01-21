@@ -53,7 +53,7 @@ static int ufi_port_to_eeprom_bus(int port)
     if (IS_QSFP(port)) { //QSFP
         bus =  port + 29;
     } else if (IS_SFP(port)) { //SFP
-        bus =  port + 25;
+        bus =  port - 7;
     } else { //unknown ports
         AIM_LOG_ERROR("unknown ports, port=%d\n", port);
         check_and_do_i2c_mux_reset(port);

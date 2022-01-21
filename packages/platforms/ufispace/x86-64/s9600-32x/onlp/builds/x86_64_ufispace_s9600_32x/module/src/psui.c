@@ -63,6 +63,74 @@ int onlp_psui_init(void)
     return ONLP_STATUS_OK;
 }
 
+/**
+ * @brief get psu type
+ * @param local_id: psu id
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
+ * @param fru_in: input fru node. we will use the input node informations to get psu type
+ */
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
+{
+    bmc_fru_t *fru = NULL;
+    bmc_fru_t fru_tmp = {0};
+
+    if(psu_type == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if(fru_in == NULL) {
+        fru = &fru_tmp;
+        ONLP_TRY(bmc_fru_read(local_id, fru));
+    } else {
+        fru = fru_in;
+    }
+
+    //TODO: PSU Type ignore
+    /*if(strcmp(fru->name.val, "VICTO451AM") == 0) {
+        *psu_type = ONLP_PSU_TYPE_AC;
+    } else if (strcmp(fru->name.val, "YNEB0450AM") == 0) {
+        *psu_type = ONLP_PSU_TYPE_DC48;
+    } else {
+        *psu_type = ONLP_PSU_TYPE_INVALID;
+        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
+    }*/
+    *psu_type = ONLP_PSU_TYPE_INVALID;
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Update the information of Model and Serial from PSU EEPROM
+ * @param local_id The PSU Local ID
+ * @param[out] info Receives the PSU information (model and serial).
+ */
+static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
+{
+    bmc_fru_t fru = {0};
+    int psu_type = ONLP_PSU_TYPE_AC;
+
+    //read fru data
+    ONLP_TRY(bmc_fru_read(local_id, &fru));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    //update FRU type
+    ONLP_TRY(get_psu_type(local_id, &psu_type, &fru));
+
+    if(psu_type == ONLP_PSU_TYPE_AC) {
+        info->caps |= ONLP_PSU_CAPS_AC;
+    } else if(psu_type == ONLP_PSU_TYPE_DC48){
+        info->caps |= ONLP_PSU_CAPS_DC48;
+    }
+    return ONLP_STATUS_OK;
+}
+
 int psu_status_info_get(int id, onlp_psu_info_t *info)
 {   
     int rc, pw_present, pw_good;    
@@ -152,9 +220,7 @@ int psu_status_info_get(int id, onlp_psu_info_t *info)
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
     
     /* Get FRU (model/serial) */
-    if ((rc = psu_fru_get(info, id)) != ONLP_STATUS_OK) {        
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(update_psui_fru_info(id, info));
     
     return ONLP_STATUS_OK;
 }

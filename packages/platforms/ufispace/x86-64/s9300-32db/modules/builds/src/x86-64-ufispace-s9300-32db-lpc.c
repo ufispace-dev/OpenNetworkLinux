@@ -232,7 +232,7 @@ static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
     int len=0;
 
     reg_val = _read_lpc_reg(reg, mask);
-    len=sprintf(buf,"%d\n", reg_val);
+    len=sprintf(buf,"0x%x\n", reg_val);
 
     return len;
 }
@@ -300,10 +300,15 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
     u8 reg_val;
+    u8 major, minor, build;
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+    reg_val = _mask_shift(inb(reg), mask);
+    major = _mask_shift(reg_val, mask_major);
+    minor = _mask_shift(reg_val, mask_minor);
+    reg = REG_CPU_CPLD_BUILD;
+    build = _mask_shift(inb(reg), mask);
+    len = sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
     mutex_unlock(&lpc_data->access_lock);
 
     BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
@@ -321,10 +326,15 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
     u8 reg_val;
+    u8 major, minor, build;
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+    reg_val = _mask_shift(inb(reg), mask);
+    major = _mask_shift(reg_val, mask_major);
+    minor = _mask_shift(reg_val, mask_minor);
+    reg = REG_MB_CPLD_BUILD;
+    build = _mask_shift(inb(reg), mask);
+    len = sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
     mutex_unlock(&lpc_data->access_lock);
 
     BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);

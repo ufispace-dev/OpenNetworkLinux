@@ -59,8 +59,7 @@ bool bmc_enable = false;
  * The onlp_sysi_platform_set() function is optional.
  * The onlp_sysi_platform_get() is not optional.
  */
-const char*
-onlp_sysi_platform_get(void)
+const char* onlp_sysi_platform_get(void)
 {
     return "x86-64-ufispace-s9600-64x-r0";
 }
@@ -71,8 +70,7 @@ onlp_sysi_platform_get(void)
  * reported platform.
  * @note Optional
  */
-int
-onlp_sysi_platform_set(const char* platform)
+int onlp_sysi_platform_set(const char* platform)
 {
     //AIM_LOG_INFO("Set ONL platform interface to '%s'\n", platform);
     //AIM_LOG_INFO("Real HW Platform: '%s'\n", onlp_sysi_platform_get());
@@ -82,8 +80,7 @@ onlp_sysi_platform_set(const char* platform)
 /**
  * @brief Initialize the system platform subsystem.
  */
-int
-onlp_sysi_init(void)
+int onlp_sysi_init(void)
 {
     /* check if the platform is bmc enabled */
     if ( onlp_sysi_bmc_en_get() ) {
@@ -102,8 +99,7 @@ onlp_sysi_init(void)
  * @notes This function is only necessary if you cannot provide
  * the physical base address as per onlp_sysi_onie_data_phys_addr_get().
  */
-int
-onlp_sysi_onie_data_get(uint8_t** data, int* size)
+int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
     uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
@@ -127,8 +123,7 @@ onlp_sysi_onie_data_get(uint8_t** data, int* size)
  * will be called to perform any cleanup that may be necessary
  * after the data has been used.
  */
-void
-onlp_sysi_onie_data_free(uint8_t* data)
+void onlp_sysi_onie_data_free(uint8_t* data)
 {
     if (data) {
         aim_free(data);
@@ -140,8 +135,7 @@ onlp_sysi_onie_data_free(uint8_t* data)
  * @param table [out] Receives the table.
  * @param max The maximum number of entries you can fill.
  */
-int
-onlp_sysi_oids_get(onlp_oid_t* table, int max)
+int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
@@ -214,8 +208,7 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
  * @note This function should automatically adjust the FAN speeds
  * according to the platform conditions.
  */
-int
-onlp_sysi_platform_manage_fans(void)
+int onlp_sysi_platform_manage_fans(void)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -225,8 +218,7 @@ onlp_sysi_platform_manage_fans(void)
  * @note This function should automatically adjust the LED indicators
  * according to the platform conditions.
  */
-int
-onlp_sysi_platform_manage_leds(void)
+int onlp_sysi_platform_manage_leds(void)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -234,8 +226,7 @@ onlp_sysi_platform_manage_leds(void)
 /**
  * @brief Return custom platform information.
  */
-int
-onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
+int onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int rc;
     if ((rc = sysi_platform_info_get(pi)) != ONLP_STATUS_OK) {
@@ -248,8 +239,7 @@ onlp_sysi_platform_info_get(onlp_platform_info_t* pi)
 /**
  * @brief Friee a custom platform information structure.
  */
-void
-onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
+void onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
 {
     if (pi->cpld_versions) {
         aim_free(pi->cpld_versions);

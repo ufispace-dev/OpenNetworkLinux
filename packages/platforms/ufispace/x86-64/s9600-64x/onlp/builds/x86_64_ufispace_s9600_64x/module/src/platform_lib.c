@@ -41,6 +41,7 @@
 #include "platform_lib.h"
 
 const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32, 0x33, 0x34};
+const int CPLD_I2C_BUS[] = {1, 1, 1, 1, 1};
 
 const char * thermal_id_str[] = {
     "",
@@ -105,37 +106,60 @@ const char * psu_id_str[] = {
 
 bmc_info_t bmc_cache[] =
 {
-    {"TEMP_CPU_PECI", 0},
-    {"TEMP_Q2CL_ENV", 0},
-    {"TEMP_Q2CL_DIE", 0},
-    {"TEMP_Q2CR_ENV", 0},
-    {"TEMP_Q2CR_DIE", 0},
-    {"TEMP_REAR_ENV_1", 0},
-    {"TEMP_REAR_ENV_2", 0},
-    {"PSU0_TEMP", 0},
-    {"PSU1_TEMP", 0},
-    {"FAN0_RPM", 0},
-    {"FAN1_RPM", 0},
-    {"FAN2_RPM", 0},
-    {"FAN3_RPM", 0},
-    {"PSU0_FAN", 0},
-    {"PSU1_FAN", 0},
-    {"FAN0_PRSNT_H",0},
-    {"FAN1_PRSNT_H",0},
-    {"FAN2_PRSNT_H", 0},
-    {"FAN3_PRSNT_H", 0},
-    {"PSU0_VIN", 0},
-    {"PSU0_VOUT", 0},
-    {"PSU0_IIN",0},
-    {"PSU0_IOUT",0},
-    {"PSU0_STBVOUT", 0},
-    {"PSU0_STBIOUT", 0},
-    {"PSU1_VIN", 0},
-    {"PSU1_VOUT", 0},
-    {"PSU1_IIN", 0},
-    {"PSU1_IOUT", 0},
-    {"PSU1_STBVOUT", 0},
-    {"PSU1_STBIOUT", 0}
+    [BMC_ATTR_ID_TEMP_CPU_PECI]   = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_Q2CL_ENV]   = {"TEMP_Q2CL_ENV", 0},
+    [BMC_ATTR_ID_TEMP_Q2CL_DIE]   = {"TEMP_Q2CL_DIE", 0},
+    [BMC_ATTR_ID_TEMP_Q2CR_ENV]   = {"TEMP_Q2CR_ENV", 0},
+    [BMC_ATTR_ID_TEMP_Q2CR_DIE]   = {"TEMP_Q2CR_DIE", 0},
+    [BMC_ATTR_ID_TEMP_REAR_ENV_1] = {"TEMP_REAR_ENV_1", 0},
+    [BMC_ATTR_ID_TEMP_REAR_ENV_2] = {"TEMP_REAR_ENV_2", 0},
+    [BMC_ATTR_ID_PSU0_TEMP]       = {"PSU0_TEMP", 0},
+    [BMC_ATTR_ID_PSU1_TEMP]       = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_FAN0_RPM]        = {"FAN0_RPM", 0},
+    [BMC_ATTR_ID_FAN1_RPM]        = {"FAN1_RPM", 0},
+    [BMC_ATTR_ID_FAN2_RPM]        = {"FAN2_RPM", 0},
+    [BMC_ATTR_ID_FAN3_RPM]        = {"FAN3_RPM", 0},
+    [BMC_ATTR_ID_PSU0_FAN]        = {"PSU0_FAN", 0},
+    [BMC_ATTR_ID_PSU1_FAN]        = {"PSU1_FAN", 0},
+    [BMC_ATTR_ID_FAN0_PRSNT_H]    = {"FAN0_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN1_PRSNT_H]    = {"FAN1_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN2_PRSNT_H]    = {"FAN2_PRSNT_H", 0},
+    [BMC_ATTR_ID_FAN3_PRSNT_H]    = {"FAN3_PRSNT_H", 0},
+    [BMC_ATTR_ID_PSU0_VIN]        = {"PSU0_VIN", 0},
+    [BMC_ATTR_ID_PSU0_VOUT]       = {"PSU0_VOUT", 0},
+    [BMC_ATTR_ID_PSU0_IIN]        = {"PSU0_IIN",0},
+    [BMC_ATTR_ID_PSU0_IOUT]       = {"PSU0_IOUT",0},
+    [BMC_ATTR_ID_PSU0_STBVOUT]    = {"PSU0_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT]    = {"PSU0_STBIOUT", 0},
+    [BMC_ATTR_ID_PSU1_VIN]        = {"PSU1_VIN", 0},
+    [BMC_ATTR_ID_PSU1_VOUT]       = {"PSU1_VOUT", 0},
+    [BMC_ATTR_ID_PSU1_IIN]        = {"PSU1_IIN", 0},
+    [BMC_ATTR_ID_PSU1_IOUT]       = {"PSU1_IOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT]    = {"PSU1_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT]    = {"PSU1_STBIOUT", 0}
+};
+
+static bmc_fru_t bmc_fru_cache[] =
+{
+    [ONLP_PSU_0] = {
+        .bmc_fru_id = 1,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_1",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+
+    },
+    [ONLP_PSU_1] = {
+        .bmc_fru_id = 2,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_2",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
 };
 
 static onlp_shlock_t* onlp_lock = NULL;
@@ -178,7 +202,8 @@ int get_shift(int mask) {
     return -1;
 }
 
-int mask_shift(int val, int mask) {
+int mask_shift(int val, int mask)
+{
     return (val & mask) >> get_shift(mask);
 }
 
@@ -196,6 +221,40 @@ int check_file_exist(char *file_path, long *file_time)
     } else {
        return 0;
     }
+}
+
+/**
+ * @brief check bmc still alive
+ * @returns ONLP_STATUS_OK         : bmc still alive
+ *          ONLP_STATUS_E_INTERNAL : bmc not respond
+ */
+int bmc_check_alive(void)
+{
+    /**
+     *   BMC detect timeout get from "ipmitool mc info" test.
+     *   Test Case: Run 100 times of "ipmitool mc info" command and get the execution times.
+     *              We take 3s as The detect timeout value,
+     *              since the execution times value is between 0.015s - 0.062s.
+     */
+    char* bmc_dect = "timeout 3s ipmitool mc info > /dev/null 2>&1";
+
+    int retry = 0, retry_max = 2;
+    for (retry = 0; retry < retry_max; ++retry) {
+        int ret = 0;
+        if((ret=system(bmc_dect)) != 0) {
+            if (retry == retry_max-1) {
+                AIM_LOG_ERROR("%s() bmc detecting fail, retry=%d, ret=%d",
+                    __func__, retry, ret);
+                return ONLP_STATUS_E_INTERNAL;
+            } else {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+
+    return ONLP_STATUS_OK;
 }
 
 int get_board_id(void)
@@ -253,21 +312,11 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 {
-    struct timeval new_tv;
-    FILE *fp = NULL;
-    char ipmi_cmd[1024] = {0};
-    char get_data_cmd[120] = {0};
-    char buf[20];
-    int rv = ONLP_STATUS_OK;
-    int dev_num = 0;
-    int dev_size = sizeof(bmc_cache)/sizeof(bmc_cache[0]);
     int cache_time = 0;
     int bmc_cache_expired = 0;
-    float f_rv = 0;
     long file_last_time = 0;
-    static long bmc_cache_time = 0;
-    char* presence_str = "Present";
-    int retry = 0, retry_max = 3;
+    static int init_cache = 1;
+    int rv = ONLP_STATUS_OK;
 
     switch(sensor_type) {
         case FAN_SENSOR:
@@ -281,8 +330,11 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             break;
     }
 
+    ONLP_LOCK();
+
     if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time))
     {
+        struct timeval new_tv = {0};
         gettimeofday(&new_tv, NULL);
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
@@ -293,24 +345,27 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         bmc_cache_expired = 1;
     }
 
-    if(bmc_cache_time == 0 && check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
-        bmc_cache_expired = 1;
-        gettimeofday(&new_tv,NULL);
-        bmc_cache_time = new_tv.tv_sec;
-    }
-
     //update cache
-    if(bmc_cache_expired == 1)
-    {
-        ONLP_LOCK();
-        if(bmc_cache_expired_check(file_last_time, bmc_cache_time, cache_time)) {
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
+    if(bmc_cache_expired == 1 || init_cache == 1) {
+        if(bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
+            }
+
+            // get bmc data
+            char ipmi_cmd[1024] = {0};
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
+            int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
-                if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
+                int ret = 0;
+                if((ret=system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d",
-                            __func__, retry, ipmi_cmd, rv);
-                        return ONLP_STATUS_E_INTERNAL;
+                            __func__, retry, ipmi_cmd, ret);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
                     } else {
                         continue;
                     }
@@ -320,437 +375,188 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             }
         }
 
-        for(dev_num = 0; dev_num < dev_size; dev_num++)
-        {
-            memset(buf, 0, sizeof(buf));
+        //read sensor from cache file and save to bmc_cache
+        FILE *fp = NULL;
+        fp = fopen (BMC_SENSOR_CACHE, "r");
+        if(fp == NULL) {
+            AIM_LOG_ERROR("%s() open file failed, file=%s", __func__, BMC_SENSOR_CACHE);
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
+        }
 
-            if( dev_num >= 15 && dev_num <=18 ) {
-                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 5);
-                fp = popen(get_data_cmd, "r");
-                if(fp != NULL)
-                {
-                    if(fgets(buf, sizeof(buf), fp) != NULL)
-                    {
-                        if( strstr(buf, presence_str) != NULL ) {
-                            f_rv = 1;
-                        } else {
-                            f_rv = 0;
-                        }
-                        bmc_cache[dev_num].data = f_rv;
-                    }
-                }
-                pclose(fp);
-            } else {
-                snprintf(get_data_cmd, sizeof(get_data_cmd), CMD_BMC_CACHE_GET, bmc_cache[dev_num].name, 2);
+        //read file line by line
+        char line[BMC_FRU_LINE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_LINE_SIZE, fp) != NULL) {
+            int i = 0;
+            char *line_ptr = line;
+            char *token = NULL;
 
-                fp = popen(get_data_cmd, "r");
-                if(fp != NULL)
-                {
-                    if(fgets(buf, sizeof(buf), fp) != NULL) {
-                        f_rv = atof(buf);
-                        bmc_cache[dev_num].data = f_rv;
-                    }
-                }
-                pclose(fp);
+            //parse line into fields. fields[0]: fields name, fields[1]: fields value
+            char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE] = {{0}};
+            while ((token = strsep (&line_ptr, ",")) != NULL) {
+                sscanf (token, "%[^\n]", line_fields[i++]);
             }
 
+            //save bmc_cache from fields
+            for(i=0; i<BMC_ATTR_ID_MAX; ++i) {
+                if(strcmp(line_fields[0], bmc_cache[i].name) == 0) {
+                    if(i >= BMC_ATTR_ID_FAN0_PRSNT_H && i <= BMC_ATTR_ID_FAN3_PRSNT_H) {
+                        /* fan present, got from bmc */
+                        if( strstr(line_fields[4], "Present") != NULL ) {
+                            bmc_cache[i].data = 1;
+                        } else {
+                            bmc_cache[i].data = 0;
+                        }
+                    } else {
+                        /* other attribut, got from bmc */
+                        bmc_cache[i].data = atof(line_fields[1]);
+                    }
+                    break;
+                }
+            }
         }
-        gettimeofday(&new_tv,NULL);
-        bmc_cache_time = new_tv.tv_sec;
-        ONLP_UNLOCK();
+        fclose(fp);
+        init_cache = 0;
     }
 
     //read from cache
     *data = bmc_cache[bmc_cache_index].data;
 
+done:
+    ONLP_UNLOCK();
     return rv;
 }
 
-int
-psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
+/**
+ * @brief bmc fru read
+ * @param local_id The psu local id
+ * @param[out] data The psu fru information.
+ */
+int bmc_fru_read(int local_id, bmc_fru_t *data)
+{
+    struct timeval new_tv;
+    int cache_time = PSU_CACHE_TIME;
+    int bmc_cache_expired = 0;
+    long file_last_time = 0;
+    int rv = ONLP_STATUS_OK;
+
+    if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    bmc_fru_t *fru = &bmc_fru_cache[local_id];
+
+    ONLP_LOCK();
+
+    if(check_file_exist(fru->cache_files, &file_last_time)) {
+        gettimeofday(&new_tv, NULL);
+        if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
+            bmc_cache_expired = 1;
+        } else {
+            bmc_cache_expired = 0;
+        }
+    } else {
+        bmc_cache_expired = 1;
+    }
+
+    //update cache
+    if(bmc_cache_expired == 1 || fru->init_done == 0) {
+        //get fru from ipmitool and save to cache file
+        if(bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
+            }
+
+            // get bmc data
+            char ipmi_cmd[1024] = {0};
+            char fields[256]="";
+            snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
+                        BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);
+
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, IPMITOOL_CMD_TIMEOUT, fru->bmc_fru_id, fields, fru->cache_files);
+            int retry = 0, retry_max = 2;
+            for (retry = 0; retry < retry_max; ++retry) {
+                int ret = 0;
+                if ((ret = system(ipmi_cmd)) != 0) {
+                    if (retry == retry_max-1) {
+                        AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
+                            __func__, retry, ipmi_cmd, ret);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        //read fru from cache file and save to bmc_fru_cache
+        FILE *fp = NULL;
+        fp = fopen (fru->cache_files, "r");
+        while(1) {
+            char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+            char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+                break;
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
+                memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
+                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
+                memset(fru->name.val, '\0', sizeof(fru->name.val));
+                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
+                memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
+                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+            if(strcmp(key, BMC_FRU_KEY_SERIAL) == 0) {
+                memset(fru->serial.val, '\0', sizeof(fru->serial.val));
+                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            }
+
+        }
+
+        fclose(fp);
+
+        fru->init_done = 1;
+
+        //Check output is correct
+        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
+            strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s",
+                local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
+        }
+    }
+
+    //read from cache
+    *data = *fru;
+
+done:
+    ONLP_UNLOCK();
+    return rv;
+}
+
+int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-psu_fan_info_get(onlp_fan_info_t* info, int id)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu_vin_get(onlp_psu_info_t* info, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_VIN] : psu_id_str[PSU_ID_PSU1_VIN]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        info->mvin = token_val;
-        info->caps |= ONLP_PSU_CAPS_VIN;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_vout_get(onlp_psu_info_t* info, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_VOUT] : psu_id_str[PSU_ID_PSU1_VOUT]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        info->mvout = token_val;
-        info->caps |= ONLP_PSU_CAPS_VOUT;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_stbvout_get(int* stbmvout, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_STBVOUT] : psu_id_str[PSU_ID_PSU1_STBVOUT]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        *stbmvout = token_val;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_iin_get(onlp_psu_info_t* info, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_IIN] : psu_id_str[PSU_ID_PSU1_IIN]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        info->miin = token_val;
-        info->caps |= ONLP_PSU_CAPS_IIN;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_iout_get(onlp_psu_info_t* info, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_IOUT] : psu_id_str[PSU_ID_PSU1_IOUT]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        info->miout = token_val;
-        info->caps |= ONLP_PSU_CAPS_IOUT;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_stbiout_get(int* stbmiout, int id)
-{
-    int i=0, token_idx=1, token_val=0;
-
-    char cmd[48];
-    char cmd_out[150];
-    char* tokens[20];
-    char delimiter[]=",";
-    const char* sensor_str;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-
-    sensor_str = (id == PSU_ID_PSU0 ? psu_id_str[PSU_ID_PSU0_STBIOUT] : psu_id_str[PSU_ID_PSU1_STBIOUT]);
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_str);
-
-    //Get sensor info from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_str);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0 ||
-        strchr(cmd_out, ',')==NULL ||
-        strstr(cmd_out, sensor_str)==NULL ){
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //parse cmd_out to tokens
-    tokens[i++] = strtok(cmd_out, delimiter);
-    while (tokens[i-1] != NULL) {
-        tokens[i++] = strtok(NULL, delimiter);
-    }
-
-    //read token_idx field
-    if (i>=token_idx) {
-        token_val = (int) (atof(tokens[token_idx])*1000);
-        *stbmiout = token_val;
-    } else {
-        AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s, cmd=%s, out=%s\n", sensor_str, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu_eeprom_get(onlp_psu_info_t* info, int id)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu_fru_get(onlp_psu_info_t* info, int id)
-{
-    char cmd[256];
-    char cmd_out[64];
-    char fru_model[] = "Product Name";  //only Product Name can identify AC/DC
-    char fru_serial[] = "Product Serial";
-
-    //FRU (model)
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    memset(info->model, 0, sizeof(info->model));
-
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_model);
-
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, cmd_out is empty, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
-
-    //FRU (serial)
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(cmd_out, 0, sizeof(cmd_out));
-    memset(info->serial, 0, sizeof(info->serial));
-
-    snprintf(cmd, sizeof(cmd), CMD_FRU_INFO_GET, id, fru_serial);
-
-    //Get psu fru info (model) from BMC
-    if (exec_cmd(cmd, cmd_out, sizeof(cmd_out)) < 0) {
-        AIM_LOG_ERROR("unable to read fru info from BMC, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //Check output is correct
-    if (strnlen(cmd_out, sizeof(cmd_out))==0){
-        AIM_LOG_ERROR("unable to read fru info from BMC, cmd_out is empty, fru id=%d, cmd=%s, out=%s\n", id, cmd, cmd_out);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    snprintf(info->serial, sizeof(info->serial), "%s", cmd_out);
-
-    return ONLP_STATUS_OK;
-}
-
-int
-psu_present_get(int *pw_present, int id)
+int psu_present_get(int *pw_present, int id)
 {
     int reg_val, rc;
     int mask;
@@ -773,8 +579,7 @@ psu_present_get(int *pw_present, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-psu_pwgood_get(int *pw_good, int id)
+int psu_pwgood_get(int *pw_good, int id)
 {
     int reg_val, rc;
     int mask;
@@ -797,8 +602,7 @@ psu_pwgood_get(int *pw_good, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-qsfp_present_get(int port, int *pres_val)
+int qsfp_present_get(int port, int *pres_val)
 {
     int status, rc;
     int cpld_addr, sysfs_attr_offset;
@@ -912,36 +716,6 @@ int sfp_present_get(int port, int *pres_val)
     return ONLP_STATUS_OK;
 }
 
-int
-system_led_set(onlp_led_mode_t mode)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-fan_led_set(onlp_led_mode_t mode)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu1_led_set(onlp_led_mode_t mode)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-psu2_led_set(onlp_led_mode_t mode)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
-int
-fan_tray_led_set(onlp_oid_t id, onlp_led_mode_t mode)
-{
-    return ONLP_STATUS_E_UNSUPPORTED;
-}
-
 int read_ioport(int addr, int *reg_val) {
     int ret;
 
@@ -962,8 +736,7 @@ int read_ioport(int addr, int *reg_val) {
     return ONLP_STATUS_OK;
 }
 
-int
-exec_cmd(char *cmd, char* out, int size) {
+int exec_cmd(char *cmd, char* out, int size) {
     FILE *fp;
 
     /* Open the command for reading. */
@@ -983,8 +756,7 @@ exec_cmd(char *cmd, char* out, int size) {
     return ONLP_STATUS_OK;
 }
 
-int
-get_ipmitool_len(char *ipmitool_out){
+int get_ipmitool_len(char *ipmitool_out){
     size_t str_len=0, ipmitool_len=0;
     str_len = strlen(ipmitool_out);
     if (str_len>0) {
@@ -993,76 +765,70 @@ get_ipmitool_len(char *ipmitool_out){
     return ipmitool_len;
 }
 
-int
-sysi_platform_info_get(onlp_platform_info_t* pi)
+int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpu_cpld_addr = 0x600, cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor;
-    int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
-    int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
-    int rc=0;
+    uint8_t cpu_cpld_ver_h[32];
+    uint8_t mb_cpld_ver_h[CPLD_MAX][16];
+    int data_len = 0;
+    int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG;
+    int mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
+
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
     memset(bmc_out2, 0, sizeof(bmc_out2));
     memset(bmc_out3, 0, sizeof(bmc_out3));
+    memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
+    memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
 
-    //get CPU CPLD version
-    if (read_ioport(cpu_cpld_addr, &cpu_cpld_ver) < 0) {
-        AIM_LOG_ERROR("unable to read CPU CPLD version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
-    cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x01));
-    cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
+    //get CPU CPLD version readable string
+    ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len,
+                    LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VER_ATTR));
+    //trim new line
+    cpu_cpld_ver_h[strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
 
-    //get MB CPLD version
+    //get MB CPLD version readable string
     for(i=0; i<CPLD_MAX; ++i) {
-        if ((rc = file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/1-00%02x/cpld_version",
-                                 CPLD_BASE_ADDR[i])) != ONLP_STATUS_OK) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
-        if (cpld_ver[i] < 0) {
-            AIM_LOG_ERROR("unable to read MB CPLD version\n");
-            return ONLP_STATUS_E_INTERNAL;
-        }
-
-        cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x11));
-        cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
+        ONLP_TRY(onlp_file_read(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), &data_len,
+        SYS_FMT, CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i], "/cpld_version_h"));
+        //trim new line
+        mb_cpld_ver_h[i][strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
     }
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[CPU CPLD] %d.%02d\n"
-        "[MB CPLD1] %d.%02d\n"
-        "[MB CPLD2] %d.%02d\n"
-        "[MB CPLD3] %d.%02d\n"
-        "[MB CPLD4] %d.%02d\n"
-        "[MB CPLD5] %d.%02d\n",
-        cpu_cpld_ver_major, cpu_cpld_ver_minor,
-        cpld_ver_major[0], cpld_ver_minor[0],
-        cpld_ver_major[1], cpld_ver_minor[1],
-        cpld_ver_major[2], cpld_ver_minor[2],
-        cpld_ver_major[3], cpld_ver_minor[3],
-        cpld_ver_major[4], cpld_ver_minor[4]);
+        "[CPU CPLD] %s\n"
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n"
+        "[MB CPLD4] %s\n"
+        "[MB CPLD5] %s\n",
+        cpu_cpld_ver_h,
+        mb_cpld_ver_h[0],
+        mb_cpld_ver_h[1],
+        mb_cpld_ver_h[2],
+        mb_cpld_ver_h[3],
+        mb_cpld_ver_h[4]);
 
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
+
     mb_cpld1_hw_rev = ((mb_cpld1_board_type_rev) & 0x03);
     //FIXME: check build_rev bits
     //mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
     mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
 
     //Get BIOS version
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
+
+    // Detect bmc status
+    if(bmc_check_alive() != ONLP_STATUS_OK) {
+        AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
-
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
@@ -1085,14 +851,12 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     return ONLP_STATUS_OK;
 }
 
-bool
-onlp_sysi_bmc_en_get(void)
+bool onlp_sysi_bmc_en_get(void)
 {
    return true;
 }
 
-int
-qsfp_port_to_cpld_addr(int port)
+int qsfp_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
     int cpld_num = ((port%32) / 8) + 1;
@@ -1102,8 +866,7 @@ qsfp_port_to_cpld_addr(int port)
     return cpld_addr;
 }
 
-int
-qsfp_port_to_sysfs_attr_offset(int port)
+int qsfp_port_to_sysfs_attr_offset(int port)
 {
     int sysfs_attr_offset = 0;
 
@@ -1112,8 +875,7 @@ qsfp_port_to_sysfs_attr_offset(int port)
     return sysfs_attr_offset;
 }
 
-int
-parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
+int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
                   char *tokens[], int token_size,
                   const char *sensor_id_str, int *idx)
 {
@@ -1125,7 +887,7 @@ parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
     memset(cmd, 0, sizeof(cmd));
     memset(cmd_out, 0, cmd_out_size);
 
-    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, sensor_id_str);
+    snprintf(cmd, sizeof(cmd), CMD_BMC_SDR_GET, IPMITOOL_CMD_TIMEOUT, sensor_id_str);
 
     if (exec_cmd(cmd, cmd_out, cmd_out_size) < 0) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%s\n", sensor_id_str);
@@ -1149,8 +911,7 @@ parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size,
     return ONLP_STATUS_OK;
 }
 
-int
-bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
+int bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rc=0;
     float data=0;
@@ -1165,8 +926,7 @@ bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     return rc;
 }
 
-int
-bmc_fan_info_get(onlp_fan_info_t* info, int id)
+int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int rv=0, rpm=0, percentage=0;
     int presence=0;
@@ -1223,8 +983,7 @@ bmc_fan_info_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_OK;
 }
 
-int
-file_read_hex(int* value, const char* fmt, ...)
+int file_read_hex(int* value, const char* fmt, ...)
 {
     int rv;
     va_list vargs;
@@ -1234,8 +993,7 @@ file_read_hex(int* value, const char* fmt, ...)
     return rv;
 }
 
-int
-file_vread_hex(int* value, const char* fmt, va_list vargs)
+int file_vread_hex(int* value, const char* fmt, va_list vargs)
 {
     int rv;
     uint8_t data[32];
@@ -1274,8 +1032,41 @@ void check_and_do_i2c_mux_reset(int port)
     }
 }
 
-int
-sys_led_info_get(onlp_led_info_t* info, int id)
+/* reg shift */
+uint8_t ufi_shift(uint8_t mask)
+{
+    int i = 0, mask_one = 1;
+
+    for(i=0; i<8; ++i) {
+        if ((mask & mask_one) == 1)
+            return i;
+        else
+            mask >>= 1;
+    }
+
+    return -1;
+}
+
+/* reg mask and shift */
+uint8_t ufi_mask_shift(uint8_t val, uint8_t mask)
+{
+    int shift = 0;
+
+    shift = ufi_shift(mask);
+
+    return (val & mask) >> shift;
+}
+
+uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
+{
+    if (bit_val == 0)
+        reg_val = reg_val & ~(1 << bit);
+    else
+        reg_val = reg_val | (1 << bit);
+    return reg_val;
+}
+
+int sys_led_info_get(onlp_led_info_t* info, int id)
 {
     int value, rc;
     int sysfs_index;

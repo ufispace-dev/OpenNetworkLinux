@@ -53,7 +53,7 @@ onlp_fan_info_t fan_info[] = {
         0,
         0,
         ONLP_FAN_MODE_INVALID,
-    },    
+    },
     {
         { FAN_OID_FAN3, "Chassis Fan - 3", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
@@ -66,33 +66,30 @@ onlp_fan_info_t fan_info[] = {
         { FAN_OID_PSU0_FAN, "PSU 0 - Fan", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-    },    
+    },
     {
         { FAN_OID_PSU1_FAN, "PSU 1 - Fan", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-    },    
+    },
 };
 
 /*
  * This function will be called prior to all of onlp_fani_* functions.
  */
-int
-onlp_fani_init(void)
+int onlp_fani_init(void)
 {
     lock_init();
     return ONLP_STATUS_OK;
 }
 
-int 
-sys_fan_info_get(onlp_fan_info_t* info, int id)
+int sys_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int
-sys_fan_rpm_percent_set(int perc)
-{  
+int sys_fan_rpm_percent_set(int perc)
+{
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
@@ -102,8 +99,7 @@ sys_fan_rpm_percent_set(int perc)
  * @param rpm The new RPM
  * @note This is only relevant if the RPM capability is set.
  */
-int
-onlp_fani_rpm_set(onlp_oid_t id, int rpm)
+int onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
@@ -114,10 +110,9 @@ onlp_fani_rpm_set(onlp_oid_t id, int rpm)
  * @param p The new fan speed percentage.
  * @note This is only relevant if the PERCENTAGE capability is set.
  */
-int
-onlp_fani_percentage_set(onlp_oid_t id, int percentage)
+int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;  
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
 /**
@@ -125,14 +120,13 @@ onlp_fani_percentage_set(onlp_oid_t id, int percentage)
  * @param id The fan OID
  * @param rv [out] Receives the fan information.
  */
-int
-onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
+int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id ,rc;
-        
+
     fan_id = ONLP_OID_ID_GET(id);
     *rv = fan_info[fan_id];
-       
+
     switch (fan_id) {
         case FAN_ID_FAN0:
         case FAN_ID_FAN1:
@@ -142,7 +136,7 @@ onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         case FAN_ID_PSU1_FAN:
             rc = bmc_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

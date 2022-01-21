@@ -261,8 +261,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         }
 
         //read file line by line
-        char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-        while(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE, fp) != NULL) {
+        char line[BMC_FRU_LINE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_LINE_SIZE, fp) != NULL) {
             int i = 0;
             char *line_ptr = line;
             char *token = NULL;
@@ -346,7 +346,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
             }
 
             // get bmc data
-            char ipmi_cmd[400] = {0};
+            char ipmi_cmd[1024] = {0};
             char fields[256]="";
             snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
                         BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);

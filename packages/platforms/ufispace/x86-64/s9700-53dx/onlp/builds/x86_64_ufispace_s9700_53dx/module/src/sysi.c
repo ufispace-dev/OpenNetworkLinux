@@ -73,10 +73,10 @@
  *            |                  |----[07] ONLP_PSU1_FAN_1
  *            |                  |----[08] ONLP_PSU1_FAN_2
  *            |
- *            |----[01] ONLP_FAN_1
- *            |----[02] ONLP_FAN_2
- *            |----[03] ONLP_FAN_3
- *            |----[04] ONLP_FAN_4
+ *            |----[01] ONLP_FAN_0
+ *            |----[02] ONLP_FAN_1
+ *            |----[03] ONLP_FAN_2
+ *            |----[04] ONLP_FAN_3
  */
 static onlp_oid_t __onlp_oid_info[] = { 
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
@@ -110,10 +110,10 @@ static onlp_oid_t __onlp_oid_info[] = {
     //ONLP_LED_ID_CREATE(ONLP_LED_FAN_TRAY4),
     ONLP_PSU_ID_CREATE(ONLP_PSU_0),
     ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
     ONLP_FAN_ID_CREATE(ONLP_FAN_1),
     ONLP_FAN_ID_CREATE(ONLP_FAN_2),
     ONLP_FAN_ID_CREATE(ONLP_FAN_3),
-    ONLP_FAN_ID_CREATE(ONLP_FAN_4),
     //ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_1),
     //ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_2),
     //ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_1),
@@ -121,7 +121,8 @@ static onlp_oid_t __onlp_oid_info[] = {
 };
 
 
-static int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len){
+static int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len)
+{
     int i=0;
     char data[3];
 
@@ -167,6 +168,12 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     for(i=0; i<CPLD_MAX; ++i) {
         //cpld_ver[i] = onlp_i2c_readb(I2C_BUS_1, CPLD_BASE_ADDR[i], CPLD_REG_VER, ONLP_I2C_F_FORCE);
         ONLP_TRY(file_read_hex(&cpld_ver[i], "/sys/bus/i2c/devices/1-00%02x/cpld_version", CPLD_BASE_ADDR[i]));
+
+        if (cpld_ver[i] < 0) {
+            AIM_LOG_ERROR("unable to read MB CPLD version\n");
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
         cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x01));
         cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
     }
@@ -351,6 +358,7 @@ int onlp_sysi_onie_data_get(uint8_t** data, int* size)
     AIM_LOG_INFO("Unable to data get data from eeprom \n");
     aim_free(rdata);
     *size = 0;
+
     return ONLP_STATUS_E_INTERNAL;
 }
 
@@ -452,7 +460,6 @@ int onlp_sysi_platform_manage_leds(void)
  */
 int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
 {
-
     ONLP_TRY(update_sysi_platform_info(info));
 
     return ONLP_STATUS_OK;

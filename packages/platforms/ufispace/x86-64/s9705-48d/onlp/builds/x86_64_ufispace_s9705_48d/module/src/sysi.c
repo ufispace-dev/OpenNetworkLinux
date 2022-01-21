@@ -73,10 +73,10 @@
  *            |                  |----[08] ONLP_PSU1_FAN_2
  *            |                  |----[08] ONLP_THERMAL_PSU1
  *            |
- *            |----[01] ONLP_FAN_1
- *            |----[02] ONLP_FAN_2
- *            |----[03] ONLP_FAN_3
- *            |----[04] ONLP_FAN_4
+ *            |----[01] ONLP_FAN_0
+ *            |----[02] ONLP_FAN_1
+ *            |----[03] ONLP_FAN_2
+ *            |----[04] ONLP_FAN_3
  */
 static onlp_oid_t __onlp_oid_info[] = { 
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
@@ -109,10 +109,10 @@ static onlp_oid_t __onlp_oid_info[] = {
     //ONLP_LED_ID_CREATE(ONLP_LED_FAN_TRAY4),
     ONLP_PSU_ID_CREATE(ONLP_PSU_0),
     ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
     ONLP_FAN_ID_CREATE(ONLP_FAN_1),
     ONLP_FAN_ID_CREATE(ONLP_FAN_2),
     ONLP_FAN_ID_CREATE(ONLP_FAN_3),
-    ONLP_FAN_ID_CREATE(ONLP_FAN_4),
     //ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_1),
     //ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_2),
     //ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_1),
@@ -162,10 +162,7 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     memset(ucd_date_b, 0, sizeof(ucd_date_b));
 
     //get CPU CPLD version
-    if (read_ioport(cpu_cpld_addr, &cpu_cpld_ver) < 0) {
-        AIM_LOG_ERROR("unable to read CPU CPLD version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(cpu_cpld_addr, &cpu_cpld_ver));
     cpu_cpld_ver_major = (((cpu_cpld_ver) >> 6 & 0x01));
     cpu_cpld_ver_minor = (((cpu_cpld_ver) & 0x3F));
 
@@ -197,18 +194,12 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         cpld_ver_major[3], cpld_ver_minor[3]);
 
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 2 & 0x03));
     mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
 
     //Get BIOS version 
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
     //Detect bmc status
     if(bmc_check_alive() != ONLP_STATUS_OK) {
@@ -225,10 +216,7 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     }
 
     //Get UCD version - Top Board
-    if (exec_cmd(CMD_UCD_VER_T, ucd_out_t, sizeof(ucd_out_t)) < 0 ) {
-        AIM_LOG_ERROR("unable to read UCD version - Top Board\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_UCD_VER_T, ucd_out_t, sizeof(ucd_out_t)));
 
     //Parse UCD version and date - Top Board
     ucd_len = get_ipmitool_len(ucd_out_t);
@@ -240,10 +228,7 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     }
 
     //Get UCD version - Bottom Board
-    if (exec_cmd(CMD_UCD_VER_B, ucd_out_b, sizeof(ucd_out_b)) < 0 ) {
-        AIM_LOG_ERROR("unable to read UCD version - Bottom Board\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_UCD_VER_B, ucd_out_b, sizeof(ucd_out_b)));
 
     //Parse UCD version and date - Bottom Board
     ucd_len = get_ipmitool_len(ucd_out_b);

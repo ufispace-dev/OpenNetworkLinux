@@ -96,7 +96,8 @@
 #define FAN_DIR_B2F             1
 #define FAN_DIR_F2B             2
 /* LENGTH */
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE 256
+#define BMC_FRU_LINE_SIZE           256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 /* error redirect */
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"

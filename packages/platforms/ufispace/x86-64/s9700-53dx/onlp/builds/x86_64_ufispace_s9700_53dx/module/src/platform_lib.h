@@ -61,10 +61,10 @@
  *            |                  |----[08] ONLP_PSU1_FAN_2
  *            |                  |----[08] ONLP_THERMAL_PSU1
  *            |
- *            |----[01] ONLP_FAN_1
- *            |----[02] ONLP_FAN_2
- *            |----[03] ONLP_FAN_3
- *            |----[04] ONLP_FAN_4
+ *            |----[01] ONLP_FAN_0
+ *            |----[02] ONLP_FAN_1
+ *            |----[03] ONLP_FAN_2
+ *            |----[04] ONLP_FAN_3
  */
 
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
@@ -152,10 +152,10 @@ enum onlp_psu_id {
 /* Fan definitions*/
 enum onlp_fan_id {
     ONLP_FAN_RESERVED = 0,
-    ONLP_FAN_1        = 1,
-    ONLP_FAN_2        = 2,
-    ONLP_FAN_3        = 3,
-    ONLP_FAN_4        = 4,
+    ONLP_FAN_0        = 1,
+    ONLP_FAN_1        = 2,
+    ONLP_FAN_2        = 3,
+    ONLP_FAN_3        = 4,
     ONLP_PSU0_FAN_1   = 5,
     ONLP_PSU0_FAN_2   = 6,
     ONLP_PSU1_FAN_1   = 7,
@@ -232,7 +232,8 @@ typedef struct bmc_info_s {
     float data;
 } bmc_info_t;
 
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_LINE_SIZE            256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE  ONLP_CONFIG_INFO_STR_MAX
 typedef struct bmc_fru_attr_s {
     char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];
     char val[BMC_FRU_ATTR_KEY_VALUE_SIZE];

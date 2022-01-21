@@ -283,7 +283,7 @@ int bmc_fan_dir_read(int bmc_cache_index, float *data)
     long file_last_time = 0;
     static int init_cache = 1;
     int retry = 0, retry_max = 2;
-    char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+    char line[BMC_FRU_LINE_SIZE] = {'\0'};
     char *line_ptr = NULL;
     char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
     char seps[] = " ";
@@ -339,7 +339,7 @@ int bmc_fan_dir_read(int bmc_cache_index, float *data)
         }
 
         //read file line for fan tray dir parsing
-        if(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE,fp) != NULL) {
+        if(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
             line_ptr = line;
             token = NULL;
             i = 0;
@@ -355,7 +355,7 @@ int bmc_fan_dir_read(int bmc_cache_index, float *data)
         }
 
         //read file line for psu fan dir parsing
-        if(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE,fp) != NULL) {
+        if(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
             line_ptr = line;
             token = NULL;
             i = 0;
@@ -398,7 +398,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     static int init_cache = 1;
     char* presence_str = "Present";
     int retry = 0, retry_max = 2;
-    char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+    char line[BMC_FRU_LINE_SIZE] = {'\0'};
     char *line_ptr = NULL;
     char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
     char seps[] = ",";
@@ -466,7 +466,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         }
 
         //read file line by line
-        while(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE,fp) != NULL) {
+        while(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
             i=0;
             line_ptr = line;
             token = NULL;
@@ -522,7 +522,7 @@ exit:
 int bmc_fru_read(int local_id, bmc_fru_t *data)
 {
     struct timeval new_tv;
-    char ipmi_cmd[400] = {0};
+    char ipmi_cmd[1024] = {0};
     int cache_time = PSU_CACHE_TIME;
     int bmc_cache_expired = 0;
     long file_last_time = 0;

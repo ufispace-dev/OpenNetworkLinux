@@ -564,7 +564,7 @@ psu_fru_get(onlp_psu_info_t* info, int id)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    snprintf(info->model, sizeof(info->model), "%s", cmd_out);
+    snprintf(info->model, sizeof(info->model), "%s", cmd_out) < 0 ? abort() : (void)0;
 
     //FRU (serial)
 
@@ -586,7 +586,7 @@ psu_fru_get(onlp_psu_info_t* info, int id)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    snprintf(info->serial, sizeof(info->serial), "%s", cmd_out);
+    snprintf(info->serial, sizeof(info->serial), "%s", cmd_out) < 0 ? abort() : (void)0;
 
     return ONLP_STATUS_OK;
 }

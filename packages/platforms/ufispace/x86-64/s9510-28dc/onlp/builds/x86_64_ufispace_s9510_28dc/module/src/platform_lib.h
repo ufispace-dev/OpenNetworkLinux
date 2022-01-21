@@ -102,7 +102,8 @@
                                     "PSU1_STBIOUT "\
                                     "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_LINE_SIZE           256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 #define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
 #define BMC_FRU_KEY_NAME            "Product Name"

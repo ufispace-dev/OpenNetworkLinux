@@ -77,12 +77,13 @@
 /* SYSFS */
 #define LPC_CPU_CPLD_VERSION_ATTR   "cpu_cpld_version"
 #define LPC_CPU_CPLD_BUILD_ATTR     "cpu_cpld_build"
+#define LPC_CPU_CPLD_VER_H_ATTR     "cpu_cpld_version_h"
 #define LPC_MB_SKUID_ATTR           "board_sku_id"
 #define LPC_MB_HWID_ATTR            "board_hw_id"
 #define LPC_MB_IDTYPE_ATTR          "board_id_type"
 #define LPC_MB_BUILDID_ATTR         "board_build_id"
 #define LPC_MB_DEPHID_ATTR          "board_deph_id"
-
+#define MB_CPLD_VER_H_ATTR          "cpld_version_h"
 
 static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
@@ -127,10 +128,8 @@ static onlp_oid_t __onlp_oid_info[] = {
 /* update sysi platform info */
 static int update_sysi_platform_info(onlp_platform_info_t* info)
 {
-    char cpu_cpld_ver_h[32];
-    int cpu_cpld_ver, cpu_cpld_build;
-    int cpld_ver_major, cpld_ver_minor, cpld_ver_build;
-    char mb_cpld_ver_h[CPLD_MAX][16];
+    uint8_t cpu_cpld_ver_h[32];
+    uint8_t mb_cpld_ver_h[CPLD_MAX][16];
     uint8_t bios_ver_h[32];
     char bmc_ver[3][16];
     int sku_id, hw_id, id_type, build_id, deph_id;
@@ -143,20 +142,18 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     memset(bmc_ver, 0, sizeof(bmc_ver));
 
     //get CPU CPLD version readable string
-    ONLP_TRY(file_read_hex(&cpu_cpld_ver, LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VERSION_ATTR));
-    ONLP_TRY(file_read_hex(&cpu_cpld_build, LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_BUILD_ATTR));
-
-    snprintf(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), "%d.%02d build %03d",
-            cpu_cpld_ver >> 6, cpu_cpld_ver & 0b00111111, cpu_cpld_build);
+    ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &size,
+                LPC_CPU_CPLD_PATH "/" LPC_CPU_CPLD_VER_H_ATTR));
+    //trim new line
+    cpu_cpld_ver_h[strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
 
     //get MB CPLD version from CPLD sysfs
     for(i=0; i<CPLD_MAX; ++i) {
-        ONLP_TRY(file_read_hex(&cpld_ver_major, SYS_DEV "/2-00%02x/cpld_major_ver", CPLD_BASE_ADDR[i]));
-        ONLP_TRY(file_read_hex(&cpld_ver_minor, SYS_DEV "/2-00%02x/cpld_minor_ver", CPLD_BASE_ADDR[i]));
-        ONLP_TRY(file_read_hex(&cpld_ver_build, SYS_DEV "/2-00%02x/cpld_build_ver", CPLD_BASE_ADDR[i]));
 
-        snprintf(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), "%d.%02d build %03d",
-                cpld_ver_major, cpld_ver_minor, cpld_ver_build);
+        ONLP_TRY(onlp_file_read(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), &size,
+                SYS_DEV "/2-00%02x/" MB_CPLD_VER_H_ATTR, CPLD_BASE_ADDR[i]));
+        //trim new line
+        mb_cpld_ver_h[i][strcspn((char *)cpu_cpld_ver_h, "\n" )] = '\0';
     }
 
     info->cpld_versions = aim_fstrdup(

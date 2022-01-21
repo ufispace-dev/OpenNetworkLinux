@@ -60,7 +60,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
     MODEL = "s9300-32db"
     SYS_OBJECT_ID = ".9300.32"
     PORT_COUNT = 32
-    PORT_CONFIG = "32x400"
+    PORT_CONFIG = "24x200 + 8x400"
 
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2

@@ -232,7 +232,7 @@ static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
     int len=0;
 
     reg_val = _read_lpc_reg(reg, mask);
-    len=sprintf(buf,"%d\n", reg_val);
+    len=sprintf(buf,"0x%x\n", reg_val);
 
     return len;
 }
@@ -300,10 +300,16 @@ static ssize_t read_cpu_cpld_version_h(struct device *dev,
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
     u8 reg_val;
+    u8 major, minor, build;
+
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+    reg_val = _mask_shift(inb(reg), mask);
+    major = _mask_shift(reg_val, mask_major);
+    minor = _mask_shift(reg_val, mask_minor);
+    reg = REG_CPU_CPLD_BUILD;
+    build = _mask_shift(inb(reg), mask);
+    len=sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
     mutex_unlock(&lpc_data->access_lock);
 
     BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
@@ -321,10 +327,15 @@ static ssize_t read_mb_cpld_1_version_h(struct device *dev,
     u8 mask_major = 0b11000000;
     u8 mask_minor = 0b00111111;
     u8 reg_val;
+    u8 major, minor, build;
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
+    reg_val = _mask_shift(inb(reg), mask);
+    major = _mask_shift(reg_val, mask_major);
+    minor = _mask_shift(reg_val, mask_minor);
+    reg = REG_MB_CPLD_BUILD;
+    build = _mask_shift(inb(reg), mask);
+    len=sprintf(buf, "%d.%02d.%03d\n", major, minor, build);
     mutex_unlock(&lpc_data->access_lock);
 
     BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
@@ -565,15 +576,15 @@ static ssize_t write_bsp_callback(struct device *dev,
         default:
             return -EINVAL;
     }
-    
+
     if (attr->index == ATT_BSP_DEBUG) {
         if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
             return -EINVAL;
         } else if (_config_bsp_log(bsp_debug_u8) < 0) {
             return -EINVAL;
-        }    	
+        }
     }
-    
+
     return write_bsp(buf, str, str_len, count);
 }
 
@@ -789,15 +800,15 @@ static struct platform_driver lpc_drv = {
 int lpc_init(void)
 {
     int err = 0;
-    
+
     err = platform_driver_register(&lpc_drv);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	
+
     	return err;
     }
-        
+
     err = platform_device_register(&lpc_dev);
     if (err) {
     	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",

@@ -31,7 +31,7 @@
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
     {
-        { FAN_OID_FAN1, "Chassis Fan - 1", 0 },
+        { FAN_OID_FAN1, "Chassis Fan - 0", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -39,7 +39,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN2, "Chassis Fan - 2", 0 },
+        { FAN_OID_FAN2, "Chassis Fan - 1", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -47,7 +47,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN3, "Chassis Fan - 3", 0 },
+        { FAN_OID_FAN3, "Chassis Fan - 2", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -55,7 +55,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN4, "Chassis Fan - 4", 0 },
+        { FAN_OID_FAN4, "Chassis Fan - 3", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -63,12 +63,12 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_PSU0_FAN1, "PSU 1 - Fan 1", 0 },
+        { FAN_OID_PSU0_FAN1, "PSU 0 - Fan", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM,
     },
     {
-        { FAN_OID_PSU1_FAN1, "PSU 2 - Fan 1", 0 },
+        { FAN_OID_PSU1_FAN1, "PSU 1 - Fan", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM,
     },
@@ -89,7 +89,7 @@ int sys_fan_present_get(onlp_fan_info_t* info, int id)
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
-int 
+int
 sys_fan_info_get(onlp_fan_info_t* info, int id)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
@@ -97,7 +97,7 @@ sys_fan_info_get(onlp_fan_info_t* info, int id)
 
 int
 sys_fan_rpm_percent_set(int perc)
-{  
+{
     return ONLP_STATUS_E_UNSUPPORTED;
 }
 
@@ -118,18 +118,18 @@ onlp_fani_rpm_set(onlp_oid_t id, int rpm)
 int
 onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;  
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
 int
 onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id ,rc;
-        
+
     fan_id = ONLP_OID_ID_GET(id);
     *rv = fan_info[fan_id];
     rv->caps |= ONLP_FAN_CAPS_GET_RPM;
-       
+
     switch (fan_id) {
         case FAN_ID_FAN1:
         case FAN_ID_FAN2:
@@ -139,7 +139,7 @@ onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         case FAN_ID_PSU1_FAN1:
             rc = bmc_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

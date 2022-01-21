@@ -399,9 +399,9 @@ function _cpld_version_sysfs {
 
     if [ "${MODEL_NAME}" == "S9600-32X" ]; then
         # MB CPLD S9600-32X
-        _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0031/cpld_version"
-        _check_filepath "/sys/bus/i2c/devices/1-0032/cpld_version"
+        _check_filepath "/sys/bus/i2c/devices/1-0030/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0031/cpld_version_h"
+        _check_filepath "/sys/bus/i2c/devices/1-0032/cpld_version_h"
         #_check_filepath "/sys/bus/i2c/devices/1-0033/cpld_version" #TODO: 64x only
         #_check_filepath "/sys/bus/i2c/devices/1-0034/cpld_version" #TODO: 64x only
         mb_cpld1_ver=$(eval "cat /sys/bus/i2c/devices/1-0030/cpld_version_h ${LOG_REDIRECT}")
