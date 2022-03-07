@@ -117,6 +117,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
         *e++ = THERMAL_OID_CPU0;
         *e++ = THERMAL_OID_CPU1;
         *e++ = THERMAL_OID_DRAM0;
+        *e++ = THERMAL_OID_DRAM1;
         *e++ = THERMAL_OID_MAC;
 
         *e++ = LED_OID_SYNC;

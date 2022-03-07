@@ -48,7 +48,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -61,7 +61,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -74,7 +74,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -87,7 +87,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -100,7 +100,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -113,7 +113,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -126,7 +126,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -139,7 +139,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {
@@ -152,7 +152,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(102), MILLI(105)}
+        .thresholds = {MILLI(0), MILLI(73), MILLI(93)}
     },
     {
         .hdr = {

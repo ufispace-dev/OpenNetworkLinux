@@ -16,18 +16,18 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
     SYS_OBJECT_ID=".9180.32"
     PORT_COUNT=32
     PORT_CONFIG="32x100"
-     
+
     def check_bmc_enable(self):
         # check if main mux accessable, if no, bmc enabled
         retcode = subprocess.call('i2cget -y 0 0x76 0x0 2>/dev/null', shell=True)
-        # fail if retrun code not 0 
+        # fail if retrun code not 0
         if retcode:
             return 1
         return 0
-        
-    def init_i2c_mux_idle_state(self, muxs):        
+
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -40,18 +40,18 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         if bmc_enable:
             return self.baseconfig_bmc()
-      
-        # vid to mac vdd value mapping 
+
+        # vid to mac vdd value mapping
         vdd_val_array=( 0.85,  0.82,  0.77,  0.87,  0.74,  0.84,  0.79,  0.89 )
-        # vid to rov reg value mapping 
+        # vid to rov reg value mapping
         rov_reg_array=( 0x24,  0x21,  0x1C,  0x26,  0x19, 0x23, 0x1E, 0x28 )
-           
+
         self.insmod("eeprom_mb")
         # init SYS EEPROM devices
         self.new_i2c_devices(
@@ -62,12 +62,12 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
                 ('mb_eeprom', 0x51, 0),
             ]
         )
-        
+
         os.system("modprobe w83795")
         os.system("modprobe eeprom")
         os.system("modprobe gpio_pca953x")
         self.insmod("optoe")
-        
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
         i2c_muxs = [
@@ -79,18 +79,18 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             ('pca9548', 0x71, 7),
             ('pca9548', 0x76, 0),
         ]
-                    
+
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-        
+
         # init PCA9545
         self.new_i2c_device('pca9545', 0x72, 0)
 
         # Golden Finger to show CPLD
         os.system("i2cget -y 44 0x74 2")
-        
+
         # Reset BMC Dummy Board
         os.system("i2cset -y -r 0 0x26 4 0x00")
         os.system("i2cset -y -r 0 0x26 5 0x00")
@@ -102,7 +102,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         # CPU Baord
         os.system("i2cset -y -r 0 0x77 6 0xFF")
         os.system("i2cset -y -r 0 0x77 7 0xFF")
-       
+
         # init SMBUS1 ABS
         os.system("i2cset -y -r 5 0x20 4 0x00")
         os.system("i2cset -y -r 5 0x20 5 0x00")
@@ -118,14 +118,14 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 5 0x22 5 0x00")
         os.system("i2cset -y -r 5 0x22 6 0xFF")
         os.system("i2cset -y -r 5 0x22 7 0xFF")
-        
+
         os.system("i2cset -y -r 5 0x23 4 0x00")
         os.system("i2cset -y -r 5 0x23 5 0x00")
         os.system("i2cset -y -r 5 0x23 2 0xCF")
         os.system("i2cset -y -r 5 0x23 3 0xF0")
         os.system("i2cset -y -r 5 0x23 6 0xCF")
         os.system("i2cset -y -r 5 0x23 7 0xF0")
-        
+
         # init SFP
         os.system("i2cset -y -r 5 0x27 4 0x00")
         os.system("i2cset -y -r 5 0x27 5 0x00")
@@ -149,7 +149,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 6 0x21 6 0x00")
         os.system("i2cset -y -r 6 0x21 7 0x00")
 
-        # set ZQSFP RST = 1 
+        # set ZQSFP RST = 1
         os.system("i2cset -y -r 6 0x22 4 0x00")
         os.system("i2cset -y -r 6 0x22 5 0x00")
         os.system("i2cset -y -r 6 0x22 2 0xFF")
@@ -177,7 +177,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         #os.system("i2cset -y -r 50 0x75 5 0x00")
         #os.system("i2cset -y -r 50 0x75 6 0x00")
         #os.system("i2cset -y -r 50 0x75 7 0xFF")
-        
+
         # init Board ID
         os.system("i2cset -y -r 51 0x27 4 0x00")
         os.system("i2cset -y -r 51 0x27 5 0x00")
@@ -238,19 +238,19 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             [
                 # ASIC Coretemp and Front MAC
                 ('lm86', 0x4C, 41),
-                
+
                 # CPU Board
                 ('tmp75', 0x4F, 0),
-                
+
                 # Near PSU1
                 ('tmp75', 0x48, 41),
-                
+
                 # Rear MAC
                 ('tmp75', 0x4A, 41),
-                
+
                 # Near Port 32
                 ('tmp75', 0x4B, 41),
-                
+
                 # Near PSU2
                 ('tmp75', 0x4D, 41),
             ]
@@ -261,35 +261,35 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         for i in range(496, 512):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-                    
+
         # init GPIO, ABS Port 16-31
         self.new_i2c_device('pca9535', 0x21, 5)
         for i in range(480, 496):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-        
+
         # init GPIO, INT Port 0-15
         self.new_i2c_device('pca9535', 0x22, 5)
         for i in range(464, 480):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            
+
         # init GPIO, INT Port 16-31
         self.new_i2c_device('pca9535', 0x23, 5)
         for i in range(448, 464):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            
+
         # init GPIO, SFP
         self.new_i2c_device('pca9535', 0x27, 5)
         for i in range(432, 448):
             os.system("echo %d > /sys/class/gpio/export" % i)
-            if i == 180 or i == 181 or i == 184 or \
-               i == 185 or i == 186 or i == 187:
+            if i == 436 or i == 437 or i == 440 or \
+               i == 441 or i == 442 or i == 443:
                 os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
             else:
                 os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-        
+
         # init GPIO, LP Mode Port 0-15
         self.new_i2c_device('pca9535', 0x20, 6)
         for i in range(416, 432):
@@ -301,7 +301,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         for i in range(400, 416):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            
+
         # init GPIO, RST Port 0-15
         self.new_i2c_device('pca9535', 0x22, 6)
         for i in range(384, 400):
@@ -309,7 +309,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
             os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
-            
+
         # init GPIO, RST Port 16-31
         self.new_i2c_device('pca9535', 0x23, 6)
         for i in range(368, 384):
@@ -318,28 +318,38 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
             os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
 
+        # init GPIO, PSU I/O status
+        self.new_i2c_device('pca9535', 0x25, 0)
+        for i in range(352, 368):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            if i == 353 or i == 354 or i == 356 or \
+               i == 357 or i == 358 or i == 361 or \
+               i == 362 or i == 364:
+                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
         # init QSFP EEPROM
         for port in range(1, 33):
             self.new_i2c_device('optoe1', 0x50, port + 8)
-        
+
         # init SFP(0/1) EEPROM
         self.new_i2c_device('sff8436', 0x50, 45)
         self.new_i2c_device('sff8436', 0x50, 46)
-        
+
         # init PSU(0/1) EEPROM devices
         self.new_i2c_device('eeprom', 0x50, 57)
         self.new_i2c_device('eeprom', 0x50, 58)
 
         # _mac_vdd_init
-        reg_val_str = subprocess.check_output("""i2cget -y 44 0x33 0x42 2>/dev/null""", shell=True)
-        reg_val = int(reg_val_str, 16)
-        vid = reg_val & 0x7
-        mac_vdd_val = vdd_val_array[vid]
-        rov_reg = rov_reg_array[vid]
-        
-        msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg) ) 
-        os.system("i2cset -y -r 55 0x22 0x21 0x%x w" % rov_reg)
-        
+        try:
+            reg_val_str = subprocess.check_output("""i2cget -y 44 0x33 0x42 2>/dev/null""", shell=True)
+            reg_val = int(reg_val_str, 16)
+            vid = reg_val & 0x7
+            mac_vdd_val = vdd_val_array[vid]
+            rov_reg = rov_reg_array[vid]
+            subprocess.check_output("""i2cset -y -r 55 0x22 0x21 0x%x w 2>/dev/null""" % rov_reg, shell=True)
+            msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg) )
+        except subprocess.CalledProcessError:
+            pass
         # init SYS LED
         os.system("i2cset -y -r 50 0x75 2 0x01")
         os.system("i2cset -y -r 50 0x75 4 0x00")
@@ -348,9 +358,14 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 50 0x75 7 0x00")
 
         return True
-        
+
     def baseconfig_bmc(self):
-          
+
+        # vid to mac vdd value mapping
+        vdd_val_array=( 0.85,  0.82,  0.77,  0.87,  0.74,  0.84,  0.79,  0.89 )
+        # vid to rov reg value mapping
+        rov_reg_array=( 0x24,  0x21,  0x1C,  0x26,  0x19, 0x23, 0x1E, 0x28 )
+
         self.insmod("eeprom_mb")
         # init SYS EEPROM devices
         self.new_i2c_devices(
@@ -359,11 +374,11 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
                 ('mb_eeprom', 0x51, 0),
             ]
         )
-        
+
         os.system("modprobe eeprom")
         os.system("modprobe gpio_pca953x")
         self.insmod("optoe")
-        
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
         self.new_i2c_devices(
@@ -376,14 +391,14 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
                 ('pca9548', 0x71, 7),
             ]
         )
-        
+
         # Golden Finger to show CPLD
         os.system("i2cget -y 44 0x74 2")
 
         # CPU Baord
         os.system("i2cset -y -r 0 0x77 6 0xFF")
         os.system("i2cset -y -r 0 0x77 7 0xFF")
-       
+
         # init SMBUS1 ABS
         os.system("i2cset -y -r 5 0x20 4 0x00")
         os.system("i2cset -y -r 5 0x20 5 0x00")
@@ -399,14 +414,14 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 5 0x22 5 0x00")
         os.system("i2cset -y -r 5 0x22 6 0xFF")
         os.system("i2cset -y -r 5 0x22 7 0xFF")
-        
+
         os.system("i2cset -y -r 5 0x23 4 0x00")
         os.system("i2cset -y -r 5 0x23 5 0x00")
         os.system("i2cset -y -r 5 0x23 2 0xCF")
         os.system("i2cset -y -r 5 0x23 3 0xF0")
         os.system("i2cset -y -r 5 0x23 6 0xCF")
         os.system("i2cset -y -r 5 0x23 7 0xF0")
-        
+
         # init SFP
         os.system("i2cset -y -r 5 0x27 4 0x00")
         os.system("i2cset -y -r 5 0x27 5 0x00")
@@ -430,7 +445,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 6 0x21 6 0x00")
         os.system("i2cset -y -r 6 0x21 7 0x00")
 
-        # set ZQSFP RST = 1 
+        # set ZQSFP RST = 1
         os.system("i2cset -y -r 6 0x22 4 0x00")
         os.system("i2cset -y -r 6 0x22 5 0x00")
         os.system("i2cset -y -r 6 0x22 2 0xFF")
@@ -455,7 +470,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
 
         # init Temperature
         self.new_i2c_devices(
-            [               
+            [
                 # CPU Board
                 ('tmp75', 0x4F, 0),
             ]
@@ -466,35 +481,35 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         for i in range(496, 512):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-                    
+
         # init GPIO, ABS Port 16-31
         self.new_i2c_device('pca9535', 0x21, 5)
         for i in range(480, 496):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-        
+
         # init GPIO, INT Port 0-15
         self.new_i2c_device('pca9535', 0x22, 5)
         for i in range(464, 480):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            
+
         # init GPIO, INT Port 16-31
         self.new_i2c_device('pca9535', 0x23, 5)
         for i in range(448, 464):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            
+
         # init GPIO, SFP
         self.new_i2c_device('pca9535', 0x27, 5)
         for i in range(432, 448):
             os.system("echo %d > /sys/class/gpio/export" % i)
-            if i == 180 or i == 181 or i == 184 or \
-               i == 185 or i == 186 or i == 187:
+            if i == 436 or i == 437 or i == 440 or \
+               i == 441 or i == 442 or i == 443:
                 os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
             else:
                 os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-        
+
         # init GPIO, LP Mode Port 0-15
         self.new_i2c_device('pca9535', 0x20, 6)
         for i in range(416, 432):
@@ -506,7 +521,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         for i in range(400, 416):
             os.system("echo %d > /sys/class/gpio/export" % i)
             os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            
+
         # init GPIO, RST Port 0-15
         self.new_i2c_device('pca9535', 0x22, 6)
         for i in range(384, 400):
@@ -514,7 +529,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
             os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
             os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
-            
+
         # init GPIO, RST Port 16-31
         self.new_i2c_device('pca9535', 0x23, 6)
         for i in range(368, 384):
@@ -526,9 +541,20 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         # init QSFP EEPROM
         for port in range(1, 33):
             self.new_i2c_device('optoe1', 0x50, port + 8)
-        
+
         # init SFP(0/1) EEPROM
         self.new_i2c_device('sff8436', 0x50, 45)
         self.new_i2c_device('sff8436', 0x50, 46)
 
-        return True        
+        # _mac_vdd_init
+        try:
+            reg_val_str = subprocess.check_output("""i2cget -y 44 0x33 0x42 2>/dev/null""", shell=True)
+            reg_val = int(reg_val_str, 16)
+            vid = reg_val & 0x7
+            mac_vdd_val = vdd_val_array[vid]
+            rov_reg = rov_reg_array[vid]
+            subprocess.check_output("""i2cset -y -r 8 0x22 0x21 0x%x w 2>/dev/null""" % rov_reg, shell=True)
+            msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg) )
+        except subprocess.CalledProcessError:
+            pass
+        return True

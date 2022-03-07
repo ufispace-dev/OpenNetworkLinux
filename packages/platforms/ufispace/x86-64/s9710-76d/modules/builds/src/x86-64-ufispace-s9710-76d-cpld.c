@@ -62,6 +62,18 @@
     BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
+#define _SENSOR_DEVICE_ATTR_RO(_name, _func, _index)     \
+    SENSOR_DEVICE_ATTR(_name, S_IRUGO, read_##_func, NULL, _index)
+
+#define _SENSOR_DEVICE_ATTR_WO(_name, _func, _index)     \
+    SENSOR_DEVICE_ATTR(_name, S_IWUSR, NULL, write_##_func, _index)
+
+#define _SENSOR_DEVICE_ATTR_RW(_name, _func, _index)     \
+    SENSOR_DEVICE_ATTR(_name, S_IRUGO | S_IWUSR, read_##_func, write_##_func, _index)
+
+#define _DEVICE_ATTR(_name)     \
+    &sensor_dev_attr_##_name.dev_attr.attr
+
 /* CPLD sysfs attributes index  */
 enum cpld_sysfs_attributes {
     CPLD_BOARD_ID_0,
@@ -110,6 +122,11 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_1,
     CPLD_SYSTEM_LED_2,
     CPLD_LED_CLEAR,
+    DBG_CPLD_MAC_INTR,
+    DBG_CPLD_PHY_INTR,
+    DBG_CPLD_CPLDX_INTR,
+    DBG_CPLD_MAC_THERMAL_INTR,
+    DBG_CPLD_MISC_INTR,
 
     //CPLD 2-5
     CPLD_QSFPDD_INTR_PORT_0,
@@ -145,6 +162,15 @@ enum cpld_sysfs_attributes {
     CPLD_QSFPDD_LPMODE_0,
     CPLD_QSFPDD_LPMODE_1,
     CPLD_QSFPDD_LPMODE_2,
+    DBG_CPLD_QSFPDD_INTR_PORT_0,
+    DBG_CPLD_QSFPDD_INTR_PORT_1,
+    DBG_CPLD_QSFPDD_INTR_PORT_2,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_0,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_1,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_2,
+    DBG_CPLD_QSFPDD_INTR_FUSE_0,
+    DBG_CPLD_QSFPDD_INTR_FUSE_1,
+    DBG_CPLD_QSFPDD_INTR_FUSE_2,
 
     //CPLD 2
     CPLD_OP2_INTR,
@@ -153,12 +179,14 @@ enum cpld_sysfs_attributes {
     CPLD_OP2_RESET,
     CPLD_OP2_PWR,
     CPLD_MISC_PWR,
+    DBG_CPLD_OP2_INTR,
 
     //CPLD 2/3
     CPLD_SFP_STATUS,
     CPLD_SFP_MASK,
     CPLD_SFP_EVT,
     CPLD_SFP_CONFIG,
+    DBG_CPLD_SFP_STATUS,
 
     //CPLD 4
     CPLD_I2C_MUX_FAB_RESET,
@@ -241,493 +269,570 @@ static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, 0x32, 0x33, 0x34, I2
 
 /* define all support register access of cpld in attribute */
 
-static SENSOR_DEVICE_ATTR(cpld_board_id_0,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_0);
-static SENSOR_DEVICE_ATTR(cpld_board_id_1,  S_IRUGO, read_cpld_callback, NULL, CPLD_BOARD_ID_1);
-static SENSOR_DEVICE_ATTR(cpld_version,     S_IRUGO, read_cpld_callback, NULL, CPLD_VERSION);
-static SENSOR_DEVICE_ATTR(cpld_build,       S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD);
-static SENSOR_DEVICE_ATTR(cpld_id,          S_IRUGO, read_cpld_callback, NULL, CPLD_ID);
+static _SENSOR_DEVICE_ATTR_RO(cpld_board_id_0,  cpld_callback, CPLD_BOARD_ID_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_board_id_1,  cpld_callback, CPLD_BOARD_ID_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_version,     cpld_callback, CPLD_VERSION);
+static _SENSOR_DEVICE_ATTR_RO(cpld_build,       cpld_callback, CPLD_BUILD);
+static _SENSOR_DEVICE_ATTR_RO(cpld_id,          cpld_callback, CPLD_ID);
 
-static SENSOR_DEVICE_ATTR(cpld_major_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_MAJOR_VER);
-static SENSOR_DEVICE_ATTR(cpld_minor_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_MINOR_VER);
-static SENSOR_DEVICE_ATTR(cpld_build_ver,   S_IRUGO, read_cpld_callback, NULL, CPLD_BUILD_VER);
-static SENSOR_DEVICE_ATTR(cpld_version_h,   S_IRUGO, read_cpld_version_h, NULL, CPLD_VERSION_H);
+static _SENSOR_DEVICE_ATTR_RO(cpld_major_ver,   cpld_callback, CPLD_MAJOR_VER);
+static _SENSOR_DEVICE_ATTR_RO(cpld_minor_ver,   cpld_callback, CPLD_MINOR_VER);
+static _SENSOR_DEVICE_ATTR_RO(cpld_build_ver,   cpld_callback, CPLD_BUILD_VER);
+static _SENSOR_DEVICE_ATTR_RO(cpld_version_h,   cpld_version_h, CPLD_VERSION_H);
 
-static SENSOR_DEVICE_ATTR(cpld_mac_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_INTR);
-static SENSOR_DEVICE_ATTR(cpld_phy_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_PHY_INTR);
-static SENSOR_DEVICE_ATTR(cpld_cpldx_intr,  S_IRUGO, read_cpld_callback, NULL, CPLD_CPLDX_INTR);
-static SENSOR_DEVICE_ATTR(cpld_mac_thermal_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_THERMAL_INTR);
-static SENSOR_DEVICE_ATTR(cpld_misc_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_MISC_INTR);
-static SENSOR_DEVICE_ATTR(cpld_cpu_intr,    S_IRUGO, read_cpld_callback, NULL, CPLD_CPU_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_intr,    cpld_callback, CPLD_MAC_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_phy_intr,    cpld_callback, CPLD_PHY_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_cpldx_intr,  cpld_callback, CPLD_CPLDX_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_thermal_intr, cpld_callback, CPLD_MAC_THERMAL_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_misc_intr,   cpld_callback, CPLD_MISC_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_cpu_intr,    cpld_callback, CPLD_CPU_INTR);
 
-static SENSOR_DEVICE_ATTR(cpld_mac_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_MASK);
-static SENSOR_DEVICE_ATTR(cpld_phy_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_PHY_MASK);
-static SENSOR_DEVICE_ATTR(cpld_cpldx_mask,  S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_CPLDX_MASK);
-static SENSOR_DEVICE_ATTR(cpld_mac_thermal_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_THERMAL_MASK);
-static SENSOR_DEVICE_ATTR(cpld_misc_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MISC_MASK);
-static SENSOR_DEVICE_ATTR(cpld_cpu_mask,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_CPU_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mac_mask,    cpld_callback, CPLD_MAC_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_phy_mask,    cpld_callback, CPLD_PHY_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_cpldx_mask,  cpld_callback, CPLD_CPLDX_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mac_thermal_mask, cpld_callback, CPLD_MAC_THERMAL_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_misc_mask,   cpld_callback, CPLD_MISC_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_cpu_mask,    cpld_callback, CPLD_CPU_MASK);
 
-static SENSOR_DEVICE_ATTR(cpld_mac_evt,     S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_EVT);
-static SENSOR_DEVICE_ATTR(cpld_phy_evt,     S_IRUGO, read_cpld_callback, NULL, CPLD_PHY_EVT);
-static SENSOR_DEVICE_ATTR(cpld_cpldx_evt,   S_IRUGO, read_cpld_callback, NULL, CPLD_CPLDX_EVT);
-static SENSOR_DEVICE_ATTR(cpld_mac_thermal_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_THERMAL_EVT);
-static SENSOR_DEVICE_ATTR(cpld_misc_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_MISC_EVT);
-static SENSOR_DEVICE_ATTR(cpld_evt_ctrl,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_EVT_CTRL);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_evt,     cpld_callback, CPLD_MAC_EVT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_phy_evt,     cpld_callback, CPLD_PHY_EVT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_cpldx_evt,   cpld_callback, CPLD_CPLDX_EVT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_thermal_evt, cpld_callback, CPLD_MAC_THERMAL_EVT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_misc_evt,    cpld_callback, CPLD_MISC_EVT);
+static _SENSOR_DEVICE_ATTR_RW(cpld_evt_ctrl,    cpld_callback, CPLD_EVT_CTRL);
 
-static SENSOR_DEVICE_ATTR(cpld_mac_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MAC_RESET);
-static SENSOR_DEVICE_ATTR(cpld_phy_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_PHY_RESET);
-static SENSOR_DEVICE_ATTR(cpld_bmc_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_BMC_RESET);
-static SENSOR_DEVICE_ATTR(cpld_usb_reset,          S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_USB_RESET);
-static SENSOR_DEVICE_ATTR(cpld_cpldx_reset,        S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_CPLDX_RESET);
-static SENSOR_DEVICE_ATTR(cpld_i2c_mux_nif_reset,  S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_I2C_MUX_NIF_RESET);
-static SENSOR_DEVICE_ATTR(cpld_misc_reset,         S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MISC_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mac_reset,   cpld_callback, CPLD_MAC_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_phy_reset,   cpld_callback, CPLD_PHY_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_bmc_reset,   cpld_callback, CPLD_BMC_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_usb_reset,   cpld_callback, CPLD_USB_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_cpldx_reset, cpld_callback, CPLD_CPLDX_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_i2c_mux_nif_reset, cpld_callback, CPLD_I2C_MUX_NIF_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_misc_reset,  cpld_callback, CPLD_MISC_RESET);
 
-static SENSOR_DEVICE_ATTR(cpld_brd_present, S_IRUGO, read_cpld_callback, NULL, CPLD_BRD_PRESENT);
-static SENSOR_DEVICE_ATTR(cpld_psu_status,  S_IRUGO, read_cpld_callback, NULL, CPLD_PSU_STATUS);
-static SENSOR_DEVICE_ATTR(cpld_system_pwr,  S_IRUGO, read_cpld_callback, NULL, CPLD_SYSTEM_PWR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_brd_present, cpld_callback, CPLD_BRD_PRESENT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_psu_status,  cpld_callback, CPLD_PSU_STATUS);
+static _SENSOR_DEVICE_ATTR_RO(cpld_system_pwr,  cpld_callback, CPLD_SYSTEM_PWR);
 
-static SENSOR_DEVICE_ATTR(cpld_mac_synce, S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_SYNCE);
-static SENSOR_DEVICE_ATTR(cpld_mac_rov,   S_IRUGO, read_cpld_callback, NULL, CPLD_MAC_ROV);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_synce,   cpld_callback, CPLD_MAC_SYNCE);
+static _SENSOR_DEVICE_ATTR_RO(cpld_mac_rov,     cpld_callback, CPLD_MAC_ROV);
 
-static SENSOR_DEVICE_ATTR(cpld_mux_ctrl, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_MUX_CTRL);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mux_ctrl,    cpld_callback, CPLD_MUX_CTRL);
 
-static SENSOR_DEVICE_ATTR(cpld_system_led_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_SYSTEM_LED_0);
-static SENSOR_DEVICE_ATTR(cpld_system_led_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_SYSTEM_LED_1);
-static SENSOR_DEVICE_ATTR(cpld_system_led_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_SYSTEM_LED_2);
-static SENSOR_DEVICE_ATTR(cpld_led_clear,    S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_LED_CLEAR);
+static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_0, cpld_callback, CPLD_SYSTEM_LED_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_1, cpld_callback, CPLD_SYSTEM_LED_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_2, cpld_callback, CPLD_SYSTEM_LED_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_led_clear,    cpld_callback, CPLD_LED_CLEAR);
+
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_intr,   cpld_callback, DBG_CPLD_MAC_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_phy_intr,   cpld_callback, DBG_CPLD_PHY_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_cpldx_intr, cpld_callback, DBG_CPLD_CPLDX_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_thermal_intr, cpld_callback, DBG_CPLD_MAC_THERMAL_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_misc_intr, cpld_callback, DBG_CPLD_MISC_INTR);
 
 //CPLD 2-5
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_port_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PORT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_port_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PORT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_port_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PORT_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_0, cpld_callback, CPLD_QSFPDD_INTR_PORT_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_1, cpld_callback, CPLD_QSFPDD_INTR_PORT_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_2, cpld_callback, CPLD_QSFPDD_INTR_PORT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_present_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PRESENT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_present_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PRESENT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_present_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_PRESENT_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_0, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_1, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_2, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_FUSE_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_fuse_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_FUSE_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_intr_fuse_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_INTR_FUSE_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_0, cpld_callback, CPLD_QSFPDD_INTR_FUSE_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_1, cpld_callback, CPLD_QSFPDD_INTR_FUSE_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_2, cpld_callback, CPLD_QSFPDD_INTR_FUSE_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_port_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PORT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_port_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PORT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_port_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PORT_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_0, cpld_callback, CPLD_QSFPDD_MASK_PORT_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_1, cpld_callback, CPLD_QSFPDD_MASK_PORT_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_2, cpld_callback, CPLD_QSFPDD_MASK_PORT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_present_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PRESENT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_present_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PRESENT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_present_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_PRESENT_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_0, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_1, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_2, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_FUSE_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_fuse_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_FUSE_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_mask_fuse_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_MASK_FUSE_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_0, cpld_callback, CPLD_QSFPDD_MASK_FUSE_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_1, cpld_callback, CPLD_QSFPDD_MASK_FUSE_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_2, cpld_callback, CPLD_QSFPDD_MASK_FUSE_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_port_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PORT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_port_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PORT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_port_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PORT_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_0, cpld_callback, CPLD_QSFPDD_EVT_PORT_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_1, cpld_callback, CPLD_QSFPDD_EVT_PORT_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_2, cpld_callback, CPLD_QSFPDD_EVT_PORT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_present_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PRESENT_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_present_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PRESENT_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_present_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_PRESENT_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_0, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_1, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_2, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_FUSE_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_fuse_1, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_FUSE_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_evt_fuse_2, S_IRUGO, read_cpld_callback, NULL, CPLD_QSFPDD_EVT_FUSE_2);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_0, cpld_callback, CPLD_QSFPDD_EVT_FUSE_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_1, cpld_callback, CPLD_QSFPDD_EVT_FUSE_1);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_2, cpld_callback, CPLD_QSFPDD_EVT_FUSE_2);
 
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_RESET_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_RESET_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_RESET_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_0, cpld_callback, CPLD_QSFPDD_RESET_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_1, cpld_callback, CPLD_QSFPDD_RESET_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_2, cpld_callback, CPLD_QSFPDD_RESET_2);
 
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lpmode_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_LPMODE_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lpmode_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_LPMODE_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lpmode_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_LPMODE_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_0, cpld_callback, CPLD_QSFPDD_LPMODE_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_1, cpld_callback, CPLD_QSFPDD_LPMODE_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_2, cpld_callback, CPLD_QSFPDD_LPMODE_2);
+
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_2);
+
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_2);
+
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_2);
 
 //CPLD 2
-static SENSOR_DEVICE_ATTR(cpld_op2_intr,   S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_INTR);
-static SENSOR_DEVICE_ATTR(cpld_op2_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_OP2_MASK);
-static SENSOR_DEVICE_ATTR(cpld_op2_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_EVT);
-static SENSOR_DEVICE_ATTR(cpld_op2_reset,  S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_OP2_RESET);
-static SENSOR_DEVICE_ATTR(cpld_op2_pwr,    S_IRUGO, read_cpld_callback, NULL, CPLD_OP2_PWR);
-static SENSOR_DEVICE_ATTR(cpld_misc_pwr,   S_IRUGO, read_cpld_callback, NULL, CPLD_MISC_PWR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_op2_intr,     cpld_callback, CPLD_OP2_INTR);
+static _SENSOR_DEVICE_ATTR_RW(cpld_op2_mask,     cpld_callback, CPLD_OP2_MASK);
+static _SENSOR_DEVICE_ATTR_RO(cpld_op2_evt,      cpld_callback, CPLD_OP2_EVT);
+static _SENSOR_DEVICE_ATTR_RW(cpld_op2_reset,    cpld_callback, CPLD_OP2_RESET);
+static _SENSOR_DEVICE_ATTR_RO(cpld_op2_pwr,      cpld_callback, CPLD_OP2_PWR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_misc_pwr,     cpld_callback, CPLD_MISC_PWR);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_op2_intr, cpld_callback, DBG_CPLD_OP2_INTR);
 
 //CPLD 2/3
-static SENSOR_DEVICE_ATTR(cpld_sfp_status, S_IRUGO, read_cpld_callback, NULL, CPLD_SFP_STATUS);
-static SENSOR_DEVICE_ATTR(cpld_sfp_mask,   S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_SFP_MASK);
-static SENSOR_DEVICE_ATTR(cpld_sfp_evt,    S_IRUGO, read_cpld_callback, NULL, CPLD_SFP_EVT);
-static SENSOR_DEVICE_ATTR(cpld_sfp_config, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_SFP_CONFIG);
+static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_status, cpld_callback, CPLD_SFP_STATUS);
+static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mask,   cpld_callback, CPLD_SFP_MASK);
+static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,    cpld_callback, CPLD_SFP_EVT);
+static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config, cpld_callback, CPLD_SFP_CONFIG);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_sfp_status, cpld_callback, DBG_CPLD_SFP_STATUS);
 
 //CPLD 4
-static SENSOR_DEVICE_ATTR(cpld_i2c_mux_fab_reset, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_I2C_MUX_FAB_RESET);
+static _SENSOR_DEVICE_ATTR_RW(cpld_i2c_mux_fab_reset, cpld_callback, CPLD_I2C_MUX_FAB_RESET);
 
 //CPLD 4/5
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_0, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_0);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_1, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_1);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_2, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_2);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_3, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_3);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_4, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_4);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_5, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_5);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_6, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_6);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_7, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_7);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_8, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_8);
-static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_led_9, S_IWUSR | S_IRUGO, read_cpld_callback, write_cpld_callback, CPLD_QSFPDD_FAB_LED_9);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_0, cpld_callback, CPLD_QSFPDD_FAB_LED_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_1, cpld_callback, CPLD_QSFPDD_FAB_LED_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_2, cpld_callback, CPLD_QSFPDD_FAB_LED_2);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_3, cpld_callback, CPLD_QSFPDD_FAB_LED_3);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_4, cpld_callback, CPLD_QSFPDD_FAB_LED_4);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_5, cpld_callback, CPLD_QSFPDD_FAB_LED_5);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_6, cpld_callback, CPLD_QSFPDD_FAB_LED_6);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_7, cpld_callback, CPLD_QSFPDD_FAB_LED_7);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_8, cpld_callback, CPLD_QSFPDD_FAB_LED_8);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_fab_led_9, cpld_callback, CPLD_QSFPDD_FAB_LED_9);
 
 //BSP DEBUG
-static SENSOR_DEVICE_ATTR(bsp_debug, S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, BSP_DEBUG);
+static _SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, BSP_DEBUG);
 
 /* define support attributes of cpldx */
 
 /* cpld 1 */
 static struct attribute *cpld1_attributes[] = {
-    &sensor_dev_attr_cpld_board_id_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_board_id_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_build.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    _DEVICE_ATTR(cpld_board_id_0),
+    _DEVICE_ATTR(cpld_board_id_1),
+    _DEVICE_ATTR(cpld_version),
+    _DEVICE_ATTR(cpld_build),
+    _DEVICE_ATTR(cpld_id),
 
-    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+    _DEVICE_ATTR(cpld_major_ver),
+    _DEVICE_ATTR(cpld_minor_ver),
+    _DEVICE_ATTR(cpld_build_ver),
+    _DEVICE_ATTR(cpld_version_h),
 
-    &sensor_dev_attr_cpld_mac_intr.dev_attr.attr,
-    &sensor_dev_attr_cpld_phy_intr.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpldx_intr.dev_attr.attr,
-	&sensor_dev_attr_cpld_mac_thermal_intr.dev_attr.attr,
-    &sensor_dev_attr_cpld_misc_intr.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpu_intr.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mac_intr),
+    _DEVICE_ATTR(cpld_phy_intr),
+    _DEVICE_ATTR(cpld_cpldx_intr),
+    _DEVICE_ATTR(cpld_mac_thermal_intr),
+    _DEVICE_ATTR(cpld_misc_intr),
+    _DEVICE_ATTR(cpld_cpu_intr),
 
-    &sensor_dev_attr_cpld_mac_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_phy_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpldx_mask.dev_attr.attr,
-	&sensor_dev_attr_cpld_mac_thermal_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_misc_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpu_mask.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mac_mask),
+    _DEVICE_ATTR(cpld_phy_mask),
+    _DEVICE_ATTR(cpld_cpldx_mask),
+    _DEVICE_ATTR(cpld_mac_thermal_mask),
+    _DEVICE_ATTR(cpld_misc_mask),
+    _DEVICE_ATTR(cpld_cpu_mask),
 
-    &sensor_dev_attr_cpld_mac_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_phy_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpldx_evt.dev_attr.attr,
-	&sensor_dev_attr_cpld_mac_thermal_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_misc_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mac_evt),
+    _DEVICE_ATTR(cpld_phy_evt),
+    _DEVICE_ATTR(cpld_cpldx_evt),
+    _DEVICE_ATTR(cpld_mac_thermal_evt),
+    _DEVICE_ATTR(cpld_misc_evt),
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
-    &sensor_dev_attr_cpld_mac_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_phy_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_bmc_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_usb_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_cpldx_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_i2c_mux_nif_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_misc_reset.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mac_reset),
+    _DEVICE_ATTR(cpld_phy_reset),
+    _DEVICE_ATTR(cpld_bmc_reset),
+    _DEVICE_ATTR(cpld_usb_reset),
+    _DEVICE_ATTR(cpld_cpldx_reset),
+    _DEVICE_ATTR(cpld_i2c_mux_nif_reset),
+    _DEVICE_ATTR(cpld_misc_reset),
 
-    &sensor_dev_attr_cpld_brd_present.dev_attr.attr,
-    &sensor_dev_attr_cpld_psu_status.dev_attr.attr,
-    &sensor_dev_attr_cpld_system_pwr.dev_attr.attr,
+    _DEVICE_ATTR(cpld_brd_present),
+    _DEVICE_ATTR(cpld_psu_status),
+    _DEVICE_ATTR(cpld_system_pwr),
 
-    &sensor_dev_attr_cpld_mac_synce.dev_attr.attr,
-    &sensor_dev_attr_cpld_mac_rov.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mac_synce),
+    _DEVICE_ATTR(cpld_mac_rov),
 
-    &sensor_dev_attr_cpld_mux_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_mux_ctrl),
 
-    &sensor_dev_attr_cpld_system_led_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_system_led_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_system_led_2.dev_attr.attr,
-    &sensor_dev_attr_cpld_led_clear.dev_attr.attr,
-    &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    _DEVICE_ATTR(cpld_system_led_0),
+    _DEVICE_ATTR(cpld_system_led_1),
+    _DEVICE_ATTR(cpld_system_led_2),
+    _DEVICE_ATTR(cpld_led_clear),
+    _DEVICE_ATTR(bsp_debug),
+
+    _DEVICE_ATTR(dbg_cpld_mac_intr),
+    _DEVICE_ATTR(dbg_cpld_phy_intr),
+    _DEVICE_ATTR(dbg_cpld_cpldx_intr),
+    _DEVICE_ATTR(dbg_cpld_mac_thermal_intr),
+    _DEVICE_ATTR(dbg_cpld_misc_intr),
     NULL
 };
 
 /* cpld 2 */
 static struct attribute *cpld2_attributes[] = {
-    &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_build.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    _DEVICE_ATTR(cpld_version),
+    _DEVICE_ATTR(cpld_build),
+    _DEVICE_ATTR(cpld_id),
 
-    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+    _DEVICE_ATTR(cpld_major_ver),
+    _DEVICE_ATTR(cpld_minor_ver),
+    _DEVICE_ATTR(cpld_build_ver),
+    _DEVICE_ATTR(cpld_version_h),
 
     //CPLD 2-5
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_2),
 
-    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
-    &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_reset_0),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_1),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_0),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
 
     //CPLD2 only
 
-    &sensor_dev_attr_cpld_op2_intr.dev_attr.attr,
-    &sensor_dev_attr_cpld_op2_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_op2_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_op2_reset.dev_attr.attr,
-    &sensor_dev_attr_cpld_op2_pwr.dev_attr.attr,
-    &sensor_dev_attr_cpld_misc_pwr.dev_attr.attr,
+    _DEVICE_ATTR(cpld_op2_intr),
+    _DEVICE_ATTR(cpld_op2_mask),
+    _DEVICE_ATTR(cpld_op2_evt),
+    _DEVICE_ATTR(cpld_op2_reset),
+    _DEVICE_ATTR(cpld_op2_pwr),
+    _DEVICE_ATTR(cpld_misc_pwr),
+    _DEVICE_ATTR(dbg_cpld_op2_intr),
 
     //CPLD 2/3
 
-    &sensor_dev_attr_cpld_sfp_status.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_config.dev_attr.attr,
+    _DEVICE_ATTR(cpld_sfp_status),
+    _DEVICE_ATTR(cpld_sfp_mask),
+    _DEVICE_ATTR(cpld_sfp_evt),
+    _DEVICE_ATTR(cpld_sfp_config),
+    _DEVICE_ATTR(dbg_cpld_sfp_status),
     NULL
 };
 
 /* cpld 3 */
 static struct attribute *cpld3_attributes[] = {
-    &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_build.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    _DEVICE_ATTR(cpld_version),
+    _DEVICE_ATTR(cpld_build),
+    _DEVICE_ATTR(cpld_id),
 
-    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+    _DEVICE_ATTR(cpld_major_ver),
+    _DEVICE_ATTR(cpld_minor_ver),
+    _DEVICE_ATTR(cpld_build_ver),
+    _DEVICE_ATTR(cpld_version_h),
 
     //CPLD 2-5
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_2),
 
-    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
-    &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_reset_0),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_1),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_0),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
 
     //CPLD 2/3
 
-    &sensor_dev_attr_cpld_sfp_status.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_mask.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_evt.dev_attr.attr,
-    &sensor_dev_attr_cpld_sfp_config.dev_attr.attr,
+    _DEVICE_ATTR(cpld_sfp_status),
+    _DEVICE_ATTR(cpld_sfp_mask),
+    _DEVICE_ATTR(cpld_sfp_evt),
+    _DEVICE_ATTR(cpld_sfp_config),
+    _DEVICE_ATTR(dbg_cpld_sfp_status),
     NULL
 };
 
 /* cpld 4 */
 static struct attribute *cpld4_attributes[] = {
-    &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_build.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    _DEVICE_ATTR(cpld_version),
+    _DEVICE_ATTR(cpld_build),
+    _DEVICE_ATTR(cpld_id),
 
-    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+    _DEVICE_ATTR(cpld_major_ver),
+    _DEVICE_ATTR(cpld_minor_ver),
+    _DEVICE_ATTR(cpld_build_ver),
+    _DEVICE_ATTR(cpld_version_h),
 
     //CPLD 2-5
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_2),
 
-    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
-    &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_reset_0),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_1),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_0),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
 
     //CPLD 4
 
-    &sensor_dev_attr_cpld_i2c_mux_fab_reset.dev_attr.attr,
+    _DEVICE_ATTR(cpld_i2c_mux_fab_reset),
 
     //CPLD 4/5
 
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_2.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_3.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_4.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_5.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_6.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_7.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_8.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_9.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_0),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_1),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_2),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_3),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_4),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_5),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_6),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_7),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_8),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_9),
     NULL
 };
 
 /* cpld 5 */
 static struct attribute *cpld5_attributes[] = {
-    &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_build.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    _DEVICE_ATTR(cpld_version),
+    _DEVICE_ATTR(cpld_build),
+    _DEVICE_ATTR(cpld_id),
 
-    &sensor_dev_attr_cpld_major_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_minor_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_build_ver.dev_attr.attr,
-    &sensor_dev_attr_cpld_version_h.dev_attr.attr,
+    _DEVICE_ATTR(cpld_major_ver),
+    _DEVICE_ATTR(cpld_minor_ver),
+    _DEVICE_ATTR(cpld_build_ver),
+    _DEVICE_ATTR(cpld_version_h),
     //CPLD 2-5
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_intr_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_mask_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_port_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_present_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_evt_fuse_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_1),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_2),
 
-    &sensor_dev_attr_cpld_evt_ctrl.dev_attr.attr,
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
-    &sensor_dev_attr_cpld_qsfpdd_reset_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_reset_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_reset_0),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_1),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_2),
 
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_lpmode_2.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_0),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
 
     //CPLD 4/5
 
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_0.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_1.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_2.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_3.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_4.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_5.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_6.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_7.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_8.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_fab_led_9.dev_attr.attr,
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_0),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_1),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_2),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_3),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_4),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_5),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_6),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_7),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_8),
+    _DEVICE_ATTR(cpld_qsfpdd_fab_led_9),
     NULL
 };
 
@@ -779,15 +884,6 @@ static u8 _mask_shift(u8 val, u8 mask)
     shift = _shift(mask);
 
     return (val & mask) >> shift;
-}
-
-static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
-{
-    if (bit_val == 0)
-        reg_val = reg_val & ~(1 << bit);
-    else
-        reg_val = reg_val | (1 << bit);
-    return reg_val;
 }
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
@@ -1076,6 +1172,33 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
+        case DBG_CPLD_MAC_INTR:
+            reg = DBG_CPLD_MAC_INTR_REG;
+            break;
+        case DBG_CPLD_PHY_INTR:
+            reg = DBG_CPLD_PHY_INTR_REG;
+            break;
+        case DBG_CPLD_CPLDX_INTR:
+            reg = DBG_CPLD_CPLDX_INTR_REG;
+            break;
+        case DBG_CPLD_MAC_THERMAL_INTR:
+            reg = DBG_CPLD_THERMAL_INTR_BASE_REG;
+            break;
+        case DBG_CPLD_MISC_INTR:
+            reg = DBG_CPLD_MISC_INTR_REG;
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PORT_0 ... DBG_CPLD_QSFPDD_INTR_PORT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PORT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_0 ... DBG_CPLD_QSFPDD_INTR_PRESENT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_0 ... DBG_CPLD_QSFPDD_INTR_FUSE_2:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_FUSE_0);
+            break;
         //CPLD 2
         case CPLD_OP2_INTR:
             reg = CPLD_OP2_INTR_REG;
@@ -1095,6 +1218,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_MISC_PWR:
             reg = CPLD_MISC_PWR_REG;
             break;
+        case DBG_CPLD_OP2_INTR:
+            reg = DBG_CPLD_OP2_INTR_REG;
+            break;
         //CPLD 2/3
         case CPLD_SFP_STATUS:
             reg = CPLD_SFP_STATUS_REG;
@@ -1107,6 +1233,9 @@ static ssize_t read_cpld_callback(struct device *dev,
             break;
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
+            break;
+        case DBG_CPLD_SFP_STATUS:
+            reg = DBG_CPLD_SFP_STATUS_REG;
             break;
         //CPLD 4
         case CPLD_I2C_MUX_FAB_RESET:
@@ -1204,6 +1333,33 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
+        case DBG_CPLD_MAC_INTR:
+            reg = DBG_CPLD_MAC_INTR_REG;
+            break;
+        case DBG_CPLD_PHY_INTR:
+            reg = DBG_CPLD_PHY_INTR_REG;
+            break;
+        case DBG_CPLD_CPLDX_INTR:
+            reg = DBG_CPLD_CPLDX_INTR_REG;
+            break;
+        case DBG_CPLD_MAC_THERMAL_INTR:
+            reg = DBG_CPLD_THERMAL_INTR_BASE_REG;
+            break;
+        case DBG_CPLD_MISC_INTR:
+            reg = DBG_CPLD_MISC_INTR_REG;
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PORT_0 ... DBG_CPLD_QSFPDD_INTR_PORT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PORT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_0 ... DBG_CPLD_QSFPDD_INTR_PRESENT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_0 ... DBG_CPLD_QSFPDD_INTR_FUSE_2:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_FUSE_0);
+            break;
         //CPLD 2
         case CPLD_OP2_MASK:
             reg = CPLD_OP2_MASK_REG;
@@ -1211,12 +1367,18 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_OP2_RESET:
             reg = CPLD_OP2_RESET_REG;
             break;
+        case DBG_CPLD_OP2_INTR:
+            reg = DBG_CPLD_OP2_INTR_REG;
+            break;
         //CPLD 2/3
         case CPLD_SFP_MASK:
             reg = CPLD_SFP_MASK_REG;
             break;
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
+            break;
+        case DBG_CPLD_SFP_STATUS:
+            reg = DBG_CPLD_SFP_STATUS_REG;
             break;
         //CPLD 4
         case CPLD_I2C_MUX_FAB_RESET:
@@ -1265,7 +1427,6 @@ static ssize_t read_cpld_reg(struct device *dev,
         dev_err(dev, "read_cpld_reg() error, reg_val=%d\n", reg_val);
         return reg_val;
     } else {
-        reg_val=_mask_shift(reg_val, mask);
         return sprintf(buf, "0x%02x\n", reg_val);
     }
 }
@@ -1280,20 +1441,24 @@ static ssize_t write_cpld_reg(struct device *dev,
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
     u8 reg_val, reg_val_now, shift;
-    int ret;
+    int ret = 0;
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
-    //apply SINGLE BIT operation if mask is specified, multiple bits are not supported
+    //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
         reg_val_now = _read_cpld_reg(dev, reg, MASK_ALL);
-        if (unlikely(ret < 0)) {
+        if (unlikely(reg_val_now < 0)) {
             dev_err(dev, "write_cpld_reg() error, reg_val_now=%d\n", reg_val_now);
             return reg_val_now;
         } else {
+            //clear bits in reg_val_now by the mask
+            reg_val_now &= ~mask;
+            //get bit shift by the mask
             shift = _shift(mask);
-            reg_val = _bit_operation(reg_val_now, shift, reg_val);
+            //calculate new reg_val
+            reg_val = reg_val_now | (reg_val << shift);
         }
     }
 
@@ -1418,7 +1583,7 @@ static int cpld_probe(struct i2c_client *client,
             data->index);
 #endif
 
-              data->index = dev_id->driver_data;
+    data->index = dev_id->driver_data;
 
     /* register sysfs hooks for different cpld group */
     dev_info(&client->dev, "probe cpld with index %d\n", data->index);

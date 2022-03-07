@@ -60,6 +60,8 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9510.28"
     PORT_COUNT=28
     PORT_CONFIG="24x25 + 2x100 + 2x400"
+    LEVEL_INFO=1
+    LEVEL_ERR=2
 
     def check_bmc_enable(self):
         return 1
@@ -90,6 +92,21 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
                     msg("I2C bus recovery done.\n")
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
+
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_pr_info"
+
+        if os.path.exists(sysfs_bsp_logging):
+            with open(sysfs_bsp_logging, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp logging sys is not exist\n")
 
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
@@ -256,12 +273,14 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         # init MUX sysfs
+        self.bsp_pr("Init i2c");
         self.init_mux(bus_i801, bus_ismt, hw_rev_id)
 
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
         # init SYS EEPROM devices
+        self.bsp_pr("Init mb eeprom");
         self.new_i2c_devices(
             [
                 #  on cpu board
@@ -270,13 +289,16 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         )
 
         # init EEPROM
+        self.bsp_pr("Init port eeprom");
         self.init_eeprom()
 
         # init GPIO sysfs
+        self.bsp_pr("Init gpio");
         self.init_gpio()
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 
+        self.bsp_pr("Init done");
         return True
 

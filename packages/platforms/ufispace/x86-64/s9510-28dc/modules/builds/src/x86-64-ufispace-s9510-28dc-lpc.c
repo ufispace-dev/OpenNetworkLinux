@@ -36,6 +36,8 @@
     _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
             __FILE__, __func__, __LINE__, ##args)
 
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9510_28dc_lpc"
 
 /* LPC registers */
@@ -125,6 +127,8 @@ enum lpc_sysfs_attributes {
     //BSP
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
+    ATT_BSP_PR_INFO,
+    ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_MAX
 };
@@ -133,7 +137,8 @@ enum bsp_log_types {
     LOG_NONE,
     LOG_RW,
     LOG_READ,
-    LOG_WRITE
+    LOG_WRITE,
+    LOG_SYS
 };
 
 enum bsp_log_ctrl {
@@ -151,6 +156,7 @@ char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
 u8 enable_log_read=LOG_DISABLE;
 u8 enable_log_write=LOG_DISABLE;
+u8 enable_log_sys=LOG_ENABLE;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -189,7 +195,8 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
 static int _bsp_log(u8 log_type, char *fmt, ...)
 {
     if ((log_type==LOG_READ  && enable_log_read) ||
-        (log_type==LOG_WRITE && enable_log_write)) {
+        (log_type==LOG_WRITE && enable_log_write) ||
+        (log_type==LOG_SYS && enable_log_sys) ) {
         va_list args;
         int r;
 
@@ -584,6 +591,29 @@ static ssize_t write_bsp_callback(struct device *dev,
     return write_bsp(buf, str, str_len, count);
 }
 
+static ssize_t write_bsp_pr_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len = strlen(buf);
+
+    if(str_len <= 0)
+        return str_len;
+
+    switch (attr->index) {
+        case ATT_BSP_PR_INFO:
+            BSP_PR(KERN_INFO, "%s", buf);
+            break;
+        case ATT_BSP_PR_ERR:
+            BSP_PR(KERN_ERR, "%s", buf);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    return str_len;
+}
+
 /* get mux reset all register value */
 static ssize_t read_mux_rest_all_callback(struct device *dev,
         struct device_attribute *da, char *buf)
@@ -681,9 +711,11 @@ static SENSOR_DEVICE_ATTR(led_ctrl_2          , S_IRUGO | S_IWUSR, read_lpc_call
 static SENSOR_DEVICE_ATTR(led_status_1        , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_LED_STATUS_1);
 
 //SENSOR_DEVICE_ATTR - BSP
-static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
-static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
-static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR(bsp_pr_info , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_INFO);
+static SENSOR_DEVICE_ATTR(bsp_pr_err  , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_ERR);
+static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback             , ATT_BSP_REG);
 
 static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_id_0.dev_attr.attr,
@@ -734,6 +766,8 @@ static struct attribute *bios_attrs[] = {
 static struct attribute *bsp_attrs[] = {
     &sensor_dev_attr_bsp_version.dev_attr.attr,
     &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_info.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_err.dev_attr.attr,
     &sensor_dev_attr_bsp_reg.dev_attr.attr,
     NULL,
 };

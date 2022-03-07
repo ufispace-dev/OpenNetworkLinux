@@ -16,9 +16,9 @@ def msg(s, fatal=False):
         sys.exit(1)
 
 class IPMI_Ioctl(object):
-    _IONONE = 0
+    _IONONE  = 0
     _IOWRITE = 1
-    _IOREAD = 2
+    _IOREAD  = 2
 
     IPMI_MAINTENANCE_MODE_AUTO = 0
     IPMI_MAINTENANCE_MODE_OFF  = 1
@@ -54,14 +54,18 @@ class IPMI_Ioctl(object):
         fcntl.ioctl(self.ipmidev, self.IPMICTL_SET_MAINTENANCE_MODE_CMD, c_int(mode))
 
 class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
-    PLATFORM='x86-64-ufispace-s9710-76d-r0'
+    PLATFORM="x86-64-ufispace-s9710-76d-r0"
     MODEL="S9710-76D"
     SYS_OBJECT_ID=".9710.76"
     PORT_COUNT=76
     PORT_CONFIG="76x400"
-
+    LEVEL_INFO=1
+    LEVEL_ERR=2
+    SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc"
+    FS_PLTM_CFG="/lib/platform-config/current/onl"
+    
     def check_i2c_status(self): 
-        sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/mb_cpld/mux_reset"
+        sysfs_mux_reset = self.SYSFS_LPC + "/mb_cpld/mux_reset"
                            
         # Check I2C status
         retcode = os.system("i2cget -f -y 0 0x71 > /dev/null 2>&1")
@@ -79,11 +83,26 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
 
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            bsp_pr = self.SYSFS_LPC + "/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            bsp_pr = self.SYSFS_LPC + "/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            bsp_pr = self.SYSFS_LPC + "/bsp/bsp_pr_info"
+
+        if os.path.exists(bsp_pr):
+            with open(bsp_pr, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp_pr sysfs does not exist\n")
+
     def init_eeprom(self):
         port = 0
         data = None
 
-        with open("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/port_config.yml", 'r') as yaml_file:
+        with open(self.FS_PLTM_CFG + "/port_config.yml", 'r') as yaml_file:
             data = yaml.safe_load(yaml_file)
         
         # init QSFPDD NIF EEPROM
@@ -159,7 +178,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         
         ########### initialize I2C bus 0 ###########
         # init PCA9548
-        
+        self.bsp_pr("Init PCA9548")
         i2c_muxs = [
             ('pca9548', 0x71, 0),  # 9548_CPLD
             ('pca9548', 0x72, 0),  # 9548_NIF_ROOT
@@ -186,6 +205,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         self.insmod("optoe")
 
         # init SYS EEPROM devices
+        self.bsp_pr("Init cpu eeprom")
         self.new_i2c_devices(
             [
                 #  on cpu board
@@ -194,9 +214,11 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         )
 
         # init EEPROM
+        self.bsp_pr("Init port eeprom")
         self.init_eeprom()
 
         # init GPIO sysfs
+        self.bsp_pr("Init GPIO sysfs")
         #9555_BEACON_LED
         self.new_i2c_device('pca9555', 0x20, 4)
         #9539_CPU_I2C
@@ -233,13 +255,15 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         # init CPLD
+        self.bsp_pr("Init CPLD")
         self.insmod("x86-64-ufispace-s9710-76d-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32)):
             self.new_i2c_device("s9710_76d_cpld" + str(i+1), addr, 1)
         for i, addr in enumerate((0x33, 0x34)):
-            self.new_i2c_device("s9710_76d_cpld" + str(i+4), addr, 30)    
+            self.new_i2c_device("s9710_76d_cpld" + str(i+4), addr, 30)
 
-        #config mac rov        
+        #config mac rov
+        self.bsp_pr("Init MAC ROV")
         cpld_addr=30
         cpld_bus=1
         rov_addrs=[0x60, 0x62]
@@ -274,10 +298,15 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 
-        # init i40e (need to have i40e before bcm82752 init to avoid failure)        
+        # init i40e (need to have i40e before bcm82752 init to avoid failure)
+        self.bsp_pr("Init i40e")        
         self.insmod("i40e")
+        
         # init bcm82752
-        os.system("/lib/platform-config/x86-64-ufispace-s9710-76d-r0/onl/epdm_cli init mdio 10G optics &")
+        self.bsp_pr("Init bcm82752")
+        os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init mdio 10G optics")
+        
+        self.bsp_pr("Init done")
         
         return True
 

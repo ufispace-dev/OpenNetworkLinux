@@ -427,21 +427,58 @@ done:
     return rv;
 }
 
-int read_ioport(int addr, int *reg_val) {
+int ufi_read_ioport(unsigned int addr, unsigned char *reg_val) {
     int ret;
 
-    /*set r/w permission of all 65536 ports*/
+    if(reg_val == NULL) {
+        AIM_LOG_ERROR("reg_val is null");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (addr < 0x0 || addr > 0xffff) {
+        AIM_LOG_ERROR("Invalid addr, it should be 0x0 - 0xFFFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    /*enable io port*/
     ret = iopl(3);
     if(ret < 0) {
-        AIM_LOG_ERROR("unable to read cpu cpld version, iopl enable error %d\n", ret);
+        AIM_LOG_ERROR("read_ioport() iopl enable error %d\n", ret);
         return ONLP_STATUS_E_INTERNAL;
     }
+
     *reg_val = inb(addr);
 
-    /*set r/w permission of  all 65536 ports*/
+    /*disable io port*/
     ret = iopl(0);
     if(ret < 0) {
-        AIM_LOG_ERROR("unable to read cpu cpld version, iopl disable error %d\n", ret);
+        AIM_LOG_ERROR("read_ioport() iopl disable error %d\n", ret);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    return ONLP_STATUS_OK;
+}
+
+int ufi_write_ioport(unsigned int addr, unsigned char reg_val) {
+    int ret;
+
+    if (IS_INVALID_CPLD_ADDR(addr)) {
+        AIM_LOG_ERROR("Invalid address, it should be 0x%X - 0x%X", CPLD_START_ADDR, CPLD_END_ADDR);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    /*enable io port*/
+    ret = iopl(3);
+    if(ret < 0){
+        AIM_LOG_ERROR("write_ioport() iopl enable error %d\n", ret);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    outb(reg_val, addr);
+
+    /*disable io port*/
+    ret = iopl(0);
+    if(ret < 0){
+        AIM_LOG_ERROR("write_ioport(), iopl disable error %d\n", ret);
         return ONLP_STATUS_E_INTERNAL;
     }
     return ONLP_STATUS_OK;

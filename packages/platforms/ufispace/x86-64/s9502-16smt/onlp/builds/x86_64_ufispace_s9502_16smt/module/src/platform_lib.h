@@ -34,14 +34,27 @@
 #include "x86_64_ufispace_s9502_16smt_log.h"
 #include <x86_64_ufispace_s9502_16smt/x86_64_ufispace_s9502_16smt_config.h>
 
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
 #define SYS_HWMON_PREFIX            "/sys/class/hwmon/hwmon%d/"
 #define SYS_DEV_BUS_ADDR_PREFIX     "/sys/bus/i2c/devices/%d-%04x/"
+#define SYS_I2C_HWMON_PREFIX        SYS_DEV_BUS_ADDR_PREFIX"hwmon/hwmon%d/"
 #define SYS_GPIO_VAL                "/sys/class/gpio/gpio%d/value"
 #define SYS_EEPROM_PATH             "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE 512
+#define UCD_TMP_BUS                 9
+#define UCD90124A_ADDR              (0x41)
+#define TMP451_ADDR                 (0x4e)
 
 #define BMC_EN_FILE_PATH            "/etc/onl/bmc_en"
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
@@ -184,7 +197,8 @@ typedef enum thermal_oid_e {
     THERMAL_OID_CPU0 = ONLP_THERMAL_ID_CREATE(2),
     THERMAL_OID_CPU1 = ONLP_THERMAL_ID_CREATE(3),
     THERMAL_OID_DRAM0 = ONLP_THERMAL_ID_CREATE(4),
-    THERMAL_OID_MAC = ONLP_THERMAL_ID_CREATE(5),
+    THERMAL_OID_DRAM1 = ONLP_THERMAL_ID_CREATE(5),
+    THERMAL_OID_MAC = ONLP_THERMAL_ID_CREATE(6),
 } thermal_oid_t;
 
 /** thermal_id */
@@ -193,8 +207,9 @@ typedef enum thermal_id_e {
     THERMAL_ID_CPU0 = 2,
     THERMAL_ID_CPU1 = 3,
     THERMAL_ID_DRAM0 = 4,
-    THERMAL_ID_MAC = 5,
-    THERMAL_ID_MAX = 6,//TODO
+    THERMAL_ID_DRAM1 = 5,
+    THERMAL_ID_MAC = 6,
+    THERMAL_ID_MAX = 7,//TODO
 } thermal_id_t;
 
 /* Shortcut for CPU thermal threshold value. */

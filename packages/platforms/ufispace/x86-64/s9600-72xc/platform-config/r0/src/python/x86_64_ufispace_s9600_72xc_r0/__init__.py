@@ -69,6 +69,8 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
     ROV_I2C_ADDR = 0x70
     ROV_I2C_BUS = 9
     ROV_WRITE_CMD = "i2cset -y {} {} {} {} w"
+    LEVEL_INFO=1
+    LEVEL_ERR=2
 
     def vid_to_volt_str(self, vid):
         volt = (vid - 1)*0.005 + 0.25
@@ -184,6 +186,21 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
 
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_pr_info"
+
+        if os.path.exists(sysfs_bsp_logging):
+            with open(sysfs_bsp_logging, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp logging sys is not exist\n")
+
     def baseconfig(self):
 
         # lpc driver
@@ -192,6 +209,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         # check i2c bus status
         self.check_i2c_status()
 
+        self.bsp_pr("Init i2c");
         # initialize I210 I2C bus 0 #
         # init PCA9548
         i2c_muxs = [
@@ -215,6 +233,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
 
+        self.bsp_pr("Init eeprom");
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
@@ -224,20 +243,24 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         # init Temperature
 
         # init CPLD
+        self.bsp_pr("Init mb cpld");
         self.insmod("x86-64-ufispace-s9600-72xc-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32, 0x33)):
             self.new_i2c_device("s9600_72xc_cpld" + str(i+1), addr, 1)
 
         # config mac rov
+        self.bsp_pr("Init mac rov");
         stamp = self.get_mac_rov_stamp()
         if not self.set_mac_rov_config(stamp):
             msg("Warning: fail to set mac rov\n")
 
         self.enable_ipmi_maintenance_mode()
 
+        self.bsp_pr("Init bcm82752");
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.insmod("i40e")
         # init bcm82752
-        os.system("/lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init -s auto_10G -d mdio &")
+        os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init -s auto_10G -d mdio")
 
+        self.bsp_pr("Init done");
         return True

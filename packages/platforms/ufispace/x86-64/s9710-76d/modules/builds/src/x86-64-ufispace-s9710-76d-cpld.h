@@ -75,6 +75,11 @@ enum cpld_id {
 #define CPLD_QSPI_SEL_REG                 0x5F
 #define CPLD_SYSTEM_LED_BASE_REG          0x80
 #define CPLD_LED_CLEAR_REG                0x83
+#define DBG_CPLD_MAC_INTR_REG             0xE0
+#define DBG_CPLD_PHY_INTR_REG             0xE3
+#define DBG_CPLD_CPLDX_INTR_REG           0xE4
+#define DBG_CPLD_THERMAL_INTR_BASE_REG    0xE6
+#define DBG_CPLD_MISC_INTR_REG            0xEB
 
 //CPLD 2-5
 
@@ -97,18 +102,25 @@ enum cpld_id {
 #define CPLD_QSFPDD_RESET_BASE_REG          0x40
 #define CPLD_QSFPDD_LPMODE_BASE_REG         0x44
 
+//debug
+#define DBG_CPLD_QSFPDD_INTR_PORT_BASE_REG      0xE0
+#define DBG_CPLD_QSFPDD_INTR_PRESENT_BASE_REG   0xE4
+#define DBG_CPLD_QSFPDD_INTR_FUSE_BASE_REG      0xE8
+
 //CPLD2 only
 #define CPLD_OP2_INTR_REG                   0x1C
 #define CPLD_OP2_MASK_REG                   0x2C
 #define CPLD_OP2_EVT_REG                    0x3C
 #define CPLD_OP2_PWR_REG                    0x90
 #define CPLD_MISC_PWR_REG                   0x91
+#define DBG_CPLD_OP2_INTR_REG               0x1C
 //CPLD2/3
 #define CPLD_SFP_STATUS_REG                 0x1D
 #define CPLD_SFP_MASK_REG                   0x2D
 #define CPLD_SFP_EVT_REG                    0x3D
 #define CPLD_OP2_RESET_REG                  0x48
 #define CPLD_SFP_CONFIG_REG                 0x55
+#define DBG_CPLD_SFP_STATUS_REG             0xED
 //CPLD4 only
 #define CPLD_I2C_MUX_FAB_RESET_REG          0x49
 //CPLD4/5

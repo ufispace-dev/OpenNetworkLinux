@@ -94,8 +94,8 @@ typedef struct
 
 static const led_attr_t led_attr[] = {
 /*  led attribute          type                 action         g_gpin y_gpin lpc_sysfs              color blink onoff */
-    [ONLP_LED_SYS_GNSS] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    ,-1    ,LPC_FMT "led_ctrl_1"  ,0    ,2    ,3},
-    [ONLP_LED_SYS_SYNC] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    ,-1    ,LPC_FMT "led_ctrl_2"  ,0    ,2    ,3},
+    [ONLP_LED_SYS_GNSS] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    ,-1    ,LPC_FMT "led_ctrl_1"  ,0    ,2    ,3},
+    [ONLP_LED_SYS_SYNC] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    ,-1    ,LPC_FMT "led_ctrl_2"  ,0    ,2    ,3},
     [ONLP_LED_SYS_SYS]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    ,-1    ,LPC_FMT "led_ctrl_1"  ,4    ,6    ,7},
     [ONLP_LED_SYS_FAN]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    ,-1    ,LPC_FMT "led_status_1",0    ,2    ,3},
     [ONLP_LED_SYS_PWR]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    ,-1    ,LPC_FMT "led_status_1",4    ,6    ,7},

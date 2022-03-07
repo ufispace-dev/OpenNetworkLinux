@@ -61,6 +61,8 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID = ".9300.32"
     PORT_COUNT = 32
     PORT_CONFIG = "24x200 + 8x400"
+    LEVEL_INFO=1
+    LEVEL_ERR=2
 
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
@@ -128,6 +130,21 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32db_lpc/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32db_lpc/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32db_lpc/bsp/bsp_pr_info"
+
+        if os.path.exists(sysfs_bsp_logging):
+            with open(sysfs_bsp_logging, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp logging sys is not exist\n")
+
     def baseconfig(self):
 
         # lpc driver
@@ -136,6 +153,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
         # check i2c bus status
         self.check_i2c_status()
 
+        self.bsp_pr("Init i2c");
         # initialize I210 I2C bus 0 #
         # init PCA9548
         i2c_muxs = [
@@ -152,6 +170,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
 
+        self.bsp_pr("Init eeprom");
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
@@ -159,6 +178,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
         self.init_eeprom()
 
         # init CPLD
+        self.bsp_pr("Init mb cpld");
         self.insmod("x86-64-ufispace-s9300-32db-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32)):
             self.new_i2c_device("s9300_32db_cpld" + str(i+1), addr, 2)
@@ -169,9 +189,11 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
         self.enable_ipmi_maintenance_mode()
 
         # init i40e
+        self.bsp_pr("Init i40e");
         self.insmod("i40e")
 
         # enable port led
         os.system("echo 1 > /sys/bus/i2c/devices/2-0030/cpld_port_led_clr_ctrl")
 
+        self.bsp_pr("Init done");
         return True

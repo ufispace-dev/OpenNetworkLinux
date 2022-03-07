@@ -342,7 +342,7 @@ int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len)
 
 int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
+    int cpld_ver[CPLD_MAX];
     int mb_cpld1_addr = CPLD_REG_BASE, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
@@ -352,7 +352,6 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     char ucd_date[8];
     //int ucd_len=0; //TODO
     //int ucd_date_len=6;
-    int rc=0;
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -364,36 +363,27 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
 
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {
-        if ((rc = read_ioport(CPLD_REG_BASE+CPLD_REG_VER, &cpld_ver[i])) != ONLP_STATUS_OK) {
-            return ONLP_STATUS_E_INTERNAL;
-        }
+        ONLP_TRY(read_ioport(CPLD_REG_BASE+CPLD_REG_VER, &cpld_ver[i]));
         if (cpld_ver[i] < 0) {
 	        AIM_LOG_ERROR("unable to read MB CPLD version\n");
             return ONLP_STATUS_E_INTERNAL;
         }
-        //FIXME
-        cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x01));
-        cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
+
+        cpld_ver[i] = (((cpld_ver[i]) & 0xFF));
     }
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %d.%02d\n",
-        cpld_ver_major[0], cpld_ver_minor[0]);
+        "[MB CPLD] v%02d\n",
+        cpld_ver[0]);
 
     //Get HW Build Version
-    if (read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev) < 0) {
-        AIM_LOG_ERROR("unable to read MB CPLD1 Board Type Revision\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 4 & 0x03));
     mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) >> 6 & 0x03));
 
     //Get BIOS version
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
     //Get BMC version //TODO
     /*if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||

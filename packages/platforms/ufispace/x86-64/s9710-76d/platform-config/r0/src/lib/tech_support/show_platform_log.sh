@@ -246,13 +246,9 @@ function _pre_log {
 function _show_board_info {
     _banner "Show Board Info"
     
-    # CPLD1 0xE00 Register Definition
-    build_rev_id_array=(0 1 2 3 4 5 6 7) 
-    build_rev_array=(1 2 3 4 5 6 7 8)
-    hw_rev_id_array=(0 1 2 3)
-    deph_name_array=("NPI" "GA")
-    hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
-    hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
+    # CPLD1 0xE00 Register Definition    
+    build_rev_array=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
+    hw_rev_array=("Proto" "Alpha" "Beta" "PVT" "GA" "Reserved" "Reserved" "Reserved")    
     model_id_array=($((2#00000000)) $((2#00010000)))
     model_name_array=("NCP3" "NCP3(w/o OP2)")
     model_name=""
@@ -276,22 +272,13 @@ function _show_board_info {
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
         exit $ret
     fi
-
-    # DEPH D[2] 
-    deph_id=$(((board_rev_id & 2#00000100) >> 2))
-    deph_name=${deph_name_array[${deph_id}]}
     
-    # HW Rev D[0:1]
-    hw_rev_id=$(((board_rev_id & 2#00000011) >> 0))
+    # HW Rev D[0:2]
+    hw_rev_id=$(((board_rev_id & 2#00000111) >> 0))
     hw_rev=${hw_rev_array[${hw_rev_id}]}
-    if [ $deph_id -eq 0 ]; then 
-        hw_rev=${hw_rev_array[${hw_rev_id}]}
-    else
-        hw_rev=${hw_rev_ga_array[${hw_rev_id}]}
-    fi
     
-    # Build Rev D[3:5]
-    build_rev_id=$(((board_rev_id & 2#00111000) >> 3))
+    # Build Rev D[3:6]
+    build_rev_id=$(((board_rev_id & 2#01111000) >> 3))
     build_rev=${build_rev_array[${build_rev_id}]}
    
     # Model Name    
@@ -311,13 +298,13 @@ function _show_board_info {
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
     _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
-    _echo "[Board Type and Revision]: ${model_name} ${deph_name} ${hw_rev} ${build_rev}"
+    _echo "[Board Type and Revision]: ${model_name} ${hw_rev} ${build_rev}"
 }
 
 function _bios_version {
     _banner "Show BIOS Version"
 
-    bios_ver=$(eval "dmidecode -s bios-version ${LOG_REDIRECT}")
+    bios_ver=$(eval "cat /sys/class/dmi/id/bios_version ${LOG_REDIRECT}")
     bios_boot_rom=`${IOGET} 0x602`
     if [ $? -eq 0 ]; then
         bios_boot_rom=`echo ${bios_boot_rom} | awk -F" " '{print $NF}'`
@@ -429,7 +416,7 @@ function _cpld_version_i2c {
         _printf "[MB CPLD2 Version]: %d.%02d.%03d\n" $(( (mb_cpld2_ver & 2#11000000) >> 6)) $(( mb_cpld2_ver & 2#00111111 )) $((mb_cpld2_build))
         _printf "[MB CPLD3 Version]: %d.%02d.%03d\n" $(( (mb_cpld3_ver & 2#11000000) >> 6)) $(( mb_cpld3_ver & 2#00111111 )) $((mb_cpld3_build))
         _printf "[MB CPLD4 Version]: %d.%02d.%03d\n" $(( (mb_cpld4_ver & 2#11000000) >> 6)) $(( mb_cpld4_ver & 2#00111111 )) $((mb_cpld4_build))
-        _printf "[MB CPLD5 Version]: %d.%02d.%03d\n" $(( (mb_cpld5_ver & 2#11000000) >> 6)) $(( mb_cpld5_ver & 2#00111111 )) $((mb_cpld4_build))
+        _printf "[MB CPLD5 Version]: %d.%02d.%03d\n" $(( (mb_cpld5_ver & 2#11000000) >> 6)) $(( mb_cpld5_ver & 2#00111111 )) $((mb_cpld5_build))
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -893,7 +880,7 @@ function _show_nif_port_status_sysfs {
             port_lp_mode_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_lpmode_${port_status_sysfs_idx_array[${i}]} ${LOG_REDIRECT}")
             port_lp_mode=$(( (port_lp_mode_reg & 1 << ${port_status_bit_idx_array[i]})>> ${port_status_bit_idx_array[i]} ))
             
-            # Module FAB Port Reset Status (0:Reset, 1:Normal)
+            # Module NIF Port Reset Status (0:Reset, 1:Normal)
             _check_filepath "/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_reset_${port_status_sysfs_idx_array[${i}]}"
             port_reset_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_reset_${port_status_sysfs_idx_array[${i}]} ${LOG_REDIRECT}")
             port_reset=$(( (port_reset_reg & 1 << ${port_status_bit_idx_array[i]})>> ${port_status_bit_idx_array[i]} ))

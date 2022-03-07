@@ -45,6 +45,10 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
+    { { THERMAL_OID_DRAM1, "DRAM Thermal 1", 0},
+                ONLP_THERMAL_STATUS_PRESENT,
+                ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
+    },
     { { THERMAL_OID_MAC, "TEMP_MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {96000, 101000, 106000}
@@ -93,9 +97,11 @@ static int dram_thermal_info_get(onlp_thermal_info_t* info, int id)
     int temp_index=1;
 
     if (id == THERMAL_ID_DRAM0) {
-        hwmon_index = 2;
+        hwmon_index = 4;
 
-    } else {
+    } else if (id == THERMAL_ID_DRAM1) {
+        hwmon_index = 5;
+    }else {
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -113,8 +119,8 @@ static int dram_thermal_info_get(onlp_thermal_info_t* info, int id)
 static int mac_thermal_info_get(onlp_thermal_info_t* info, int id)
 {
     int rv;
-    int hwmon_index = 4;
-    int temp_index=2;
+    int hwmon_index = 3;
+    int temp_index = 2;
 
     rv = onlp_file_read_int(&info->mcelsius,
                       SYS_HWMON_PREFIX "temp%d_input", hwmon_index, temp_index);
@@ -168,6 +174,9 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
             rc = cpu_thermal_info_get(info, sensor_id);
             break;
         case THERMAL_ID_DRAM0:
+            rc = dram_thermal_info_get(info, sensor_id);
+            break;
+        case THERMAL_ID_DRAM1:
             rc = dram_thermal_info_get(info, sensor_id);
             break;
         case THERMAL_ID_MAC:

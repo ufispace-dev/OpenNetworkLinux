@@ -59,6 +59,8 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9501.18"
     PORT_COUNT=18
     PORT_CONFIG="12x1 + 6x10"
+    LEVEL_INFO=1
+    LEVEL_ERR=2
 
     def check_bmc_enable(self):
         return 1
@@ -96,6 +98,21 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
 
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/bsp/bsp_pr_info"
+
+        if os.path.exists(sysfs_bsp_logging):
+            with open(sysfs_bsp_logging, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp logging sys is not exist\n")
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -130,6 +147,7 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
 
 
         # init PCA9548
+        self.bsp_pr("Init i2c MUXs");
         bus_i801=0
         bus_ismt=1
         i2c_muxs = [
@@ -146,6 +164,7 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
         self.insmod("optoe")
 
         # init SYS EEPROM devices
+        self.bsp_pr("Init mb eeprom");
         self.new_i2c_devices(
             [
                 #  on cpu board
@@ -154,6 +173,7 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
         )
 
         # init SFP/SFP+ EEPROM
+        self.bsp_pr("Init port eeprom");
         self.init_eeprom(bus_ismt)
 
         # init Temperature
@@ -161,11 +181,13 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
         os.system("modprobe jc42")
 
         # init GPIO sysfs
+        self.bsp_pr("Init gpio");
         self.init_gpio()
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 
+        self.bsp_pr("Init done");
         return True
 
     def enable_ipmi_maintenance_mode(self):
@@ -201,34 +223,19 @@ class OnlPlatform_x86_64_ufispace_s9501_18smt_r0(OnlPlatformUfiSpace):
         # init all GPIO direction to "in"
         gpio_dir = ["in"] * 512
 
-        # get board id
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/mb_cpld/board_id_0"
-        status, output = commands.getstatusoutput("cat /sys/devices/platform/x86_64_ufispace_s9501_18smt_lpc/mb_cpld/board_id_0")
-        if status != 0:
-            msg("Get board id from LPC failed, status=%s, output=%s, cmd=%s\n" % (status, output, cmd))
-            return
+        # init GPIO direction to output low
+        for i in range(491, 487, -1) + \
+                 range(479, 477, -1) + \
+                 range(471, 463, -1) + \
+                 range(427, 423, -1) + \
+                 range(407, 403, -1):
+            gpio_dir[i] = "low"
 
-        board_id = int(output, 10)
-        model_id = board_id & 0b00001111
-        hw_rev = (board_id & 0b00110000) >> 4
-        build_rev = (board_id & 0b11000000) >> 6
-        hw_build_rev = (hw_rev << 2) | (build_rev)
-
-        #Beta 1
-        if hw_build_rev == 8:
-            # init GPIO direction to output low
-            for i in range(491, 487, -1) + \
-                     range(479, 477, -1) + \
-                     range(471, 463, -1) + \
-                     range(427, 423, -1) + \
-                     range(407, 403, -1):
-                gpio_dir[i] = "low"
-
-            # init GPIO direction to output high
-            for i in range(415, 413, -1) + \
-                     range(403, 399, -1):
-                gpio_dir[i] = "high"
-            msg("Beta 1 and later GPIO init\n")
+        # init GPIO direction to output high
+        for i in range(415, 413, -1) + \
+                 range(403, 399, -1):
+            gpio_dir[i] = "high"
+        msg("Beta 1 and later GPIO init\n")
 
         # export GPIO and configure direction
         for i in range(336, 512):

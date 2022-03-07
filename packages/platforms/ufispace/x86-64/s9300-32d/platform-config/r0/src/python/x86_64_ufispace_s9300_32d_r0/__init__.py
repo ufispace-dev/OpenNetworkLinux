@@ -61,13 +61,15 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID = ".9300.32"
     PORT_COUNT = 32
     PORT_CONFIG = "32x400"
-     
+    LEVEL_INFO=1
+    LEVEL_ERR=2
+
     def check_bmc_enable(self):
         return 1
 
-    def init_i2c_mux_idle_state(self, muxs):        
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -76,7 +78,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
 
-    def check_i2c_status(self): 
+    def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/mb_cpld/mux_reset"
 
         # Check I2C status
@@ -97,7 +99,7 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
 
     def init_eeprom(self):
         port = 0
-                    
+
         # init SYS EEPROM devices
         self.new_i2c_devices(
             [
@@ -109,27 +111,42 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         # init QSFPDD EEPROM
         for bus in range(17, 49):
             self.new_i2c_device('optoe3', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
         # init SFP EEPROM
         for bus in range(13, 17):
             self.new_i2c_device('sff8436', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
-            
+
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+
+    def bsp_pr(self, pr_msg, level = LEVEL_INFO):
+        if level == self.LEVEL_INFO:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/bsp/bsp_pr_info"
+        elif level == self.LEVEL_ERR:
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/bsp/bsp_pr_err"
+        else:
+            msg("Warning: BSP pr level is unknown, using LEVEL_INFO.\n")
+            sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/bsp/bsp_pr_info"
+
+        if os.path.exists(sysfs_bsp_logging):
+            with open(sysfs_bsp_logging, "w") as f:
+                f.write(pr_msg)
+        else:
+            msg("Warning: bsp logging sys is not exist\n")
 
     def baseconfig(self):
 
@@ -141,10 +158,11 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
+        self.bsp_pr("Init i2c");
         # initialize I210 I2C bus 0 #
         # init PCA9548
         i2c_muxs = [
@@ -155,12 +173,13 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x76, 11),
             ('pca9548', 0x76, 12),
         ]
-                    
+
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-        
+
+        self.bsp_pr("Init eeprom");
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
@@ -168,19 +187,22 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         self.init_eeprom()
 
         # init CPLD
+        self.bsp_pr("Init mb cpld");
         self.insmod("x86-64-ufispace-s9300-32d-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32)):
             self.new_i2c_device("s9300_32d_cpld" + str(i+1), addr, 2)
 
         # config mac rov
-        # done bye CPLD at power on          
+        # done bye CPLD at power on
 
         self.enable_ipmi_maintenance_mode()
 
         # init i40e
+        self.bsp_pr("Init i40e");
         self.insmod("i40e")
-        
-        # enable port led 
+
+        # enable port led
         os.system("echo 1 > /sys/bus/i2c/devices/2-0030/cpld_port_led_clr_ctrl")
 
+        self.bsp_pr("Init done");
         return True

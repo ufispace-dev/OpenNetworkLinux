@@ -913,7 +913,7 @@ int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len){
 
 int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
+    int cpld_ver[CPLD_MAX];
     int mb_cpld1_addr = CPLD_REG_BASE, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
@@ -938,15 +938,14 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
 	        AIM_LOG_ERROR("unable to read MB CPLD version\n");
             return ONLP_STATUS_E_INTERNAL;
         }
-        //FIXME
-        cpld_ver_major[i] = (((cpld_ver[i]) >> 6 & 0x01));
-        cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
+
+        cpld_ver[i] = (((cpld_ver[i]) & 0xFF));
     }
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %d.%02d\n",
-        cpld_ver_major[0], cpld_ver_minor[0]);
+        "[MB CPLD] v%02d\n",
+        cpld_ver[0]);
 
     //Get HW Build Version
     ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
