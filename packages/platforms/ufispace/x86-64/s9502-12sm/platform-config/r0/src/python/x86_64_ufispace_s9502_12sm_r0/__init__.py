@@ -88,7 +88,7 @@ class OnlPlatform_x86_64_ufispace_s9502_12sm_r0(OnlPlatformUfiSpace):
     def baseconfig(self):
 
         #CPLD
-        self.insmod("x86-64-ufispace-s9501-18smt-lpc")
+        self.insmod("x86-64-ufispace-s9502-12sm-lpc")
 
         # check i2c bus status
         self.check_i2c_status()

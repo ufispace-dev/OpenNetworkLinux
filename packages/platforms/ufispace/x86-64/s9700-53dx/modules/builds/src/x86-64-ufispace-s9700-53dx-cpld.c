@@ -40,17 +40,26 @@
 #define DEBUG_PRINT(fmt, args...)
 #endif
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
 #define I2C_READ_BYTE_DATA(ret, lock, i2c_client, reg) \
 { \
     mutex_lock(lock); \
     ret = i2c_smbus_read_byte_data(i2c_client, reg); \
     mutex_unlock(lock); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
 }
 #define I2C_WRITE_BYTE_DATA(ret, lock, i2c_client, reg, val) \
 { \
-        mutex_lock(lock); \
-        ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
-        mutex_unlock(lock); \
+    mutex_lock(lock); \
+    ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
+    mutex_unlock(lock); \
+    BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
 /* CPLD sysfs attributes index  */
@@ -148,6 +157,21 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_GBOX_INTR_0,
     CPLD_GBOX_INTR_1,
     CPLD_RETIMER_INTR,
+    
+    //BSP DEBUG
+    BSP_DEBUG
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 /* CPLD sysfs attributes hook functions  */
@@ -158,6 +182,12 @@ static ssize_t write_access_register(struct device *dev,
 static ssize_t read_register_value(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t write_register_value(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count);
+static ssize_t read_bsp(char *buf, char *str);
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count);
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf);
+static ssize_t write_bsp_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
 static ssize_t get_qsfp_port_start(struct device *dev,
                 struct device_attribute *da, char *buf);
@@ -260,6 +290,10 @@ static const struct i2c_device_id apollo_cpld_id[] = {
     { "s9700_53dx_cpld5",  cpld5 },
     {}
 };
+
+char bsp_debug[2]="0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
 
 /* Addresses scanned for apollo_cpld */
 static const unsigned short cpld_i2c_addr[] = { 0x30, 0x39, 0x3A, 0x3B, 0x3C, I2C_CLIENT_END };
@@ -469,6 +503,8 @@ static SENSOR_DEVICE_ATTR(cpld_gbox_intr_1, S_IRUGO,
 		read_gbox_intr, NULL, CPLD_GBOX_INTR_1);
 static SENSOR_DEVICE_ATTR(cpld_retimer_intr, S_IRUGO,
 		read_retimer_intr, NULL, CPLD_RETIMER_INTR);
+static SENSOR_DEVICE_ATTR(bsp_debug, S_IWUSR | S_IRUGO, read_bsp_callback, write_bsp_callback, BSP_DEBUG);
+
 /* define support attributes of cpldx , total 5 */
 /* cpld 1 */
 static struct attribute *apollo_cpld1_attributes[] = {
@@ -522,6 +558,7 @@ static struct attribute *apollo_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_gbox_intr_0.dev_attr.attr,
     &sensor_dev_attr_cpld_gbox_intr_1.dev_attr.attr,
     &sensor_dev_attr_cpld_retimer_intr.dev_attr.attr,
+    &sensor_dev_attr_bsp_debug.dev_attr.attr,
     NULL
 };
 
@@ -650,6 +687,115 @@ static const struct attribute_group apollo_cpld5_group = {
     .attrs = apollo_cpld5_attributes,
 };
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write)) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+/* get bsp value */
+static ssize_t read_bsp(char *buf, char *str)
+{
+    ssize_t len=0;
+
+    len=sprintf(buf, "%s", str);
+    BSP_LOG_R("reg_val=%s", str);
+
+    return len;
+}
+
+/* set bsp value */
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
+{
+    snprintf(str, str_len, "%s", buf);
+    BSP_LOG_W("reg_val=%s", str);
+
+    return count;
+}
+
+/* get bsp parameter value */
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+
+    switch (attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(bsp_debug);
+            break;
+        default:
+            return -EINVAL;
+    }
+    return read_bsp(buf, str);
+}
+
+/* set bsp parameter value */
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+    ssize_t ret = 0;
+    u8 bsp_debug_u8 = 0;
+
+    switch (attr->index) {
+        case BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(str);
+            ret = write_bsp(buf, str, str_len, count);
+
+            if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+                return -EINVAL;
+            } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+                return -EINVAL;
+            }
+            return ret;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
 /* read access register from cpld data */
 static ssize_t read_access_register(struct device *dev,
                     struct device_attribute *da,
@@ -659,6 +805,7 @@ static ssize_t read_access_register(struct device *dev,
     struct cpld_data *data = i2c_get_clientdata(client);
     u8 reg = data->access_reg;
 
+    BSP_LOG_R("reg=%x", reg);
     return sprintf(buf, "0x%x\n", reg);
 }
 
@@ -676,6 +823,7 @@ static ssize_t write_access_register(struct device *dev,
         return -EINVAL;
 
     data->access_reg = reg;
+    BSP_LOG_W("reg=%x", reg);
     return count;
 }
 

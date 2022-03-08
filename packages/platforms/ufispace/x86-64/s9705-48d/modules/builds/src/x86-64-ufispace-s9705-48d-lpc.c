@@ -27,6 +27,14 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9705_48d_lpc"
 
 /* LPC Base Address */
@@ -44,6 +52,23 @@
 /* MB CPLD Register */
 #define REG_MB_CPLD1_VERSION              (REG_BASE_MB + 0x02)
 
+/* MAC Temp Register */
+#define REG_TEMP_RAMON_PM0_T              (REG_BASE_MB + 0x60)
+#define REG_TEMP_RAMON_PM1_T              (REG_BASE_MB + 0x61)
+#define REG_TEMP_RAMON_PM2_T              (REG_BASE_MB + 0x62)
+#define REG_TEMP_RAMON_PM3_T              (REG_BASE_MB + 0x63)
+#define REG_TEMP_RAMON_PM0_B              (REG_BASE_MB + 0x68)
+#define REG_TEMP_RAMON_PM1_B              (REG_BASE_MB + 0x69)
+#define REG_TEMP_RAMON_PM2_B              (REG_BASE_MB + 0x6A)
+#define REG_TEMP_RAMON_PM3_B              (REG_BASE_MB + 0x6B)
+
+#define MASK_ALL                          (0xFF)
+#define MASK_CPLD_MAJOR_VER               (0b11000000)
+#define MASK_CPLD_MINOR_VER               (0b00111111)
+#define MASK_BIOS_BOOT_ROM                (0b10000000)
+#define MASK_CPU_MUX_RESET                (0b00000001)
+#define LPC_MDELAY                        (5)
+
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
     /* CPU CPLD */
@@ -54,7 +79,35 @@ enum lpc_sysfs_attributes {
     /* MB CPLD */
     ATT_MB_CPLD1_VERSION,
     ATT_MB_CPLD1_VERSION_H,
+    //BSP
+    ATT_BSP_VERSION,
+    ATT_BSP_DEBUG,
+    ATT_BSP_PR_INFO,
+    ATT_BSP_PR_ERR,
+    ATT_BSP_REG,
+    /* MAC TEMP */
+    ATT_TEMP_RAMON_PM0_T,
+    ATT_TEMP_RAMON_PM1_T,
+    ATT_TEMP_RAMON_PM2_T,
+    ATT_TEMP_RAMON_PM3_T,
+    ATT_TEMP_RAMON_PM0_B,
+    ATT_TEMP_RAMON_PM1_B,
+    ATT_TEMP_RAMON_PM2_B,
+    ATT_TEMP_RAMON_PM3_B,
     ATT_MAX
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE,
+    LOG_SYS
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 struct lpc_data_s {
@@ -62,73 +115,196 @@ struct lpc_data_s {
 };
 
 struct lpc_data_s *lpc_data;
+char bsp_version[16]="";
+char bsp_debug[2]="0";
+char bsp_reg[8]="0x0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
+u8 enable_log_sys=LOG_ENABLE;
+
+/* reg shift */
+static u8 _shift(u8 mask)
+{
+    int i=0, mask_one=1;
+
+    for(i=0; i<8; ++i) {
+        if ((mask & mask_one) == 1)
+            return i;
+        else
+            mask >>= 1;
+    }
+
+    return -1;
+}
+
+/* reg mask and shift */
+static u8 _mask_shift(u8 val, u8 mask)
+{
+    int shift=0;
+
+    shift = _shift(mask);
+
+    return (val & mask) >> shift;
+}
+
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write) ||
+        (log_type==LOG_SYS && enable_log_sys) ) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+static void _outb(u8 data, u16 port)
+{
+    outb(data, port);
+    mdelay(LPC_MDELAY);
+}
+
+/* get lpc register value */
+static u8 _read_lpc_reg(u16 reg, u8 mask)
+{
+    u8 reg_val;
+
+    mutex_lock(&lpc_data->access_lock);
+    reg_val=_mask_shift(inb(reg), mask);
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
+    return reg_val;
+}
+
+/* get lpc register value */
+static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
+{
+    u8 reg_val;
+    int len=0;
+
+    reg_val = _read_lpc_reg(reg, mask);
+    len=sprintf(buf,"%d\n", reg_val);
+
+    return len;
+}
+
+/* set lpc register value */
+static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
+{
+    u8 reg_val, reg_val_now, shift;
+
+    if (kstrtou8(buf, 0, &reg_val) < 0)
+        return -EINVAL;
+
+    //apply continuous bits operation if mask is specified, discontinuous bits are not supported
+    if (mask != MASK_ALL) {
+        reg_val_now = _read_lpc_reg(reg, MASK_ALL);
+        //clear bits in reg_val_now by the mask
+        reg_val_now &= ~mask;
+        //get bit shift by the mask
+        shift = _shift(mask);
+        //calculate new reg_val
+        reg_val = reg_val_now | (reg_val << shift);
+    }
+
+    mutex_lock(&lpc_data->access_lock);
+
+    _outb(reg_val, reg);
+
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+
+    return count;
+}
+
+/* get bsp value */
+static ssize_t read_bsp(char *buf, char *str)
+{
+	ssize_t len=0;
+
+	mutex_lock(&lpc_data->access_lock);
+    len=sprintf(buf, "%s", str);
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg_val=%s", str);
+
+    return len;
+}
+
+/* set bsp value */
+static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
+{
+	mutex_lock(&lpc_data->access_lock);
+    snprintf(str, str_len, "%s", buf);
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg_val=%s", str);
+
+    return count;
+}
 
 /* get cpu_cpld_version register value */
 static ssize_t read_cpu_cpld_version(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_CPU_CPLD_VERSION);
-    len = sprintf(buf,"%d\n", reg_val);
-    mutex_unlock(&lpc_data->access_lock);
-
-    return len;
+    return sprintf(buf,"%d\n", _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_ALL));
 }
 
 /* get cpu_cpld_version_h register value (human readable) */
 static ssize_t read_cpu_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-    u8 ver_int = 0;
-    u8 ver_dec = 0;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_CPU_CPLD_VERSION);
-    ver_int = (reg_val & 0b11000000) >> 6;
-    ver_dec = (reg_val & 0b00111111) >> 0;
-    len = sprintf(buf,"%d.%02d\n", ver_int, ver_dec);
-    mutex_unlock(&lpc_data->access_lock);
-
-    return len;
+    return sprintf(buf,"%d.%02d\n", _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MAJOR_VER),
+                                    _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MINOR_VER));
 }
 
 /* get bios_boot_rom register value */
 static ssize_t read_cpu_bios_boot_rom(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-    u8 bios_boot_rom = 0;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_CPU_STATUS_1);
-    bios_boot_rom = (reg_val & 0b10000000) >> 7;
-    len = sprintf(buf,"%d\n", bios_boot_rom);
-    mutex_unlock(&lpc_data->access_lock);
-
-    return len;
+    return sprintf(buf,"%d\n", _read_lpc_reg(REG_CPU_STATUS_1, MASK_BIOS_BOOT_ROM));
 }
 
 /* get cpu_mux_reset register value */
 static ssize_t read_cpu_mux_reset_callback(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-    u8 cpu_mux_reset = 0;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_CPU_CTRL_2);
-    cpu_mux_reset = (reg_val & 0b00000001) >> 0;
-    len = sprintf(buf,"%d\n", cpu_mux_reset);
-    mutex_unlock(&lpc_data->access_lock);
-
-    return len;
+    return sprintf(buf,"%d\n", _read_lpc_reg(REG_CPU_CTRL_2, MASK_CPU_MUX_RESET));
 }
 
 /* set cpu_mux_reset register value */
@@ -146,19 +322,21 @@ static ssize_t write_cpu_mux_reset(struct device *dev,
         if (val == 0) {
             mutex_lock(&lpc_data->access_lock);
             cpu_mux_reset_flag = 1;
-            printk(KERN_INFO "i2c mux reset is triggered...\n");
+            BSP_LOG_W("i2c mux reset is triggered...");
             reg_val = inb(REG_CPU_CTRL_2);
             outb((reg_val & 0b11111110), REG_CPU_CTRL_2);
             mdelay(100);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val & 0b11111110);
             outb((reg_val | 0b00000001), REG_CPU_CTRL_2);
             mdelay(500);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val | 0b00000001);            
             cpu_mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {
             return -EINVAL;
         }
     } else {
-        printk(KERN_INFO "i2c mux is resetting... (ignore)\n");
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
         mutex_lock(&lpc_data->access_lock);
         mutex_unlock(&lpc_data->access_lock);
     }
@@ -170,34 +348,191 @@ static ssize_t write_cpu_mux_reset(struct device *dev,
 static ssize_t read_mb_cpld1_version(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_MB_CPLD1_VERSION);
-    len = sprintf(buf,"%d\n", reg_val);
-    mutex_unlock(&lpc_data->access_lock);
-
-    return len;
+    return sprintf(buf,"%d\n", _read_lpc_reg(REG_MB_CPLD1_VERSION, MASK_ALL));
 }
 
 /* get mb_cpld1_version_h register value (human readable) */
 static ssize_t read_mb_cpld1_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    int len = 0;
-    u8 reg_val = 0;
-    u8 ver_int = 0;
-    u8 ver_dec = 0;
+    return sprintf(buf,"%d.%02d\n", _read_lpc_reg(REG_MB_CPLD1_VERSION, MASK_CPLD_MAJOR_VER),
+                                    _read_lpc_reg(REG_MB_CPLD1_VERSION, MASK_CPLD_MINOR_VER));
+}
 
-    mutex_lock(&lpc_data->access_lock);
-    reg_val = inb(REG_MB_CPLD1_VERSION);
-    ver_int = (reg_val & 0b11000000) >> 6;
-    ver_dec = (reg_val & 0b00111111) >> 0;
-    len = sprintf(buf,"%d.%02d\n", ver_int, ver_dec);
-    mutex_unlock(&lpc_data->access_lock);
+/* get lpc register value */
+static ssize_t read_lpc_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    u16 reg = 0;
+    u8 mask = MASK_ALL;
 
-    return len;
+    switch (attr->index) {
+        //MAC Temp
+        case ATT_TEMP_RAMON_PM0_T:
+            reg = REG_TEMP_RAMON_PM0_T;
+            break;
+        case ATT_TEMP_RAMON_PM1_T:
+            reg = REG_TEMP_RAMON_PM1_T;
+            break;
+        case ATT_TEMP_RAMON_PM2_T:
+            reg = REG_TEMP_RAMON_PM2_T;
+            break;
+        case ATT_TEMP_RAMON_PM3_T:
+            reg = REG_TEMP_RAMON_PM3_T;
+            break;
+        case ATT_TEMP_RAMON_PM0_B:
+            reg = REG_TEMP_RAMON_PM0_B;
+            break;
+        case ATT_TEMP_RAMON_PM1_B:
+            reg = REG_TEMP_RAMON_PM1_B;
+            break;
+        case ATT_TEMP_RAMON_PM2_B:
+            reg = REG_TEMP_RAMON_PM2_B;
+            break;
+        case ATT_TEMP_RAMON_PM3_B:
+            reg = REG_TEMP_RAMON_PM3_B;
+            break;
+        //BSP
+        case ATT_BSP_REG:
+            if (kstrtou16(bsp_reg, 0, &reg) < 0)
+                return -EINVAL;
+            break;            
+        default:
+            return -EINVAL;
+    }
+    return read_lpc_reg(reg, mask, buf);
+}
+
+/* set lpc register value */
+static ssize_t write_lpc_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    u16 reg = 0;
+    u8 mask = MASK_ALL;
+
+    switch (attr->index) {
+        //MAC Temp
+        case ATT_TEMP_RAMON_PM0_T:
+            reg = REG_TEMP_RAMON_PM0_T;
+            break;
+        case ATT_TEMP_RAMON_PM1_T:
+            reg = REG_TEMP_RAMON_PM1_T;
+            break;
+        case ATT_TEMP_RAMON_PM2_T:
+            reg = REG_TEMP_RAMON_PM2_T;
+            break;
+        case ATT_TEMP_RAMON_PM3_T:
+            reg = REG_TEMP_RAMON_PM3_T;
+            break;
+        case ATT_TEMP_RAMON_PM0_B:
+            reg = REG_TEMP_RAMON_PM0_B;
+            break;
+        case ATT_TEMP_RAMON_PM1_B:
+            reg = REG_TEMP_RAMON_PM1_B;
+            break;
+        case ATT_TEMP_RAMON_PM2_B:
+            reg = REG_TEMP_RAMON_PM2_B;
+            break;
+        case ATT_TEMP_RAMON_PM3_B:
+            reg = REG_TEMP_RAMON_PM3_B;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return write_lpc_reg(reg, mask, buf, count);
+}
+
+/* get bsp parameter value */
+static ssize_t read_bsp_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+
+    switch (attr->index) {
+        case ATT_BSP_VERSION:
+            str = bsp_version;
+            str_len = sizeof(bsp_version);
+            break;
+        case ATT_BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(bsp_debug);
+            break;
+        case ATT_BSP_REG:
+            str = bsp_reg;
+            str_len = sizeof(bsp_reg);
+            break;
+        default:
+            return -EINVAL;
+    }
+    return read_bsp(buf, str);
+}
+
+/* set bsp parameter value */
+static ssize_t write_bsp_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+    u16 reg = 0;
+    u8 bsp_debug_u8 = 0;
+
+    switch (attr->index) {
+        case ATT_BSP_VERSION:
+            str = bsp_version;
+            str_len = sizeof(str);
+            break;
+        case ATT_BSP_DEBUG:
+            str = bsp_debug;
+            str_len = sizeof(str);
+            break;
+        case ATT_BSP_REG:
+            if (kstrtou16(buf, 0, &reg) < 0)
+                return -EINVAL;
+
+            str = bsp_reg;
+            str_len = sizeof(str);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    if (attr->index == ATT_BSP_DEBUG) {
+        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+            return -EINVAL;
+        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+            return -EINVAL;
+        }
+    }
+
+    return write_bsp(buf, str, str_len, count);
+}
+
+static ssize_t write_bsp_pr_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len = strlen(buf);
+
+    if(str_len <= 0)
+        return str_len;
+
+    switch (attr->index) {
+        case ATT_BSP_PR_INFO:
+            BSP_PR(KERN_INFO, "%s", buf);
+            break;
+        case ATT_BSP_PR_ERR:
+            BSP_PR(KERN_ERR, "%s", buf);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    return str_len;
 }
 
 /* SENSOR_DEVICE_ATTR - CPU */
@@ -209,6 +544,23 @@ static SENSOR_DEVICE_ATTR(mux_reset,        S_IRUGO | S_IWUSR, read_cpu_mux_rese
 /* SENSOR_DEVICE_ATTR - MB */
 static SENSOR_DEVICE_ATTR(mb_cpld1_version, S_IRUGO, read_mb_cpld1_version, NULL, ATT_MB_CPLD1_VERSION);
 static SENSOR_DEVICE_ATTR(mb_cpld1_version_h, S_IRUGO, read_mb_cpld1_version_h, NULL, ATT_MB_CPLD1_VERSION_H);
+
+//SENSOR_DEVICE_ATTR - BSP
+static SENSOR_DEVICE_ATTR(bsp_version, S_IRUGO | S_IWUSR,  read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_debug,   S_IRUGO | S_IWUSR,  read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR(bsp_pr_info, S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_INFO);
+static SENSOR_DEVICE_ATTR(bsp_pr_err , S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_ERR);
+static SENSOR_DEVICE_ATTR(bsp_reg,     S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+
+/* SENSOR_DEVICE_ATTR - MAC Temp */
+static SENSOR_DEVICE_ATTR(temp_ramon_pm0_t, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM0_T);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm1_t, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM1_T);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm2_t, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM2_T);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm3_t, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM3_T);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm0_b, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM0_B);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm1_b, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM1_B);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm2_b, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM2_B);
+static SENSOR_DEVICE_ATTR(temp_ramon_pm3_b, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM3_B);
 
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
@@ -228,6 +580,27 @@ static struct attribute *mb_cpld_attrs[] = {
     NULL,
 };
 
+static struct attribute *bsp_attrs[] = {
+    &sensor_dev_attr_bsp_version.dev_attr.attr,
+    &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_info.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_err.dev_attr.attr,
+    &sensor_dev_attr_bsp_reg.dev_attr.attr,
+    NULL,
+};
+
+static struct attribute *mac_temp_attrs[] = {
+    &sensor_dev_attr_temp_ramon_pm0_t.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm1_t.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm2_t.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm3_t.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm0_b.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm1_b.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm2_b.dev_attr.attr,
+    &sensor_dev_attr_temp_ramon_pm3_b.dev_attr.attr,
+    NULL,
+};
+
 static struct attribute_group cpu_cpld_attr_grp = {
 	.name = "cpu_cpld",
     .attrs = cpu_cpld_attrs,
@@ -241,6 +614,16 @@ static struct attribute_group bios_attr_grp = {
 static struct attribute_group mb_cpld_attr_grp = {
 	.name = "mb_cpld",
     .attrs = mb_cpld_attrs,
+};
+
+static struct attribute_group bsp_attr_grp = {
+    .name = "bsp",
+    .attrs = bsp_attrs,
+};
+
+static struct attribute_group mac_temp_attr_grp = {
+    .name = "mac_temp",
+    .attrs = mac_temp_attrs,
 };
 
 static void lpc_dev_release( struct device * dev)
@@ -287,6 +670,25 @@ static int lpc_drv_probe(struct platform_device *pdev)
         return ret;
     }
 
+    ret = sysfs_create_group(&pdev->dev.kobj, &bsp_attr_grp);
+    if (ret) {
+        printk(KERN_ERR "Cannot create sysfs for group %s\n", bsp_attr_grp.name);
+        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
+        sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
+        sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
+        return ret;
+    }
+
+    ret = sysfs_create_group(&pdev->dev.kobj, &mac_temp_attr_grp);
+    if (ret) {
+        printk(KERN_ERR "Cannot create sysfs for group %s\n", mac_temp_attr_grp.name);
+        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
+        sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
+        sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
+        sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+        return ret;
+    }
+
     return ret;
 }
 
@@ -295,6 +697,8 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &mac_temp_attr_grp);
 
     return 0;
 }
