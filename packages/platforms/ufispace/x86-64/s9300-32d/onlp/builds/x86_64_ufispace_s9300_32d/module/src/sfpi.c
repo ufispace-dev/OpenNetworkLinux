@@ -297,7 +297,7 @@ static int get_sfpi_port_txfault_status(int local_id, int *status)
     if(IS_QSFPDD(local_id)) {
         AIM_LOG_ERROR("unsupported ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P0(local_id)) {
+    } else if(IS_SFP(local_id)) {
         ONLP_TRY(file_read_hex(&cpld_port_txfault_reg, CPLD2_SYSFS_PATH"/"SFP_TXFAULT_ATTR));
         if(IS_SFP_P0(local_id)) {
             *status = (cpld_port_txfault_reg & 0b00000001) >> 0;
@@ -549,7 +549,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
             snprintf(command, sizeof(command), "ethtool -m %s raw on length 256 > /tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME, SFP0_INTERFACE_NAME);
             snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME);
         } else if(IS_SFP_P1(local_id)) {
-            /* SFP Port0 */
+            /* SFP Port1 */
             snprintf(command, sizeof(command), "ethtool -m %s raw on length 256 > /tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME, SFP1_INTERFACE_NAME);
             snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME);
         } else {

@@ -121,6 +121,7 @@ enum lpc_sysfs_attributes {
     ATT_MB_BRD_HW_ID,
     ATT_MB_BRD_ID_TYPE,
     ATT_MB_BRD_BUILD_ID,
+    ATT_MB_BRD_DEPH_ID,
     ATT_MB_MUX_RESET,
 
     ATT_MB_CPLD_1_MAJOR_VER,
@@ -468,7 +469,7 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_MB_BRD_HW_ID:
             reg = REG_MB_BRD_ID_1;
-            mask = 0x07;
+            mask = 0x03;
             break;
         case ATT_MB_BRD_ID_TYPE:
             reg = REG_MB_BRD_ID_1;
@@ -476,7 +477,11 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_MB_BRD_BUILD_ID:
             reg = REG_MB_BRD_ID_1;
-            mask = 0x78;
+            mask = 0x38;
+            break;
+        case ATT_MB_BRD_DEPH_ID:
+            reg = REG_MB_BRD_ID_1;
+            mask = 0x04;
             break;
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;

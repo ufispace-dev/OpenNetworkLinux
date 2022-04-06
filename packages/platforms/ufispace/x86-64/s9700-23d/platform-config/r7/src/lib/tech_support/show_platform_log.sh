@@ -51,6 +51,14 @@ function _echo {
     fi
 }
 
+function _printf {
+    if [ "${LOG_FILE_ENABLE}" == "1" ] && [ -f "${LOG_FILE_PATH}" ]; then
+        printf "$@" >> "${LOG_FILE_PATH}"
+    else
+        printf "$@"
+    fi
+}
+
 function _banner {
    banner="$1"
 
@@ -2270,6 +2278,9 @@ function _show_bmc_device_status {
         done
         _echo ""
 
+        _show_ucd 2 0x68
+        _show_ucd 2 0x6a
+        
         ## Step4: Re-start IPMI polling
         #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x1 ${LOG_REDIRECT}")
         #_echo "[Start IPMI Polling]: ${ret}"
@@ -2317,6 +2328,8 @@ function _show_bmc_device_status {
         done
         _echo ""
 
+        _show_ucd 2 0x68
+        
         ## Step4: Re-start IPMI polling
         #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x1 ${LOG_REDIRECT}")
         #_echo "[Start IPMI Polling]: ${ret}"
@@ -2458,6 +2471,152 @@ function _show_bmc_device_status {
     _echo ""
 
     sleep 3
+}
+
+function _show_ucd {
+
+    pmbus_cmd=(\
+        "FAULT_RESPONSE 0xe9    0x0a" \
+        "LOGGED_FAULTS  0xea    0x0f" \
+        "STATUS_WORD    0x79    0x02" \
+        "STATUS_VOUT    0x7a    0x01" \
+        "STATUS_IOUT    0x7b    0x01" \
+        "STATUS_TEMP    0x7d    0x01" \
+        "STATUS_CML     0x7e    0x01" \
+        "MFR_STATUS     0xf3    0x05" \
+        "VOUT_MODE      0x20    0x01" \
+        "UV_WARN_LIMIT  0x43    0x02" \
+        "UV_FAULT_LIMIT 0x44    0x02" \
+    )
+
+    # Check STATUS register of UCD
+    for i in $(seq 0 1 11);
+    do
+        # Set PAGE to each power rail
+        ipmitool i2c bus=${1} ${2} 0x0 0x0 ${i} >/dev/null 2>&1
+        _printf "===== PAGE %2sh (${2}) =====\n" ${i}
+        for entry in "${pmbus_cmd[@]}"
+        do
+            cmd=(${entry})
+            cmd_result=`ipmitool i2c bus=${1} ${2} ${cmd[2]} ${cmd[1]} | sed -n '1p'`            
+            _printf "%15s [%2s] =%-15s\n" ${cmd[0]} ${cmd[1]} "${cmd_result}"            
+        done
+    done
+
+    # Check every GPIO status (gpio#0~25)
+    _printf "\n===== GPIO Status (${2}) =====\n"
+    for i in $(seq 0 1 25);
+    do
+        ipmitool i2c bus=${1} ${2} 0x0 0xfa ${i} >/dev/null 2>&1
+        gpio_sts=`ipmitool i2c bus=${1} ${2} 0x1 0xfb | sed -n '2p' | cut -c 5-8`
+        case "${gpio_sts}" in
+            0000) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  input  low" ;;
+            0001) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   input  low" ;;
+            0010) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  output low" ;;
+            0011) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   output low" ;;
+            0100) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  input  low" ;;
+            0101) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   input  low" ;;
+            0110) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  output low" ;;
+            0111) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   output low" ;;
+            1000) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  input  HIGH" ;;
+            1001) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   input  HIGH" ;;
+            1010) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  output HIGH" ;;
+            1011) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   output HIGH" ;;
+            1100) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  input  HIGH" ;;
+            1101) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   input  HIGH" ;;
+            1110) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Default  output HIGH" ;;
+            1111) _printf "%-7s = %2s,  %-15s\n" GPIO_${i} ${gpio_sts} "Enable   output HIGH" ;;
+            *) _printf "%-15s raw data = %-15s\n" GPIO_${i} ${gpio_sts} ;;
+        esac
+    done
+
+    _ucd_detail_info ${1} ${2}
+
+}
+
+function _ucd_detail_info {
+    fault_type_list=(\
+        "Reserved" \
+        "System Watchdog Timeout" \
+        "Resequence Error" \
+        "Watchdog Timeout" \
+        "Reserved" \
+        "Reserved" \
+        "Reserved" \
+        "Reserved" \
+        "Fan Fault" \
+        "GPI Fault" \
+    )
+    
+    fault_type_list_page=(\
+        "VOUT_OV" \
+        "VOUT_UV" \
+        "TON_MAX" \
+        "IOUT_OC" \
+        "IOUT_UC" \
+        "Temperature_OT" \
+        "SequenceOn Timeout" \
+        "SequenceOff Timeout" \
+    )
+
+     _printf "\n===== FAULT DETAIL in UCD (${2}) =====\n"
+
+    # Get size of Fault Buffer
+    detail_count=`ipmitool i2c bus=${1} ${2} 0x2 0xeb | head -n 1 | awk '{print $2}'`
+    detail_count=`echo $((16#${detail_count}))`
+    _printf "Total %2s fault details is recorded\n" ${detail_count}
+    detail_count=`expr ${detail_count} - 1`
+
+    # Get raw data of each FAULT DETAIL
+    for i in $(seq 0 1 ${detail_count});
+    do
+        ipmitool i2c bus=${1} ${2} 0x0 0xeb ${i} 0x0 >/dev/null 2>&1
+        detail_raw=`ipmitool i2c bus=${1} ${2} 0xb 0xec`
+        
+        _printf "%-15s =%-30s\n" FAULT_DETAIL_${i} "${detail_raw}"
+    done
+    _printf "\n"
+
+    # Decode FAULT DETAIL
+    for i in $(seq 0 1 ${detail_count});
+    do
+        ipmitool i2c bus=${1} ${2} 0x0 0xeb ${i} 0x0 >/dev/null 2>&1
+        detail_raw="`ipmitool i2c bus=${1} ${2} 0xb 0xec`"
+        detail_sts=(${detail_raw})
+
+        time_ms="${detail_sts[1]}${detail_sts[2]}${detail_sts[3]}${detail_sts[4]}"
+        time_ms=`echo $((16#${time_ms}))`
+        day="${detail_sts[6]}${detail_sts[7]}${detail_sts[8]}"
+        day=`echo $((16#${day}))`
+        ((day &= 4194303))
+
+        detail_is_page=`echo $((16#${detail_sts[5]}))`
+        ((detail_is_page >>= 7))
+        detail_fault_type=`echo $((16#${detail_sts[5]}))`
+        ((detail_fault_type &= 127))
+        ((detail_fault_type >>= 3))
+        detail_page=${detail_sts[5]}${detail_sts[6]}
+        detail_page=`echo $((16#${detail_page}))`
+        ((detail_page &= 1920))
+        ((detail_page >>= 7))
+        detail_fault_data=0x${detail_sts[10]}${detail_sts[9]}
+        
+        if [ "${detail_is_page}" = '1' ]; then
+            _printf "%-15s - time = %4sd+%-10s page = %-3s type = %-10s data = %-6s\n" \
+                FAULT_DETAIL_${i} \
+                ${day} ${time_ms}ms, \
+                ${detail_page}, \
+                "${fault_type_list_page[${detail_fault_type}]}," \
+                ${detail_fault_data}
+        else
+            _printf "%-15s - page = %s type = %-10s data = %-6x \n" \
+                FAULT_DETAIL_${i} \
+                '-,' \
+                "${fault_type_list[${detail_fault_type}]}," \
+                ${detail_fault_data} 
+        fi
+    done
+    _printf "\n\n"
 }
 
 function _show_bmc_sensors {

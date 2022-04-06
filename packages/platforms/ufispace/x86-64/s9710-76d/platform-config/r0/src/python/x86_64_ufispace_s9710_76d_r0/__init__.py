@@ -107,7 +107,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         
         # init QSFPDD NIF EEPROM
         for bus in range(73, 109):
-            self.new_i2c_device('optoe1', 0x50, bus)
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
             if data is not None:
                 port = bus - 73
@@ -116,7 +116,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # init QSFPDD FAB EEPROM
         for bus in range(33, 73):
-            self.new_i2c_device('optoe1', 0x50, bus)
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
             if data is not None:
                 port = bus - 33

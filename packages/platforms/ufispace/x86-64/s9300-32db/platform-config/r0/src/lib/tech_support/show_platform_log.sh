@@ -721,7 +721,7 @@ function _show_sfp_port_status_sysfs {
         bus_id="2"
         sfp_port_eeprom_bus_id_base=11
         port_status_cpld_addr="0031"
-        port_status_bit_idx_array=("0" "1" "2" "3")
+        port_status_bit_idx_array=("0" "1")
 
         # check if sfp 0/1 has no abs 
         _is_sfp_no_abs no_abs

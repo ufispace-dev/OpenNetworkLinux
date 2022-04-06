@@ -246,9 +246,13 @@ function _pre_log {
 function _show_board_info {
     _banner "Show Board Info"
     
-    # CPLD1 0xE00 Register Definition    
-    build_rev_array=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
-    hw_rev_array=("Proto" "Alpha" "Beta" "PVT" "GA" "Reserved" "Reserved" "Reserved")    
+    # CPLD1 0xE00 Register Definition
+    build_rev_id_array=(0 1 2 3 4 5 6 7) 
+    build_rev_array=(1 2 3 4 5 6 7 8)
+    hw_rev_id_array=(0 1 2 3)
+    deph_name_array=("NPI" "GA")
+    hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
+    hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     model_id_array=($((2#00000000)) $((2#00010000)))
     model_name_array=("NCP3" "NCP3(w/o OP2)")
     model_name=""
@@ -272,13 +276,22 @@ function _show_board_info {
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
         exit $ret
     fi
+
+    # DEPH D[2] 
+    deph_id=$(((board_rev_id & 2#00000100) >> 2))
+    deph_name=${deph_name_array[${deph_id}]}
     
-    # HW Rev D[0:2]
-    hw_rev_id=$(((board_rev_id & 2#00000111) >> 0))
+    # HW Rev D[0:1]
+    hw_rev_id=$(((board_rev_id & 2#00000011) >> 0))
     hw_rev=${hw_rev_array[${hw_rev_id}]}
+    if [ $deph_id -eq 0 ]; then 
+        hw_rev=${hw_rev_array[${hw_rev_id}]}
+    else
+        hw_rev=${hw_rev_ga_array[${hw_rev_id}]}
+    fi
     
-    # Build Rev D[3:6]
-    build_rev_id=$(((board_rev_id & 2#01111000) >> 3))
+    # Build Rev D[3:5]
+    build_rev_id=$(((board_rev_id & 2#00111000) >> 3))
     build_rev=${build_rev_array[${build_rev_id}]}
    
     # Model Name    
@@ -298,7 +311,7 @@ function _show_board_info {
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
     _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
-    _echo "[Board Type and Revision]: ${model_name} ${hw_rev} ${build_rev}"
+    _echo "[Board Type and Revision]: ${model_name} ${deph_name} ${hw_rev} ${build_rev}"
 }
 
 function _bios_version {

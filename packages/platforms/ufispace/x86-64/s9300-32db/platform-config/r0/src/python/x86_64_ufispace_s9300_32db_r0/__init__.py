@@ -112,13 +112,6 @@ class OnlPlatform_x86_64_ufispace_s9300_32db_r0(OnlPlatformUfiSpace):
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
-        # init SFP EEPROM
-        for bus in range(13, 17):
-            self.new_i2c_device('sff8436', 0x50, bus)
-            # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
-            port = port + 1
-
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
 

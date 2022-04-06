@@ -40,8 +40,8 @@
 #define QSFP56_PORT_NUM         24
 #define QSFPDD_PORT_NUM         8
 #define QSFPX_PORT_NUM          (QSFP56_PORT_NUM+QSFPDD_PORT_NUM)
-#define SFP_PORT_NUM            4
-#define ALL_PORT_NUM            (QSFPX_PORT_NUM+SFP_PORT_NUM) //36
+#define SFP_PORT_NUM            2
+#define ALL_PORT_NUM            (QSFPX_PORT_NUM+SFP_PORT_NUM) //34
 
 /* port order: QSFP56(0-23), QSFPDD(24-31), SFP(32-35) */
 #define IS_QSFP56(_port)        (_port >= 0 && _port < QSFP56_PORT_NUM)
@@ -50,8 +50,7 @@
 #define IS_SFP(_port)           (_port >= (QSFPX_PORT_NUM) && _port < ALL_PORT_NUM)
 #define IS_SFP_P0(_port)        (_port == (QSFPX_PORT_NUM))   //CPU
 #define IS_SFP_P1(_port)        (_port == (QSFPX_PORT_NUM+1)) //CPU
-#define IS_SFP_P2(_port)        (_port == (QSFPX_PORT_NUM+2)) //MAC
-#define IS_SFP_P3(_port)        (_port == (QSFPX_PORT_NUM+3)) //MAC
+
 
 #define SFP0_INTERFACE_NAME     "enp182s0f0"
 #define SFP1_INTERFACE_NAME     "enp182s0f1"
@@ -73,13 +72,11 @@ static int qsfpdd_port_eeprom_bus_id_array[QSFPDD_PORT_NUM] = { 41, 42, 43, 44, 
  */
 static int get_sfpi_port_present_status(int local_id, int *status)
 {
-    int ret = ONLP_STATUS_OK;
     int cpld_port_present_reg = 0;
     int port_id = -1;
     int port_index = -1; //index(0-7) in each port group
     int port_group = -1; //group0: port[0-7], group1: port[8-15], group2: port[16-23]
     int port_mask = 0;
-    char command[256] = "";
 
     //QSFP56, QSFPDD, SFP Ports
     if(IS_QSFP56(local_id)) {
@@ -100,18 +97,8 @@ static int get_sfpi_port_present_status(int local_id, int *status)
         ONLP_TRY(file_read_hex(&cpld_port_present_reg, CPLD2_SYSFS_PATH"/"QSFPDD_PRES_ATTR));
         //val 0 for presence, status set to 1
         *status = !((cpld_port_present_reg & port_mask) >> port_index);
-    } else if(IS_SFP_P0(local_id)) {
-        /* SFP Port0 - CPU */
-        snprintf(command, sizeof(command), "ethtool -m %s raw on length 1 > /dev/null 2>&1", SFP0_INTERFACE_NAME);
-        ret = system(command);
-        *status = (ret==0) ? 1 : 0;
-    } else if(IS_SFP_P1(local_id)) {
-        /* SFP Port1 - CPU */
-        snprintf(command, sizeof(command), "ethtool -m %s raw on length 1 > /dev/null 2>&1", SFP1_INTERFACE_NAME);
-        ret = system(command);
-        *status = (ret==0) ? 1 : 0;
-    } else if(IS_SFP_P2(local_id) || IS_SFP_P3(local_id)) {
-        /* SFP Port2 and Port3 - MAC */
+    } else if(IS_SFP(local_id)) {
+        /* SFP Port0 and Port1 */
         port_id = local_id - QSFPX_PORT_NUM;
         port_index = port_id;
         port_mask = 0b00000001 << port_index;
@@ -365,16 +352,12 @@ static int get_sfpi_port_txfault_status(int local_id, int *status)
     if(IS_QSFPX(local_id)) {
         AIM_LOG_ERROR("unsupported ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P0(local_id)) {
+    } else if(IS_SFP(local_id)) {
         ONLP_TRY(file_read_hex(&cpld_port_txfault_reg, CPLD2_SYSFS_PATH"/"SFP_TXFAULT_ATTR));
         if(IS_SFP_P0(local_id)) {
             *status = (cpld_port_txfault_reg & 0b00000001) >> 0;
         } else if IS_SFP_P1(local_id) {
             *status = (cpld_port_txfault_reg & 0b00000010) >> 1;
-        } else if IS_SFP_P2(local_id) {
-            *status = (cpld_port_txfault_reg & 0b00000100) >> 2;
-        } else if IS_SFP_P3(local_id) {
-            *status = (cpld_port_txfault_reg & 0b00001000) >> 3;
         }
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
@@ -405,10 +388,6 @@ static int get_sfpi_port_rxlos_status(int local_id, int *status)
             *status = (cpld_port_rxlos_reg & 0b00000001) >> 0;
         } else if IS_SFP_P1(local_id) {
             *status = (cpld_port_rxlos_reg & 0b00000010) >> 1;
-        } else if IS_SFP_P2(local_id) {
-            *status = (cpld_port_rxlos_reg & 0b00000100) >> 2;
-        } else if IS_SFP_P3(local_id) {
-            *status = (cpld_port_rxlos_reg & 0b00001000) >> 3;
         }
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
@@ -439,10 +418,6 @@ static int get_sfpi_port_txdisable_status(int local_id, int *status)
             *status = (cpld_port_txdisable_reg & 0b00000001) >> 0;
         } else if IS_SFP_P1(local_id) {
             *status = (cpld_port_txdisable_reg & 0b00000010) >> 1;
-        } else if IS_SFP_P2(local_id) {
-            *status = (cpld_port_txdisable_reg & 0b00000100) >> 2;
-        } else if IS_SFP_P3(local_id) {
-            *status = (cpld_port_txdisable_reg & 0b00001000) >> 3;
         }
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
@@ -614,7 +589,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         bus_id = qsfpdd_port_eeprom_bus_id_array[port_id];
         snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", bus_id);
         ret = onlp_file_read(data, 256, &size, eeprom_path);
-    } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
+    } else if(IS_SFP(local_id)) {
         /* SFP */
         port_id = local_id - QSFPX_PORT_NUM;
 
@@ -623,7 +598,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
             snprintf(command, sizeof(command), "ethtool -m %s raw on length 256 > /tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME, SFP0_INTERFACE_NAME);
             snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME);
         } else if(IS_SFP_P1(local_id)) {
-            /* SFP Port0 */
+            /* SFP Port1 */
             snprintf(command, sizeof(command), "ethtool -m %s raw on length 256 > /tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME, SFP1_INTERFACE_NAME);
             snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME);
         } else {
@@ -637,10 +612,6 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         }
 
         ret = onlp_file_read(data, 256, &size, eeprom_path);
-    } else if(IS_SFP_P2(local_id)) {
-        ret = onlp_file_read(data, 256, &size, "/sys/bus/i2c/devices/13-0050/eeprom");
-    } else if(IS_SFP_P3(local_id)) {
-        ret = onlp_file_read(data, 256, &size, "/sys/bus/i2c/devices/14-0050/eeprom");
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -689,17 +660,6 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
         /* SFP Port0 or SFP Port1 */
         return ONLP_STATUS_E_UNSUPPORTED;
-
-    } else if(IS_SFP_P2(local_id)) {
-        /* SFP Port2 */
-        bus_id = 13;
-        ret = onlp_i2c_readb(bus_id, devaddr, addr, ONLP_I2C_F_FORCE);
-
-    } else if(IS_SFP_P3(local_id)) {
-        /* SFP Port3 */
-        bus_id = 14;
-        ret = onlp_i2c_readb(bus_id, devaddr, addr, ONLP_I2C_F_FORCE);
-
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -741,14 +701,6 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
         /* SFP Port0 or SFP Port1 */
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P2(local_id)) {
-        /* SFP Port2 */
-        bus_id = 13;
-        ret = onlp_i2c_writeb(bus_id, devaddr, addr, value, ONLP_I2C_F_FORCE);
-    } else if(IS_SFP_P3(local_id)) {
-        /* SFP Port3 */
-        bus_id = 14;
-        ret = onlp_i2c_writeb(bus_id, devaddr, addr, value, ONLP_I2C_F_FORCE);
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -793,14 +745,6 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
         /* SFP Port0 or SFP Port1 */
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P2(local_id)) {
-        /* SFP Port2 */
-        bus_id = 13;
-        ret = onlp_i2c_readw(bus_id, devaddr, addr, ONLP_I2C_F_FORCE);
-    } else if(IS_SFP_P3(local_id)) {
-        /* SFP Port3 */
-        bus_id = 14;
-        ret = onlp_i2c_readw(bus_id, devaddr, addr, ONLP_I2C_F_FORCE);
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -841,14 +785,6 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
     } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
         /* SFP Port0 or SFP Port1 */
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P2(local_id)) {
-        /* SFP Port2 */
-        bus_id = 13;
-        ret = onlp_i2c_writew(bus_id, devaddr, addr, value, ONLP_I2C_F_FORCE);
-    } else if(IS_SFP_P3(local_id)) {
-        /* SFP Port3 */
-        bus_id = 14;
-        ret = onlp_i2c_writew(bus_id, devaddr, addr, value, ONLP_I2C_F_FORCE);
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -890,21 +826,9 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
         port_id = local_id - QSFP56_PORT_NUM;
         bus_id = qsfpdd_port_eeprom_bus_id_array[port_id];
         ret = onlp_i2c_block_read(bus_id, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE);
-
     } else if(IS_SFP_P0(local_id) || IS_SFP_P1(local_id)) {
         /* SFP Port0 or SFP Port1 */
         return ONLP_STATUS_E_UNSUPPORTED;
-
-    } else if(IS_SFP_P2(local_id)) {
-        /* SFP Port2 */
-        bus_id = 13;
-        ret = onlp_i2c_block_read(bus_id, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE);
-
-    } else if(IS_SFP_P3(local_id)) {
-        /* SFP Port3 */
-        bus_id = 14;
-        ret = onlp_i2c_block_read(bus_id, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE);
-
     } else {
         AIM_LOG_ERROR("unknown ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;

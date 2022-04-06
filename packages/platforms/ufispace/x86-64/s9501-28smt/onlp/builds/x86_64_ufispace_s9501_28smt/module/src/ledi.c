@@ -115,7 +115,26 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
  */
 int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    int led_id, rc=ONLP_STATUS_OK;
+
+    led_id = ONLP_OID_ID_GET(id);
+
+    switch (led_id) {
+        case LED_ID_SYS_SYS:
+        case LED_ID_SYS_SYNC:
+        case LED_ID_SYS_GNSS:
+            if (on_or_off) {
+                rc = onlp_ledi_mode_set(id, ONLP_LED_MODE_GREEN);
+            } else {
+                rc = onlp_ledi_mode_set(id, ONLP_LED_MODE_OFF);
+            }
+            break;
+        default:
+            rc = ONLP_STATUS_E_UNSUPPORTED;
+            break;
+    }
+
+    return rc;
 }
 
 /*
@@ -126,10 +145,55 @@ int onlp_ledi_set(onlp_oid_t id, int on_or_off)
  */
 int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    int led_id, rc=ONLP_STATUS_OK;
+    int color, blink, onoff;
+
+    led_id = ONLP_OID_ID_GET(id);
+
+    switch (mode) {
+        case ONLP_LED_MODE_GREEN:
+            color = LED_COLOR_GREEN;
+            blink = LED_STABLE;
+            onoff = LED_ON;
+            break;
+        case ONLP_LED_MODE_GREEN_BLINKING:
+            color = LED_COLOR_GREEN;
+            blink = LED_BLINKING;
+            onoff = LED_ON;
+            break;
+        case ONLP_LED_MODE_YELLOW:
+            color = LED_COLOR_YELLOW;
+            blink = LED_STABLE;
+            onoff = LED_ON;
+            break;
+        case ONLP_LED_MODE_YELLOW_BLINKING:
+            color = LED_COLOR_YELLOW;
+            blink = LED_BLINKING;
+            onoff = LED_ON;
+            break;
+        case ONLP_LED_MODE_OFF:
+            onoff = LED_OFF;
+            break;
+        default:
+            return ONLP_STATUS_E_UNSUPPORTED;
+            break;
+    }
+
+    switch (led_id) {
+        case LED_ID_SYS_SYS:
+        case LED_ID_SYS_SYNC:
+        case LED_ID_SYS_GNSS:
+            rc = sys_led_mode_set(led_id, color, blink, onoff);
+            break;
+        default:
+            return ONLP_STATUS_E_UNSUPPORTED;
+            break;
+    }
+
+    return rc;
 }
 
 int onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
 {
-    return ONLP_STATUS_OK;
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
