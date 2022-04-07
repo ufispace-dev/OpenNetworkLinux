@@ -42,6 +42,10 @@
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
 
+#define CPLD_START_ADDR                 0x700
+#define CPLD_END_ADDR                   0x790
+#define IS_INVALID_CPLD_ADDR(_addr)     (_addr > CPLD_END_ADDR || _addr < CPLD_START_ADDR)
+
 /* BMC CMD */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
@@ -93,7 +97,8 @@
                                     "PSU1_STBIOUT "\
                                     "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_LINE_SIZE           256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 #define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
 #define BMC_FRU_KEY_NAME            "Product Name"
@@ -230,7 +235,8 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
-int read_ioport(int addr, int *reg_val);
+int ufi_read_ioport(unsigned int addr, unsigned char *reg_val);
+int ufi_write_ioport(unsigned int addr, unsigned char reg_val);
 
 int exec_cmd(char *cmd, char* out, int size);
 

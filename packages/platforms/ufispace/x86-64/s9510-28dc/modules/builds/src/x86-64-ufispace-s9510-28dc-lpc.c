@@ -2,6 +2,7 @@
  * A lpc driver for the ufispace_s9510_28dc
  *
  * Copyright (C) 2017-2020 UfiSpace Technology Corporation.
+ * Nonodark Huang <nonodark.huang@ufispace.com>
  * Jason Tsai <jason.cy.tsai@ufispace.com>
  *
  *
@@ -27,6 +28,15 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
+
+#define BSP_LOG_R(fmt, args...) \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+#define BSP_LOG_W(fmt, args...) \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+            __FILE__, __func__, __LINE__, ##args)
+
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
 
 #define DRIVER_NAME "x86_64_ufispace_s9510_28dc_lpc"
 
@@ -63,8 +73,15 @@
 #define REG_LED_CTRL_2                 (REG_BASE_MB + 0x82)
 #define REG_LED_STATUS_1               (REG_BASE_MB + 0x83)
 
-#define MASK_ALL                          (0xFF)
-#define MUX_RESET_ALL_MASK                (0x37) // 2#00110111
+#define MASK_ALL                          (0xFF) // 2#11111111
+#define MASK_CPLD_MAJOR                   (0xC0) // 2#11000000
+#define MASK_CPLD_MINOR                   (0x3F) // 2#00111111
+#define MASK_MUX_RESET_ALL                (0x37) // 2#00110111
+
+#define MDELAY_LPC                        (5)
+#define MDELAY_RESET_INTERVAL             (100)
+#define MDELAY_RESET_FINISH               (500)
+
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -76,6 +93,8 @@ enum lpc_sysfs_attributes {
     ATT_BRD_BUILD_ID,
     ATT_BRD_DEPH_ID,
     ATT_CPLD_VERSION,
+    ATT_CPLD_VERSION_MAJOR,
+    ATT_CPLD_VERSION_MINOR,
     ATT_CPLD_VERSION_H,
     ATT_CPLD_ID,
     ATT_CPLD_BUILD,
@@ -108,8 +127,23 @@ enum lpc_sysfs_attributes {
     //BSP
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
+    ATT_BSP_PR_INFO,
+    ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_MAX
+};
+
+enum bsp_log_types {
+    LOG_NONE,
+    LOG_RW,
+    LOG_READ,
+    LOG_WRITE,
+    LOG_SYS
+};
+
+enum bsp_log_ctrl {
+    LOG_DISABLE,
+    LOG_ENABLE
 };
 
 struct lpc_data_s {
@@ -117,9 +151,12 @@ struct lpc_data_s {
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16];
-char bsp_debug[32];
+char bsp_version[16]="";
+char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
+u8 enable_log_read=LOG_DISABLE;
+u8 enable_log_write=LOG_DISABLE;
+u8 enable_log_sys=LOG_ENABLE;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -155,16 +192,63 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
     return reg_val;
 }
 
+static int _bsp_log(u8 log_type, char *fmt, ...)
+{
+    if ((log_type==LOG_READ  && enable_log_read) ||
+        (log_type==LOG_WRITE && enable_log_write) ||
+        (log_type==LOG_SYS && enable_log_sys) ) {
+        va_list args;
+        int r;
+
+        va_start(args, fmt);
+        r = vprintk(fmt, args);
+        va_end(args);
+
+        return r;
+    } else {
+        return 0;
+    }
+}
+
+static int _config_bsp_log(u8 log_type)
+{
+    switch(log_type) {
+        case LOG_NONE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_RW:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        case LOG_READ:
+            enable_log_read = LOG_ENABLE;
+            enable_log_write = LOG_DISABLE;
+            break;
+        case LOG_WRITE:
+            enable_log_read = LOG_DISABLE;
+            enable_log_write = LOG_ENABLE;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
 /* get lpc register value */
 static u8 _read_lpc_reg(u16 reg, u8 mask)
 {
-    u8 reg_val;
+    u8 reg_val=0x0, reg_mk_shf_val = 0x0;
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
+    reg_val = inb(reg);
     mutex_unlock(&lpc_data->access_lock);
 
-    return reg_val;
+    reg_mk_shf_val = _mask_shift(reg_val, mask);
+
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x, mask=0x%02x, reg_mk_shf_val=0x%02x", reg, reg_val, mask, reg_mk_shf_val);
+
+    return reg_mk_shf_val;
 }
 
 /* get lpc register value */
@@ -174,6 +258,8 @@ static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
     int len=0;
 
     reg_val = _read_lpc_reg(reg, mask);
+
+    // may need to change to hex value ?
     len=sprintf(buf,"%d\n", reg_val);
 
     return len;
@@ -195,8 +281,13 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
     }
 
     mutex_lock(&lpc_data->access_lock);
+
     outb(reg_val, reg);
+    mdelay(MDELAY_LPC);
+
     mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x, mask=0x%02x", reg, reg_val, mask);
 
     return count;
 }
@@ -210,6 +301,8 @@ static ssize_t read_bsp(char *buf, char *str)
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_R("reg_val=%s", str);
+
     return len;
 }
 
@@ -220,6 +313,8 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
 
+    BSP_LOG_W("reg_val=%s", str);
+
     return count;
 }
 
@@ -228,16 +323,11 @@ static ssize_t read_mb_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     ssize_t len=0;
-    u16 reg = REG_CPLD_VERSION;
-    u8 mask = MASK_ALL;
-    u8 mask_major = 0b11000000;
-    u8 mask_minor = 0b00111111;
-    u8 reg_val;
-
-    mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
-    len=sprintf(buf, "%d.%02d\n", _mask_shift(reg_val, mask_major), _mask_shift(reg_val, mask_minor));
-    mutex_unlock(&lpc_data->access_lock);
+    u8 major = 0, minor = 0, build = 0;
+    major = _read_lpc_reg( REG_CPLD_VERSION, MASK_CPLD_MAJOR);
+    minor = _read_lpc_reg( REG_CPLD_VERSION, MASK_CPLD_MINOR);
+    build = _read_lpc_reg( REG_CPLD_BUILD, MASK_ALL);
+    len=sprintf(buf, "%u.%02u.%03u", major, minor, build);
 
     return len;
 }
@@ -276,6 +366,14 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_CPLD_VERSION:
             reg = REG_CPLD_VERSION;
+            break;
+        case ATT_CPLD_VERSION_MAJOR:
+            reg = REG_CPLD_VERSION;
+            mask = MASK_CPLD_MAJOR;
+            break;
+        case ATT_CPLD_VERSION_MINOR:
+            reg = REG_CPLD_VERSION;
+            mask = MASK_CPLD_MINOR;
             break;
         case ATT_CPLD_ID:
             reg = REG_CPLD_ID;
@@ -460,6 +558,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     int str_len=0;
     char *str=NULL;
     u16 reg = 0;
+    u8 bsp_debug_u8 = 0;
 
     switch (attr->index) {
         case ATT_BSP_VERSION:
@@ -480,7 +579,39 @@ static ssize_t write_bsp_callback(struct device *dev,
         default:
             return -EINVAL;
     }
+
+    if (attr->index == ATT_BSP_DEBUG) {
+        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+            return -EINVAL;
+        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+            return -EINVAL;
+        }
+    }
+
     return write_bsp(buf, str, str_len, count);
+}
+
+static ssize_t write_bsp_pr_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len = strlen(buf);
+
+    if(str_len <= 0)
+        return str_len;
+
+    switch (attr->index) {
+        case ATT_BSP_PR_INFO:
+            BSP_PR(KERN_INFO, "%s", buf);
+            break;
+        case ATT_BSP_PR_ERR:
+            BSP_PR(KERN_ERR, "%s", buf);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    return str_len;
 }
 
 /* get mux reset all register value */
@@ -504,30 +635,35 @@ static ssize_t read_mux_rest_all_callback(struct device *dev,
 static ssize_t write_mux_reset_all_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
 {
-    static int cpu_mux_reset_flag = 0;
+    static int mux_reset_flag = 0;
     u8 reg_val = 0;
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
-    if(cpu_mux_reset_flag == 0)
+    if(mux_reset_flag == 0)
     {
         if (reg_val == 0) {
             mutex_lock(&lpc_data->access_lock);
-            cpu_mux_reset_flag = 1;
-            pr_info("i2c mux reset is triggered...\n");
+            mux_reset_flag = 1;
+
+            BSP_LOG_W("i2c mux reset is triggered...");
             reg_val = inb(REG_MUX_RESET);
-            outb((reg_val & (u8)(~MUX_RESET_ALL_MASK)), REG_MUX_RESET);
-            mdelay(100);
-            outb((reg_val | MUX_RESET_ALL_MASK), REG_MUX_RESET);
-            mdelay(500);
-            cpu_mux_reset_flag = 0;
+            outb((reg_val & (u8)(~MASK_MUX_RESET_ALL)), REG_MUX_RESET);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MUX_RESET, reg_val & (u8)(~MASK_MUX_RESET_ALL));
+
+            mdelay(MDELAY_RESET_INTERVAL);
+
+            outb((reg_val | MASK_MUX_RESET_ALL), REG_MUX_RESET);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MUX_RESET, (reg_val | MASK_MUX_RESET_ALL));
+            mdelay(MDELAY_RESET_FINISH);
+            mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {
             return -EINVAL;
         }
     }else {
-        pr_info("i2c mux is resetting... (ignore)\n");
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
         mutex_lock(&lpc_data->access_lock);
         mutex_unlock(&lpc_data->access_lock);
     }
@@ -535,47 +671,51 @@ static ssize_t write_mux_reset_all_callback(struct device *dev,
 }
 
 //SENSOR_DEVICE_ATTR - MB
-static SENSOR_DEVICE_ATTR(board_id_0    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_ID_0);
-static SENSOR_DEVICE_ATTR(board_id_1    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_ID_1);
-static SENSOR_DEVICE_ATTR(board_sku_id  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_SKU_ID);
-static SENSOR_DEVICE_ATTR(board_hw_id   , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_HW_ID);
-static SENSOR_DEVICE_ATTR(board_build_id, S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_BUILD_ID);
-static SENSOR_DEVICE_ATTR(board_deph_id , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_BRD_DEPH_ID);
-static SENSOR_DEVICE_ATTR(cpld_version  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_VERSION);
-static SENSOR_DEVICE_ATTR(cpld_version_h, S_IRUGO          , read_mb_cpld_version_h    , NULL                        , ATT_CPLD_VERSION_H);
-static SENSOR_DEVICE_ATTR(cpld_id       , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_ID);
-static SENSOR_DEVICE_ATTR(cpld_build    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_BUILD);
-static SENSOR_DEVICE_ATTR(psu_intr      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PSU_INTR);
-static SENSOR_DEVICE_ATTR(fan_intr      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_FAN_INTR);
-static SENSOR_DEVICE_ATTR(port_intr     , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PORT_INTR);
-static SENSOR_DEVICE_ATTR(output_intr   , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_OUTPUT_INTR);
-static SENSOR_DEVICE_ATTR(psu_mask      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_PSU_MASK);
-static SENSOR_DEVICE_ATTR(fan_mask      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_FAN_MASK);
-static SENSOR_DEVICE_ATTR(port_mask     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_PORT_MASK);
-static SENSOR_DEVICE_ATTR(output_mask   , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_OUTPUT_MASK);
-static SENSOR_DEVICE_ATTR(mux_reset     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_MUX_RESET);
-static SENSOR_DEVICE_ATTR(mux_reset_all , S_IRUGO | S_IWUSR, read_mux_rest_all_callback, write_mux_reset_all_callback, ATT_MUX_RESET_ALL);
-static SENSOR_DEVICE_ATTR(mac_rov       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_MAC_ROV);
-static SENSOR_DEVICE_ATTR(fan_present   , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT);
-static SENSOR_DEVICE_ATTR(fan_present_0 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_0);
-static SENSOR_DEVICE_ATTR(fan_present_1 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_1);
-static SENSOR_DEVICE_ATTR(fan_present_2 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_2);
-static SENSOR_DEVICE_ATTR(fan_present_3 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_3);
-static SENSOR_DEVICE_ATTR(fan_present_4 , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_4);
-static SENSOR_DEVICE_ATTR(psu_status    , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_STATUS);
-static SENSOR_DEVICE_ATTR(bios_boot_sel , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BIOS_BOOT_SEL);
-static SENSOR_DEVICE_ATTR(uart_ctrl     , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_UART_CTRL);
-static SENSOR_DEVICE_ATTR(usb_ctrl      , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_USB_CTRL);
-static SENSOR_DEVICE_ATTR(mux_ctrl      , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_MUX_CTRL);
-static SENSOR_DEVICE_ATTR(led_clr       , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback          , ATT_LED_CLR);
-static SENSOR_DEVICE_ATTR(led_ctrl_1    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_CTRL_1);
-static SENSOR_DEVICE_ATTR(led_ctrl_2    , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_CTRL_2);
-static SENSOR_DEVICE_ATTR(led_status_1  , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_LED_STATUS_1);
+static SENSOR_DEVICE_ATTR(board_id_0          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_ID_0);
+static SENSOR_DEVICE_ATTR(board_id_1          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_ID_1);
+static SENSOR_DEVICE_ATTR(board_sku_id        , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_SKU_ID);
+static SENSOR_DEVICE_ATTR(board_hw_id         , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_HW_ID);
+static SENSOR_DEVICE_ATTR(board_build_id      , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_BUILD_ID);
+static SENSOR_DEVICE_ATTR(board_deph_id       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BRD_DEPH_ID);
+static SENSOR_DEVICE_ATTR(cpld_version        , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_VERSION);
+static SENSOR_DEVICE_ATTR(cpld_version_major  , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_VERSION_MAJOR);
+static SENSOR_DEVICE_ATTR(cpld_version_minor  , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_VERSION_MINOR);
+static SENSOR_DEVICE_ATTR(cpld_version_h      , S_IRUGO          , read_mb_cpld_version_h    , NULL                         , ATT_CPLD_VERSION_H);
+static SENSOR_DEVICE_ATTR(cpld_id             , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_ID);
+static SENSOR_DEVICE_ATTR(cpld_build          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_BUILD);
+static SENSOR_DEVICE_ATTR(psu_intr            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_INTR);
+static SENSOR_DEVICE_ATTR(fan_intr            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_INTR);
+static SENSOR_DEVICE_ATTR(port_intr           , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PORT_INTR);
+static SENSOR_DEVICE_ATTR(output_intr         , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_OUTPUT_INTR);
+static SENSOR_DEVICE_ATTR(psu_mask            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_PSU_MASK);
+static SENSOR_DEVICE_ATTR(fan_mask            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_FAN_MASK);
+static SENSOR_DEVICE_ATTR(port_mask           , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_PORT_MASK);
+static SENSOR_DEVICE_ATTR(output_mask         , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_OUTPUT_MASK);
+static SENSOR_DEVICE_ATTR(mux_reset           , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_MUX_RESET);
+static SENSOR_DEVICE_ATTR(mux_reset_all       , S_IRUGO | S_IWUSR, read_mux_rest_all_callback, write_mux_reset_all_callback , ATT_MUX_RESET_ALL);
+static SENSOR_DEVICE_ATTR(mac_rov             , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_MAC_ROV);
+static SENSOR_DEVICE_ATTR(fan_present         , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT);
+static SENSOR_DEVICE_ATTR(fan_present_0       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_0);
+static SENSOR_DEVICE_ATTR(fan_present_1       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_1);
+static SENSOR_DEVICE_ATTR(fan_present_2       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_2);
+static SENSOR_DEVICE_ATTR(fan_present_3       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_3);
+static SENSOR_DEVICE_ATTR(fan_present_4       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_4);
+static SENSOR_DEVICE_ATTR(psu_status          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_STATUS);
+static SENSOR_DEVICE_ATTR(bios_boot_sel       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BIOS_BOOT_SEL);
+static SENSOR_DEVICE_ATTR(uart_ctrl           , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_UART_CTRL);
+static SENSOR_DEVICE_ATTR(usb_ctrl            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_USB_CTRL);
+static SENSOR_DEVICE_ATTR(mux_ctrl            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_MUX_CTRL);
+static SENSOR_DEVICE_ATTR(led_clr             , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_LED_CLR);
+static SENSOR_DEVICE_ATTR(led_ctrl_1          , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_LED_CTRL_1);
+static SENSOR_DEVICE_ATTR(led_ctrl_2          , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_LED_CTRL_2);
+static SENSOR_DEVICE_ATTR(led_status_1        , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_LED_STATUS_1);
 
 //SENSOR_DEVICE_ATTR - BSP
-static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
-static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
-static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR(bsp_pr_info , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_INFO);
+static SENSOR_DEVICE_ATTR(bsp_pr_err  , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_ERR);
+static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback             , ATT_BSP_REG);
 
 static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_id_0.dev_attr.attr,
@@ -585,6 +725,8 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_build_id.dev_attr.attr,
     &sensor_dev_attr_board_deph_id.dev_attr.attr,
     &sensor_dev_attr_cpld_version.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_major.dev_attr.attr,
+    &sensor_dev_attr_cpld_version_minor.dev_attr.attr,
     &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
@@ -624,6 +766,8 @@ static struct attribute *bios_attrs[] = {
 static struct attribute *bsp_attrs[] = {
     &sensor_dev_attr_bsp_version.dev_attr.attr,
     &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_info.dev_attr.attr,
+    &sensor_dev_attr_bsp_pr_err.dev_attr.attr,
     &sensor_dev_attr_bsp_reg.dev_attr.attr,
     NULL,
 };

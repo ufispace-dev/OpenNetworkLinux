@@ -403,14 +403,9 @@ function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
     if [ "${MODEL_NAME}" == "S9510" ]; then
-        if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version"; then
-            mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version ${LOG_REDIRECT}")
-            _echo "[MB CPLD Version]: $(( (mb_cpld_ver & 2#11000000) >> 6)).$(( mb_cpld_ver & 2#00111111 ))"
-        fi
-
-        if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_build"; then
-            mb_cpld_build=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_build ${LOG_REDIRECT}")
-            _echo "[MB CPLD Build  ]: $(( mb_cpld_build ))"
+        if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version_h"; then
+            mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version_h ${LOG_REDIRECT}")
+            _echo "[MB CPLD Version]: ${mb_cpld_ver}"
         fi
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"

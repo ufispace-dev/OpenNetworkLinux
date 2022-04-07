@@ -161,3 +161,15 @@ int onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 
     return ONLP_STATUS_OK;
 }
+
+/**
+ * @brief Get the chassis info structure.
+ * @param id The Chassis OID.
+ * @param[out] info Receives the chassis information.
+ */
+int onlp_chassisi_info_get(onlp_oid_id_t id, onlp_chassis_info_t* info)
+{
+    int local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(onlp_chassisi_hdr_get(local_id, &info->hdr));
+    return ONLP_STATUS_OK;
+}

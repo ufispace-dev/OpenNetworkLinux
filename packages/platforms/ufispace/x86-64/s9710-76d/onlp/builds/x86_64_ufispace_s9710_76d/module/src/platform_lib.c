@@ -31,7 +31,6 @@
 #include "platform_lib.h"
 
 /* SYS */
-#define CPLD_MAX      5
 const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32, 0x33, 0x34};
 const int CPLD_I2C_BUS[] = {1, 1, 1, 30, 30};
 
@@ -229,7 +228,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     static int init_cache = 1;
     char* presence_str = "Present";
     int retry = 0, retry_max = 2;
-    char line[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
+    char line[BMC_FRU_LINE_SIZE] = {'\0'};
     char *line_ptr = NULL;
     char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
     char seps[] = ",";
@@ -264,10 +263,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     //update cache
     if(bmc_cache_expired == 1 || init_cache == 1) {
         if (bmc_cache_expired == 1) {
-            // detect bmc status            
+            // detect bmc status
             if(bmc_check_alive() != ONLP_STATUS_OK) {
-                ONLP_UNLOCK();
-                return ONLP_STATUS_E_INTERNAL;
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
             }
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
             for (retry = 0; retry < retry_max; ++retry) {
@@ -275,8 +274,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d", 
                             __func__, retry, ipmi_cmd, rv);
-                        ONLP_UNLOCK();
-                        return ONLP_STATUS_E_INTERNAL;
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
                     } else {
                         continue;
                     }
@@ -291,12 +290,12 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         if(fp == NULL) {
             AIM_LOG_ERROR("%s() open file failed, file=%s", 
                             __func__, BMC_SENSOR_CACHE);
-            ONLP_UNLOCK();
-            return ONLP_STATUS_E_INTERNAL;
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
         }
 
         //read file line by line
-        while(fgets(line,BMC_FRU_ATTR_KEY_VALUE_SIZE,fp) != NULL) {
+        while(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
             i=0;
             line_ptr = line;
             token = NULL;
@@ -336,10 +335,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     }
 
     //read from cache
-    *data = bmc_cache[bmc_cache_index].data;    
+    *data = bmc_cache[bmc_cache_index].data;
     
+done:
     ONLP_UNLOCK();
-    
     return rv;
 }
 
@@ -351,10 +350,11 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 int bmc_fru_read(int local_id, bmc_fru_t *data)
 {
     struct timeval new_tv;
-    char ipmi_cmd[400] = {0};
+    char ipmi_cmd[1024] = {0};
     int cache_time = PSU_CACHE_TIME;
     int bmc_cache_expired = 0;
     long file_last_time = 0;
+    int rv = ONLP_STATUS_OK;
 
     if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {        
         return ONLP_STATUS_E_INTERNAL;
@@ -381,8 +381,8 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         if(bmc_cache_expired == 1) {
             // detect bmc status
             if(bmc_check_alive() != ONLP_STATUS_OK) {
-                ONLP_UNLOCK();
-                return ONLP_STATUS_E_INTERNAL;
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto done;
             }
             char fields[256]="";
             snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
@@ -395,8 +395,8 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
                             __func__, retry, ipmi_cmd, rv);
-                        ONLP_UNLOCK();
-                        return ONLP_STATUS_E_INTERNAL;
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
                     } else {
                         continue;
                     }
@@ -448,17 +448,17 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
             strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
             AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s",
                 local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
-            ONLP_UNLOCK();
-            return ONLP_STATUS_E_INTERNAL;
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto done;
         }         
     }
 
     //read from cache
     *data = *fru;
 
+done:
     ONLP_UNLOCK();
-            
-    return ONLP_STATUS_OK;
+    return rv;
 }
 
 int read_ioport(int addr, int *reg_val) {
@@ -491,21 +491,6 @@ int exec_cmd(char *cmd, char* out, int size) {
     pclose(fp);
 
     return ONLP_STATUS_OK;
-}
-
-int get_ipmitool_len(char *ipmitool_out) {
-    size_t str_len = 0, ipmitool_len = 0;
-    str_len = strlen(ipmitool_out);
-    if (str_len > 0) {
-        ipmitool_len = str_len/3;
-    }
-    return ipmitool_len;
-}
-
-bool onlp_sysi_bmc_en_get(void)
-{
-    //enable bmc by default
-    return true;
 }
 
 int file_read_hex(int* value, const char* fmt, ...)
@@ -545,10 +530,8 @@ void check_and_do_i2c_mux_reset(int port)
         
         if (ret != 0) {            
             if(access(MUX_RESET_PATH, F_OK) != -1 ) {
-                //AIM_LOG_ERROR("I2C bus is stuck!! (port=%d)", port);
                 snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
                 ret = system(cmd_buf);
-                //AIM_LOG_ERROR("Do I2C mux reset!! (ret=%d)", ret);
             }
         }
     }

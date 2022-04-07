@@ -96,7 +96,8 @@
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
-#define BMC_FRU_ATTR_KEY_VALUE_SIZE  256
+#define BMC_FRU_LINE_SIZE           256
+#define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 #define BMC_FRU_KEY_MANUFACTURER    "Product Manufacturer"
 #define BMC_FRU_KEY_NAME            "Product Name"
@@ -335,8 +336,6 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
-int get_ipmitool_len(char *ipmitool_out) ;
-bool onlp_sysi_bmc_en_get(void);
 int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size, char *tokens[], int token_size, const char *sensor_id_str, int *idx);
 int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);

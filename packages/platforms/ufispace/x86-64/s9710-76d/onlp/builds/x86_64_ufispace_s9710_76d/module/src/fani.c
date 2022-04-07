@@ -149,9 +149,9 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     },    
     {
         .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_0),
+            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
             .description = "PSU-0-Fan",
-            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0_FAN),
+            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
         .dir = ONLP_FAN_DIR_F2B,
@@ -161,9 +161,9 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     },
     {
         .hdr = {
-            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_1),
+            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
             .description = "PSU-1-Fan",
-            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1_FAN),
+            .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
         .dir = ONLP_FAN_DIR_F2B,

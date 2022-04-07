@@ -57,7 +57,7 @@ const char* onlp_platformi_get(void)
  */
 int onlp_platformi_set(const char* platform)
 {
-    return ONLP_STATUS_OK;
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
 /**
@@ -83,7 +83,7 @@ int onlp_platformi_hw_init(uint32_t flags)
  */
 int onlp_platformi_manage_init(void)
 {
-    return ONLP_STATUS_OK;
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
 /**

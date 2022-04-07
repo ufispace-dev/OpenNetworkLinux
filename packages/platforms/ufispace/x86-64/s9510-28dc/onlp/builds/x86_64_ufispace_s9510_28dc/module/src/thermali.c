@@ -77,7 +77,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -90,7 +90,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -103,7 +103,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -116,7 +116,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -129,7 +129,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -142,7 +142,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -155,7 +155,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -168,7 +168,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {
@@ -181,7 +181,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 102000, 105000),
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(0, 73000, 93000),
     },
     {
         .hdr = {

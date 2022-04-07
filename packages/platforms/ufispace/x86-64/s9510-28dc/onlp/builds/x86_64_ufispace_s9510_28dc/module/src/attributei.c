@@ -35,37 +35,31 @@
   }
 
 #define IDPROM_PATH        "/sys/bus/i2c/devices/1-0057/eeprom"
-#define SYSFS_CPLD_VER     LPC_FMT "cpld_version"
-#define SYSFS_CPLD_BUILD   LPC_FMT "cpld_build"
+#define SYSFS_CPLD_VER_H   LPC_FMT "cpld_version_h"
 #define SYSFS_HW_ID        LPC_FMT "board_hw_id"
 #define SYSFS_BUILD_ID     LPC_FMT "board_build_id"
-#define CMD_BIOS_VER       "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
+#define SYSFS_BIOS_VER     "/sys/class/dmi/id/bios_version"
+
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
 static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset_info)
 {
-    int mb_cpld_ver = 0, cpld_ver_major = 0, cpld_ver_minor = 0, cpld_build = 0;
     int mb_cpld_hw_rev = 0, mb_cpld_build_rev = 0;
-    char bios_out[32] = {0};
+    int len = 0;
+    char bios_out[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
 
     onlp_onie_info_t onie_info;
 
     //get MB CPLD version
-    ONLP_TRY(onlp_file_read_int(&mb_cpld_ver, SYSFS_CPLD_VER));
-
-    // Major: bit 6-7, Minor: bit 0-5
-    cpld_ver_major = mb_cpld_ver >> 6 & 0x03;
-    cpld_ver_minor = mb_cpld_ver & 0x3F;
-
-    //get MB CPLD Build
-    ONLP_TRY(onlp_file_read_int(&cpld_build, SYSFS_CPLD_BUILD));
+    char mb_cpld_ver[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
+    ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_CPLD_VER_H));
 
     asset_info->cpld_revision = aim_fstrdup(
         "\n"
-        "    [MB CPLD] %d.%02d.%d\n", cpld_ver_major, cpld_ver_minor, cpld_build);
+        "    [MB CPLD] %s\n", mb_cpld_ver);
 
     //Get HW Version
     ONLP_TRY(file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID));
@@ -74,10 +68,11 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
     ONLP_TRY(file_read_hex(&mb_cpld_build_rev, SYSFS_BUILD_ID));
 
     //Get BIOS version
-    if (exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)) < 0) {
-        AIM_LOG_ERROR("unable to read BIOS version\n");
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    char tmp_str[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
+    ONLP_TRY(onlp_file_read((uint8_t*)&tmp_str, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_BIOS_VER));
+
+    // Remove '\n'
+    sscanf (tmp_str, "%[^\n]", bios_out);
 
     // Detect bmc status
     if(bmc_check_alive() != ONLP_STATUS_OK) {
@@ -140,6 +135,48 @@ int onlp_attributei_sw_denit(void)
     return ONLP_STATUS_OK;
 }
 
+/**
+ * @brief Determine whether the OID supports the given attributei.
+ * @param oid The OID.
+ * @param attribute The attribute name.
+ */
+int onlp_attributei_supported(onlp_oid_t oid, const char* attribute)
+{
+     return ONLP_STATUS_E_UNSUPPORTED;
+}
+
+/**
+ * @brief Set an attribute on the given OID.
+ * @param oid The OID.
+ * @param attribute The attribute name.
+ * @param value A pointer to the value.
+ */
+int onlp_attributei_set(onlp_oid_t oid, const char* attribute, void* value)
+{
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
+
+/**
+ * @brief Get an attribute from the given OID.
+ * @param oid The OID.
+ * @param attribute The attribute to retrieve.
+ * @param[out] value Receives the attributei's value.
+ */
+int onlp_attributei_get(onlp_oid_t oid, const char* attribute, void** value) 
+{
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
+
+/**
+ * @brief Free an attribute value returned from onlp_attributei_get().
+ * @param oid The OID.
+ * @param attribute The attribute.
+ * @param value The value.
+ */
+int onlp_attributei_free(onlp_oid_t oid, const char* attribute, void* value)
+{
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
 
 /**
  * Access to standard attributes.
