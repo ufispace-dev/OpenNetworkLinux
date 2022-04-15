@@ -609,3 +609,17 @@ int get_hw_rev_id(void)
 
     return hw_rev;
 }
+
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id)
+{
+    if (rev_id == NULL || dev_phase == NULL || build_id == NULL) {
+        AIM_LOG_ERROR("rev_id, dev_phase or build_id is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(rev_id, "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/ec/cpu_rev_hw_rev"));
+    ONLP_TRY(file_read_hex(dev_phase, "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/ec/cpu_rev_dev_phase"));
+    ONLP_TRY(file_read_hex(build_id, "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/ec/cpu_rev_build_id"));
+
+    return ONLP_STATUS_OK;
+}

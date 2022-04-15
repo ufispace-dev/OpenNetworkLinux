@@ -281,4 +281,5 @@ int get_hw_rev_id(void);
 
 int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 #endif  /* __PLATFORM_LIB_H__ */

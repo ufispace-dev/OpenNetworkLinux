@@ -28,33 +28,19 @@ class OnlPlatform_x86_64_ufispace_s9502_16smt_r0(OnlPlatformUfiSpace):
         return 0
     def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9502_16smt_lpc/mb_cpld/mux_reset"
-        controller_remove = "/sys/bus/pci/devices/0000:00:12.0/remove"
-        controller_rescan = "/sys/bus/pci/rescan"
 
         # Check I2C status,assume i2c-ismt in bus 1
-        retcode = os.system("i2cget -f -y 1 0x75 > /dev/null 2>&1")
+        retcode = os.system("i2cget -f -y 0 0x76 > /dev/null 2>&1")
         if retcode != 0:
 
             #read mux failed, i2c bus may be stuck
             msg("Warning: Read I2C Mux Failed!! (ret=%d)\n" % (retcode) )
 
             #Recovery I2C
-            if os.path.exists(sysfs_mux_reset) and os.path.exists(controller_remove)\
-                    and os.path.exists(controller_rescan):
+            if os.path.exists(sysfs_mux_reset):
                 with open(sysfs_mux_reset, "w") as f:
                     #write 0 to sysfs
                     f.write("{}".format(0))
-
-                with open(controller_remove, "w") as f:
-                    #write 1 to sysfs
-                    f.write("{}".format(1))
-
-                with open(controller_rescan, "w") as f:
-                    #write 1 to sysfs
-                    f.write("{}".format(1))
-
-                os.system("rmmod i2c-ismt")
-                os.system("modprobe i2c-ismt")
                 msg("I2C bus recovery done.\n")
             else:
                 msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )

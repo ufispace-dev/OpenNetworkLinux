@@ -63,8 +63,8 @@ static onlp_led_info_t led_info[] =
     CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 3 (STAT LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 4 (FAN LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_PWR, "Chassis LED 5 (PWR LED)"),
-    CHASSIS_FLEXE_LED_INFO(ONLP_LED_FLEXE_0, "Chassis LED 5 (FlexE 0)"),
-    CHASSIS_FLEXE_LED_INFO(ONLP_LED_FLEXE_1, "Chassis LED 6 (FlexE 1)")
+    CHASSIS_FLEXE_LED_INFO(ONLP_LED_FLEXE_0, "Chassis LED 6 (FlexE 0)"),
+    CHASSIS_FLEXE_LED_INFO(ONLP_LED_FLEXE_1, "Chassis LED 7 (FlexE 1)")
 };
 
 typedef enum led_attr_type_e {
