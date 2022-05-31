@@ -56,8 +56,8 @@ class IPMI_Ioctl(object):
 class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
     PLATFORM='x86-64-ufispace-s9600-32x-r0'
     MODEL="S9600-32X"
-    SYS_OBJECT_ID=".9600.64"
-    PORT_COUNT=64
+    SYS_OBJECT_ID=".9600.32"
+    PORT_COUNT=32
     PORT_CONFIG="32x100"
     LEVEL_INFO=1
     LEVEL_ERR=2

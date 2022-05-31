@@ -492,12 +492,12 @@ int sys_led_info_get(onlp_led_info_t* info, int id)
         mask_color = 0b00100000;
         mask_blink  = 0b00000100;
         ctrl_offset = CPLD_REG_LED_CTRL;
-    } else if (id == LED_ID_SYS_FAN) {
+    } else if (id == LED_ID_SYS_PSU) {
         mask_onoff = 0b00010000;
         mask_color = 0b00100000;
         mask_blink  = 0b00001000;
         ctrl_offset = CPLD_REG_LED_CLEAR;
-    } else if (id == LED_ID_SYS_PSU) {
+    } else if (id == LED_ID_SYS_PWR) {
         mask_onoff = 0b01000000;
         mask_color = 0b10000000;
         mask_blink  = 0b00010000;
@@ -535,40 +535,6 @@ int sys_led_info_get(onlp_led_info_t* info, int id)
         if (led_val_blink == 1) {
             info->mode = info->mode + 1;
         }
-    }
-
-    return ONLP_STATUS_OK;
-}
-
-int sys_fan_present_get(onlp_fan_info_t* info, int id)
-{
-    int rc;
-    int mask;
-    int reg, reg_val;
-    int fan_present;
-
-    if (id == FAN_ID_FAN0) {
-        mask = FAN0_PRESENT_MASK;
-    } else if (id == FAN_ID_FAN1) {
-        mask = FAN1_PRESENT_MASK;
-    } else if (id == FAN_ID_FAN2) {
-        mask = FAN2_PRESENT_MASK;
-    } else {
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
-    //read cpld reg via LPC
-    reg = CPLD_REG_BASE + CPLD_REG_FAN_PRNT;
-    if ((rc=read_ioport(reg, &reg_val)) != ONLP_STATUS_OK) {
-        return rc;
-    }
-
-    fan_present = ((mask_shift(reg_val, mask))? 0 : 1);
-
-    if( fan_present == 1 ) {
-        info->status |= ONLP_FAN_STATUS_PRESENT;
-    } else {
-        info->status &= ~ONLP_FAN_STATUS_PRESENT;
     }
 
     return ONLP_STATUS_OK;

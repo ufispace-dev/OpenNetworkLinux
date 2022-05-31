@@ -122,15 +122,11 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 
         *e++ = LED_OID_SYNC;
         *e++ = LED_OID_SYS;
-        *e++ = LED_OID_FAN;
         *e++ = LED_OID_PSU;
+        *e++ = LED_OID_PWR;
 
         *e++ = PSU_OID_PSU0;
         *e++ = PSU_OID_PSU1;
-
-        *e++ = FAN_OID_FAN0;
-        *e++ = FAN_OID_FAN1;
-        *e++ = FAN_OID_FAN2;
     }
 
     return ONLP_STATUS_OK;

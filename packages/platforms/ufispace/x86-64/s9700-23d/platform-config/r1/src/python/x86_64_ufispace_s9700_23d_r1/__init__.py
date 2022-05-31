@@ -109,6 +109,9 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r1(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+        
     def init_i2c_mux_idle_state(self, muxs):        
         IDLE_STATE_DISCONNECT = -2
         
@@ -263,6 +266,7 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r1(OnlPlatformUfiSpace):
             os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], rov_addr, rov_reg, rov_reg_val))            
 
         self.enable_ipmi_maintenance_mode()
+        self.disable_bmc_watchdog()
 
         return True
 

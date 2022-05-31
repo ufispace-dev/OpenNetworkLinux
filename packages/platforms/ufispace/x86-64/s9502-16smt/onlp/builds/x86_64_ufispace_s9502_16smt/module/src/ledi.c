@@ -50,21 +50,18 @@ static onlp_led_info_t led_info[] =
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING ,
     },
     {
-        { LED_OID_FAN, "Chassis LED 3 (FAN LED)", 0 },
+        { LED_OID_PSU, "Chassis LED 3 (PSU LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING ,
     },
     {
-        { LED_OID_PSU, "Chassis LED 4 (PWR LED)", 0 },
+        { LED_OID_PWR, "Chassis LED 4 (PWR LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING ,
     },
 };
-
-
-extern int sys_fan_info_get(onlp_fan_info_t* info, int id);
 
 /*
  * This function will be called prior to any other onlp_ledi_* functions.
@@ -84,8 +81,8 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
     switch (led_id) {        
         case LED_ID_SYS_SYNC:
         case LED_ID_SYS_SYS:       
-        case LED_ID_SYS_FAN:
         case LED_ID_SYS_PSU:
+        case LED_ID_SYS_PWR:
             rc = sys_led_info_get(info, led_id);
             break;        
         default:            

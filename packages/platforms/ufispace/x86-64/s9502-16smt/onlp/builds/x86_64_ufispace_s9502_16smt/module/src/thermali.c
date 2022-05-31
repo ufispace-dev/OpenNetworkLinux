@@ -72,9 +72,9 @@ static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
     if (id == THERMAL_ID_CPU_PKG) {
         temp_index = 1;
     } else if (id == THERMAL_ID_CPU0) {
-        temp_index = 8;
+        temp_index = 6;
     } else if (id == THERMAL_ID_CPU1) {
-        temp_index = 14;
+        temp_index = 16;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }

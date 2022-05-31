@@ -41,7 +41,10 @@ LOG_REDIRECT="2>&1"
 # GPIO_OFFSET: update by function _update_gpio_offset
 GPIO_OFFSET=0
 
-
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
 
 function _echo {
     str="$@"
@@ -74,7 +77,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.1"
+    _banner "Package Version = 1.0.6"
 }
 
 function _update_gpio_offset {
@@ -131,7 +134,7 @@ function _check_env {
 function _check_filepath {
     filepath=$1
     if [ -z "${filepath}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     elif [ ! -f "$filepath" ]; then
         _echo "ERROR: No such file: ${filepath}"
@@ -146,7 +149,7 @@ function _check_i2c_device {
     i2c_addr=$1
 
     if [ -z "${i2c_addr}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     fi
 
@@ -836,6 +839,34 @@ function _show_rov {
     fi
 }
 
+function _eeprom_page_desc {
+    eeprom_page=$1
+    
+    if [ "${eeprom_page}" == "0" ]; then
+        echo "Lower Page 0 (00h)"
+    else        
+        hex_page=$(printf "%02X" $((eeprom_page - 1)))
+        echo "Upper Page $((eeprom_page - 1)) (${hex_page}h)"
+    fi
+}
+
+function _eeprom_page_repeat_desc {
+    loop_idx=$1
+    loop_max=$2
+    
+    if [ "${loop_max}" == "1" ]; then
+        echo ""
+    else 
+        if [ "${loop_idx}" == "0" ]; then
+            echo "(1st)"
+        elif [ "${loop_idx}" == "1" ]; then
+            echo "(2nd)"
+        else
+            echo "($((loop_idx + 1)))"
+        fi
+    fi
+}
+
 function _show_nif_port_status_sysfs {
     _banner "Show NIF Port Status / EEPROM"
     echo "    Show NIF Port Status / EEPROM, please wait..."
@@ -875,7 +906,7 @@ function _show_nif_port_status_sysfs {
                                    "7" "0" "1" "2" "3" \
                                    "4" "5" "6" "7" "0" \
                                    "1" )
-
+        
         for (( i=0; i<${#port_status_cpld_addr_array[@]}; i++ ))
         do
             # Module NIF Port Interrupt Status (0: Interrupted, 1:No Interrupt)
@@ -898,50 +929,52 @@ function _show_nif_port_status_sysfs {
             port_reset_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_reset_${port_status_sysfs_idx_array[${i}]} ${LOG_REDIRECT}")
             port_reset=$(( (port_reset_reg & 1 << ${port_status_bit_idx_array[i]})>> ${port_status_bit_idx_array[i]} ))
 
-
-            # Module NIF Port Dump EEPROM
-            if [ "${port_module_absent_l}" == "0" ]; then
-                _check_filepath "/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
-                port_eeprom_p0_1st=$(eval  "dd if=/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p0_2nd=$(eval  "dd if=/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_1st=$(eval "dd if=/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_2nd=$(eval "dd if=/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p18=$(eval     "dd if=/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=19 status=none ${LOG_REDIRECT} | hexdump -C")
-                if [ -z "$port_eeprom_p0_1st" ]; then
-                    port_eeprom_p0_1st="ERROR!!! The result is empty. It should read failed (/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom)!!"
-                fi
-                
-                # Full EEPROM Log
-                if [ "${LOG_FILE_ENABLE}" == "1" ]; then
-                    hexdump -C "/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom" > ${LOG_FOLDER_PATH}/qsfpdd_nif_port${i}_eeprom.log 2>&1
-                fi
-            else
-                port_eeprom_p0_1st="N/A"
-                port_eeprom_p0_2nd="N/A"
-                port_eeprom_p17_1st="N/A"
-                port_eeprom_p17_2nd="N/A"
-                port_eeprom_p18="N/A"
-            fi
-
             _echo "[Port${i} Status Reg Raw]: ${port_module_interrupt_reg}"
             _echo "[Port${i} Module INT (L)]: ${port_module_interrupt_l}"
-            _echo "[Port${i} Module Absent Reg Raq]: ${port_module_absent_reg}"
+            _echo "[Port${i} Module Absent Reg Raw]: ${port_module_absent_reg}"
             _echo "[Port${i} Module Absent ]: ${port_module_absent_l}"
             _echo "[Port${i} Config Reg Raw]: ${port_lp_mode_reg}"
             _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
             _echo "[Port${i} Reset Reg Raw]: ${port_reset_reg}"
             _echo "[Port${i} Reset Status]: ${port_reset}"
-            _echo "[Port${i} EEPROM Page0-0(1st)]:"
-            _echo "${port_eeprom_p0_1st}"
-            _echo "[Port${i} EEPROM Page0-0(2nd)]:"
-            _echo "${port_eeprom_p0_2nd}"
-            _echo "[Port${i} EEPROM Page17 (1st)]:"
-            _echo "${port_eeprom_p17_1st}"
-            _echo "[Port${i} EEPROM Page17 (2nd)]:"
-            _echo "${port_eeprom_p17_2nd}"
-            _echo "[Port${i} EEPROM Page18      ]:"
-            _echo "${port_eeprom_p18}"
-            _echo ""
+
+            # Module NIF Port Dump EEPROM            
+
+            # 0:  eeprom lower page 0
+            # 1:  eeprom upper page 0 
+            # 17: eeprom upper page 16 (10h) 
+            # 33: eeprom upper page 32 (20h)
+
+            eeprom_page_array=(0 1 2 3 4 5 \
+                               17 18 19 \
+                               33 34 35 36 37 38 39 40 \
+                               41 42 43 44 45 46 47 48 )
+            eeprom_repeat_array=(2 2 2 1 1 1 \
+                                 1 1 1 \
+                                 1 1 1 1 1 1 1 1 \
+                                 1 1 1 1 1 1 1 1 )
+                        
+            eeprom_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
+            _check_filepath ${eeprom_path}
+            
+            for (( page_i=0; page_i<${#eeprom_page_array[@]}; page_i++ ))
+            do
+                for (( repeate_i=0; repeate_i<${eeprom_repeat_array[page_i]}; repeate_i++ ))
+                do
+                    if [ "${port_module_absent_l}" == "0" ]; then
+                        eeprom_content=$(eval  "dd if=${eeprom_path} bs=128 count=1 skip=${eeprom_page_array[${page_i}]}  status=none ${LOG_REDIRECT} | hexdump -C")
+                        
+                        if [ -z "$eeprom_content" ] && [ "${eeprom_repeat_array[page_i]}" == "0" ]; then
+                            eeprom_content="ERROR!!! The result is empty. It should read failed ${eeprom_path}!!"
+                        fi
+                    else
+                        eeprom_content="N/A"
+                    fi
+                    _echo "[Port${i} EEPROM $(_eeprom_page_desc ${eeprom_page_array[page_i]}) $(_eeprom_page_repeat_desc ${repeate_i} ${eeprom_repeat_array[page_i]})]:"
+                    _echo "${eeprom_content}"
+                done
+            done
+                        
         done
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1027,30 +1060,6 @@ function _show_fab_port_status_sysfs {
             port_reset_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_reset_${port_status_sysfs_idx_array[${i}]} ${LOG_REDIRECT}")
             port_reset=$(( (port_reset_reg & 1 << ${port_status_bit_idx_array[i]})>> ${port_status_bit_idx_array[i]} ))
 
-            # Module FAB Port Dump EEPROM
-            if [ "${port_module_absent_l}" == "0" ]; then
-                _check_filepath "/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom"
-                port_eeprom_p0_1st=$(eval  "dd if=/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p0_2nd=$(eval  "dd if=/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_1st=$(eval "dd if=/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_2nd=$(eval "dd if=/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p18=$(eval     "dd if=/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom bs=128 count=1 skip=19 status=none ${LOG_REDIRECT} | hexdump -C")
-                if [ -z "$port_eeprom_p0_1st" ]; then
-                    port_eeprom_p0_1st="ERROR!!! The result is empty. It should read failed (/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom)!!"
-                fi
-                
-                # Full EEPROM Log
-                if [ "${LOG_FILE_ENABLE}" == "1" ]; then
-                    hexdump -C "/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom" > ${LOG_FOLDER_PATH}/qsfpdd_fab_port${i}_eeprom.log 2>&1
-                fi
-            else
-                port_eeprom_p0_1st="N/A"
-                port_eeprom_p0_2nd="N/A"
-                port_eeprom_p17_1st="N/A"
-                port_eeprom_p17_2nd="N/A"
-                port_eeprom_p18="N/A"
-            fi
-
             # QSFPDD FAB Port LED
             cpld_qsfpdd_led_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_qsfpdd_fab_led_${port_led_sysfs_idx_array[${i}]} ${LOG_REDIRECT}")
             if [ $(($i % 2)) -eq 0 ]; then
@@ -1065,7 +1074,7 @@ function _show_fab_port_status_sysfs {
 
             _echo "[Port${i} Status Reg Raw]: ${port_module_interrupt_reg}"
             _echo "[Port${i} Module INT (L)]: ${port_module_interrupt_l}"
-            _echo "[Port${i} Module Absent Reg Raq]: ${port_module_absent_reg}"
+            _echo "[Port${i} Module Absent Reg Raw]: ${port_module_absent_reg}"
             _echo "[Port${i} Module Absent ]: ${port_module_absent_l}"
             _echo "[Port${i} Config Reg Raw]: ${port_lp_mode_reg}"
             _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
@@ -1073,18 +1082,45 @@ function _show_fab_port_status_sysfs {
             _echo "[Port${i} Reset Status]: ${port_reset}"            
             _echo "[Port${i} LED Reg Raw   ]: ${cpld_qsfpdd_led_reg}"
             _echo "[Port${i} LED Status    ]: Red: ${led_red}, Green: ${led_green}, "\
-                                            "Blue: ${led_blue}, Blinking: ${led_blink}"           
-            _echo "[Port${i} EEPROM Page0-0(1st)]:"
-            _echo "${port_eeprom_p0_1st}"
-            _echo "[Port${i} EEPROM Page0-0(2nd)]:"
-            _echo "${port_eeprom_p0_2nd}"
-            _echo "[Port${i} EEPROM Page17 (1st)]:"
-            _echo "${port_eeprom_p17_1st}"
-            _echo "[Port${i} EEPROM Page17 (2nd)]:"
-            _echo "${port_eeprom_p17_2nd}"
-            _echo "[Port${i} EEPROM Page18      ]:"
-            _echo "${port_eeprom_p18}"
-            _echo ""
+                                            "Blue: ${led_blue}, Blinking: ${led_blink}"
+
+            # 0:  eeprom lower page 0
+            # 1:  eeprom upper page 0 
+            # 17: eeprom upper page 16 (10h) 
+            # 33: eeprom upper page 32 (20h)
+
+            eeprom_page_array=(0 1 2 3 4 5 \
+                               17 18 19 \
+                               33 34 35 36 37 38 39 40 \
+                               41 42 43 44 45 46 47 48 )
+            eeprom_repeat_array=(2 2 2 1 1 1 \
+                                 1 1 1 \
+                                 1 1 1 1 1 1 1 1 \
+                                 1 1 1 1 1 1 1 1 )            
+
+            # Module FAB Port Dump EEPROM
+                        
+            eeprom_path="/sys/bus/i2c/devices/$((fab_port_eeprom_bus_id_base + i))-0050/eeprom"
+            _check_filepath ${eeprom_path}
+            
+            for (( page_i=0; page_i<${#eeprom_page_array[@]}; page_i++ ))
+            do
+                for (( repeate_i=0; repeate_i<${eeprom_repeat_array[page_i]}; repeate_i++ ))
+                do
+                    if [ "${port_module_absent_l}" == "0" ]; then
+                        eeprom_content=$(eval  "dd if=${eeprom_path} bs=128 count=1 skip=${eeprom_page_array[${page_i}]}  status=none ${LOG_REDIRECT} | hexdump -C")
+                        
+                        if [ -z "$eeprom_content" ] && [ "${eeprom_repeat_array[page_i]}" == "0" ]; then
+                            eeprom_content="ERROR!!! The result is empty. It should read failed ${eeprom_path}!!"
+                        fi
+                    else
+                        eeprom_content="N/A"
+                    fi
+                    _echo "[Port${i} EEPROM $(_eeprom_page_desc ${eeprom_page_array[page_i]}) $(_eeprom_page_repeat_desc ${repeate_i} ${eeprom_repeat_array[page_i]})]:"
+                    _echo "${eeprom_content}"
+                done
+            done  
+                        
         done
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1855,6 +1891,20 @@ function _show_dmesg {
     _echo "${ret}"
 }
 
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+    
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+    
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"    
+    
+    _echo "[Elapse Time] ${elapsed_time} seconds"
+}
+
 function _additional_log_collection {
     _banner "Additional Log Collection"
 
@@ -1933,6 +1983,7 @@ function _main {
     _show_bmc_sel_elist_detail
     _show_dmesg
     _additional_log_collection
+    _show_time
     _compression
 
     echo "#   done..."

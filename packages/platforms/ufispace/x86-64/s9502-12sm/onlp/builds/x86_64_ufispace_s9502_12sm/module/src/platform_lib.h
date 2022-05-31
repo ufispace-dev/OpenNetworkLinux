@@ -180,16 +180,16 @@ enum sensor
 typedef enum led_oid_e {
     LED_OID_SYNC = ONLP_LED_ID_CREATE(1),
     LED_OID_SYS = ONLP_LED_ID_CREATE(2),
-    LED_OID_FAN = ONLP_LED_ID_CREATE(3),
-    LED_OID_PSU = ONLP_LED_ID_CREATE(4),
+    LED_OID_PSU = ONLP_LED_ID_CREATE(3),
+    LED_OID_PWR = ONLP_LED_ID_CREATE(4),
 } led_oid_t;
 
 /** led_id */
 typedef enum led_id_e {
     LED_ID_SYS_SYNC = 1,
     LED_ID_SYS_SYS = 2,
-    LED_ID_SYS_FAN = 3,
-    LED_ID_SYS_PSU = 4,
+    LED_ID_SYS_PSU = 3,
+    LED_ID_SYS_PWR = 4,
 } led_id_t;
 
 /** Thermal_oid */
@@ -218,21 +218,6 @@ typedef enum thermal_id_e {
     { THERMAL_WARNING_DEFAULT, \
       THERMAL_ERROR_DEFAULT,   \
       THERMAL_SHUTDOWN_DEFAULT }
-
-/** Fan_oid */
-typedef enum fan_oid_e {
-    FAN_OID_FAN0 = ONLP_FAN_ID_CREATE(1),
-    FAN_OID_FAN1 = ONLP_FAN_ID_CREATE(2),
-    FAN_OID_FAN2 = ONLP_FAN_ID_CREATE(3),
-} fan_oid_t;
-
-/** fan_id */
-typedef enum fan_id_e {
-    FAN_ID_FAN0 = 1,
-    FAN_ID_FAN1 = 2,
-    FAN_ID_FAN2 = 3,
-    FAN_ID_MAX = 4,
-} fan_id_t;
 
 /** led_oid */
 typedef enum psu_oid_e {
@@ -312,8 +297,6 @@ int psu_fru_get(onlp_psu_info_t* info, int id);
 int psu_stbiout_get(int* stbiout, int id);
 
 int psu_stbvout_get(int* stbvout, int id);
-
-int sys_fan_present_get(onlp_fan_info_t* info, int id);
 
 extern bool bmc_enable;
 #endif  /* __PLATFORM_LIB_H__ */
