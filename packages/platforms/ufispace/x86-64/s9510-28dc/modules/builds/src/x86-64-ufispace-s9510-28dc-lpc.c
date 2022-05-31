@@ -42,9 +42,8 @@
 
 /* LPC registers */
 
-#define REG_BASE_CPU                      0x600
 #define REG_BASE_MB                       0x700
-
+#define REG_BASE_EC                       0xe300
 
 //MB CPLD
 #define REG_BRD_ID_0                   (REG_BASE_MB + 0x00)
@@ -72,6 +71,9 @@
 #define REG_LED_CTRL_1                 (REG_BASE_MB + 0x81)
 #define REG_LED_CTRL_2                 (REG_BASE_MB + 0x82)
 #define REG_LED_STATUS_1               (REG_BASE_MB + 0x83)
+
+//MB EC
+#define REG_CPU_REV                    (REG_BASE_EC + 0x17)
 
 #define MASK_ALL                          (0xFF) // 2#11111111
 #define MASK_CPLD_MAJOR                   (0xC0) // 2#11000000
@@ -124,12 +126,19 @@ enum lpc_sysfs_attributes {
     ATT_LED_CTRL_1,
     ATT_LED_CTRL_2,
     ATT_LED_STATUS_1,
+
     //BSP
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
     ATT_BSP_PR_INFO,
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
+
+    //EC
+    ATT_EC_CPU_REV_HW_REV,
+    ATT_EC_CPU_REV_DEV_PHASE,
+    ATT_EC_CPU_REV_BUILD_ID,
+
     ATT_MAX
 };
 
@@ -472,6 +481,21 @@ static ssize_t read_lpc_callback(struct device *dev,
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
             break;
+
+        //EC
+        case ATT_EC_CPU_REV_HW_REV:
+            reg = REG_CPU_REV;
+            mask = 0x03; // 2#00000011
+            break;
+        case ATT_EC_CPU_REV_DEV_PHASE:
+            reg = REG_CPU_REV;
+            mask = 0x04; // 2#00000100
+            break;
+        case ATT_EC_CPU_REV_BUILD_ID:
+            reg = REG_CPU_REV;
+            mask = 0x18; // 2#00011000
+            break;
+
         default:
             return -EINVAL;
     }
@@ -717,6 +741,11 @@ static SENSOR_DEVICE_ATTR(bsp_pr_info , S_IWUSR          , NULL             , wr
 static SENSOR_DEVICE_ATTR(bsp_pr_err  , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback             , ATT_BSP_REG);
 
+//SENSOR_DEVICE_ATTR - EC
+static SENSOR_DEVICE_ATTR(cpu_rev_hw_rev      , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_HW_REV);
+static SENSOR_DEVICE_ATTR(cpu_rev_dev_phase   , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_DEV_PHASE);
+static SENSOR_DEVICE_ATTR(cpu_rev_build_id    , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_BUILD_ID);
+
 static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_board_id_0.dev_attr.attr,
     &sensor_dev_attr_board_id_1.dev_attr.attr,
@@ -772,6 +801,13 @@ static struct attribute *bsp_attrs[] = {
     NULL,
 };
 
+static struct attribute *ec_attrs[] = {
+    &sensor_dev_attr_cpu_rev_hw_rev.dev_attr.attr,
+    &sensor_dev_attr_cpu_rev_dev_phase.dev_attr.attr,
+    &sensor_dev_attr_cpu_rev_build_id.dev_attr.attr,
+    NULL,
+};
+
 static struct attribute_group mb_cpld_attr_grp = {
     .name = "mb_cpld",
     .attrs = mb_cpld_attrs,
@@ -785,6 +821,11 @@ static struct attribute_group bios_attr_grp = {
 static struct attribute_group bsp_attr_grp = {
     .name = "bsp",
     .attrs = bsp_attrs,
+};
+
+static struct attribute_group ec_attr_grp = {
+    .name = "ec",
+    .attrs = ec_attrs,
 };
 
 static void lpc_dev_release( struct device * dev)
@@ -802,7 +843,7 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 3;
+    int i = 0, grp_num = 4;
     int err[5] = {0};
     struct attribute_group *grp;
 
@@ -823,6 +864,9 @@ static int lpc_drv_probe(struct platform_device *pdev)
                 break;
             case 2:
                 grp = &bsp_attr_grp;
+                break;
+            case 3:
+                grp = &ec_attr_grp;
                 break;
             default:
                 break;
@@ -851,6 +895,9 @@ exit:
             case 2:
                 grp = &bsp_attr_grp;
                 break;
+            case 3:
+                grp = &ec_attr_grp;
+                break;
             default:
                 break;
         }
@@ -872,6 +919,7 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &ec_attr_grp);
 
     return 0;
 }

@@ -99,7 +99,7 @@ static onlp_led_info_t __onlp_led_info[] =
     {
         .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_0),
-            .description = "Chassis LED 5 (FlexE 0)",
+            .description = "Chassis LED 6 (FlexE 0)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -108,7 +108,7 @@ static onlp_led_info_t __onlp_led_info[] =
     {
         .hdr = {
             .id = ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_1),
-            .description = "Chassis LED 6 (FlexE 1)",
+            .description = "Chassis LED 7 (FlexE 1)",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
