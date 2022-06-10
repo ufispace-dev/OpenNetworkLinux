@@ -59,7 +59,13 @@ static onlp_psu_info_t psu_info[] =
     PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1),
 };
 
-static char *vendors[] = {"DELTA", "FSPGROUP"};
+static psu_support_info_t psu_support_list[] =
+{
+    {"FSPGROUP", "YESM1300AM-2A02P10", ONLP_PSU_TYPE_AC},
+    {"ACBEL", "FSH082-HAAG", ONLP_PSU_TYPE_AC},
+    {"ACBEL", "FSJ033-HAAG", ONLP_PSU_TYPE_DC48},
+    {"FSPGROUP", "YESM1300CM-2A01N01", ONLP_PSU_TYPE_DC48},
+};
 
 int psu_present_get(int *pw_present, int local_id)
 {
@@ -119,6 +125,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 {
     bmc_fru_t *fru = NULL;
     bmc_fru_t fru_tmp = {0};
+    int i, max;
 
     if(psu_type == NULL) {
         return ONLP_STATUS_E_INTERNAL;
@@ -131,29 +138,18 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
         fru = fru_in;
     }
 
-    if (strncmp(fru->vendor.val, vendors[0], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //Delta
-        //read from part_num
-        if (fru->part_num.val[7] == 'A') {
-            *psu_type = ONLP_PSU_TYPE_AC;
-        } else if (fru->part_num.val[7] == 'D') {
-            *psu_type = ONLP_PSU_TYPE_DC48;
-        } else {
-            AIM_LOG_ERROR("unknown PSU type, vendor=%d, model=%s, func=%s\n", fru->vendor.val, fru->part_num.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL;
+    *psu_type = ONLP_PSU_TYPE_INVALID;
+    max = sizeof(psu_support_list)/sizeof(*psu_support_list);
+    for (i = 0; i < max; ++i) {
+        if ((strncmp(fru->vendor.val, psu_support_list[i].vendor, BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) &&
+            (strncmp(fru->part_num.val, psu_support_list[i].part_number, BMC_FRU_ATTR_KEY_VALUE_SIZE)==0)) {
+            *psu_type = psu_support_list[i].type;
+            break;
         }
-    } else if (strncmp(fru->vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) { //FSP FIXME: check rule
-        //read from name
-        if (strstr(fru->name.val, "AM") > 0) {
-            *psu_type = ONLP_PSU_TYPE_AC;
-        } else if (strstr(fru->name.val, "EM") > 0) {
-            *psu_type = ONLP_PSU_TYPE_DC48;
-        } else {
-            AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-    } else {
-        *psu_type = ONLP_PSU_TYPE_INVALID;
-        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
+    }
+
+    if (*psu_type == ONLP_PSU_TYPE_INVALID) {
+        AIM_LOG_ERROR("[%s]unknown PSU type, vendor=%s, part_num=%s", __FUNCTION__, fru->vendor.val, fru->part_num.val);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -175,7 +171,7 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
 
     //update FRU model
     memset(info->model, 0, sizeof(info->model));
-    if (strncmp(fru.vendor.val, vendors[1], sizeof(BMC_FRU_ATTR_KEY_VALUE_SIZE))==0) {
+    if (strncmp(fru.vendor.val, "FSPGROUP", BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) {
         //read product name for FSP
         snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
     } else {

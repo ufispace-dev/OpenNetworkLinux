@@ -196,7 +196,7 @@ const char* onlp_sysi_platform_get(void)
  */
 int onlp_sysi_platform_set(const char* platform)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    return ONLP_STATUS_OK;
 }
 
 /**

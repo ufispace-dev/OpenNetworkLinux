@@ -275,6 +275,12 @@ typedef struct bmc_fru_s {
     bmc_fru_attr_t serial;
 } bmc_fru_t;
 
+typedef struct psu_support_info_s {
+    char vendor[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char part_number[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    int type;
+} psu_support_info_t;
+
 void lock_init();
 int check_file_exist(char *file_path, long *file_time);
 int bmc_check_alive(void);
