@@ -183,6 +183,12 @@ typedef struct bmc_fru_s {
     bmc_fru_attr_t serial;
 } bmc_fru_t;
 
+typedef struct psu_support_info_s {
+    char vendor[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char part_number[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    int type;
+} psu_support_info_t;
+
 int psu_present_get(int *pw_present, int id);
 
 int psu_pwgood_get(int *pw_good, int id);

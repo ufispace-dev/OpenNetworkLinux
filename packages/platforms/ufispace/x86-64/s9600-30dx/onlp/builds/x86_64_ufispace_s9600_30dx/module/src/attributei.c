@@ -37,7 +37,7 @@
 #define IDPROM_PATH   "/sys/bus/i2c/devices/0-0057/eeprom"
 #define SYSFS_BIOS_VER "/sys/class/dmi/id/bios_version"
 
-#define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/cpu_cpld_version_h"
+#define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/cpu_cpld/cpu_cpld_version_h"
 #define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
 
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
@@ -66,7 +66,7 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
     //get MB CPLD version
     for(i=0; i < CPLD_MAX; ++i) {
         ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER, 
-                                             CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
+                                             CPLD_I2C_BUS, CPLD_BASE_ADDR[i]));
     }
     
     asset_info->cpld_revision = aim_fstrdup(
@@ -74,15 +74,11 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
         "    [CPU CPLD] %s\n"
         "    [MB CPLD1] %s\n"
         "    [MB CPLD2] %s\n"
-        "    [MB CPLD3] %s\n"
-        "    [MB CPLD4] %s\n" 
-        "    [MB CPLD5] %s\n", 
+        "    [MB CPLD3] %s\n", 
         cpu_cpld_ver_out, 
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],
-        mb_cpld_ver_out[2],
-        mb_cpld_ver_out[3],
-        mb_cpld_ver_out[4]);    
+        mb_cpld_ver_out[2]);    
     
     //Get HW Build Version
     ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
@@ -191,8 +187,6 @@ int onlp_attributei_onie_info_get(onlp_oid_t oid, onlp_onie_info_t* onie_info)
  */
 int onlp_attributei_asset_info_get(onlp_oid_t oid, onlp_asset_info_t* asset_info)
 {
-    int ret = ONLP_STATUS_OK;
-
     if(oid != ONLP_OID_CHASSIS) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -203,7 +197,8 @@ int onlp_attributei_asset_info_get(onlp_oid_t oid, onlp_asset_info_t* asset_info
 
     asset_info->oid = oid;
 
-    ret = update_attributei_asset_info(oid, asset_info);
+    ONLP_TRY(update_attributei_asset_info(oid, asset_info));
 
-    return ret;
+    return ONLP_STATUS_OK;
 }
+

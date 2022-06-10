@@ -48,7 +48,7 @@
  */
 const char* onlp_platformi_get(void)
 {
-    return "x86-64-ufispace-s9510-28dc-r0";
+    return "x86-64-ufispace-s9600-30dx-r0";
 }
 
 /**
@@ -83,7 +83,7 @@ int onlp_platformi_hw_init(uint32_t flags)
  */
 int onlp_platformi_manage_init(void)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -105,3 +105,4 @@ int onlp_platformi_manage_leds(void)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
+

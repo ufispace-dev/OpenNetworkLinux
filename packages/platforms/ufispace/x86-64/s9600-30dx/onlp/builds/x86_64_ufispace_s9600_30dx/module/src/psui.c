@@ -34,17 +34,15 @@
 #define PSU1_PRESENT_MASK      0x02
 #define PSU0_PWGOOD_MASK       0x10
 #define PSU1_PWGOOD_MASK       0x20
-#define PSU_STATUS_PRESENT     1
-#define PSU_STATUS_POWER_GOOD  1
 
 #define SYSFS_PSU_STATUS     "/sys/bus/i2c/devices/1-0030/cpld_psu_status"
 
 /**
  * Get all information about the given PSU oid.
  *
- *            |----[01] ONLP_PSU_0----[09] ONLP_PSU_0_FAN
+ *            |----[01] ONLP_PSU_0----[05] ONLP_PSU_0_FAN
  *            |
- *            |----[02] ONLP_PSU_1----[10] ONLP_PSU_1_FAN
+ *            |----[02] ONLP_PSU_1----[06] ONLP_PSU_1_FAN
  */
 static onlp_psu_info_t __onlp_psu_info[] = {
     { }, /* Not used */
@@ -184,8 +182,9 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
         }
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
-        AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
-        return ONLP_STATUS_E_INTERNAL; 
+        AIM_LOG_ERROR("unknown PSU type, vendor=%s, name=%s, part_num=%s, func=%s", 
+                               fru->vendor.val, fru->name.val, fru->part_num.val, __FUNCTION__);
+        return ONLP_STATUS_E_INTERNAL;
     }
     
     return ONLP_STATUS_OK;
@@ -333,6 +332,7 @@ int onlp_psui_sw_init(void)
  */
 int onlp_psui_hw_init(uint32_t flags)
 {
+    lock_init();
     return ONLP_STATUS_OK;
 }
 
@@ -353,7 +353,7 @@ int onlp_psui_sw_denit(void)
  */
 int onlp_psui_id_validate(onlp_oid_id_t id)
 {
-    return ONLP_OID_ID_VALIDATE_RANGE(id, 1, ONLP_PSU_MAX-1);
+    return ONLP_OID_ID_VALIDATE_RANGE(id, ONLP_PSU_0, ONLP_PSU_1);
 }
 
 /**
@@ -397,3 +397,4 @@ int onlp_psui_info_get(onlp_oid_id_t id, onlp_psu_info_t* info)
 
     return ONLP_STATUS_OK;
 }
+
