@@ -167,7 +167,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 
     *psu_type = ONLP_PSU_TYPE_INVALID;
     max = sizeof(psu_support_list)/sizeof(*psu_support_list);
-    for (i = 0; i < max; ) {
+    for (i = 0;i < max; ++i) {
         if ((strncmp(fru->vendor.val, psu_support_list[i].vendor, BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) &&
             (strncmp(fru->part_num.val, psu_support_list[i].part_number, BMC_FRU_ATTR_KEY_VALUE_SIZE)==0)) {
             *psu_type = psu_support_list[i].type;
