@@ -44,6 +44,11 @@ GPIO_OFFSET=0
 # CPLD max index
 MAX_CPLD=3
 
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
+
 # NETIF name, should be changed according NOS naming
 NET_IF=""
 
@@ -70,7 +75,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.10"
 }
 
 function _update_gpio_offset {
@@ -1522,6 +1527,20 @@ function _additional_log_collection {
     fi
 }
 
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+    
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+    
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"    
+    
+    _echo "[Elapse Time] ${elapsed_time} seconds"
+}
+
 function _compression {
     _banner "Compression"
     
@@ -1574,6 +1593,7 @@ function _main {
     _show_bmc_sel_elist_detail
     _show_dmesg
     _additional_log_collection
+    _show_time    
     _compression
 
     echo "#   done..."

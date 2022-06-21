@@ -312,7 +312,7 @@ int qsfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control, int
     //sysfs path
     switch(control) {
         case ONLP_SFP_CONTROL_RESET:
-            snprintf(sysfs, sizeof(sysfs), "%s/"MB_CPLD_QSFP_GROUP_PRES_ATTR_FMT,
+            snprintf(sysfs, sizeof(sysfs), "%s/"MB_CPLD_QSFP_GROUP_RESET_ATTR_FMT,
                 cpld_sysfs_path, qsfp_group_str[port_info.port_group]);
             //0 for reset, 1 for out of reset, reverse the value
             value = (value) ? 0:1;
