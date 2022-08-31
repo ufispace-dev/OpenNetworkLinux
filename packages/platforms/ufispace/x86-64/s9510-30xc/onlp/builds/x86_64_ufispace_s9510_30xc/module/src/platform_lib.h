@@ -192,10 +192,6 @@ enum onlp_psu_id {
 /* thermal_id */
 enum onlp_thermal_id {
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0,
-    ONLP_THERMAL_CPU_1,
-    ONLP_THERMAL_CPU_2,
-    ONLP_THERMAL_CPU_3,
     ONLP_THERMAL_MAC,
     ONLP_THERMAL_DDR4,
     ONLP_THERMAL_BMC,

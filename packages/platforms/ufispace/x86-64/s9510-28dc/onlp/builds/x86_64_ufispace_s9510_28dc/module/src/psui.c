@@ -34,13 +34,6 @@
 
 #define SYSFS_PSU_STATUS     LPC_FMT "psu_status"
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_PSU(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
-    } while(0)
-
 #define PSU_INFO(id, desc, fid, tid)            \
     {                                           \
         { ONLP_PSU_ID_CREATE(id), desc, POID_0,\
@@ -57,6 +50,36 @@ static onlp_psu_info_t psu_info[] =
     PSU_INFO(ONLP_PSU_0, "PSU-0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU_0),
     PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU_1),
 };
+
+/**
+ * @brief Get and check psu local ID
+ * @param id [in] OID
+ * @param local_id [out] The psu local id
+ */
+static int get_psu_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_PSU(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_PSU_0:
+        case ONLP_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
 
 int get_psu_present_status(int local_id, int *pw_present)
 {
@@ -117,6 +140,10 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
     bmc_fru_t *fru = NULL;
     bmc_fru_t fru_tmp = {0};
 
+    if(local_id != ONLP_PSU_0 && local_id !=  ONLP_PSU_1) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
     if(psu_type == NULL) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -126,11 +153,11 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
         ONLP_TRY(bmc_fru_read(local_id, fru));
     } else {
         fru = fru_in;
-    } 
+    }
 
-    if(strcmp(fru->name.val, "VICTO451AM") == 0) {
+    if(strncmp(fru->name.val, "VICTO451AM", BMC_FRU_ATTR_KEY_VALUE_SIZE) == 0) {
         *psu_type = ONLP_PSU_TYPE_AC;
-    } else if (strcmp(fru->name.val, "YNEB0450AM") == 0) {
+    } else if (strncmp(fru->name.val, "YNEB0450AM", BMC_FRU_ATTR_KEY_VALUE_SIZE) == 0) {
         *psu_type = ONLP_PSU_TYPE_DC48;
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
@@ -250,9 +277,8 @@ int onlp_psui_init(void)
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(get_psu_local_id(id, &local_id));
     memset(rv, 0, sizeof(onlp_psu_info_t));
 
     *rv = psu_info[local_id];
@@ -263,15 +289,7 @@ int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
         return ONLP_STATUS_OK;
     }
 
-    switch (local_id) {
-        case ONLP_PSU_0:
-        case ONLP_PSU_1:
-            return update_psui_info(local_id, rv);
-            break;
-        default:
-            return ONLP_STATUS_E_UNSUPPORTED;
-            break;
-    }
+    ONLP_TRY(update_psui_info(local_id, rv));
 
     return ONLP_STATUS_OK;
 }
@@ -285,10 +303,8 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
     int pw_present, pw_good;
-    VALIDATE(id);
 
-    /* Get power present status */
-    local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(get_psu_local_id(id, &local_id));
     ONLP_TRY(get_psu_present_status(local_id, &pw_present));
 
     if (pw_present != PSU_STATUS_PRESENT) {
@@ -318,14 +334,10 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_psui_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-    if(local_id > ONLP_PSU_1) {
-        return ONLP_STATUS_E_INVALID;
-    } else {
-        *rv = psu_info[local_id].hdr;
-    }
+    ONLP_TRY(get_psu_local_id(id, &local_id));
+    *rv = psu_info[local_id].hdr;
+
     return ONLP_STATUS_OK;
 }
 

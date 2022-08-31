@@ -31,13 +31,6 @@
 #define PSU_FAN_RPM_MAX_AC 20000
 #define PSU_FAN_RPM_MAX_DC 18000
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_FAN(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
-    } while(0)
-
 #define CHASSIS_INFO(id, des)                               \
     {                                                           \
         { ONLP_FAN_ID_CREATE(id), des, POID_0},\
@@ -63,6 +56,40 @@ onlp_fan_info_t fan_info[] = {
     CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU-1-Fan"),
 };
 
+/**
+ * @brief Get and check fan local ID
+ * @param id [in] OID
+ * @param local_id [out] The fan local id
+ */
+static int get_fan_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_FAN(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_FAN_0:
+        case ONLP_FAN_1:
+        case ONLP_FAN_2:
+        case ONLP_FAN_3:
+        case ONLP_FAN_4:
+        case ONLP_PSU_0_FAN:
+        case ONLP_PSU_1_FAN:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
 
 /**
  * @brief Get the fan information from BMC
@@ -75,41 +102,41 @@ static int ufi_bmc_fan_info_get(int local_id, onlp_fan_info_t* info)
     float data=0;
     int sys_max_fan_speed = SYS_FAN_RPM_MAX;
     int psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
-    int bmc_attr_id = BMC_ATTR_ID_MAX;
+    int bmc_attr = BMC_ATTR_ID_INVALID;
 
     switch(local_id)
     {
         case ONLP_FAN_0:
-            bmc_attr_id = BMC_ATTR_ID_FAN_0;
+            bmc_attr = BMC_ATTR_ID_FAN_0;
             break;
         case ONLP_FAN_1:
-            bmc_attr_id = BMC_ATTR_ID_FAN_1;
+            bmc_attr = BMC_ATTR_ID_FAN_1;
             break;
         case ONLP_FAN_2:
-            bmc_attr_id = BMC_ATTR_ID_FAN_2;
+            bmc_attr = BMC_ATTR_ID_FAN_2;
             break;
         case ONLP_FAN_3:
-            bmc_attr_id = BMC_ATTR_ID_FAN_3;
+            bmc_attr = BMC_ATTR_ID_FAN_3;
             break;
         case ONLP_FAN_4:
-            bmc_attr_id = BMC_ATTR_ID_FAN_4;
+            bmc_attr = BMC_ATTR_ID_FAN_4;
             break;
         case ONLP_PSU_0_FAN:
-            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            bmc_attr = BMC_ATTR_ID_PSU0_FAN;
             break;
         case ONLP_PSU_1_FAN:
-            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            bmc_attr = BMC_ATTR_ID_PSU1_FAN;
             break;
         default:
-            bmc_attr_id = BMC_ATTR_ID_MAX;
+            bmc_attr = BMC_ATTR_ID_INVALID;
     }
 
-    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+    if(bmc_attr == BMC_ATTR_ID_INVALID) {
         return ONLP_STATUS_E_PARAM;
     }
 
     //get fan rpm
-    ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(bmc_attr, FAN_SENSOR, &data));
     rpm = (int) data;
 
     //set rpm field
@@ -163,9 +190,8 @@ int onlp_fani_init(void)
 int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(get_fan_local_id(id, &local_id));
     *rv = fan_info[local_id];
     ONLP_TRY(onlp_fani_status_get(id, &rv->status));
 
@@ -173,18 +199,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         return ONLP_STATUS_OK;
     }
 
-    switch (local_id) {
-        case ONLP_FAN_0:
-        case ONLP_FAN_1:
-        case ONLP_FAN_2:
-        case ONLP_FAN_3:
-        case ONLP_FAN_4:
-        case ONLP_PSU_0_FAN:
-        case ONLP_PSU_1_FAN:
-            return ufi_bmc_fan_info_get(local_id, rv);
-        default:
-            return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(ufi_bmc_fan_info_get(local_id, rv));
 
     return ONLP_STATUS_OK;
 }
@@ -200,7 +215,8 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
     int presence;
-    local_id = ONLP_OID_ID_GET(id);
+
+    ONLP_TRY(get_fan_local_id(id, &local_id));
 
     //check presence for fantray 1-5
     if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_4) {
@@ -237,14 +253,10 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_fani_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-    if(local_id >= ONLP_FAN_MAX) {
-        return ONLP_STATUS_E_INVALID;
-    } else {
-        *hdr = fan_info[local_id].hdr;
-    }
+    ONLP_TRY(get_fan_local_id(id, &local_id));
+    *hdr = fan_info[local_id].hdr;
+
     return ONLP_STATUS_OK;
 }
 

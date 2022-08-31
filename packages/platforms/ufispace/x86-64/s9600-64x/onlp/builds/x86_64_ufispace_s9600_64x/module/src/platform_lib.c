@@ -930,10 +930,8 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int rv=0, rpm=0, percentage=0;
     int presence=0;
-    float data=0;
-    //FIXME
-    int sys_max_fan_speed = 16100;
-    int psu_max_fan_speed = 26200;
+    int psu_type = ONLP_PSU_TYPE_AC;
+    float data = 0;
     int max_fan_speed = 0;
 
     //check presence for fantray 1-4
@@ -966,15 +964,30 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
     info->rpm = rpm;
 
     if (id >= FAN_ID_FAN0 && id <= FAN_ID_FAN3) {
-        percentage = (info->rpm*100)/sys_max_fan_speed;
+        percentage = (info->rpm*100)/SYS_FAN_RPM_MAX;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= FAN_ID_PSU0_FAN && id <= FAN_ID_PSU1_FAN) {
-        if (id == FAN_ID_PSU0_FAN || id == FAN_ID_PSU1_FAN ) {
-            max_fan_speed = psu_max_fan_speed;
+        //get psu type
+        if (id == FAN_ID_PSU0_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
+        } else if (id == FAN_ID_PSU1_FAN) {
+            ONLP_TRY(get_psu_type(ONLP_PSU_1, &psu_type, NULL));
         } else {
-            max_fan_speed = psu_max_fan_speed;
+            AIM_LOG_ERROR("unknown fan id (%d), func=%s", id, __FUNCTION__);
+            return ONLP_STATUS_E_PARAM;
         }
+
+        //AC/DC has different MAX RPM
+        if (psu_type==ONLP_PSU_TYPE_AC) {
+            max_fan_speed = PSU_FAN_RPM_MAX_AC;
+        } else if (psu_type==ONLP_PSU_TYPE_DC12 || psu_type==ONLP_PSU_TYPE_DC48) {
+            max_fan_speed = PSU_FAN_RPM_MAX_DC;
+        } else {
+            AIM_LOG_ERROR("unknown psu_type, id=%d, psu_type=%d func=%s", id-FAN_ID_PSU0_FAN+1, psu_type, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
         percentage = (info->rpm*100)/max_fan_speed;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;

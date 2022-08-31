@@ -33,38 +33,38 @@
 
 bmc_info_t bmc_cache[] =
 {
-    [BMC_ATTR_ID_TEMP_MAC]        = {"TEMP_MAC"        , 0},
-    [BMC_ATTR_ID_TEMP_DDR4]       = {"TEMP_DDR4"       , 0},
-    [BMC_ATTR_ID_TEMP_BMC]        = {"TEMP_BMC"        , 0},
-    [BMC_ATTR_ID_TEMP_FANCARD1]   = {"TEMP_FANCARD1"   , 0},
-    [BMC_ATTR_ID_TEMP_FANCARD2]   = {"TEMP_FANCARD2"   , 0},
-    [BMC_ATTR_ID_TEMP_FPGA_R]     = {"TEMP_FPGA_R"     , 0},
-    [BMC_ATTR_ID_TEMP_FPGA_L]     = {"TEMP_FPGA_L"     , 0},
-    [BMC_ATTR_ID_HWM_TEMP_GDDR]   = {"HWM_TEMP_GDDR"   , 0},
-    [BMC_ATTR_ID_HWM_TEMP_MAC]    = {"HWM_TEMP_MAC"    , 0},
-    [BMC_ATTR_ID_HWM_TEMP_AMB]    = {"HWM_TEMP_AMB"    , 0},
-    [BMC_ATTR_ID_HWM_TEMP_NTMCARD]= {"HWM_TEMP_NTMCARD", 0},
-    [BMC_ATTR_ID_PSU0_TEMP]       = {"PSU0_TEMP1"      , 0},
-    [BMC_ATTR_ID_PSU1_TEMP]       = {"PSU1_TEMP1"      , 0},
-    [BMC_ATTR_ID_FAN_0]           = {"FAN_0"           , 0},
-    [BMC_ATTR_ID_FAN_1]           = {"FAN_1"           , 0},
-    [BMC_ATTR_ID_FAN_2]           = {"FAN_2"           , 0},
-    [BMC_ATTR_ID_FAN_3]           = {"FAN_3"           , 0},
-    [BMC_ATTR_ID_FAN_4]           = {"FAN_4"           , 0},
-    [BMC_ATTR_ID_PSU0_FAN]        = {"PSU0_FAN"        , 0},
-    [BMC_ATTR_ID_PSU1_FAN]        = {"PSU1_FAN"        , 0},
-    [BMC_ATTR_ID_PSU0_VIN]        = {"PSU0_VIN"        , 0},
-    [BMC_ATTR_ID_PSU0_VOUT]       = {"PSU0_VOUT"       , 0},
-    [BMC_ATTR_ID_PSU0_IIN]        = {"PSU0_IIN"        , 0},
-    [BMC_ATTR_ID_PSU0_IOUT]       = {"PSU0_IOUT"       , 0},
-    [BMC_ATTR_ID_PSU0_STBVOUT]    = {"PSU0_STBVOUT"    , 0},
-    [BMC_ATTR_ID_PSU0_STBIOUT]    = {"PSU0_STBIOUT"    , 0},
-    [BMC_ATTR_ID_PSU1_VIN]        = {"PSU1_VIN"        , 0},
-    [BMC_ATTR_ID_PSU1_VOUT]       = {"PSU1_VOUT"       , 0},
-    [BMC_ATTR_ID_PSU1_IIN]        = {"PSU1_IIN"        , 0},
-    [BMC_ATTR_ID_PSU1_IOUT]       = {"PSU1_IOUT"       , 0},
-    [BMC_ATTR_ID_PSU1_STBVOUT]    = {"PSU1_STBVOUT"    , 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT]    = {"PSU1_STBIOUT"    , 0}
+    [BMC_ATTR_ID_TEMP_MAC]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_TEMP_MAC        , 0},
+    [BMC_ATTR_ID_TEMP_DDR4]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_TEMP_DDR4       , 0},
+    [BMC_ATTR_ID_TEMP_BMC]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_TEMP_BMC        , 0},
+    [BMC_ATTR_ID_TEMP_FANCARD1]   = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_TEMP_FANCARD1   , 0},
+    [BMC_ATTR_ID_TEMP_FANCARD2]   = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_TEMP_FANCARD2   , 0},
+    [BMC_ATTR_ID_TEMP_FPGA_R]     = {(HW_PLAT_PREMIUM_EXT)                                 , BMC_ATTR_NAME_TEMP_FPGA_R     , 0},
+    [BMC_ATTR_ID_TEMP_FPGA_L]     = {(HW_PLAT_PREMIUM_EXT)                                 , BMC_ATTR_NAME_TEMP_FPGA_L     , 0},
+    [BMC_ATTR_ID_HWM_TEMP_GDDR]   = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_HWM_TEMP_GDDR   , 0},
+    [BMC_ATTR_ID_HWM_TEMP_MAC]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_HWM_TEMP_MAC    , 0},
+    [BMC_ATTR_ID_HWM_TEMP_AMB]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_HWM_TEMP_AMB    , 0},
+    [BMC_ATTR_ID_HWM_TEMP_NTMCARD]= {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_HWM_TEMP_NTMCARD, 0},
+    [BMC_ATTR_ID_PSU0_TEMP]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_TEMP1      , 0},
+    [BMC_ATTR_ID_PSU1_TEMP]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_TEMP1      , 0},
+    [BMC_ATTR_ID_FAN_0]           = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_FAN_0           , 0},
+    [BMC_ATTR_ID_FAN_1]           = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_FAN_1           , 0},
+    [BMC_ATTR_ID_FAN_2]           = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_FAN_2           , 0},
+    [BMC_ATTR_ID_FAN_3]           = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_FAN_3           , 0},
+    [BMC_ATTR_ID_FAN_4]           = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_FAN_4           , 0},
+    [BMC_ATTR_ID_PSU0_FAN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_FAN        , 0},
+    [BMC_ATTR_ID_PSU1_FAN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_FAN        , 0},
+    [BMC_ATTR_ID_PSU0_VIN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_VIN        , 0},
+    [BMC_ATTR_ID_PSU0_VOUT]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_VOUT       , 0},
+    [BMC_ATTR_ID_PSU0_IIN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_IIN        , 0},
+    [BMC_ATTR_ID_PSU0_IOUT]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_IOUT       , 0},
+    [BMC_ATTR_ID_PSU0_STBVOUT]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_STBVOUT    , 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU0_STBIOUT    , 0},
+    [BMC_ATTR_ID_PSU1_VIN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_VIN        , 0},
+    [BMC_ATTR_ID_PSU1_VOUT]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_VOUT       , 0},
+    [BMC_ATTR_ID_PSU1_IIN]        = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_IIN        , 0},
+    [BMC_ATTR_ID_PSU1_IOUT]       = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_IOUT       , 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_STBVOUT    , 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT]    = {(HW_PLAT_PREMIUM_EXT|HW_PLAT_STANDARD|HW_PLAT_PREMIUM), BMC_ATTR_NAME_PSU1_STBIOUT    , 0}
 };
 
 static bmc_fru_t bmc_fru_cache[] =
@@ -112,6 +112,34 @@ void lock_init()
         sem_inited = 1;
         check_and_do_i2c_mux_reset(-1);
     }
+}
+
+/**
+ * @brief Get board version
+ * @param board [out] board data struct
+ */
+int ufi_get_board_version(board_t *board)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(board == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    //Get HW Version
+    if(file_read_hex(&board->hw_rev, LPC_FMT "board_hw_id") != ONLP_STATUS_OK ||
+       file_read_hex(&board->deph_id, LPC_FMT "board_deph_id") != ONLP_STATUS_OK ||
+       file_read_hex(&board->hw_build, LPC_FMT "board_build_id") != ONLP_STATUS_OK ||
+       file_read_hex(&board->rev_id, LPC_FMT "rev_id") != ONLP_STATUS_OK)
+    {
+        board->hw_rev = 0;
+        board->deph_id = 0;
+        board->hw_build = 0;
+        board->rev_id = 0;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+
+    return rv;
 }
 
 int check_file_exist(char *file_path, long *file_time)
@@ -207,6 +235,9 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             break;
     }
 
+    board_t board = {0};
+    ONLP_TRY(ufi_get_board_version(&board));
+
     ONLP_LOCK();
 
     if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
@@ -232,7 +263,28 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 
             // get bmc data
             char ipmi_cmd[1024] = {0};
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
+            char bmc_token[1024] = {0};
+            int i = 0;
+            for(i = BMC_ATTR_ID_START; i <= BMC_ATTR_ID_LAST; i++) {
+                int plat = 0;
+                if(board.rev_id == HW_EXT_ID_PREMIUM_EXT)
+                    plat = HW_PLAT_PREMIUM_EXT;
+                else if(board.rev_id == HW_EXT_ID_STANDARD)
+                    plat = HW_PLAT_STANDARD;
+                else if(board.rev_id == HW_EXT_ID_PREMIUM)
+                    plat = HW_PLAT_PREMIUM;
+                else
+                    plat = HW_PLAT_PREMIUM_EXT;
+
+                if(bmc_cache[i].plat & plat) {
+                    char tmp_str[1024] = {0};
+                    int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0? (sizeof(bmc_token) - strlen(bmc_token) - 1):0;
+                    snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
+                    strncat(bmc_token, tmp_str, copy_size);
+                }
+            }
+
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT, bmc_token);
             int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
                 int ret = 0;
@@ -268,13 +320,13 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             char *token = NULL;
 
             //parse line into fields. fields[0]: fields name, fields[1]: fields value
-            char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE] = {{0}};
+            char line_fields[BMC_FIELDS_MAX][BMC_FRU_ATTR_KEY_VALUE_SIZE] = {{0}};
             while ((token = strsep (&line_ptr, ",")) != NULL) {
                 sscanf (token, "%[^\n]", line_fields[i++]);
             }
 
             //save bmc_cache from fields
-            for(i=0; i<BMC_ATTR_ID_MAX; ++i) {
+            for(i=BMC_ATTR_ID_START; i<=BMC_ATTR_ID_LAST; ++i) {
                 if(strcmp(line_fields[0], bmc_cache[i].name) == 0) {
                     if(0) {
                         /* fan present, got from bmc */
@@ -587,7 +639,6 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     return reg_val;
 }
 
-
 int get_hw_rev_id(void)
 {
     int hw_rev;
@@ -622,4 +673,116 @@ int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id)
     ONLP_TRY(file_read_hex(build_id, "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/ec/cpu_rev_build_id"));
 
     return ONLP_STATUS_OK;
+}
+
+int ufi_get_thermal_thld(int thermal_local_id,  temp_thld_t *temp_thld) {
+
+    board_t board = {0};
+    if(temp_thld == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    ONLP_TRY(ufi_get_board_version(&board));
+    if(board.rev_id == HW_EXT_ID_PREMIUM_EXT) {
+        switch(thermal_local_id) {
+            case ONLP_THERMAL_FPGA_R:
+                temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+                temp_thld->error = THERMAL_FPGA_R_ERROR;
+                temp_thld->shutdown = THERMAL_FPGA_R_SHUTDOWN;
+                return ONLP_STATUS_OK;
+            case ONLP_THERMAL_FPGA_L:
+                temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+                temp_thld->error = THERMAL_FPGA_L_ERROR;
+                temp_thld->shutdown = THERMAL_FPGA_L_SHUTDOWN;
+                return ONLP_STATUS_OK;
+            default:
+                break;
+        }
+    }
+
+    if(board.rev_id == HW_EXT_ID_STANDARD) {
+        switch(thermal_local_id) {
+            case ONLP_THERMAL_CPU_PKG:
+                temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+                temp_thld->error = THERMAL_CPU_STD_ERROR;
+                temp_thld->shutdown = THERMAL_CPU_STD_SHUTDOWN;
+                return ONLP_STATUS_OK;
+            default:
+                break;
+        }
+    }
+
+    if(board.rev_id == HW_EXT_ID_PREMIUM_EXT || board.rev_id == HW_EXT_ID_PREMIUM) {
+        switch(thermal_local_id) {
+            case ONLP_THERMAL_CPU_PKG:
+                temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+                temp_thld->error = THERMAL_CPU_ERROR;
+                temp_thld->shutdown = THERMAL_CPU_SHUTDOWN;
+                return ONLP_STATUS_OK;
+            default:
+                break;
+        }
+    }
+
+    switch(thermal_local_id) {
+        case ONLP_THERMAL_MAC:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_MAC_ERROR;
+            temp_thld->shutdown = THERMAL_MAC_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_DDR4:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_DDR4_ERROR;
+            temp_thld->shutdown = THERMAL_DDR4_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_BMC:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_BMC_ERROR;
+            temp_thld->shutdown = THERMAL_BMC_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_FANCARD1:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_FANCARD1_ERROR;
+            temp_thld->shutdown = THERMAL_FANCARD1_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_FANCARD2:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_FANCARD2_ERROR;
+            temp_thld->shutdown = THERMAL_FANCARD2_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_HWM_GDDR:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_HWM_GDDR_ERROR;
+            temp_thld->shutdown = THERMAL_HWM_GDDR_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_HWM_MAC:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_HWM_MAC_ERROR;
+            temp_thld->shutdown = THERMAL_HWM_MAC_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_HWM_AMB:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_HWM_AMB_ERROR;
+            temp_thld->shutdown = THERMAL_HWM_AMB_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_HWM_NTMCARD:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_HWM_NTMCARD_ERROR;
+            temp_thld->shutdown = THERMAL_HWM_NTMCARD_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_PSU_0:
+            temp_thld->warning = THERMAL_PSU_0_WARNING;
+            temp_thld->error = THERMAL_PSU_0_ERROR;
+            temp_thld->shutdown = THERMAL_PSU_0_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_PSU_1:
+            temp_thld->warning = THERMAL_PSU_1_WARNING;
+            temp_thld->error = THERMAL_PSU_1_ERROR;
+            temp_thld->shutdown = THERMAL_PSU_1_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        default:
+            break;
+    }
+
+    return ONLP_STATUS_E_UNSUPPORTED;
 }

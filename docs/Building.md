@@ -38,14 +38,25 @@ To build a Debian 8 based ONL run:
     #> make docker
     
 
-If you would like to build by hand you can do the following:
+If you would like to build by hand you can do the following: (for stretch)
 
     #> git clone https://github.com/opencomputeproject/OpenNetworkLinux
     #> cd OpenNetworkLinux
-    #> docker/tools/onlbuilder (-8)             # enter the docker workspace
+    #> docker/tools/onlbuilder (-9)             # enter the docker workspace
     #> apt-cacher-ng
     #> source setup.env                         # pull in necessary environment variables
-    #> make amd64 ppc                           # make onl for $platform (currently amd64 or powerpc)
+    #> make amd64                               # make onl for $platform (amd64)
+
+If you would like to build by hand you can do the following: (for buster)
+
+    #> git clone https://github.com/opencomputeproject/OpenNetworkLinux
+    #> cd OpenNetworkLinux
+    #> docker/tools/onlbuilder (-10)                                                                         # enter the docker workspace
+    #> wget http://deb.debian.org/debian/pool/main/a/apt-cacher-ng/apt-cacher-ng_3.3.1-2~bpo10+1_amd64.deb   # download apt-cacher-ng
+    #> sudo DEBIAN_FRONTEND=noninteractive dpkg -i apt-cacher-ng_3.3.1-2~bpo10+1_amd64.deb                   # install apt-cacher-ng
+    #> sudo apt-cacher-ng
+    #> source setup.env                                                                                      # pull in necessary environment variables
+    #> make amd64                                                                                            # make onl for $platform (amd64)
 
 The resulting ONIE installers are in
 `$ONL/RELEASE/$SUITE/$ARCH/ONL-2.*INSTALLER`, i.e. 

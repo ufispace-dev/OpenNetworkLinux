@@ -221,6 +221,9 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 #define FAN_3_4_PRESENT_MASK    0x04
 #define FAN_5_6_PRESENT_MASK    0x40
 #define FAN_7_8_PRESENT_MASK    0x04
+#define SYS_FAN_RPM_MAX         16100
+#define PSU_FAN_RPM_MAX_AC      27000
+#define PSU_FAN_RPM_MAX_DC      28500
 
 /* BMC CMD */
 #define BMC_CACHE_EN            1
@@ -235,6 +238,10 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 /* CPLD */
 #define CPLD_REG_BASE           0x700
 #define BRD_ID_REG              0x01
+
+/* PSU */
+#define TMP_PSU_TYPE "/tmp/psu_type_%d"
+#define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
 
 enum sensor
 {
@@ -454,6 +461,8 @@ int psu_thermal_get(onlp_thermal_info_t* info, int id);
 int psu_present_get(int *pw_present, int id);
 
 int psu_pwgood_get(int *pw_good, int id);
+
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 
 int sysi_platform_info_get(onlp_platform_info_t* pi);
 

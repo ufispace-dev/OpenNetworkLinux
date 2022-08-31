@@ -69,7 +69,7 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
         self.insmod("optoe")
 
         ########### initialize I2C bus 0 ###########
-        # init PCA9548
+        # init PCA9548/PCA9545
         i2c_muxs = [
             ('pca9548', 0x70, 0),
             ('pca9548', 0x71, 1),
@@ -78,15 +78,13 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             ('pca9548', 0x71, 4),
             ('pca9548', 0x71, 7),
             ('pca9548', 0x76, 0),
+            ('pca9545', 0x72, 0),
         ]
 
         self.new_i2c_devices(i2c_muxs)
 
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-
-        # init PCA9545
-        self.new_i2c_device('pca9545', 0x72, 0)
 
         # Golden Finger to show CPLD
         os.system("i2cget -y 44 0x74 2")
@@ -329,11 +327,16 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
 
         # init QSFP EEPROM
         for port in range(1, 33):
-            self.new_i2c_device('optoe1', 0x50, port + 8)
+            bus = port + 8
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
 
         # init SFP(0/1) EEPROM
         self.new_i2c_device('sff8436', 0x50, 45)
+        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(33, 45), shell=True)
         self.new_i2c_device('sff8436', 0x50, 46)
+        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(34, 46), shell=True)
 
         # init PSU(0/1) EEPROM devices
         self.new_i2c_device('eeprom', 0x50, 57)
@@ -540,11 +543,16 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
 
         # init QSFP EEPROM
         for port in range(1, 33):
-            self.new_i2c_device('optoe1', 0x50, port + 8)
+            bus = port + 8
+            self.new_i2c_device('optoe1', 0x50, bus)
+            # update port_name
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
 
         # init SFP(0/1) EEPROM
         self.new_i2c_device('sff8436', 0x50, 45)
+        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(33, 45), shell=True)
         self.new_i2c_device('sff8436', 0x50, 46)
+        subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(34, 46), shell=True)
 
         # _mac_vdd_init
         try:

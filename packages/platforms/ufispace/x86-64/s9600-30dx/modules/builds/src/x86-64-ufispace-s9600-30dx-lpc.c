@@ -545,7 +545,7 @@ static ssize_t write_mux_reset(struct device *dev,
 
             //unset mux on QSFP/QSFPDD ports
             _outb((mux_reset_reg_val | MASK_MB_MUX_RESET), REG_MB_MUX_RESET);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val | MASK_MB_MUX_RESET);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, misc_reset_reg_val | MASK_MB_MUX_RESET);
 
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);

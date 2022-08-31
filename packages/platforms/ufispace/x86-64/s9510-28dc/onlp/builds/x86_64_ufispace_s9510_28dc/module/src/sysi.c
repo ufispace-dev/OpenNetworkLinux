@@ -30,25 +30,17 @@
 /*
  * [01] CHASSIS
  *            |----[01]ONLP_THERMAL_CPU_PKG
- *            |----[02]ONLP_THERMAL_CPU_0
- *            |----[03]ONLP_THERMAL_CPU_1
- *            |----[04]ONLP_THERMAL_CPU_2
- *            |----[05]ONLP_THERMAL_CPU_3
- *            |----[06]ONLP_THERMAL_CPU_4
- *            |----[07]ONLP_THERMAL_CPU_5
- *            |----[08]ONLP_THERMAL_CPU_6
- *            |----[09]ONLP_THERMAL_CPU_7
- *            |----[10]ONLP_THERMAL_MAC
- *            |----[11]ONLP_THERMAL_DDR4
- *            |----[12]ONLP_THERMAL_BMC
- *            |----[13]ONLP_THERMAL_FANCARD1
- *            |----[14]ONLP_THERMAL_FANCARD2
- *            |----[15]ONLP_THERMAL_FPGA_R
- *            |----[16]ONLP_THERMAL_FPGA_L
- *            |----[17]ONLP_THERMAL_HWM_GDDR
- *            |----[18]ONLP_THERMAL_HWM_MAC
- *            |----[19]ONLP_THERMAL_HWM_AMB
- *            |----[20]ONLP_THERMAL_HWM_NTMCARD
+ *            |----[02]ONLP_THERMAL_MAC
+ *            |----[03]ONLP_THERMAL_DDR4
+ *            |----[04]ONLP_THERMAL_BMC
+ *            |----[05]ONLP_THERMAL_FANCARD1
+ *            |----[06]ONLP_THERMAL_FANCARD2
+ *            |----[07]ONLP_THERMAL_FPGA_R
+ *            |----[08]ONLP_THERMAL_FPGA_L
+ *            |----[09]ONLP_THERMAL_HWM_GDDR
+ *            |----[10]ONLP_THERMAL_HWM_MAC
+ *            |----[11]ONLP_THERMAL_HWM_AMB
+ *            |----[12]ONLP_THERMAL_HWM_NTMCARD
  *            |
  *            |----[01] ONLP_LED_SYS_GNSS
  *            |----[02] ONLP_LED_SYS_SYNC
@@ -58,9 +50,9 @@
  *            |----[06] ONLP_LED_FLEXE_0
  *            |----[07] ONLP_LED_FLEXE_1
  *            |
- *            |----[01] ONLP_PSU_0----[21] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[13] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[22] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[14] ONLP_THERMAL_PSU_1
  *            |                  |----[07] ONLP_PSU_1_FAN
  *            |
  *            |----[01] ONLP_FAN_0
@@ -70,16 +62,8 @@
  *            |----[05] ONLP_FAN_4
  */
 
-static onlp_oid_t __onlp_oid_info[] = {
+static onlp_oid_t __onlp_oid_info_premium_ext[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_4),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_5),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_6),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_7),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),
@@ -110,11 +94,69 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_FAN_ID_CREATE(ONLP_FAN_4),
 };
 
+static onlp_oid_t __onlp_oid_info_standard[] = {
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_GDDR),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_AMB),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_NTMCARD),
+
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_GNSS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_PWR),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_0),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_1),
+
+    ONLP_PSU_ID_CREATE(ONLP_PSU_0),
+    ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_2),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_3),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_4),
+};
+
+static onlp_oid_t __onlp_oid_info_premium[] = {
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FANCARD2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_GDDR),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_AMB),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_HWM_NTMCARD),
+
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_GNSS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_PWR),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_0),
+    ONLP_LED_ID_CREATE(ONLP_LED_FLEXE_1),
+
+    ONLP_PSU_ID_CREATE(ONLP_PSU_0),
+    ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_2),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_3),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_4),
+};
+
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 #define SYSFS_CPLD_VER_H   LPC_FMT "cpld_version_h"
-#define SYSFS_HW_ID        LPC_FMT "board_hw_id"
-#define SYSFS_BUILD_ID     LPC_FMT "board_build_id"
 #define SYSFS_BIOS_VER     "/sys/class/dmi/id/bios_version"
 
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
@@ -123,7 +165,7 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int mb_cpld_hw_rev = 0, mb_cpld_build_rev = 0;
+    board_t board = {0};
     int len = 0;
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
@@ -137,10 +179,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         "[MB CPLD] %s\n", mb_cpld_ver);
 
     //Get HW Version
-    ONLP_TRY(file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID));
-
-    //Get Build Version
-    ONLP_TRY(file_read_hex(&mb_cpld_build_rev, SYSFS_BUILD_ID));
+    ONLP_TRY(ufi_get_board_version(&board));
 
     //Get BIOS version
     char tmp_str[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
@@ -169,8 +208,8 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
         "[BMC  ] %d.%d.%d\n",
-        mb_cpld_hw_rev,
-        mb_cpld_build_rev,
+        board.hw_rev,
+        board.hw_build,
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
 
@@ -296,7 +335,17 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     memset(table, 0, max*sizeof(onlp_oid_t));
-    memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
+
+    board_t board = {0};
+    ONLP_TRY(ufi_get_board_version(&board));
+    if(board.rev_id == HW_EXT_ID_PREMIUM_EXT)
+        memcpy(table, __onlp_oid_info_premium_ext, sizeof(__onlp_oid_info_premium_ext));
+    else if(board.rev_id == HW_EXT_ID_STANDARD)
+        memcpy(table, __onlp_oid_info_standard, sizeof(__onlp_oid_info_standard));
+    else if(board.rev_id == HW_EXT_ID_PREMIUM)
+        memcpy(table, __onlp_oid_info_premium, sizeof(__onlp_oid_info_premium));
+    else
+        memcpy(table, __onlp_oid_info_premium_ext, sizeof(__onlp_oid_info_premium_ext));
 
     return ONLP_STATUS_OK;
 }

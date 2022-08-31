@@ -16,9 +16,9 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
     PORT_COUNT=64
     PORT_CONFIG="64x100"
 
-    def init_i2c_mux_idle_state(self, muxs):        
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -39,29 +39,29 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
                        1,  2,  5,  6,  9, 10, 13, 14,  1,  2,  5,  6,  9, 10, 13, 14,
                        3,  4,  7,  8, 11, 12, 15, 16,  3,  4,  7,  8, 11, 12, 15, 16,
                        3,  4,  7,  8, 11, 12, 15, 16,  3,  4,  7,  8, 11, 12, 15, 16)
-                
-        # vid to mac vdd value mapping 
+
+        # vid to mac vdd value mapping
         vdd_val_array=( 0.85,  0.82,  0.77,  0.87,  0.74,  0.84,  0.79,  0.89 )
-        # vid to rov reg value mapping 
+        # vid to rov reg value mapping
         rov_reg_array=( 0x79,  0x73,  0x69,  0x7D,  0x63, 0x77, 0x6D, 0x81 )
-        
-        self.insmod("eeprom_mb") 
+
+        self.insmod("eeprom_mb")
         # init SYS EEPROM devices
         self.new_i2c_devices(
             [
-                # _i2c_mb_eeprom_init 
+                # _i2c_mb_eeprom_init
                 ('mb_eeprom', 0x55, 0),
 
-                # _i2c_cb_eeprom_init  
+                # _i2c_cb_eeprom_init
                 ('mb_eeprom', 0x51, 0),
             ]
         )
-        
+
         os.system("modprobe w83795")
         os.system("modprobe eeprom")
         os.system("modprobe gpio_pca953x")
-        self.insmod("optoe") 
-        
+        self.insmod("optoe")
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
         i2c_muxs = [
@@ -82,11 +82,11 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         ]
 
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
 
-        # _i2c_hwm_init  
+        # _i2c_hwm_init
         os.system("i2cset -y -r 16 0x2f 0x00 0x80")
         os.system("i2cset -y -r 16 0x2f 0x01 0x9C")
         os.system("i2cset -y -r 16 0x2f 0x04 0x00")
@@ -97,8 +97,8 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 16 0x2f 0x0F 0x00")
         os.system("i2cset -y -r 16 0x2f 0x18 0x84")
         os.system("i2cset -y -r 16 0x2f 0x19 0x84")
-        
-        # _i2c_io_exp_init 
+
+        # _i2c_io_exp_init
         # need to init BMC io expander first due to some io expander are reset default
         # Init BMC INT & HW ID IO Expander
         os.system("i2cset -y -r 0 0x24 6 0xFF")
@@ -111,7 +111,7 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 0 0x25 7 0xFF")
         os.system("i2cset -y -r 0 0x25 4 0x00")
         os.system("i2cset -y -r 0 0x25 5 0x00")
-       
+
         # Init BMC RST and SEL IO Expander
         os.system("i2cset -y -r 0 0x26 2 0x3F")
         os.system("i2cset -y -r 0 0x26 3 0x1F")
@@ -143,7 +143,7 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         os.system("i2cset -y -r 32 0x76 4 0x00")
         os.system("i2cset -y -r 32 0x76 5 0x00")
 
-        # _i2c_sensors_init 
+        # _i2c_sensors_init
 
         self.new_i2c_devices(
             [
@@ -155,19 +155,19 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
 
                 # lm75_2 Rear MAC, hwmon3
                 ('lm75', 0x4E, 6),
-                
+
                 # lm86 , hwmon4
                 ('lm86', 0x4C, 6),
-                
+
                 # lm75_3 Front Panel, hwmon5
                 ('lm75', 0x4D, 7),
-                
+
                 # lm75_4 Front MAC, hwmon6
                 ('lm75', 0x4E, 7),
-                
+
                 # tmp75 BMC board thermal, hwmon7
                 ('lm75', 0x4A, 16),
-                
+
                 # tmp75 CPU board thermal, hwmon8
                 ('tmp75', 0x4F, 0),
             ]
@@ -177,7 +177,7 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         #os.system("modprobe jc42")
 
         # _i2c_cpld_init
-        
+
         self.insmod("ingrasys_s9280_64x_i2c_cpld")
 
         # add cpld 1~5 to sysfs
@@ -192,18 +192,24 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         for i in range(1, 3):
             self.new_i2c_device('psu%d' % i, 0x50, 19-i)
 
-        # _i2c_qsfp_eeprom_init 
+        # _i2c_qsfp_eeprom_init
         for i in range(1, 65):
             phy_port = fp2phy_array[i-1] + 1
             port_group = (phy_port-1)/8
             eeprom_busbase = 41 + (port_group * 8)
-            eeprom_busshift = (phy_port-1)%8            
+            eeprom_busshift = (phy_port-1)%8
             eeprom_bus = eeprom_busbase + eeprom_busshift
             self.new_i2c_device('optoe1', 0x50, eeprom_bus)
+            # update port_name
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, eeprom_bus), shell=True)
+            port = port + 1
 
-        # _i2c_sfp_eeprom_init 
+        # _i2c_sfp_eeprom_init
         for i in range(1, 3):
             self.new_i2c_device('sff8436', 0x50, 28+i)
+            # update port_name
+            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, eeprom_bus), shell=True)
+            port = port + 1
 
         # _mac_vdd_init
         rov_status_file = open("/sys/bus/i2c/devices/1-0033/cpld_rov_status", "r")
@@ -214,14 +220,14 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         vid = reg_val & 0x7
         mac_vdd_val = vdd_val_array[vid]
         rov_reg = rov_reg_array[vid]
-        
-        msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg) ) 
+
+        msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg) )
         os.system("i2cset -y -r 15 0x76 0x21 0x%x w" % rov_reg)
-        
-        # _i2c_fan_speed_init 
+
+        # _i2c_fan_speed_init
         os.system("echo 120 > /sys/class/hwmon/hwmon1/device/pwm2")
 
-        # _util_port_led_clear 
+        # _util_port_led_clear
         os.system("i2cset -m 0x04 -y -r 32 0x76 2 0x00")
         os.system("sleep 1")
         os.system("i2cset -m 0x04 -y -r 32 0x76 2 0xFF")
@@ -230,5 +236,5 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
         os.system("i2cset -m 0x80 -y -r 10 0x76 2 0x80")
 
         return True
-        
-        
+
+

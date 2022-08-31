@@ -66,13 +66,11 @@ static int qsfpdd_port_eeprom_bus_id_array[QSFPDD_PORT_NUM] = { 17, 18, 19, 20, 
  */
 static int get_sfpi_port_present_status(int local_id, int *status)
 {
-    int ret = ONLP_STATUS_OK;
     int cpld_port_present_reg = 0;
     int port_id = -1;
     int port_index = -1; //index(0-7) in each port group
     int port_group = -1; //group0: port[0-7], group1: port[8-15], group2: port[16-23], group3: port[24-31]
     int port_mask = 0;
-    char command[256] = "";
 
     //QSFPDD, SFP Ports
     if(IS_QSFPDD(local_id)) {
@@ -85,18 +83,8 @@ static int get_sfpi_port_present_status(int local_id, int *status)
             CPLD2_SYSFS_PATH"/"QSFPDD_PRES_ATTR_FMT, port_group));
         //val 0 for presence, status set to 1
         *status = !((cpld_port_present_reg & port_mask) >> port_index);
-    } else if(IS_SFP_P0(local_id)) {
-        /* SFP Port0 - CPU */
-        snprintf(command, sizeof(command), "ethtool -m %s raw on length 1 > /dev/null 2>&1", SFP0_INTERFACE_NAME);
-        ret = system(command);
-        *status = (ret==0) ? 1 : 0;
-    } else if(IS_SFP_P1(local_id)) {
-        /* SFP Port1 - CPU */
-        snprintf(command, sizeof(command), "ethtool -m %s raw on length 1 > /dev/null 2>&1", SFP1_INTERFACE_NAME);
-        ret = system(command);
-        *status = (ret==0) ? 1 : 0;
-    } else if(IS_SFP_P2(local_id) || IS_SFP_P3(local_id)) {
-        /* SFP Port2 and Port3 - MAC */
+    } else if(IS_SFP(local_id)) {
+        /* SFP Ports */
         port_id = local_id - QSFPDD_PORT_NUM;
         port_index = port_id;
         port_mask = 0b00000001 << port_index;

@@ -54,6 +54,8 @@ static onlp_psu_info_t pinfo[] =
     }
 };
 
+static char *vendors[] = {"FSPGROUP"};
+
 /**
  * @brief Initialize the PSU subsystem.
  */
@@ -85,16 +87,21 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
         fru = fru_in;
     }
 
-    //TODO: PSU Type ignore
-    /*if(strcmp(fru->name.val, "VICTO451AM") == 0) {
-        *psu_type = ONLP_PSU_TYPE_AC;
-    } else if (strcmp(fru->name.val, "YNEB0450AM") == 0) {
-        *psu_type = ONLP_PSU_TYPE_DC48;
+    if (strncmp(fru->vendor.val, vendors[0], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) { //FSPGROUP
+        //read from name
+        if (strstr(fru->name.val, "AM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_AC;
+        } else if (strstr(fru->name.val, "EM") > 0) {
+            *psu_type = ONLP_PSU_TYPE_DC48;
+        } else {
+            AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
         AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
-    }*/
-    *psu_type = ONLP_PSU_TYPE_INVALID;
+        return ONLP_STATUS_E_INTERNAL;
+    }
 
     return ONLP_STATUS_OK;
 }

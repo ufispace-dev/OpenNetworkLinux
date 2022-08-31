@@ -30,19 +30,15 @@
 /*
  * [01] CHASSIS
  *            |----[01]ONLP_THERMAL_CPU_PKG
- *            |----[02]ONLP_THERMAL_CPU_0
- *            |----[03]ONLP_THERMAL_CPU_1
- *            |----[04]ONLP_THERMAL_CPU_2
- *            |----[05]ONLP_THERMAL_CPU_3
- *            |----[10]ONLP_THERMAL_MAC
- *            |----[11]ONLP_THERMAL_DDR4
- *            |----[12]ONLP_THERMAL_BMC
- *            |----[13]ONLP_THERMAL_FANCARD1
- *            |----[14]ONLP_THERMAL_FANCARD2
- *            |----[17]ONLP_THERMAL_HWM_GDDR
- *            |----[18]ONLP_THERMAL_HWM_MAC
- *            |----[19]ONLP_THERMAL_HWM_AMB
- *            |----[20]ONLP_THERMAL_HWM_NTMCARD
+ *            |----[02]ONLP_THERMAL_MAC
+ *            |----[03]ONLP_THERMAL_DDR4
+ *            |----[04]ONLP_THERMAL_BMC
+ *            |----[05]ONLP_THERMAL_FANCARD1
+ *            |----[06]ONLP_THERMAL_FANCARD2
+ *            |----[07]ONLP_THERMAL_HWM_GDDR
+ *            |----[08]ONLP_THERMAL_HWM_MAC
+ *            |----[09]ONLP_THERMAL_HWM_AMB
+ *            |----[10]ONLP_THERMAL_HWM_NTMCARD
  *            |
  *            |----[01] ONLP_LED_SYS_GNSS
  *            |----[02] ONLP_LED_SYS_SYNC
@@ -50,9 +46,9 @@
  *            |----[04] ONLP_LED_SYS_FAN
  *            |----[05] ONLP_LED_SYS_PWR
  *            |
- *            |----[01] ONLP_PSU_0----[21] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[11] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[22] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[12] ONLP_THERMAL_PSU_1
  *            |                  |----[07] ONLP_PSU_1_FAN
  *            |
  *            |----[01] ONLP_FAN_0
@@ -64,10 +60,6 @@
 
 static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DDR4),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC),

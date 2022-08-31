@@ -52,6 +52,11 @@ GPIO_OFFSET=0
 i801_bus=""
 ismt_bus=""
 
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
+
 function _echo {
     str="$@"
 
@@ -938,7 +943,7 @@ function _show_port_status {
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
-    cpu_temp_array=("1" "4" "6" "10" "16")
+    cpu_temp_array=("1")
 
     for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
     do
@@ -1550,6 +1555,20 @@ function _additional_log_collection {
     fi
 }
 
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"
+
+    _echo "[Elapse Time] ${elapsed_time} seconds"
+}
+
 function _compression {
     _banner "Compression"
 
@@ -1605,6 +1624,7 @@ function _main {
     _show_bmc_sel_elist_detail
     _show_dmesg
     _additional_log_collection
+    _show_time
     _compression
 
     echo "#   done..."

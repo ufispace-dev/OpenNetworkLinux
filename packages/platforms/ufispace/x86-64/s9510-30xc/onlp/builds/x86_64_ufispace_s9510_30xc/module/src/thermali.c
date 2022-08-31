@@ -25,13 +25,6 @@
 #include <onlp/platformi/thermali.h>
 #include "platform_lib.h"
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_THERMAL(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
-    } while(0)
-
 #define MILLI(cel) (cel * 1000)
 
  //FIXME threshold
@@ -41,58 +34,6 @@ static onlp_thermal_info_t thermal_info[] = {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
             .description = "CPU Package",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(75), MILLI(95)}
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
-            .description = "CPU Thermal 0",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(75), MILLI(95)}
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
-            .description = "CPU Thermal 1",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(75), MILLI(95)}
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
-            .description = "CPU Thermal 2",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(75), MILLI(95)}
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
-            .description = "CPU Thermal 3",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -243,15 +184,50 @@ static onlp_thermal_info_t thermal_info[] = {
     }
 };
 
-// FIX Check cpu thermal sysfs
 int cpu_thermal_sysfs_id [] =
 {
     [ONLP_THERMAL_CPU_PKG] = 1,
-    [ONLP_THERMAL_CPU_0]   = 4,
-    [ONLP_THERMAL_CPU_1]   = 6,
-    [ONLP_THERMAL_CPU_2]   = 10,
-    [ONLP_THERMAL_CPU_3]   = 16,
 };
+
+/**
+ * @brief Get and check thermal local ID
+ * @param id [in] OID
+ * @param local_id [out] The thermal local id
+ */
+static int get_thermal_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_THERMAL(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_THERMAL_CPU_PKG:
+        case ONLP_THERMAL_MAC:
+        case ONLP_THERMAL_DDR4:
+        case ONLP_THERMAL_BMC:
+        case ONLP_THERMAL_FANCARD1:
+        case ONLP_THERMAL_FANCARD2:
+        case ONLP_THERMAL_HWM_GDDR:
+        case ONLP_THERMAL_HWM_MAC:
+        case ONLP_THERMAL_HWM_AMB:
+        case ONLP_THERMAL_HWM_NTMCARD:
+        case ONLP_THERMAL_PSU_0:
+        case ONLP_THERMAL_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
 
 static int ufi_cpu_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
@@ -270,7 +246,7 @@ static int ufi_cpu_thermal_info_get(int local_id, onlp_thermal_info_t* info)
     return ONLP_STATUS_OK;
 }
 
-int ufi_bmc_thermal_info_get(int local_id, onlp_thermal_info_t* info)
+static int ufi_bmc_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
     float data=0;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
@@ -342,10 +318,8 @@ int onlp_thermali_init(void)
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
     *rv = thermal_info[local_id];
 
     /* update status  */
@@ -357,10 +331,6 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
 
     switch (local_id) {
         case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_CPU_0:
-        case ONLP_THERMAL_CPU_1:
-        case ONLP_THERMAL_CPU_2:
-        case ONLP_THERMAL_CPU_3:
             ONLP_TRY(ufi_cpu_thermal_info_get(local_id, rv));
             break;
         case ONLP_THERMAL_MAC:
@@ -393,9 +363,8 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 {
 
     int local_id;
-    VALIDATE(id);
-    local_id = ONLP_OID_ID_GET(id);
 
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
     *rv = thermal_info[local_id].status;
     /* When the PSU module is unplugged, the psu thermal does not exist. */
     if(local_id == ONLP_THERMAL_PSU_0 || local_id == ONLP_THERMAL_PSU_1) {
@@ -427,14 +396,10 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-    if(local_id >= ONLP_THERMAL_MAX) {
-        return ONLP_STATUS_E_INVALID;
-    } else {
-        *rv = thermal_info[local_id].hdr;
-    }
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
+    *rv = thermal_info[local_id].hdr;
+
     return ONLP_STATUS_OK;
 }
 

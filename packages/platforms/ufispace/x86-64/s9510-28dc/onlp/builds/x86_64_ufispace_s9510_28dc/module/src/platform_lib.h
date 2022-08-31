@@ -55,55 +55,96 @@
 #define CPLD_END_ADDR                   0x790
 #define IS_INVALID_CPLD_ADDR(_addr)     (_addr > CPLD_END_ADDR || _addr < CPLD_START_ADDR)
 
-/* BMC CMD */
+/* Thermal threshold */
+#define THERMAL_CPU_ERROR                73
+#define THERMAL_CPU_SHUTDOWN             93
+#define THERMAL_CPU_STD_ERROR            75
+#define THERMAL_CPU_STD_SHUTDOWN         95
+#define THERMAL_MAC_ERROR                100
+#define THERMAL_MAC_SHUTDOWN             110
+#define THERMAL_DDR4_ERROR               101
+#define THERMAL_DDR4_SHUTDOWN            106
+#define THERMAL_BMC_ERROR                90
+#define THERMAL_BMC_SHUTDOWN             100
+#define THERMAL_FANCARD1_ERROR           85
+#define THERMAL_FANCARD1_SHUTDOWN        89
+#define THERMAL_FANCARD2_ERROR           85
+#define THERMAL_FANCARD2_SHUTDOWN        89
+#define THERMAL_FPGA_R_ERROR             100
+#define THERMAL_FPGA_R_SHUTDOWN          110
+#define THERMAL_FPGA_L_ERROR             101
+#define THERMAL_FPGA_L_SHUTDOWN          106
+#define THERMAL_HWM_GDDR_ERROR           100
+#define THERMAL_HWM_GDDR_SHUTDOWN        110
+#define THERMAL_HWM_MAC_ERROR            78
+#define THERMAL_HWM_MAC_SHUTDOWN         80
+#define THERMAL_HWM_AMB_ERROR            100
+#define THERMAL_HWM_AMB_SHUTDOWN         110
+#define THERMAL_HWM_NTMCARD_ERROR        100
+#define THERMAL_HWM_NTMCARD_SHUTDOWN     110
+#define THERMAL_PSU_0_WARNING            80
+#define THERMAL_PSU_0_ERROR              85
+#define THERMAL_PSU_0_SHUTDOWN           90
+#define THERMAL_PSU_1_WARNING            80
+#define THERMAL_PSU_1_ERROR              85
+#define THERMAL_PSU_1_SHUTDOWN           90
+#define THERMAL_STATE_NOT_SUPPORT        0
+
+/* CPU core-temp sysfs ID */
+#define CPU_PKG_CORE_TEMP_SYS_ID  "1"
+
+/* BMC attr */
+#define BMC_ATTR_NAME_TEMP_MAC             "TEMP_MAC"
+#define BMC_ATTR_NAME_TEMP_DDR4            "TEMP_DDR4"
+#define BMC_ATTR_NAME_TEMP_BMC             "TEMP_BMC"
+#define BMC_ATTR_NAME_TEMP_FANCARD1        "TEMP_FANCARD1"
+#define BMC_ATTR_NAME_TEMP_FANCARD2        "TEMP_FANCARD2"
+#define BMC_ATTR_NAME_TEMP_FPGA_R          "TEMP_FPGA_R"
+#define BMC_ATTR_NAME_TEMP_FPGA_L          "TEMP_FPGA_L"
+#define BMC_ATTR_NAME_HWM_TEMP_GDDR        "HWM_TEMP_GDDR"
+#define BMC_ATTR_NAME_HWM_TEMP_MAC         "HWM_TEMP_MAC"
+#define BMC_ATTR_NAME_HWM_TEMP_AMB         "HWM_TEMP_AMB"
+#define BMC_ATTR_NAME_HWM_TEMP_NTMCARD     "HWM_TEMP_NTMCARD"
+#define BMC_ATTR_NAME_PSU0_TEMP1           "PSU0_TEMP1"
+#define BMC_ATTR_NAME_PSU1_TEMP1           "PSU1_TEMP1"
+#define BMC_ATTR_NAME_FAN_0                "FAN_0"
+#define BMC_ATTR_NAME_FAN_1                "FAN_1"
+#define BMC_ATTR_NAME_FAN_2                "FAN_2"
+#define BMC_ATTR_NAME_FAN_3                "FAN_3"
+#define BMC_ATTR_NAME_FAN_4                "FAN_4"
+#define BMC_ATTR_NAME_PSU0_FAN             "PSU0_FAN"
+#define BMC_ATTR_NAME_PSU1_FAN             "PSU1_FAN"
+#define BMC_ATTR_NAME_PSU0_VIN             "PSU0_VIN"
+#define BMC_ATTR_NAME_PSU0_VOUT            "PSU0_VOUT"
+#define BMC_ATTR_NAME_PSU0_IIN             "PSU0_IIN"
+#define BMC_ATTR_NAME_PSU0_IOUT            "PSU0_IOUT"
+#define BMC_ATTR_NAME_PSU0_STBVOUT         "PSU0_STBVOUT"
+#define BMC_ATTR_NAME_PSU0_STBIOUT         "PSU0_STBIOUT"
+#define BMC_ATTR_NAME_PSU1_VIN             "PSU1_VIN"
+#define BMC_ATTR_NAME_PSU1_VOUT            "PSU1_VOUT"
+#define BMC_ATTR_NAME_PSU1_IIN             "PSU1_IIN"
+#define BMC_ATTR_NAME_PSU1_IOUT            "PSU1_IOUT"
+#define BMC_ATTR_NAME_PSU1_STBVOUT         "PSU1_STBVOUT"
+#define BMC_ATTR_NAME_PSU1_STBIOUT         "PSU1_STBIOUT"
+
+/* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
+#define BMC_FIELDS_MAX          20
 
 /*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
  *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
- *              We take 10s as The IPMITOOL_CMD_TIMEOUT value 
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value
  *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
  *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
  */
 
 #define IPMITOOL_CMD_TIMEOUT        10
-#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
-                                    "TEMP_MAC "\
-                                    "TEMP_DDR4 "\
-                                    "TEMP_BMC "\
-                                    "TEMP_FANCARD1 "\
-                                    "TEMP_FANCARD2 "\
-                                    "TEMP_FPGA_R "\
-                                    "TEMP_FPGA_L "\
-                                    "HWM_TEMP_GDDR "\
-                                    "HWM_TEMP_MAC "\
-                                    "HWM_TEMP_AMB "\
-                                    "HWM_TEMP_NTMCARD "\
-                                    "PSU0_TEMP1 "\
-                                    "PSU1_TEMP1 "\
-                                    "FAN_0 "\
-                                    "FAN_1 "\
-                                    "FAN_2 "\
-                                    "FAN_3 "\
-                                    "FAN_4 "\
-                                    "PSU0_FAN "\
-                                    "PSU1_FAN "\
-                                    "PSU0_VIN "\
-                                    "PSU0_VOUT "\
-                                    "PSU0_IIN "\
-                                    "PSU0_IOUT "\
-                                    "PSU0_STBVOUT "\
-                                    "PSU0_STBIOUT "\
-                                    "PSU1_VIN "\
-                                    "PSU1_VOUT "\
-                                    "PSU1_IIN "\
-                                    "PSU1_IOUT "\
-                                    "PSU1_STBVOUT "\
-                                    "PSU1_STBIOUT "\
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get %s"\
                                     "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -128,7 +169,8 @@ enum sensor
 };
 
 enum bmc_attr_id {
-    BMC_ATTR_ID_TEMP_MAC,
+    BMC_ATTR_ID_START = 0,
+    BMC_ATTR_ID_TEMP_MAC = BMC_ATTR_ID_START,
     BMC_ATTR_ID_TEMP_DDR4,
     BMC_ATTR_ID_TEMP_BMC,
     BMC_ATTR_ID_TEMP_FANCARD1,
@@ -160,7 +202,8 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_IOUT,
     BMC_ATTR_ID_PSU1_STBVOUT,
     BMC_ATTR_ID_PSU1_STBIOUT,
-    BMC_ATTR_ID_MAX
+    BMC_ATTR_ID_LAST = BMC_ATTR_ID_PSU1_STBIOUT,
+    BMC_ATTR_ID_INVALID,
 };
 
 /* fan_id */
@@ -197,14 +240,6 @@ enum onlp_psu_id {
 /* thermal_id */
 enum onlp_thermal_id {
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0,
-    ONLP_THERMAL_CPU_1,
-    ONLP_THERMAL_CPU_2,
-    ONLP_THERMAL_CPU_3,
-    ONLP_THERMAL_CPU_4,
-    ONLP_THERMAL_CPU_5,
-    ONLP_THERMAL_CPU_6,
-    ONLP_THERMAL_CPU_7,
     ONLP_THERMAL_MAC,
     ONLP_THERMAL_DDR4,
     ONLP_THERMAL_BMC,
@@ -231,8 +266,25 @@ typedef enum onlp_psu_type_e {
     ONLP_PSU_TYPE_INVALID = -1,
 } onlp_psu_type_t;
 
+enum hw_plat
+{
+    HW_PLAT_PREMIUM_EXT  = 0x1,
+    HW_PLAT_STANDARD     = 0x2,
+    HW_PLAT_PREMIUM      = 0x4,
+};
+
+enum hw_ext_id
+{
+    HW_EXT_ID_PREMIUM_EXT,
+    HW_EXT_ID_STANDARD,
+    HW_EXT_ID_PREMIUM,
+    HW_EXT_ID_ALL,
+    HW_EXT_ID_MAX,
+};
+
 typedef struct bmc_info_s
 {
+    int plat;
     char name[20];
     float data;
 } bmc_info_t;
@@ -253,6 +305,21 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t part_num;
     bmc_fru_attr_t serial;
 }bmc_fru_t;
+
+typedef struct board_s
+{
+    int hw_build;
+    int deph_id;
+    int hw_rev;
+    int rev_id;
+}board_t;
+
+typedef struct temp_thld_s
+{
+    int warning;
+    int error;
+    int shutdown;
+}temp_thld_t;
 
 int ufi_read_ioport(unsigned int addr, unsigned char *reg_val);
 int ufi_write_ioport(unsigned int addr, unsigned char reg_val);
@@ -282,4 +349,6 @@ int get_hw_rev_id(void);
 int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
+int ufi_get_board_version(board_t *board);
+int ufi_get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
 #endif  /* __PLATFORM_LIB_H__ */

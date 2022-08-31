@@ -29,12 +29,6 @@
 #define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
                    ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_LED(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
-    } while(0)
 
 #define CHASSIS_LED_INFO(id, desc)               \
     {                                            \
@@ -90,12 +84,41 @@ static const led_attr_t led_attr[] = {
     [ONLP_LED_SYS_PWR]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    , -1   ,LPC_FMT "led_status_1",4    ,6    ,7},
 };
 
+/**
+ * @brief Get and check led local ID
+ * @param id [in] OID
+ * @param local_id [out] The led local id
+ */
+static int get_led_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_LED(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_LED_SYS_GNSS:
+        case ONLP_LED_SYS_SYNC:
+        case ONLP_LED_SYS_SYS:
+        case ONLP_LED_SYS_FAN:
+        case ONLP_LED_SYS_PWR:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+
 static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
 {
-
-    if (local_id < ONLP_LED_SYS_GNSS || local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
 
     if(led_attr[local_id].type == TYPE_LED_ATTR_SYSFS) {
         int led_val = 0,led_color = 0, led_blink = 0, led_onoff =0;
@@ -157,9 +180,8 @@ int onlp_ledi_init(void)
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id];
     ONLP_TRY(onlp_ledi_status_get(id, &rv->status));
 
@@ -167,16 +189,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
         return ONLP_STATUS_OK;
     }
 
-    switch (local_id) {
-        case ONLP_LED_SYS_GNSS:
-        case ONLP_LED_SYS_SYNC:
-        case ONLP_LED_SYS_SYS:
-        case ONLP_LED_SYS_FAN:
-        case ONLP_LED_SYS_PWR:
-            return ufi_sys_led_info_get(local_id, rv);
-        default:
-            return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(ufi_sys_led_info_get(local_id, rv));
 
     return ONLP_STATUS_OK;
 }
@@ -189,9 +202,8 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
+    ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].status;
 
     return ONLP_STATUS_OK;
@@ -205,14 +217,10 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-    if(local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_INVALID;
-    } else {
-        *rv = led_info[local_id].hdr;
-    }
+    ONLP_TRY(get_led_local_id(id, &local_id));
+    *rv = led_info[local_id].hdr;
+
     return ONLP_STATUS_OK;
 }
 
@@ -226,14 +234,8 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
  int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
     int local_id;
-    VALIDATE(id);
 
-    local_id = ONLP_OID_ID_GET(id);
-
-    if (local_id < ONLP_LED_SYS_GNSS || local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
+    ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -265,13 +267,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int local_id;
 
-    VALIDATE(id);
-
-    local_id = ONLP_OID_ID_GET(id);
-    if (local_id < ONLP_LED_SYS_GNSS || local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
-
+    ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;
     }

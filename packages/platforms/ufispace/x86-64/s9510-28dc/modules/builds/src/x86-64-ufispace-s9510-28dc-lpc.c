@@ -51,6 +51,7 @@
 #define REG_CPLD_VERSION               (REG_BASE_MB + 0x02)
 #define REG_CPLD_ID                    (REG_BASE_MB + 0x03)
 #define REG_CPLD_BUILD                 (REG_BASE_MB + 0x04)
+#define REG_REV_ID                     (REG_BASE_MB + 0x06)
 #define REG_PSU_INTR                   (REG_BASE_MB + 0x12)
 #define REG_FAN_INTR                   (REG_BASE_MB + 0x16)
 #define REG_PORT_INTR                  (REG_BASE_MB + 0x18)
@@ -71,8 +72,10 @@
 #define REG_LED_CTRL_1                 (REG_BASE_MB + 0x81)
 #define REG_LED_CTRL_2                 (REG_BASE_MB + 0x82)
 #define REG_LED_STATUS_1               (REG_BASE_MB + 0x83)
+#define REG_CPLD_BIT                   (REG_BASE_MB + 0xFF)
 
 //MB EC
+#define REG_MISC_CTRL                  (REG_BASE_EC + 0x0C)
 #define REG_CPU_REV                    (REG_BASE_EC + 0x17)
 
 #define MASK_ALL                          (0xFF) // 2#11111111
@@ -100,6 +103,7 @@ enum lpc_sysfs_attributes {
     ATT_CPLD_VERSION_H,
     ATT_CPLD_ID,
     ATT_CPLD_BUILD,
+    ATT_REV_ID,
     ATT_PSU_INTR,
     ATT_FAN_INTR,
     ATT_PORT_INTR,
@@ -126,6 +130,7 @@ enum lpc_sysfs_attributes {
     ATT_LED_CTRL_1,
     ATT_LED_CTRL_2,
     ATT_LED_STATUS_1,
+    ATT_CPLD_BIT,
 
     //BSP
     ATT_BSP_VERSION,
@@ -135,6 +140,7 @@ enum lpc_sysfs_attributes {
     ATT_BSP_REG,
 
     //EC
+    ATT_EC_BIOS_BOOT_ROM,
     ATT_EC_CPU_REV_HW_REV,
     ATT_EC_CPU_REV_DEV_PHASE,
     ATT_EC_CPU_REV_BUILD_ID,
@@ -160,7 +166,7 @@ struct lpc_data_s {
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16]="";
+char bsp_version[16]="R1.0.12";
 char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
 u8 enable_log_read=LOG_DISABLE;
@@ -390,6 +396,10 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_CPLD_BUILD:
             reg = REG_CPLD_BUILD;
             break;
+        case ATT_REV_ID:
+            reg = REG_REV_ID;
+            mask = 0x7;
+            break;
         case ATT_PSU_INTR:
             reg = REG_PSU_INTR;
             break;
@@ -476,6 +486,10 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_LED_STATUS_1:
             reg = REG_LED_STATUS_1;
             break;
+        case ATT_CPLD_BIT:
+            reg = REG_CPLD_BIT;
+            break;
+
         //BSP
         case ATT_BSP_REG:
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
@@ -483,6 +497,10 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
 
         //EC
+        case ATT_EC_BIOS_BOOT_ROM:
+            reg = REG_MISC_CTRL;
+            mask = 0x40; // 2#01000000
+            break;
         case ATT_EC_CPU_REV_HW_REV:
             reg = REG_CPU_REV;
             mask = 0x03; // 2#00000011
@@ -540,6 +558,9 @@ static ssize_t write_lpc_callback(struct device *dev,
             break;
         case ATT_LED_CTRL_2:
             reg = REG_LED_CTRL_2;
+            break;
+        case ATT_CPLD_BIT:
+            reg = REG_CPLD_BIT;
             break;
         default:
             return -EINVAL;
@@ -707,6 +728,7 @@ static SENSOR_DEVICE_ATTR(cpld_version_minor  , S_IRUGO          , read_lpc_call
 static SENSOR_DEVICE_ATTR(cpld_version_h      , S_IRUGO          , read_mb_cpld_version_h    , NULL                         , ATT_CPLD_VERSION_H);
 static SENSOR_DEVICE_ATTR(cpld_id             , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_ID);
 static SENSOR_DEVICE_ATTR(cpld_build          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_CPLD_BUILD);
+static SENSOR_DEVICE_ATTR(rev_id              , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_REV_ID);
 static SENSOR_DEVICE_ATTR(psu_intr            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_INTR);
 static SENSOR_DEVICE_ATTR(fan_intr            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_INTR);
 static SENSOR_DEVICE_ATTR(port_intr           , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PORT_INTR);
@@ -725,7 +747,6 @@ static SENSOR_DEVICE_ATTR(fan_present_2       , S_IRUGO          , read_lpc_call
 static SENSOR_DEVICE_ATTR(fan_present_3       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_3);
 static SENSOR_DEVICE_ATTR(fan_present_4       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_FAN_PRESENT_4);
 static SENSOR_DEVICE_ATTR(psu_status          , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_PSU_STATUS);
-static SENSOR_DEVICE_ATTR(bios_boot_sel       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_BIOS_BOOT_SEL);
 static SENSOR_DEVICE_ATTR(uart_ctrl           , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_UART_CTRL);
 static SENSOR_DEVICE_ATTR(usb_ctrl            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_USB_CTRL);
 static SENSOR_DEVICE_ATTR(mux_ctrl            , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_MUX_CTRL);
@@ -733,15 +754,17 @@ static SENSOR_DEVICE_ATTR(led_clr             , S_IRUGO | S_IWUSR, read_lpc_call
 static SENSOR_DEVICE_ATTR(led_ctrl_1          , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_LED_CTRL_1);
 static SENSOR_DEVICE_ATTR(led_ctrl_2          , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_LED_CTRL_2);
 static SENSOR_DEVICE_ATTR(led_status_1        , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_LED_STATUS_1);
+static SENSOR_DEVICE_ATTR(cpld_bit            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_CPLD_BIT);
 
 //SENSOR_DEVICE_ATTR - BSP
-static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO          , read_bsp_callback, NULL                           , ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR(bsp_pr_info , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR(bsp_pr_err  , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg     , S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback             , ATT_BSP_REG);
 
 //SENSOR_DEVICE_ATTR - EC
+static SENSOR_DEVICE_ATTR(bios_boot_sel       , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_BIOS_BOOT_ROM);
 static SENSOR_DEVICE_ATTR(cpu_rev_hw_rev      , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_HW_REV);
 static SENSOR_DEVICE_ATTR(cpu_rev_dev_phase   , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_DEV_PHASE);
 static SENSOR_DEVICE_ATTR(cpu_rev_build_id    , S_IRUGO          , read_lpc_callback         , NULL                         , ATT_EC_CPU_REV_BUILD_ID);
@@ -759,6 +782,7 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
+    &sensor_dev_attr_rev_id.dev_attr.attr,
     &sensor_dev_attr_psu_intr.dev_attr.attr,
     &sensor_dev_attr_fan_intr.dev_attr.attr,
     &sensor_dev_attr_port_intr.dev_attr.attr,
@@ -784,6 +808,7 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_led_ctrl_1.dev_attr.attr,
     &sensor_dev_attr_led_ctrl_2.dev_attr.attr,
     &sensor_dev_attr_led_status_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_bit.dev_attr.attr,
     NULL,
 };
 
@@ -961,7 +986,7 @@ void lpc_exit(void)
     platform_device_unregister(&lpc_dev);
 }
 
-MODULE_AUTHOR("Jason Tsai <jason.cy.tsai@ufispace.com>");
+MODULE_AUTHOR("Nonodark Huang <nonodark.huang@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9510_28dc_lpc driver");
 MODULE_LICENSE("GPL");
 
