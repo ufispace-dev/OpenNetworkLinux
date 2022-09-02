@@ -262,7 +262,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             }
 
             // get bmc data
-            char ipmi_cmd[1024] = {0};
+            char ipmi_cmd[1536] = {0};
             char bmc_token[1024] = {0};
             int i = 0;
             for(i = BMC_ATTR_ID_START; i <= BMC_ATTR_ID_LAST; i++) {
@@ -398,7 +398,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
             }
 
             // get bmc data
-            char ipmi_cmd[1024] = {0};
+            char ipmi_cmd[1536] = {0};
             char fields[256]="";
             snprintf(fields, sizeof(fields), "-e '%s' -e '%s' -e '%s' -e '%s'",
                         BMC_FRU_KEY_MANUFACTURER, BMC_FRU_KEY_NAME ,BMC_FRU_KEY_PART_NUMBER, BMC_FRU_KEY_SERIAL);

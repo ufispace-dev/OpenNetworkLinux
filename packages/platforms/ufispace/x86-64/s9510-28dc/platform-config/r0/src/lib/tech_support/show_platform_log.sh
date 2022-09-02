@@ -84,7 +84,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.4"
 }
 
 function _update_gpio_offset {

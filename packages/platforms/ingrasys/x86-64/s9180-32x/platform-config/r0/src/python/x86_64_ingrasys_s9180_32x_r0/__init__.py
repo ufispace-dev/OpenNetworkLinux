@@ -36,6 +36,127 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
 
+    def init_gpio_sysfs(self, bmc_enable=1):
+        # init devices
+        if bmc_enable:
+            ioexps = [
+                ('pca9535', 0x20, 5), #ABS Port 0-15
+                ('pca9535', 0x21, 5), #ABS Port 16-31
+                ('pca9535', 0x22, 5), #INT Port 0-15
+                ('pca9535', 0x23, 5), #INT Port 16-31
+                ('pca9535', 0x27, 5), #SFP status
+                ('pca9535', 0x20, 6), #LP Mode Port 0-15
+                ('pca9535', 0x21, 6), #LP Mode Port 16-31
+                ('pca9535', 0x22, 6), #RST Port 0-15
+                ('pca9535', 0x23, 6)  #RST Port 16-31
+        ]
+        else:
+            ioexps = [
+                ('pca9535', 0x20, 5), #ABS Port 0-15
+                ('pca9535', 0x21, 5), #ABS Port 16-31
+                ('pca9535', 0x22, 5), #INT Port 0-15
+                ('pca9535', 0x23, 5), #INT Port 16-31
+                ('pca9535', 0x27, 5), #SFP status
+                ('pca9535', 0x20, 6), #LP Mode Port 0-15
+                ('pca9535', 0x21, 6), #LP Mode Port 16-31
+                ('pca9535', 0x22, 6), #RST Port 0-15
+                ('pca9535', 0x23, 6), #RST Port 16-31
+                ('pca9535', 0x25, 0)  #PSU I/O status
+            ]
+
+        self.new_i2c_devices(ioexps)
+        # get gpio base
+        max_gpiochip_num = int(subprocess.check_output("""cat /sys/class/gpio/gpiochip*/base | tail -1""", shell=True))
+        gpios_num = int(subprocess.check_output("""cat /sys/class/gpio/gpiochip*/ngpio | tail -1""", shell=True))
+        gpio_base = max_gpiochip_num + gpios_num
+        msg("GPIO_BASE = %d\n" % gpio_base)
+
+        # export gpio
+        # ABS Port 0-15
+        index_end = gpio_base
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
+        # ABS Port 16-31
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
+        # INT Port 0-15
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
+        # INT Port 16-31
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
+        # SFP status
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            if i == index_start+4 or i == index_start+5 or i == index_start+8 or \
+               i == index_start+9 or i == index_start+10 or i == index_start+11:
+                os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+            else:
+                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
+        # LP Mode Port 0-15
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+
+        # LP Mode Port 16-31
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+
+        # RST Port 0-15
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
+
+        # RST Port 16-31
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
+
+        if bmc_enable:
+            return
+
+        # apply only on platform without bmc
+        # PSU I/O status
+        index_end = index_start
+        index_start = index_end - gpios_num
+        for i in range(index_start, index_end):
+            os.system("echo %d > /sys/class/gpio/export" % i)
+            if i == index_start+1 or i == index_start+2 or i == index_start+4 or \
+               i == index_start+5 or i == index_start+6 or i == index_start+9 or \
+               i == index_start+10 or i == index_start+12:
+                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+
     def baseconfig(self):
 
         bmc_enable = self.check_bmc_enable()
@@ -254,76 +375,8 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             ]
         )
 
-        # init GPIO, ABS Port 0-15
-        self.new_i2c_device('pca9535', 0x20, 5)
-        for i in range(496, 512):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, ABS Port 16-31
-        self.new_i2c_device('pca9535', 0x21, 5)
-        for i in range(480, 496):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, INT Port 0-15
-        self.new_i2c_device('pca9535', 0x22, 5)
-        for i in range(464, 480):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, INT Port 16-31
-        self.new_i2c_device('pca9535', 0x23, 5)
-        for i in range(448, 464):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, SFP
-        self.new_i2c_device('pca9535', 0x27, 5)
-        for i in range(432, 448):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            if i == 436 or i == 437 or i == 440 or \
-               i == 441 or i == 442 or i == 443:
-                os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            else:
-                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, LP Mode Port 0-15
-        self.new_i2c_device('pca9535', 0x20, 6)
-        for i in range(416, 432):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-
-        # init GPIO, LP Mode Port 16-31
-        self.new_i2c_device('pca9535', 0x21, 6)
-        for i in range(400, 416):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-
-        # init GPIO, RST Port 0-15
-        self.new_i2c_device('pca9535', 0x22, 6)
-        for i in range(384, 400):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
-
-        # init GPIO, RST Port 16-31
-        self.new_i2c_device('pca9535', 0x23, 6)
-        for i in range(368, 384):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
-
-        # init GPIO, PSU I/O status
-        self.new_i2c_device('pca9535', 0x25, 0)
-        for i in range(352, 368):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            if i == 353 or i == 354 or i == 356 or \
-               i == 357 or i == 358 or i == 361 or \
-               i == 362 or i == 364:
-                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
+        # init gpio sysfs
+        self.init_gpio_sysfs(bmc_enable)
 
         # init QSFP EEPROM
         for port in range(1, 33):
@@ -479,67 +532,8 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
             ]
         )
 
-        # init GPIO, ABS Port 0-15
-        self.new_i2c_device('pca9535', 0x20, 5)
-        for i in range(496, 512):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, ABS Port 16-31
-        self.new_i2c_device('pca9535', 0x21, 5)
-        for i in range(480, 496):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, INT Port 0-15
-        self.new_i2c_device('pca9535', 0x22, 5)
-        for i in range(464, 480):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, INT Port 16-31
-        self.new_i2c_device('pca9535', 0x23, 5)
-        for i in range(448, 464):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, SFP
-        self.new_i2c_device('pca9535', 0x27, 5)
-        for i in range(432, 448):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            if i == 436 or i == 437 or i == 440 or \
-               i == 441 or i == 442 or i == 443:
-                os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            else:
-                os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-
-        # init GPIO, LP Mode Port 0-15
-        self.new_i2c_device('pca9535', 0x20, 6)
-        for i in range(416, 432):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-
-        # init GPIO, LP Mode Port 16-31
-        self.new_i2c_device('pca9535', 0x21, 6)
-        for i in range(400, 416):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-
-        # init GPIO, RST Port 0-15
-        self.new_i2c_device('pca9535', 0x22, 6)
-        for i in range(384, 400):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
-
-        # init GPIO, RST Port 16-31
-        self.new_i2c_device('pca9535', 0x23, 6)
-        for i in range(368, 384):
-            os.system("echo %d > /sys/class/gpio/export" % i)
-            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
-            os.system("echo 1 > /sys/class/gpio/gpio%d/active_low" % i)
-            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
+        # init gpio sysfs
+        self.init_gpio_sysfs()
 
         # init QSFP EEPROM
         for port in range(1, 33):
