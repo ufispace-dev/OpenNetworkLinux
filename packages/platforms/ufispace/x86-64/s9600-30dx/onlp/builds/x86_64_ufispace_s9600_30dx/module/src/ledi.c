@@ -29,7 +29,7 @@
 #define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
                    ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
 #define ID_LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING                   
-#define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_%s"
+#define SYSFS_LED  SYSFS_CPLD1 "cpld_system_led_%s"
 #define VALIDATE(_id)                           \
     do {                                        \
         if(!ONLP_OID_IS_LED(_id)) {             \
@@ -74,14 +74,14 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
         return ONLP_STATUS_E_PARAM;
     }
     
-    ONLP_TRY(file_read_hex(&led_val, LED_SYSFS, sysfs_index[local_id]));
+    ONLP_TRY(file_read_hex(&led_val, SYSFS_LED, sysfs_index[local_id]));
     
     led_val_color = (led_val >> 0) & 1;
     led_val_blink = (led_val >> 2) & 1;
     led_val_onoff = (led_val >> 3) & 1;
 
     //onoff
-    if (led_val_onoff == 0) { 
+    if (led_val_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
     } else {
         //color
@@ -108,7 +108,7 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
                 }
             }
         }
-    }    
+    }
     
     return ONLP_STATUS_OK;
 }

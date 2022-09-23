@@ -112,6 +112,32 @@ void lock_init()
     }
 }
 
+/**
+ * @brief Get board version
+ * @param board [out] board data struct
+ */
+int ufi_get_board_version(board_t *board)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(board == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    //Get HW Version
+    if(file_read_hex(&board->hw_rev, LPC_FMT "board_hw_id") != ONLP_STATUS_OK ||
+       file_read_hex(&board->deph_id, LPC_FMT "board_deph_id") != ONLP_STATUS_OK ||
+       file_read_hex(&board->hw_build, LPC_FMT "board_build_id") != ONLP_STATUS_OK)
+    {
+        board->hw_rev = 0;
+        board->deph_id = 0;
+        board->hw_build = 0;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+
+    return rv;
+}
+
 int check_file_exist(char *file_path, long *file_time)
 {
     struct stat file_info;

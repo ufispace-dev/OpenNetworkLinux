@@ -89,8 +89,6 @@ static onlp_oid_t __onlp_oid_info[] = {
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 #define SYSFS_CPLD_VER_H   LPC_FMT "cpld_version_h"
-#define SYSFS_HW_ID        LPC_FMT "board_hw_id"
-#define SYSFS_BUILD_ID     LPC_FMT "board_build_id"
 #define SYSFS_BIOS_VER     "/sys/class/dmi/id/bios_version"
 
 #define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
@@ -99,7 +97,7 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    int mb_cpld_hw_rev = 0, mb_cpld_build_rev = 0;
+    board_t board = {0};
     int len = 0;
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
@@ -113,10 +111,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         "[MB CPLD] %s\n", mb_cpld_ver);
 
     //Get HW Version
-    ONLP_TRY(file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID));
-
-    //Get Build Version
-    ONLP_TRY(file_read_hex(&mb_cpld_build_rev, SYSFS_BUILD_ID));
+    ONLP_TRY(ufi_get_board_version(&board));
 
     //Get BIOS version
     char tmp_str[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
@@ -145,8 +140,8 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
         "[BMC  ] %d.%d.%d\n",
-        mb_cpld_hw_rev,
-        mb_cpld_build_rev,
+        board.hw_rev,
+        board.hw_build,
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
 

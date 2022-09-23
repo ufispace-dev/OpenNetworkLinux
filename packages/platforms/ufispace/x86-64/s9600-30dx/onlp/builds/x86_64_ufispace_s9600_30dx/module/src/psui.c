@@ -33,7 +33,7 @@
 #define PSU_STATUS_PRESENT     1
 #define PSU_STATUS_POWER_GOOD  1
 
-#define SYSFS_PSU_STATUS     "/sys/bus/i2c/devices/1-0030/cpld_psu_status"
+#define SYSFS_PSU_STATUS     SYSFS_CPLD1 "cpld_psu_status"
 
 #define VALIDATE(_id)                           \
     do {                                        \

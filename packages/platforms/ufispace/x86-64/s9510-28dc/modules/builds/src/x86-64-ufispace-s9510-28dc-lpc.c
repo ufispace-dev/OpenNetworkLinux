@@ -166,7 +166,7 @@ struct lpc_data_s {
 };
 
 struct lpc_data_s *lpc_data;
-char bsp_version[16]="R1.0.12";
+char bsp_version[16]="";
 char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
 u8 enable_log_read=LOG_DISABLE;
@@ -608,18 +608,18 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             if (kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
             str = bsp_reg;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;
@@ -757,7 +757,7 @@ static SENSOR_DEVICE_ATTR(led_status_1        , S_IRUGO          , read_lpc_call
 static SENSOR_DEVICE_ATTR(cpld_bit            , S_IRUGO | S_IWUSR, read_lpc_callback         , write_lpc_callback           , ATT_CPLD_BIT);
 
 //SENSOR_DEVICE_ATTR - BSP
-static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO          , read_bsp_callback, NULL                           , ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR(bsp_version , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug   , S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback             , ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR(bsp_pr_info , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR(bsp_pr_err  , S_IWUSR          , NULL             , write_bsp_pr_callback          , ATT_BSP_PR_ERR);

@@ -285,7 +285,7 @@ static int get_sfpi_port_txfault_status(int local_id, int *status)
     if(IS_QSFPDD(local_id)) {
         AIM_LOG_ERROR("unsupported ports, local_id=%d, func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_UNSUPPORTED;
-    } else if(IS_SFP_P0(local_id)) {
+    } else if(IS_SFP(local_id)) {
         ONLP_TRY(file_read_hex(&cpld_port_txfault_reg, CPLD2_SYSFS_PATH"/"SFP_TXFAULT_ATTR));
         if(IS_SFP_P0(local_id)) {
             *status = (cpld_port_txfault_reg & 0b00000001) >> 0;

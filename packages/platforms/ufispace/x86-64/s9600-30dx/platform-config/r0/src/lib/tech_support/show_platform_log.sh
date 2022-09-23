@@ -808,9 +808,9 @@ function _show_nif_port_status_sysfs {
         port_status_sysfs_idx_array=("0_7" "0_7" "0_7" "0_7" "0_7" \
                                      "0_7" "0_7" "0_7" "8_15" "8_15" \
                                      "8_15" "8_15" "8_15" "8_15" "8_15" \
-                                     "8_15" "0_7" "0_7" "0_7" "0_7" \
-                                     "0_7" "0_7" "0_7" "0_7" "8_13" \
-                                     "8_13" "8_13" "8_13" "8_13" "8_13")                                     
+                                     "8_15" "16_23" "16_23" "16_23" "16_23" \
+                                     "16_23" "16_23" "16_23" "16_23" "24_29" \
+                                     "24_29" "24_29" "24_29" "24_29" "24_29")                                     
 
         port_status_bit_idx_array=("0" "1" "2" "3" "4" \
                                    "5" "6" "7" "0" "1" \
@@ -843,7 +843,7 @@ function _show_nif_port_status_sysfs {
 
             _echo "[Port${i} Status Reg Raw]: ${port_module_interrupt_reg}"
             _echo "[Port${i} Module INT (L)]: ${port_module_interrupt_l}"
-            _echo "[Port${i} Module Absent Reg Raq]: ${port_module_absent_reg}"
+            _echo "[Port${i} Module Absent Reg Raw]: ${port_module_absent_reg}"
             _echo "[Port${i} Module Absent ]: ${port_module_absent_l}"
             _echo "[Port${i} Config Reg Raw]: ${port_lp_mode_reg}"
             _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
@@ -1022,7 +1022,7 @@ function _show_cpld_interrupt_sysfs {
 		# CPLD 3 QSFPDD
 		#cpld_addr_array=("0032")
         sysfs_array=("cpld_qsfpdd_intr_port" "cpld_qsfpdd_intr_present" "cpld_qsfpdd_intr_fuse")
-		sysfs_index_array=("0_7" "8_13")
+		sysfs_index_array=("16_23" "24_29")
         sysfs_desc_array=("QSFPDD Port" "QSFPDD Present" "QSFPDD Fuse")
 
         # CPLD 3 QSFPDD
@@ -1070,7 +1070,49 @@ function _show_system_led_sysfs {
         _echo "[System LED PSU 0]: ${system_led_psu_0}"
 		_echo "[System LED PSU 1]: ${system_led_psu_1}"
 		_echo "[System LED ID]: ${system_led_id}"
-		
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
+}
+
+function _show_system_led_sysfs2 {
+    _banner "Show System LED"
+
+    local sysfs_attr=("cpld_system_led_sync" \
+	                  "cpld_system_led_sys" \
+	                  "cpld_system_led_fan" \
+					  "cpld_system_led_psu_0" \
+					  "cpld_system_led_psu_1" \
+					  "cpld_system_led_id")
+	local desc=("Sync " \
+	            "Sys  " \
+	            "Fan  " \
+				"PSU 0" \
+				"PSU 1" \
+				"ID   ")
+	local desc_color=("Yellow" "Green" "Blue")
+	local desc_speed=("0.5 Hz" "2 Hz")
+	local desc_blink=("Solid" "Blink")
+	local desc_onoff=("OFF" "ON")
+
+    SYSFS_CPLD1="/sys/bus/i2c/devices/1-0030"
+    if [ "${MODEL_NAME}" == "NCP1-3" ]; then
+	    for (( i=0; i<${#sysfs_attr[@]}; i++ ))
+        do
+		    _check_filepath "${SYSFS_CPLD1}/${sysfs_attr[i]}"
+			led_reg=$(eval "cat ${SYSFS_CPLD1}/${sysfs_attr[i]} ${LOG_REDIRECT}")
+			color=$(((led_reg >> 0) & 2#00000001)) # (0: yellow, 1: green)
+            speed=$(((led_reg >> 1) & 2#00000001)) # (0: 0.5 Hz, 1: 2 Hz)
+            blink=$(((led_reg >> 2) & 2#00000001)) # (0: Solid,  1: Blink)
+			onoff=$(((led_reg >> 3) & 2#00000001)) # (0: off,    1: on)
+
+			if [ "${sysfs_attr[i]}" == "cpld_system_led_id" ]; then
+			    _echo "[System LED ${desc[i]}]: ${led_reg} [${desc_color[2]}][${desc_speed[speed]}][${desc_blink[blink]}][${desc_onoff[onoff]}]"
+		    else
+			    _echo "[System LED ${desc[i]}]: ${led_reg} [${desc_color[color]}][${desc_speed[speed]}][${desc_blink[blink]}][${desc_onoff[onoff]}]"
+		    fi
+		done
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -1080,6 +1122,7 @@ function _show_system_led_sysfs {
 function _show_system_led {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         _show_system_led_sysfs
+        _show_system_led_sysfs2
     fi
 }
 

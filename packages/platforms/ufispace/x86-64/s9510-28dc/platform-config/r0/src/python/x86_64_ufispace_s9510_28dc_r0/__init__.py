@@ -62,6 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="24x25 + 2x100 + 2x400"
     LEVEL_INFO=1
     LEVEL_ERR=2
+    BSP_VERSION='1.0.14'
 
     def check_bmc_enable(self):
         return 1
@@ -245,6 +246,13 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     def baseconfig(self):
         #lpc driver
         self.insmod("x86-64-ufispace-s9510-28dc-lpc")
+
+        # version setting
+        self.bsp_pr("BSP version {}".format(self.BSP_VERSION));
+        bsp_version_path="/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_version"
+        if os.path.exists(bsp_version_path):
+            with open(bsp_version_path, "w") as f:
+                f.write(self.BSP_VERSION)
 
         # get hardware revision
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id"

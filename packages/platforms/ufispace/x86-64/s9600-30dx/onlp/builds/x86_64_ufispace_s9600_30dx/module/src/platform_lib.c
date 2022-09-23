@@ -34,14 +34,48 @@
 const int CPLD_BASE_ADDR[CPLD_MAX] = {0x30, 0x31, 0x32};
 const int CPLD_I2C_BUS = 1;
 
-bmc_info_t bmc_cache[] =
+bmc_info_t beta_bmc_cache[] =
 {
     [BMC_ATTR_ID_ADC_CPU_TEMP] = {"ADC_CPU_TEMP", 0},
-    [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},    
-    [BMC_ATTR_ID_TEMP_J2_ENV_1] = {"Temp_J2_ENV1", 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_1] = {"Temp_J2_DIE1", 0},
-    [BMC_ATTR_ID_TEMP_J2_ENV_2] = {"Temp_J2_ENV2", 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_2] = {"Temp_J2_DIE2", 0},
+    [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_1] = {BETA_TEMP_J2_ENV1, 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_1] = {BETA_TEMP_J2_DIE1, 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_2] = {BETA_TEMP_J2_ENV2, 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_2] = {BETA_TEMP_J2_DIE2, 0},
+    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
+    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_FAN0_RPM] = {"FAN0_RPM", 0},
+    [BMC_ATTR_ID_FAN1_RPM] = {"FAN1_RPM", 0},
+    [BMC_ATTR_ID_FAN2_RPM] = {"FAN2_RPM", 0},
+    [BMC_ATTR_ID_FAN3_RPM] = {"FAN3_RPM", 0},
+    [BMC_ATTR_ID_PSU0_FAN] = {"PSU0_FAN", 0},
+    [BMC_ATTR_ID_PSU1_FAN] = {"PSU1_FAN", 0},
+    [BMC_ATTR_ID_FAN0_PRSNT_H] = {"FAN0_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN1_PRSNT_H] = {"FAN1_PRSNT_H",0},
+    [BMC_ATTR_ID_FAN2_PRSNT_H] = {"FAN2_PRSNT_H", 0},
+    [BMC_ATTR_ID_FAN3_PRSNT_H] = {"FAN3_PRSNT_H", 0},
+    [BMC_ATTR_ID_PSU0_VIN] = {"PSU0_VIN", 0},
+    [BMC_ATTR_ID_PSU0_VOUT] = {"PSU0_VOUT", 0},
+    [BMC_ATTR_ID_PSU0_IIN] = {"PSU0_IIN",0},
+    [BMC_ATTR_ID_PSU0_IOUT] = {"PSU0_IOUT",0},
+    [BMC_ATTR_ID_PSU0_STBVOUT] = {"PSU0_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT] = {"PSU0_STBIOUT", 0},
+    [BMC_ATTR_ID_PSU1_VIN] = {"PSU1_VIN", 0},
+    [BMC_ATTR_ID_PSU1_VOUT] = {"PSU1_VOUT", 0},
+    [BMC_ATTR_ID_PSU1_IIN] = {"PSU1_IIN", 0},
+    [BMC_ATTR_ID_PSU1_IOUT] = {"PSU1_IOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT] = {"PSU1_STBVOUT", 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT] = {"PSU1_STBIOUT", 0}
+};
+
+bmc_info_t pvt_bmc_cache[] =
+{
+    [BMC_ATTR_ID_ADC_CPU_TEMP] = {"ADC_CPU_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_1] = {PVT_TEMP_J2_ENV1, 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_1] = {PVT_TEMP_J2_DIE1, 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_2] = {PVT_TEMP_J2_ENV2, 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_2] = {PVT_TEMP_J2_DIE2, 0},
     [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
     [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
     [BMC_ATTR_ID_FAN0_RPM] = {"FAN0_RPM", 0},
@@ -113,6 +147,32 @@ void lock_init()
         sem_inited = 1;
         check_and_do_i2c_mux_reset(-1);
     }
+}
+
+/**
+ * @brief Get board version
+ * @param board [out] board data struct
+ */
+int ufi_get_board_version(board_t *board)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(board == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    //Get HW Version
+    if(file_read_hex(&board->hw_id, SYSFS_HW_ID) != ONLP_STATUS_OK ||
+       file_read_hex(&board->deph_id, SYSFS_DEPH_ID) != ONLP_STATUS_OK ||
+       file_read_hex(&board->build_id, SYSFS_BUILD_ID) != ONLP_STATUS_OK)
+    {
+        board->hw_id = 0;
+        board->deph_id = 0;
+        board->build_id = 0;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+
+    return rv;
 }
 
 int check_file_exist(char *file_path, long *file_time) 
@@ -233,7 +293,23 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
     char seps[] = ",";
     char *token;
+    char *cmd_bmc_sensor_cache = NULL;
     int i = 0;
+    int deph_id = 0;
+    int hw_id = 0;
+    bmc_info_t *bmc_cache = NULL;
+
+    ONLP_TRY(file_read_hex(&deph_id, SYSFS_DEPH_ID));
+    ONLP_TRY(file_read_hex(&hw_id, SYSFS_HW_ID));
+	
+    //sensor name is different between AST2600 and AST2400 
+    if (deph_id == 0 && hw_id <= 2) {
+        cmd_bmc_sensor_cache = BETA_CMD_BMC_SENSOR_CACHE;
+        bmc_cache = beta_bmc_cache;
+    } else {
+        cmd_bmc_sensor_cache = PVT_CMD_BMC_SENSOR_CACHE;
+        bmc_cache = pvt_bmc_cache;
+    }		
         
     switch(sensor_type) {
         case FAN_SENSOR:
@@ -268,7 +344,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 rv = ONLP_STATUS_E_INTERNAL;
                 goto done;
             }
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT);
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), cmd_bmc_sensor_cache, IPMITOOL_CMD_TIMEOUT);
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {
@@ -525,14 +601,14 @@ void check_and_do_i2c_mux_reset(int port)
     char cmd_buf[256] = {0};
     int ret = 0;
         
-    if(access(MB_CPLD1_ID_PATH, F_OK) != -1 ) {
+    if(access(SYSFS_CPLD1_ID, F_OK) != -1 ) {
 
-        snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", MB_CPLD1_ID_PATH);
+        snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", SYSFS_CPLD1_ID);
         ret = system(cmd_buf);
 
         if (ret != 0) {
-            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
-                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
+            if(access(SYSFS_MUX_RESET, F_OK) != -1 ) {
+                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", SYSFS_MUX_RESET);
                 ret = system(cmd_buf);
             }
         }

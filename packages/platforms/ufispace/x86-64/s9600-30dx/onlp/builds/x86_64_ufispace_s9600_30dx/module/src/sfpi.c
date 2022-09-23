@@ -63,7 +63,7 @@
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
-const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "0_7", "8_13"};
+const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "16_23", "24_29"};
 const int SFP_BIT_SHIFT[SFP_NUM] = {0, 3};
 
 #define EEPROM_ADDR (0x50)
@@ -72,9 +72,9 @@ static int ufi_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
     
-    if (port >= 0 && port <= 15) {
+    if (IS_QSFP(port)) {
         cpld_addr = CPLD_BASE_ADDR[1];
-    } else if (port >= 16 && port < QSFPX_NUM) {
+    } else if (IS_QSFPDD(port)) {
         cpld_addr = CPLD_BASE_ADDR[2];
     } else if (IS_SFP(port)) {
         cpld_addr = CPLD_BASE_ADDR[1];
@@ -896,23 +896,6 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     VALIDATE_PORT(port);
     
     memset(data, 0, expect_size);
-
-    /*
-    bus = ufi_port_to_eeprom_bus(port);
-    
-    if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
-        AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
-        
-        check_and_do_i2c_mux_reset(port);
-        return rc;
-    }
-
-    if (size != expect_size) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
-        return ONLP_STATUS_E_INTERNAL;
-    }
-    */
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent. \n", port);

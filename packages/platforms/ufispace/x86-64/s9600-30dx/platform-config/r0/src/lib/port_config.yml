@@ -32,7 +32,7 @@ QSFP:
     port_name: 14
   15:
     port_name: 15
-QSFPDD:
+QSFPDD:    
   16:
     port_name: 16
   17:
@@ -48,7 +48,7 @@ QSFPDD:
   22:
     port_name: 22
   23:
-    port_name: 23    
+    port_name: 23
   24:
     port_name: 24
   25:

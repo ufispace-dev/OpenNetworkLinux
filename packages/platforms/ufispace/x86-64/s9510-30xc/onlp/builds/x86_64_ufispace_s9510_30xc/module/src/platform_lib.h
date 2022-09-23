@@ -239,6 +239,13 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
+typedef struct board_s
+{
+    int hw_build;
+    int deph_id;
+    int hw_rev;
+}board_t;
+
 int ufi_read_ioport(unsigned int addr, unsigned char *reg_val);
 int ufi_write_ioport(unsigned int addr, unsigned char reg_val);
 
@@ -266,4 +273,5 @@ int get_hw_rev_id(void);
 
 int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
+int ufi_get_board_version(board_t *board);
 #endif  /* __PLATFORM_LIB_H__ */

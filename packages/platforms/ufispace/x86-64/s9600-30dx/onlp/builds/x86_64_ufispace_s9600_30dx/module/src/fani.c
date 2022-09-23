@@ -119,8 +119,8 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
         return ONLP_STATUS_E_PARAM;
     }
     
-    //check presence for fantray 1-4
-    if (id >= ONLP_FAN_0 && id <= ONLP_FAN_3) {
+    //check presence for fantray 0-3
+    if (id >= ONLP_FAN_0 && id <= ONLP_SYS_FAN_MAX) {
         if(fan_present_id == BMC_ATTR_ID_MAX) {
             return ONLP_STATUS_E_PARAM;
         }
@@ -144,19 +144,14 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     //set rpm field
     info->rpm = rpm;
 
-    if (id >= ONLP_FAN_0 && id <= ONLP_FAN_3) {
-        if (id%2 == 1) {
-            sys_fan_max = sys_fan_max;
-        } else {
-            sys_fan_max = sys_fan_max;
-        }
+    if (id >= ONLP_FAN_0 && id <= ONLP_SYS_FAN_MAX) {
         percentage = (info->rpm*100)/sys_fan_max;
         if (percentage > 100)
             percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
-        //get psu type        
+        //get psu type
         if(id == ONLP_PSU_0_FAN) {
             ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
         } else if(id == ONLP_PSU_1_FAN) {
@@ -209,8 +204,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
     *rv = fan_info[fan_id];
        
     switch (fan_id) {
-        case ONLP_FAN_0 ... ONLP_FAN_3:
-        case ONLP_PSU_0_FAN ... ONLP_PSU_1_FAN:
+        case ONLP_FAN_0 ... ONLP_PSU_1_FAN:
             rc = ufi_bmc_fan_info_get(rv, fan_id);
             break;
         default:            
