@@ -33,7 +33,6 @@
 
 #define SYSFS_EEPROM         "eeprom"
 #define EEPROM_ADDR (0x50)
-#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 
 typedef enum port_type_e {
     TYPE_SFP = 0,
@@ -94,6 +93,9 @@ static const port_attr_t port_attr[] = {
 #define IS_QSFPX(_port)       (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFP(_port)        (port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFPDD(_port)      (port_attr[_port].port_type == TYPE_QSFPDD)
+
+#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
@@ -367,17 +369,13 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
  */
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
-    int bus = -1;
-
     VALIDATE_PORT(port);
+    int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-
-    devaddr = EEPROM_ADDR;
-    bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
         check_and_do_i2c_mux_reset(port);
@@ -420,7 +418,11 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     FILE* fp;
     int bus = 0;
 
-    VALIDATE_PORT(port);
+    //sfp dom is on 0x51 (2nd 256 bytes)
+    //qsfp dom is on lower page 0x00
+    //qsfpdd 2.0 dom is on lower page 0x00
+    //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
+    VALIDATE_SFP_PORT(port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);

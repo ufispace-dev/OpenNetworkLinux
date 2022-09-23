@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="24x25 + 2x100 + 2x400"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.14'
+    BSP_VERSION='1.0.15'
 
     def check_bmc_enable(self):
         return 1
