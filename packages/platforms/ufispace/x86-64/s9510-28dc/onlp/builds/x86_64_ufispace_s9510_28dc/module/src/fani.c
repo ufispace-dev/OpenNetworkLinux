@@ -134,6 +134,41 @@ static onlp_fan_info_t __onlp_fan_info[] = {
 };
 
 /**
+ * @brief Get and check fan local ID
+ * @param id [in] OID
+ * @param local_id [out] The fan local id
+ */
+static int get_fan_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if((ONLP_OID_TYPE_GET(id) != 0) && !ONLP_OID_IS_FAN(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_FAN_0:
+        case ONLP_FAN_1:
+        case ONLP_FAN_2:
+        case ONLP_FAN_3:
+        case ONLP_FAN_4:
+        case ONLP_PSU_0_FAN:
+        case ONLP_PSU_1_FAN:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+
+/**
  * @brief Update the status of FAN's oid header.
  * @param id The FAN ID.
  * @param[out] hdr Receives the header.
@@ -185,41 +220,41 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     float data=0;
     int sys_max_fan_speed = SYS_FAN_RPM_MAX;
     int psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
-    int bmc_attr_id = BMC_ATTR_ID_MAX;
+    int bmc_attr = BMC_ATTR_ID_INVALID;
 
     switch(local_id)
     {
         case ONLP_FAN_0:
-            bmc_attr_id = BMC_ATTR_ID_FAN_0;
+            bmc_attr = BMC_ATTR_ID_FAN_0;
             break;
         case ONLP_FAN_1:
-            bmc_attr_id = BMC_ATTR_ID_FAN_1;
+            bmc_attr = BMC_ATTR_ID_FAN_1;
             break;
         case ONLP_FAN_2:
-            bmc_attr_id = BMC_ATTR_ID_FAN_2;
+            bmc_attr = BMC_ATTR_ID_FAN_2;
             break;
         case ONLP_FAN_3:
-            bmc_attr_id = BMC_ATTR_ID_FAN_3;
+            bmc_attr = BMC_ATTR_ID_FAN_3;
             break;
         case ONLP_FAN_4:
-            bmc_attr_id = BMC_ATTR_ID_FAN_4;
+            bmc_attr = BMC_ATTR_ID_FAN_4;
             break;
         case ONLP_PSU_0_FAN:
-            bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
+            bmc_attr = BMC_ATTR_ID_PSU0_FAN;
             break;
         case ONLP_PSU_1_FAN:
-            bmc_attr_id = BMC_ATTR_ID_PSU1_FAN;
+            bmc_attr = BMC_ATTR_ID_PSU1_FAN;
             break;
         default:
-            bmc_attr_id = BMC_ATTR_ID_MAX;
+            bmc_attr = BMC_ATTR_ID_INVALID;
     }
 
-    if(bmc_attr_id == BMC_ATTR_ID_MAX) {
+    if(bmc_attr == BMC_ATTR_ID_INVALID) {
         return ONLP_STATUS_E_PARAM;
     }
 
     //get fan rpm
-    ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(bmc_attr, FAN_SENSOR, &data));
     rpm = (int) data;
 
     //set rpm field
@@ -292,7 +327,12 @@ int onlp_fani_sw_denit(void)
  */
 int onlp_fani_id_validate(onlp_oid_id_t id)
 {
-    return ONLP_OID_ID_VALIDATE_RANGE(id, 1, ONLP_FAN_MAX-1);
+    int local_id = 0;
+    if(get_fan_local_id(id, &local_id) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -303,7 +343,8 @@ int onlp_fani_id_validate(onlp_oid_id_t id)
 int onlp_fani_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+    ONLP_TRY(get_fan_local_id(id, &local_id));
 
     /* Set the onlp_fan_info_t */
     *hdr = __onlp_fan_info[local_id].hdr;
@@ -321,7 +362,8 @@ int onlp_fani_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
  */
 int onlp_fani_info_get(onlp_oid_id_t id, onlp_fan_info_t* info)
 {
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+    ONLP_TRY(get_fan_local_id(id, &local_id));
 
     /* Set the onlp_fan_info_t */
     memset(info, 0, sizeof(onlp_fan_info_t));
@@ -332,20 +374,7 @@ int onlp_fani_info_get(onlp_oid_id_t id, onlp_fan_info_t* info)
         return ONLP_STATUS_OK;
     }
 
-    switch (local_id) {
-        case ONLP_FAN_0:
-        case ONLP_FAN_1:
-        case ONLP_FAN_2:
-        case ONLP_FAN_3:
-        case ONLP_FAN_4:
-        case ONLP_PSU_0_FAN:
-        case ONLP_PSU_1_FAN:
-            ONLP_TRY(update_fani_info(local_id, info));
-            break;
-        default:
-            AIM_LOG_ERROR("unknown FAN id (%d), func=%s\n", local_id, __FUNCTION__);
-            return ONLP_STATUS_E_PARAM;
-    }
+    ONLP_TRY(update_fani_info(local_id, info));
 
     return ONLP_STATUS_OK;
 }
@@ -357,7 +386,8 @@ int onlp_fani_info_get(onlp_oid_id_t id, onlp_fan_info_t* info)
  */
 int onlp_fani_caps_get(onlp_oid_id_t id, uint32_t* rv)
 {
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+    ONLP_TRY(get_fan_local_id(id, &local_id));
 
     *rv = __onlp_fan_info[local_id].caps;
 

@@ -28,7 +28,7 @@
 #include <onlplib/file.h>
 #include "platform_lib.h"
 
- #define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_%s"
+#define SYSFS_LED  SYSFS_CPLD1 "cpld_system_led_%s"
  
 /**
  * Get the information for the given LED OID.
@@ -120,7 +120,7 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
         return ONLP_STATUS_E_PARAM;
     }
     
-    ONLP_TRY(file_read_hex(&led_val, LED_SYSFS, sysfs_index[local_id]));
+    ONLP_TRY(file_read_hex(&led_val, SYSFS_LED, sysfs_index[local_id]));
     
     led_val_color = (led_val >> 0) & 1;
     led_val_blink = (led_val >> 2) & 1;

@@ -134,7 +134,7 @@ int onlp_chassisi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 
     onlp_oid_id_t* e = hdr->coids + AIM_ARRAYSIZE(__onlp_oid_info);
 
-    /** Add 24 QSFP and 6 QSFPDD OIDs after the static table */
+    /** Add 16 QSFP and 14 QSFPDD OIDs after the static table */
     for(i = 1; i <= 30; i++) {
         *e++ = ONLP_SFP_ID_CREATE(i);
     }

@@ -66,16 +66,16 @@
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
-const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "0_7", "8_13"};
+const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "16_23", "24_29"};
 const int SFP_BIT_SHIFT[SFP_NUM] = {0, 3};
 
 static int ufi_port_to_cpld_addr(int port)
 {
     int cpld_addr = 0;
     
-    if (port >= 0 && port <= 15) {
+    if (IS_QSFP(port)) {
         cpld_addr = CPLD_BASE_ADDR[1];
-    } else if (port >= 16 && port < QSFPX_NUM) {
+    } else if (IS_QSFPDD(port)) {
         cpld_addr = CPLD_BASE_ADDR[2];
     } else if (IS_SFP(port)) {
         cpld_addr = CPLD_BASE_ADDR[1];

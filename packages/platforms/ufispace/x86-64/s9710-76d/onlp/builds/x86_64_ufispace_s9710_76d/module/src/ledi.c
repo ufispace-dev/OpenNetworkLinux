@@ -28,7 +28,7 @@
 #include <onlplib/file.h>
 #include "platform_lib.h"
 
- #define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_%d"
+#define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_"
  
 /**
  * Get the information for the given LED OID.
@@ -96,6 +96,58 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
     },
 };
 
+typedef struct
+{
+    char *sysfs;
+    int color_bit;
+    int blink_bit;
+    int onoff_bit;
+} led_attr_t;
+
+static const led_attr_t led_attr[] = {
+    /*led attribute          sysfs         color blink onoff */
+    [ONLP_LED_SYS_SYNC]   = {LED_SYSFS "2" ,0    ,2    ,3},
+    [ONLP_LED_SYS_SYS]    = {LED_SYSFS "0" ,0    ,2    ,3},
+    [ONLP_LED_SYS_FAN]    = {LED_SYSFS "0" ,4    ,6    ,7},
+    [ONLP_LED_SYS_PSU_0]  = {LED_SYSFS "1" ,0    ,2    ,3},
+    [ONLP_LED_SYS_PSU_1]  = {LED_SYSFS "1" ,4    ,6    ,7},
+};
+
+/**
+ * @brief Get and check led local ID
+ * @param id [in] OID
+ * @param local_id [out] The led local id
+ */
+static int get_led_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+    
+    tmp_id = ONLP_OID_ID_GET(id);
+    if (tmp_id <= ONLP_LED_RESERVED || tmp_id >= ONLP_LED_MAX) {
+        return ONLP_STATUS_E_PARAM;
+    }	
+	
+    switch (tmp_id) {
+        case ONLP_LED_SYS_SYNC:
+        case ONLP_LED_SYS_SYS:
+        case ONLP_LED_SYS_FAN:
+        case ONLP_LED_SYS_PSU_0:
+        case ONLP_LED_SYS_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            AIM_LOG_ERROR("id=%d, tmp_id=%d",id, tmp_id);
+            //return ONLP_STATUS_E_INVALID;
+            return ONLP_STATUS_E_PARAM;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+    
 /**
  * @brief Update the information structure for the given LED
  * @param id The LED Local ID
@@ -103,41 +155,31 @@ static onlp_led_info_t __onlp_led_info[ONLP_LED_COUNT] =
  */
 static int update_ledi_info(int local_id, onlp_led_info_t* info)
 {
-    int value = 0;
+    //int value = 0;
     int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
-    int sysfs_index[ONLP_LED_MAX] = {-1, 2, 0, 0, 1, 1};
-    int shift[ONLP_LED_MAX] = {-1, 0, 0, 4, 0, 4};
-    
-    if (local_id <= ONLP_LED_RESERVED || local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_PARAM;
-    }
-    
-    ONLP_TRY(file_read_hex(&value, LED_SYSFS, sysfs_index[local_id]));
-    
-    led_val = (value >> shift[local_id]);
-    led_val_color = (led_val >> 0) & 1;
-    led_val_blink = (led_val >> 2) & 1;
-    led_val_onoff = (led_val >> 3) & 1;
+
+    ONLP_TRY(file_read_hex(&led_val, led_attr[local_id].sysfs));
+
+    //led_val = (value >> shift[id]);
+    led_val_color = (led_val >> led_attr[local_id].color_bit) & 1;
+    led_val_blink = (led_val >> led_attr[local_id].blink_bit) & 1;
+    led_val_onoff = (led_val >> led_attr[local_id].onoff_bit) & 1;
 
     //onoff
-    if (led_val_onoff == 0) { 
+    if (led_val_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
     } else {
         //color
         if (led_val_color == 0) {
-            if (led_val_blink == 1) {
-                info->mode = ONLP_LED_MODE_YELLOW_BLINKING;
-            } else {
-                info->mode = ONLP_LED_MODE_YELLOW;
-            }
+            info->mode = ONLP_LED_MODE_YELLOW;
         } else {
-            if (led_val_blink == 1) {
-                info->mode = ONLP_LED_MODE_GREEN_BLINKING;
-            } else {
-                info->mode = ONLP_LED_MODE_GREEN;
-            }
+            info->mode = ONLP_LED_MODE_GREEN;
         }
-    }    
+        //blinking
+        if (led_val_blink == 1) {
+            info->mode = info->mode + 1;
+        } 
+    }
     
     return ONLP_STATUS_OK;
 }
@@ -188,8 +230,10 @@ int onlp_ledi_id_validate(onlp_oid_id_t id)
 int onlp_ledi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
-    int local_id = ONLP_OID_ID_GET(id);
-
+    int local_id = 0;
+	
+    ONLP_TRY(get_led_local_id(id, &local_id));
+	
     /* Set the onlp_led_info_t */
     *hdr = __onlp_led_info[local_id].hdr;
 
@@ -204,7 +248,9 @@ int onlp_ledi_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 int onlp_ledi_info_get(onlp_oid_id_t id, onlp_led_info_t* info)
 {
     int ret = ONLP_STATUS_OK;
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+	
+    ONLP_TRY(get_led_local_id(id, &local_id));
 
     /* Set the onlp_led_info_t */
     memset(info, 0, sizeof(onlp_led_info_t));
@@ -224,7 +270,9 @@ int onlp_ledi_info_get(onlp_oid_id_t id, onlp_led_info_t* info)
  */
 int onlp_ledi_caps_get(onlp_oid_id_t id, uint32_t* rv)
 {
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+	
+    ONLP_TRY(get_led_local_id(id, &local_id));
 
     *rv = __onlp_led_info[local_id].caps;
 
@@ -239,7 +287,51 @@ int onlp_ledi_caps_get(onlp_oid_id_t id, uint32_t* rv)
  */
 int onlp_ledi_mode_set(onlp_oid_id_t id, onlp_led_mode_t mode)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    int local_id;
+
+    ONLP_TRY(get_led_local_id(id, &local_id));
+
+    int led_val = 0,led_color = 0, led_blink = 0, led_onoff =0;
+    switch(mode) {
+        case ONLP_LED_MODE_GREEN:
+            led_color=1;
+            led_blink=0;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_GREEN_BLINKING:
+            led_color=1;
+            led_blink=1;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_YELLOW:
+            led_color=0;
+            led_blink=0;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_YELLOW_BLINKING:
+            led_color=0;
+            led_blink=1;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_OFF:
+            led_color=0;
+            led_blink=0;
+            led_onoff=0;
+            break;
+        default:
+            return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+   ONLP_TRY(file_read_hex(&led_val, led_attr[local_id].sysfs));
+
+   led_val = ufi_bit_operation(led_val, led_attr[local_id].color_bit, led_color);
+   led_val = ufi_bit_operation(led_val, led_attr[local_id].blink_bit, led_blink);
+   led_val = ufi_bit_operation(led_val, led_attr[local_id].onoff_bit, led_onoff);
+
+   ONLP_TRY(onlp_file_write_int(led_val, led_attr[local_id].sysfs));
+
+
+    return ONLP_STATUS_OK;
 }
 
 /**

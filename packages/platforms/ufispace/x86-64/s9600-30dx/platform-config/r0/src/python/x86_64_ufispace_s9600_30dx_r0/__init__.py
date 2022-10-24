@@ -175,8 +175,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x72, 0),  # 9548_PORT_ROOT
             ('pca9548', 0x76, 17), # 9548_QSFP_0_7
             ('pca9548', 0x76, 18), # 9548_QSFP_8_15
-            ('pca9548', 0x76, 19), # 9548_QSFPDD_0_8
-            ('pca9548', 0x76, 20), # 9548_QSFPDD_9_13
+            ('pca9548', 0x76, 19), # 9548_QSFPDD_16_23
+            ('pca9548', 0x76, 20), # 9548_QSFPDD_24_29
         ]
             
         self.new_i2c_devices(i2c_muxs)

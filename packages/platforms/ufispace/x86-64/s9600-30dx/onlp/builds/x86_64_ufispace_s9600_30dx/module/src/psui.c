@@ -35,7 +35,7 @@
 #define PSU0_PWGOOD_MASK       0x10
 #define PSU1_PWGOOD_MASK       0x20
 
-#define SYSFS_PSU_STATUS     "/sys/bus/i2c/devices/1-0030/cpld_psu_status"
+#define SYSFS_PSU_STATUS     SYSFS_CPLD1 "cpld_psu_status"
 
 /**
  * Get all information about the given PSU oid.

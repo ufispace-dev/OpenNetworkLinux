@@ -71,12 +71,12 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
     
     asset_info->cpld_revision = aim_fstrdup(
         "\n"
-        "    [CPU CPLD] %s\n"
-        "    [MB CPLD1] %s\n"
-        "    [MB CPLD2] %s\n"
-        "    [MB CPLD3] %s\n"
-        "    [MB CPLD4] %s\n" 
-        "    [MB CPLD5] %s\n", 
+        "[CPU CPLD] %s\n"
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n"
+        "[MB CPLD4] %s\n" 
+        "[MB CPLD5] %s\n", 
         cpu_cpld_ver_out, 
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],

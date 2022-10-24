@@ -174,35 +174,35 @@ enum cpld_sysfs_attributes {
     DBG_CPLD_SFP_STATUS,
 
     //CPLD 3
-    CPLD_QSFPDD_INTR_PORT_0_7,
-    CPLD_QSFPDD_INTR_PORT_8_13,
-    CPLD_QSFPDD_INTR_PRESENT_0_7,
-    CPLD_QSFPDD_INTR_PRESENT_8_13,
-    CPLD_QSFPDD_INTR_FUSE_0_7,
-    CPLD_QSFPDD_INTR_FUSE_8_13,
-    CPLD_QSFPDD_MASK_PORT_0_7,
-    CPLD_QSFPDD_MASK_PORT_8_13,
-    CPLD_QSFPDD_MASK_PRESENT_0_7,
-    CPLD_QSFPDD_MASK_PRESENT_8_13,
-    CPLD_QSFPDD_MASK_FUSE_0_7,
-    CPLD_QSFPDD_MASK_FUSE_8_13,
-    CPLD_QSFPDD_EVT_PORT_0_7,
-    CPLD_QSFPDD_EVT_PORT_8_13,
-    CPLD_QSFPDD_EVT_PRESENT_0_7,
-    CPLD_QSFPDD_EVT_PRESENT_8_13,
-    CPLD_QSFPDD_EVT_FUSE_0_7,
-    CPLD_QSFPDD_EVT_FUSE_8_13,
-    CPLD_QSFPDD_RESET_0_7,
-    CPLD_QSFPDD_RESET_8_13,
-    CPLD_QSFPDD_LPMODE_0_7,
-    CPLD_QSFPDD_LPMODE_8_13,
+    CPLD_QSFPDD_INTR_PORT_16_23,
+    CPLD_QSFPDD_INTR_PORT_24_29,
+    CPLD_QSFPDD_INTR_PRESENT_16_23,
+    CPLD_QSFPDD_INTR_PRESENT_24_29,
+    CPLD_QSFPDD_INTR_FUSE_16_23,
+    CPLD_QSFPDD_INTR_FUSE_24_29,
+    CPLD_QSFPDD_MASK_PORT_16_23,
+    CPLD_QSFPDD_MASK_PORT_24_29,
+    CPLD_QSFPDD_MASK_PRESENT_16_23,
+    CPLD_QSFPDD_MASK_PRESENT_24_29,
+    CPLD_QSFPDD_MASK_FUSE_16_23,
+    CPLD_QSFPDD_MASK_FUSE_24_29,
+    CPLD_QSFPDD_EVT_PORT_16_23,
+    CPLD_QSFPDD_EVT_PORT_24_29,
+    CPLD_QSFPDD_EVT_PRESENT_16_23,
+    CPLD_QSFPDD_EVT_PRESENT_24_29,
+    CPLD_QSFPDD_EVT_FUSE_16_23,
+    CPLD_QSFPDD_EVT_FUSE_24_29,
+    CPLD_QSFPDD_RESET_16_23,
+    CPLD_QSFPDD_RESET_24_29,
+    CPLD_QSFPDD_LPMODE_16_23,
+    CPLD_QSFPDD_LPMODE_24_29,
 
-    DBG_CPLD_QSFPDD_INTR_PORT_0_7,
-    DBG_CPLD_QSFPDD_INTR_PORT_8_13,
-    DBG_CPLD_QSFPDD_INTR_PRESENT_0_7,
-    DBG_CPLD_QSFPDD_INTR_PRESENT_8_13,
-    DBG_CPLD_QSFPDD_INTR_FUSE_0_7,
-    DBG_CPLD_QSFPDD_INTR_FUSE_8_13,
+    DBG_CPLD_QSFPDD_INTR_PORT_16_23,
+    DBG_CPLD_QSFPDD_INTR_PORT_24_29,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_16_23,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_24_29,
+    DBG_CPLD_QSFPDD_INTR_FUSE_16_23,
+    DBG_CPLD_QSFPDD_INTR_FUSE_24_29,
 
     //BSP DEBUG
     BSP_DEBUG
@@ -389,38 +389,38 @@ static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfp_intr_fuse_0_7,   cpld_callback, DBG_
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfp_intr_fuse_8_15,  cpld_callback, DBG_CPLD_QSFP_INTR_FUSE_8_15);
 
 //CPLD 3
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_0_7,    cpld_callback, CPLD_QSFPDD_INTR_PORT_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_8_13,    cpld_callback, CPLD_QSFPDD_INTR_PORT_8_13);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_0_7, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_8_13, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_8_13);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_0_7,    cpld_callback, CPLD_QSFPDD_INTR_FUSE_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_8_13,    cpld_callback, CPLD_QSFPDD_INTR_FUSE_8_13);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_16_23,    cpld_callback, CPLD_QSFPDD_INTR_PORT_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_24_29,    cpld_callback, CPLD_QSFPDD_INTR_PORT_24_29);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_16_23, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_24_29, cpld_callback, CPLD_QSFPDD_INTR_PRESENT_24_29);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_16_23,    cpld_callback, CPLD_QSFPDD_INTR_FUSE_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_24_29,    cpld_callback, CPLD_QSFPDD_INTR_FUSE_24_29);
 
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_0_7,    cpld_callback, CPLD_QSFPDD_MASK_PORT_0_7);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_8_13,    cpld_callback, CPLD_QSFPDD_MASK_PORT_8_13);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_0_7, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_0_7);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_8_13, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_8_13);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_0_7,    cpld_callback, CPLD_QSFPDD_MASK_FUSE_0_7);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_8_13,    cpld_callback, CPLD_QSFPDD_MASK_FUSE_8_13);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_16_23,    cpld_callback, CPLD_QSFPDD_MASK_PORT_16_23);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_24_29,    cpld_callback, CPLD_QSFPDD_MASK_PORT_24_29);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_16_23, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_16_23);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_24_29, cpld_callback, CPLD_QSFPDD_MASK_PRESENT_24_29);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_16_23,    cpld_callback, CPLD_QSFPDD_MASK_FUSE_16_23);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_24_29,    cpld_callback, CPLD_QSFPDD_MASK_FUSE_24_29);
 
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_0_7,    cpld_callback, CPLD_QSFPDD_EVT_PORT_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_8_13,    cpld_callback, CPLD_QSFPDD_EVT_PORT_8_13);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_0_7, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_8_13, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_8_13);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_0_7,    cpld_callback, CPLD_QSFPDD_EVT_FUSE_0_7);
-static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_8_13,    cpld_callback, CPLD_QSFPDD_EVT_FUSE_8_13);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_16_23,    cpld_callback, CPLD_QSFPDD_EVT_PORT_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_24_29,    cpld_callback, CPLD_QSFPDD_EVT_PORT_24_29);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_16_23, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_24_29, cpld_callback, CPLD_QSFPDD_EVT_PRESENT_24_29);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_16_23,    cpld_callback, CPLD_QSFPDD_EVT_FUSE_16_23);
+static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_24_29,    cpld_callback, CPLD_QSFPDD_EVT_FUSE_24_29);
 
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_0_7,  cpld_callback, CPLD_QSFPDD_RESET_0_7);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_8_13,  cpld_callback, CPLD_QSFPDD_RESET_8_13);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_0_7, cpld_callback, CPLD_QSFPDD_LPMODE_0_7);
-static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_8_13, cpld_callback, CPLD_QSFPDD_LPMODE_8_13);
-static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_0_7, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_0_7);
-static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_8_13, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_8_13);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_16_23,  cpld_callback, CPLD_QSFPDD_RESET_16_23);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_24_29,  cpld_callback, CPLD_QSFPDD_RESET_24_29);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_16_23, cpld_callback, CPLD_QSFPDD_LPMODE_16_23);
+static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_24_29, cpld_callback, CPLD_QSFPDD_LPMODE_24_29);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_16_23, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_16_23);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_24_29, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_24_29);
 
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_0_7, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_0_7);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_8_13, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_8_13);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_0_7,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_0_7);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_8_13,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_8_13);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_16_23, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_16_23);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_24_29, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_24_29);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_16_23,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_16_23);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_24_29,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_24_29);
 
 //BSP DEBUG
 static _SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, BSP_DEBUG);
@@ -569,45 +569,45 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(cpld_build_ver),
     _DEVICE_ATTR(cpld_version_h),
 
-    _DEVICE_ATTR(cpld_qsfpdd_intr_port_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_intr_port_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_intr_present_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_intr_present_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_8_13),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_port_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_present_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_intr_fuse_24_29),
 
     _DEVICE_ATTR(cpld_system_intr),
 
-    _DEVICE_ATTR(cpld_qsfpdd_mask_port_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_mask_port_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_mask_present_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_mask_present_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_8_13),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_port_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_present_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_mask_fuse_24_29),
 
     _DEVICE_ATTR(cpld_system_mask),
 
-    _DEVICE_ATTR(cpld_qsfpdd_evt_port_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_evt_port_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_evt_present_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_evt_present_8_13),
-    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_8_13),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_port_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_present_24_29),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_evt_fuse_24_29),
 
     _DEVICE_ATTR(cpld_evt_ctrl),
 
-    _DEVICE_ATTR(cpld_qsfpdd_reset_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_reset_8_13),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_reset_24_29),
 
-    _DEVICE_ATTR(cpld_qsfpdd_lpmode_0_7),
-    _DEVICE_ATTR(cpld_qsfpdd_lpmode_8_13),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_16_23),
+    _DEVICE_ATTR(cpld_qsfpdd_lpmode_24_29),
 
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0_7),
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_8_13),
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0_7),
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_8_13),
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0_7),
-    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_8_13),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_16_23),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_24_29),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_16_23),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_24_29),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_16_23),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_24_29),
     NULL
 };
 
@@ -1058,89 +1058,89 @@ static ssize_t read_cpld_callback(struct device *dev,
             break;
 
         //CPLD 3
-        case CPLD_QSFPDD_INTR_PORT_0_7:
-            reg = CPLD_QSFPDD_INTR_PORT_0_7_REG;
+        case CPLD_QSFPDD_INTR_PORT_16_23:
+            reg = CPLD_QSFPDD_INTR_PORT_16_23_REG;
             break;
-        case CPLD_QSFPDD_INTR_PORT_8_13:
-            reg = CPLD_QSFPDD_INTR_PORT_8_13_REG;
+        case CPLD_QSFPDD_INTR_PORT_24_29:
+            reg = CPLD_QSFPDD_INTR_PORT_24_29_REG;
             break;
-        case CPLD_QSFPDD_INTR_PRESENT_0_7:
-            reg = CPLD_QSFPDD_INTR_PRESENT_0_7_REG;
+        case CPLD_QSFPDD_INTR_PRESENT_16_23:
+            reg = CPLD_QSFPDD_INTR_PRESENT_16_23_REG;
             break;
-        case CPLD_QSFPDD_INTR_PRESENT_8_13:
-            reg = CPLD_QSFPDD_INTR_PRESENT_8_13_REG;
+        case CPLD_QSFPDD_INTR_PRESENT_24_29:
+            reg = CPLD_QSFPDD_INTR_PRESENT_24_29_REG;
             break;
-        case CPLD_QSFPDD_INTR_FUSE_0_7:
-            reg = CPLD_QSFPDD_INTR_FUSE_0_7_REG;
+        case CPLD_QSFPDD_INTR_FUSE_16_23:
+            reg = CPLD_QSFPDD_INTR_FUSE_16_23_REG;
             break;
-        case CPLD_QSFPDD_INTR_FUSE_8_13:
-            reg = CPLD_QSFPDD_INTR_FUSE_8_13_REG;
+        case CPLD_QSFPDD_INTR_FUSE_24_29:
+            reg = CPLD_QSFPDD_INTR_FUSE_24_29_REG;
             break;
-        case CPLD_QSFPDD_MASK_PORT_0_7:
-            reg = CPLD_QSFPDD_MASK_PORT_0_7_REG;
+        case CPLD_QSFPDD_MASK_PORT_16_23:
+            reg = CPLD_QSFPDD_MASK_PORT_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_PORT_8_13:
-            reg = CPLD_QSFPDD_MASK_PORT_8_13_REG;
+        case CPLD_QSFPDD_MASK_PORT_24_29:
+            reg = CPLD_QSFPDD_MASK_PORT_24_29_REG;
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_0_7:
-            reg = CPLD_QSFPDD_MASK_PRESENT_0_7_REG;
+        case CPLD_QSFPDD_MASK_PRESENT_16_23:
+            reg = CPLD_QSFPDD_MASK_PRESENT_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_8_13:
-            reg = CPLD_QSFPDD_MASK_PRESENT_8_13_REG;
+        case CPLD_QSFPDD_MASK_PRESENT_24_29:
+            reg = CPLD_QSFPDD_MASK_PRESENT_24_29_REG;
             break;
-        case CPLD_QSFPDD_MASK_FUSE_0_7:
-            reg = CPLD_QSFPDD_MASK_FUSE_0_7_REG;
+        case CPLD_QSFPDD_MASK_FUSE_16_23:
+            reg = CPLD_QSFPDD_MASK_FUSE_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_FUSE_8_13:
-            reg = CPLD_QSFPDD_MASK_FUSE_8_13_REG;
+        case CPLD_QSFPDD_MASK_FUSE_24_29:
+            reg = CPLD_QSFPDD_MASK_FUSE_24_29_REG;
             break;
-        case CPLD_QSFPDD_EVT_PORT_0_7:
-            reg = CPLD_QSFPDD_EVT_PORT_0_7_REG;
+        case CPLD_QSFPDD_EVT_PORT_16_23:
+            reg = CPLD_QSFPDD_EVT_PORT_16_23_REG;
             break;
-        case CPLD_QSFPDD_EVT_PORT_8_13:
-            reg = CPLD_QSFPDD_EVT_PORT_8_13_REG;
+        case CPLD_QSFPDD_EVT_PORT_24_29:
+            reg = CPLD_QSFPDD_EVT_PORT_24_29_REG;
             break;
-        case CPLD_QSFPDD_EVT_PRESENT_0_7:
-            reg = CPLD_QSFPDD_EVT_PRESENT_0_7_REG;
+        case CPLD_QSFPDD_EVT_PRESENT_16_23:
+            reg = CPLD_QSFPDD_EVT_PRESENT_16_23_REG;
             break;
-        case CPLD_QSFPDD_EVT_PRESENT_8_13:
-            reg = CPLD_QSFPDD_EVT_PRESENT_8_13_REG;
+        case CPLD_QSFPDD_EVT_PRESENT_24_29:
+            reg = CPLD_QSFPDD_EVT_PRESENT_24_29_REG;
             break;
-        case CPLD_QSFPDD_EVT_FUSE_0_7:
-            reg = CPLD_QSFPDD_EVT_FUSE_0_7_REG;
+        case CPLD_QSFPDD_EVT_FUSE_16_23:
+            reg = CPLD_QSFPDD_EVT_FUSE_16_23_REG;
             break;
-        case CPLD_QSFPDD_EVT_FUSE_8_13:
-            reg = CPLD_QSFPDD_EVT_FUSE_8_13_REG;
+        case CPLD_QSFPDD_EVT_FUSE_24_29:
+            reg = CPLD_QSFPDD_EVT_FUSE_24_29_REG;
             break;
-        case CPLD_QSFPDD_RESET_0_7:
-            reg = CPLD_QSFPDD_RESET_0_7_REG;
+        case CPLD_QSFPDD_RESET_16_23:
+            reg = CPLD_QSFPDD_RESET_16_23_REG;
             break;
-        case CPLD_QSFPDD_RESET_8_13:
-            reg = CPLD_QSFPDD_RESET_8_13_REG;
+        case CPLD_QSFPDD_RESET_24_29:
+            reg = CPLD_QSFPDD_RESET_24_29_REG;
             break;
-        case CPLD_QSFPDD_LPMODE_0_7:
-            reg = CPLD_QSFPDD_LPMODE_0_7_REG;
+        case CPLD_QSFPDD_LPMODE_16_23:
+            reg = CPLD_QSFPDD_LPMODE_16_23_REG;
             break;
-        case CPLD_QSFPDD_LPMODE_8_13:
-            reg = CPLD_QSFPDD_LPMODE_8_13_REG;
+        case CPLD_QSFPDD_LPMODE_24_29:
+            reg = CPLD_QSFPDD_LPMODE_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PORT_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_PORT_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_PORT_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PORT_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_PORT_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_PORT_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PRESENT_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PRESENT_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_FUSE_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_FUSE_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_FUSE_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_FUSE_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_24_29_REG;
             break;
 
 
@@ -1303,53 +1303,53 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
 
         //CPLD 3
-        case CPLD_QSFPDD_MASK_PORT_0_7:
-            reg = CPLD_QSFPDD_MASK_PORT_0_7_REG;
+        case CPLD_QSFPDD_MASK_PORT_16_23:
+            reg = CPLD_QSFPDD_MASK_PORT_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_PORT_8_13:
-            reg = CPLD_QSFPDD_MASK_PORT_8_13_REG;
+        case CPLD_QSFPDD_MASK_PORT_24_29:
+            reg = CPLD_QSFPDD_MASK_PORT_24_29_REG;
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_0_7:
-            reg = CPLD_QSFPDD_MASK_PRESENT_0_7_REG;
+        case CPLD_QSFPDD_MASK_PRESENT_16_23:
+            reg = CPLD_QSFPDD_MASK_PRESENT_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_PRESENT_8_13:
-            reg = CPLD_QSFPDD_MASK_PRESENT_8_13_REG;
+        case CPLD_QSFPDD_MASK_PRESENT_24_29:
+            reg = CPLD_QSFPDD_MASK_PRESENT_24_29_REG;
             break;
-        case CPLD_QSFPDD_MASK_FUSE_0_7:
-            reg = CPLD_QSFPDD_MASK_FUSE_0_7_REG;
+        case CPLD_QSFPDD_MASK_FUSE_16_23:
+            reg = CPLD_QSFPDD_MASK_FUSE_16_23_REG;
             break;
-        case CPLD_QSFPDD_MASK_FUSE_8_13:
-            reg = CPLD_QSFPDD_MASK_FUSE_8_13_REG;
+        case CPLD_QSFPDD_MASK_FUSE_24_29:
+            reg = CPLD_QSFPDD_MASK_FUSE_24_29_REG;
             break;
-        case CPLD_QSFPDD_RESET_0_7:
-            reg = CPLD_QSFPDD_RESET_0_7_REG;
+        case CPLD_QSFPDD_RESET_16_23:
+            reg = CPLD_QSFPDD_RESET_16_23_REG;
             break;
-        case CPLD_QSFPDD_RESET_8_13:
-            reg = CPLD_QSFPDD_RESET_8_13_REG;
+        case CPLD_QSFPDD_RESET_24_29:
+            reg = CPLD_QSFPDD_RESET_24_29_REG;
             break;
-        case CPLD_QSFPDD_LPMODE_0_7:
-            reg = CPLD_QSFPDD_LPMODE_0_7_REG;
+        case CPLD_QSFPDD_LPMODE_16_23:
+            reg = CPLD_QSFPDD_LPMODE_16_23_REG;
             break;
-        case CPLD_QSFPDD_LPMODE_8_13:
-            reg = CPLD_QSFPDD_LPMODE_8_13_REG;
+        case CPLD_QSFPDD_LPMODE_24_29:
+            reg = CPLD_QSFPDD_LPMODE_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PORT_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_PORT_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_PORT_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PORT_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_PORT_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_PORT_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PRESENT_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_PRESENT_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_24_29_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_FUSE_0_7:
-            reg = DBG_CPLD_QSFPDD_INTR_FUSE_0_7_REG;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_16_23:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_16_23_REG;
             break;
-        case DBG_CPLD_QSFPDD_INTR_FUSE_8_13:
-            reg = DBG_CPLD_QSFPDD_INTR_FUSE_8_13_REG;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_24_29:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_24_29_REG;
             break;
 
         default:
@@ -1559,7 +1559,7 @@ static int cpld_probe(struct i2c_client *client,
     case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &cpld2_group);
-        break;    
+        break;
     case cpld3:
         status = sysfs_create_group(&client->dev.kobj,
                     &cpld3_group);

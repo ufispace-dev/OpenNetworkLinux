@@ -16,10 +16,14 @@ LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
 LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
 
 
+# PLAT: This script is compatible with the platform.
+PLAT="S9510-28DC"
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
+# HW_EXT: set by function _board_info
+HW_EXT=""
 # BSP_INIT_FLAG: set bu function _check_bsp_init
 BSP_INIT_FLAG=""
 
@@ -52,6 +56,11 @@ GPIO_OFFSET=0
 i801_bus=""
 ismt_bus=""
 
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
+
 function _echo {
     str="$@"
 
@@ -75,7 +84,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.4"
 }
 
 function _update_gpio_offset {
@@ -182,7 +191,7 @@ function _check_i2c_device {
 
 function _check_bsp_init {
     _banner "Check BSP Init"
-    
+
     # We use ismt bus device status (cpu eeprom, i2c mux 0 ...) to check bsp init status
     local bus=$(eval "i2cdetect -y ${ismt_bus} ${LOG_REDIRECT} | grep UU")
     ret=$?
@@ -291,8 +300,9 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
+    hw_ext_name_array=("Premium Extended" "Standard" "Premium")
     model_id_array=($((2#00000101)))
-    model_name_array=("S9510")
+    model_name_array=("S9510-28DC")
 
     model_id=`${IOGET} 0x700`
     ret=$?
@@ -340,10 +350,22 @@ function _show_board_info {
        exit 1
     fi
 
+    hw_ext_id=`${IOGET} 0x706`
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        hw_ext_id=`echo ${hw_ext_id} | awk -F" " '{print $NF}'`
+        hw_ext_id=$(((hw_ext_id & 2#00000111) >> 0))
+    else
+        _echo "Get extended id failed ($ret), Exit!!"
+        exit $ret
+    fi
+    hw_ext_name=${hw_ext_name_array[${hw_ext_id}]}
+
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
-    _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
-    _echo "[Board Type and Revision]: ${model_name} ${deph_name} ${hw_rev} ${build_rev}"
+    HW_EXT=${hw_ext_id}
+    _echo "[Board Type/Rev/Ext Reg Raw ]: ${model_id} ${board_rev_id} ${hw_ext_id}"
+    _echo "[Board Type, Extended ID and Revision]: ${model_name} ${hw_ext_name} ${deph_name} ${hw_rev} ${build_rev}"
 }
 
 function _bios_version {
@@ -377,8 +399,8 @@ function _bmc_version {
 function _cpld_version_lpc {
     _banner "Show CPLD Version (LPC)"
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
-        # MB CPLD S9510
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
+        # MB CPLD S9510-28DC
         mb_cpld_ver=`${IOGET} 0x702`
         ret=$?
         if [ ${ret} -eq 0 ]; then
@@ -402,7 +424,7 @@ function _cpld_version_lpc {
 function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
         if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version_h"; then
             mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/cpld_version_h ${LOG_REDIRECT}")
             _echo "[MB CPLD Version]: ${mb_cpld_ver}"
@@ -425,7 +447,7 @@ function _ucd_version {
 
     _banner "Show UCD Version"
 
-    if [ "${MODEL_NAME}" != "S9510" ]; then
+    if [ "${MODEL_NAME}" != "${PLAT}" ]; then
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
@@ -527,7 +549,7 @@ function _show_i2c_tree_bus_mux_i2c {
     local chip_addr2=""
     local bus=""
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
 
         chip_addr1="0x76"
 
@@ -614,7 +636,7 @@ function _show_i2c_device_info {
 
     local pca954x_device_id=("")
     local pca954x_device_bus=("")
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
         pca954x_device_id=("0x75" "0x76")
 
         if [ "${HW_REV}" == "Alpha" ]; then
@@ -746,7 +768,7 @@ function _show_psu_status_cpld_sysfs {
     _banner "Show PSU Status (CPLD)"
 
     bus_id=""
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
         bus_id="1"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -798,7 +820,7 @@ function _show_rov {
 function _show_port_status_sysfs {
     _banner "Show Port Status / EEPROM"
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
 
         port_name_array=("0" "1" \
                          "2" "3" \
@@ -994,21 +1016,25 @@ function _show_port_status {
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
-    cpu_temp_array=("2" "4" "6" "8" "10" "12" "14" "16")
+    cpu_temp_array=("1")
 
     for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
     do
         if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input" ]; then
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_label"
             _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input"
             _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max"
             _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit"
+            temp_label=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_label ${LOG_REDIRECT}")
             temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
             temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
             temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
         elif [ -f "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input" ]; then
+            _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_label"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_crit"
+            temp_label=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_label ${LOG_REDIRECT}")
             temp_input=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
             temp_max=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
             temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
@@ -1016,6 +1042,7 @@ function _show_cpu_temperature_sysfs {
             _echo "sysfs of CPU core temperature not found!!!"
         fi
 
+        _echo "[CPU Core Temp${cpu_temp_array[${i}]} Label   ]: ${temp_label}"
         _echo "[CPU Core Temp${cpu_temp_array[${i}]} Input   ]: ${temp_input}"
         _echo "[CPU Core Temp${cpu_temp_array[${i}]} Max     ]: ${temp_max}"
         _echo "[CPU Core Temp${cpu_temp_array[${i}]} Crit    ]: ${temp_crit}"
@@ -1036,7 +1063,7 @@ function _show_cpld_interrupt_sysfs {
     fan_interrupt=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/fan_intr")
     port_interrupt=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/port_intr")
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
         _echo "[PSU Interrupt Reg Raw    ]: ${psu_interrupt}"
         _echo "[FAN Interrupt Reg Raw    ]: ${fan_interrupt}"
         _echo "[Port Interrupt Reg Raw   ]: ${port_interrupt}"
@@ -1057,7 +1084,7 @@ function _show_cpld_interrupt {
 function _show_system_led_sysfs {
     _banner "Show System LED"
 
-    if [ "${MODEL_NAME}" == "S9510" ]; then
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
         if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/led_ctrl_1" &&
            _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/led_ctrl_2" &&
            _check_filepath "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/led_status_1"; then
@@ -1251,7 +1278,7 @@ function _show_ioport {
 
 function _show_onlpdump {
     _banner "Show onlpdump"
-    
+
     which onlpdump > /dev/null 2>&1
     ret_onlpdump=$?
 
@@ -1279,7 +1306,7 @@ function _show_onlpdump {
 
 function _show_onlps {
     _banner "Show onlps"
-    
+
     which onlps > /dev/null 2>&1
     ret_onlps=$?
 
@@ -1606,6 +1633,20 @@ function _additional_log_collection {
     fi
 }
 
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"
+
+    _echo "[Elapse Time] ${elapsed_time} seconds"
+}
+
 function _compression {
     _banner "Compression"
 
@@ -1661,6 +1702,7 @@ function _main {
     _show_bmc_sel_elist_detail
     _show_dmesg
     _additional_log_collection
+    _show_time
     _compression
 
     echo "#   done..."

@@ -30,23 +30,43 @@
 #include <onlplib/i2c.h>
 #include "x86_64_ufispace_s9600_30dx_log.h"
 
-#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
-#define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%s"
-#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
-#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYSFS_PLTM                   "/sys/devices/platform/"
+#define SYSFS_DEVICES        "/sys/bus/i2c/devices/" 
+
+#define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s9600_30dx_lpc/"
+#define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
+#define SYSFS_HW_ID           SYSFS_LPC_MB_CPLD "board_hw_id"
+#define SYSFS_DEPH_ID        SYSFS_LPC_MB_CPLD "board_deph_id"
+#define SYSFS_BUILD_ID       SYSFS_LPC_MB_CPLD "board_build_id"
+//#define SYSFS_EXT_ID           SYSFS_LPC_MB_CPLD "board_ext_id"
+#define SYSFS_MUX_RESET    SYSFS_LPC_MB_CPLD "mux_reset"
+#define SYSFS_CPLD1            SYSFS_DEVICES "1-0030/"
+#define SYSFS_CPLD1_ID       SYSFS_CPLD1 "cpld_id"
+#define SYS_FMT                     SYSFS_DEVICES "%d-%04x/%s"
+#define SYS_FMT_OFFSET       SYSFS_DEVICES "%d-%04x/%s_%s"
+#define SYS_CPU_CORETEMP_PREFIX     SYSFS_PLTM "coretemp.0/hwmon/hwmon0/"
+#define SYS_CPU_CORETEMP_PREFIX2    SYSFS_PLTM "coretemp.0/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
-//FIXME
-#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+#define BETA_TEMP_J2_ENV1 "Temp_J2_ENV1"
+#define BETA_TEMP_J2_ENV2 "Temp_J2_ENV2"
+#define BETA_TEMP_J2_DIE1 "Temp_J2_DIE1"
+#define BETA_TEMP_J2_DIE2 "Temp_J2_DIE2"
+#define PVT_TEMP_J2_ENV1 "TEMP_J2_ENV1"
+#define PVT_TEMP_J2_ENV2 "TEMP_J2_ENV2"
+#define PVT_TEMP_J2_DIE1 "TEMP_J2_DIE1"
+#define PVT_TEMP_J2_DIE2 "TEMP_J2_DIE2"
+
+#define BETA_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "ADC_CPU_TEMP "\
                                     "TEMP_CPU_PECI "\
-                                    "Temp_J2_ENV1 "\
-                                    "Temp_J2_DIE1 "\
-                                    "Temp_J2_ENV2 "\
-                                    "Temp_J2_DIE2 "\
+                                    BETA_TEMP_J2_ENV1" "\
+                                    BETA_TEMP_J2_DIE1" "\
+                                    BETA_TEMP_J2_ENV2 " "\
+                                    BETA_TEMP_J2_DIE2" "\
                                     "PSU0_TEMP "\
                                     "PSU1_TEMP "\
                                     "FAN0_RPM "\
@@ -73,6 +93,38 @@
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
+#define PVT_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+                                    "ADC_CPU_TEMP "\
+                                    "TEMP_CPU_PECI "\
+                                    PVT_TEMP_J2_ENV1" "\
+                                    PVT_TEMP_J2_DIE1" "\
+                                    PVT_TEMP_J2_ENV2 " "\
+                                    PVT_TEMP_J2_DIE2" "\
+                                    "PSU0_TEMP "\
+                                    "PSU1_TEMP "\
+                                    "FAN0_RPM "\
+                                    "FAN1_RPM "\
+                                    "FAN2_RPM "\
+                                    "FAN3_RPM "\
+                                    "PSU0_FAN "\
+                                    "PSU1_FAN "\
+                                    "FAN0_PRSNT_H "\
+                                    "FAN1_PRSNT_H "\
+                                    "FAN2_PRSNT_H "\
+                                    "FAN3_PRSNT_H "\
+                                    "PSU0_VIN "\
+                                    "PSU0_VOUT "\
+                                    "PSU0_IIN "\
+                                    "PSU0_IOUT "\
+                                    "PSU0_STBVOUT "\
+                                    "PSU0_STBIOUT "\
+                                    "PSU1_VIN "\
+                                    "PSU1_VOUT "\
+                                    "PSU1_IIN "\
+                                    "PSU1_IOUT "\
+                                    "PSU1_STBVOUT "\
+                                    "PSU1_STBIOUT "\
+                                    "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR                                    
 #define BMC_FRU_LINE_SIZE           256
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
@@ -87,10 +139,6 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
-#define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/mb_cpld/mux_reset"
-#define SYSFS_DEPH_ID         "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/mb_cpld/board_deph_id"
-#define SYSFS_HW_ID            "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/mb_cpld/board_hw_id"
 
 /* SYS */
 #define CPLD_MAX      3  //Number of MB CPLD
@@ -106,6 +154,13 @@ extern const int CPLD_I2C_BUS;
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
+
+enum sensor
+{
+    FAN_SENSOR = 0,
+    PSU_SENSOR,
+    THERMAL_SENSOR,
+};
 
 enum bmc_attr_id {
     BMC_ATTR_ID_ADC_CPU_TEMP,
@@ -156,24 +211,24 @@ enum fru_attr_id {
 /* Thermal definitions*/
 enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
-    ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,    
-    ONLP_THERMAL_ADC_CPU_TEMP = 10,
-    ONLP_THERMAL_CPU_PECI = 11,
-    ONLP_THERMAL_J2_ENV_1 = 12,
-    ONLP_THERMAL_J2_DIE_1 = 13,      
-    ONLP_THERMAL_J2_ENV_2 = 14,
-    ONLP_THERMAL_J2_DIE_2 = 15,  
-    ONLP_THERMAL_PSU_0 = 16, 
-    ONLP_THERMAL_PSU_1 = 17,
-    ONLP_THERMAL_MAX = 18,
+    ONLP_THERMAL_CPU_PKG,
+    ONLP_THERMAL_CPU_0,
+    ONLP_THERMAL_CPU_1,
+    ONLP_THERMAL_CPU_2,
+    ONLP_THERMAL_CPU_3,
+    ONLP_THERMAL_CPU_4,
+    ONLP_THERMAL_CPU_5,
+    ONLP_THERMAL_CPU_6,
+    ONLP_THERMAL_CPU_7,
+    ONLP_THERMAL_ADC_CPU_TEMP,
+    ONLP_THERMAL_CPU_PECI,
+    ONLP_THERMAL_J2_ENV_1,
+    ONLP_THERMAL_J2_DIE_1,
+    ONLP_THERMAL_J2_ENV_2,
+    ONLP_THERMAL_J2_DIE_2,
+    ONLP_THERMAL_PSU_0,
+    ONLP_THERMAL_PSU_1,
+    ONLP_THERMAL_MAX,
 };
 
 #define ONLP_THERMAL_COUNT ONLP_THERMAL_MAX /*include "reserved"*/
@@ -182,10 +237,11 @@ enum onlp_thermal_id {
 /* Fan definitions*/
 enum onlp_fan_id {
     ONLP_FAN_RESERVED = 0,
-    ONLP_FAN_0 = 1,
+    ONLP_FAN_0,
     ONLP_FAN_1,
     ONLP_FAN_2,
     ONLP_FAN_3,
+    ONLP_SYS_FAN_MAX = ONLP_FAN_3,
     ONLP_PSU_0_FAN,
     ONLP_PSU_1_FAN,
     ONLP_FAN_MAX,
@@ -197,21 +253,21 @@ enum onlp_fan_id {
 /* PSU definitions*/
 enum onlp_psu_id {
     ONLP_PSU_RESERVED  = 0,
-    ONLP_PSU_0      = 1,
-    ONLP_PSU_1      = 2,
-    ONLP_PSU_0_VIN  = 3,
-    ONLP_PSU_0_VOUT = 4,
-    ONLP_PSU_0_IIN  = 5,
-    ONLP_PSU_0_IOUT = 6,
-    ONLP_PSU_0_STBVOUT = 7,
-    ONLP_PSU_0_STBIOUT = 8,
-    ONLP_PSU_1_VIN  = 9,
-    ONLP_PSU_1_VOUT = 10,
-    ONLP_PSU_1_IIN  = 11,
-    ONLP_PSU_1_IOUT = 12,
-    ONLP_PSU_1_STBVOUT = 13,
-    ONLP_PSU_1_STBIOUT = 14,
-    ONLP_PSU_MAX = 15,
+    ONLP_PSU_0,
+    ONLP_PSU_1,
+    ONLP_PSU_0_VIN,
+    ONLP_PSU_0_VOUT,
+    ONLP_PSU_0_IIN,
+    ONLP_PSU_0_IOUT,
+    ONLP_PSU_0_STBVOUT,
+    ONLP_PSU_0_STBIOUT,
+    ONLP_PSU_1_VIN,
+    ONLP_PSU_1_VOUT,
+    ONLP_PSU_1_IIN,
+    ONLP_PSU_1_IOUT,
+    ONLP_PSU_1_STBVOUT,
+    ONLP_PSU_1_STBIOUT,
+    ONLP_PSU_MAX,
 };
 
 
@@ -228,13 +284,6 @@ enum onlp_led_id {
 };
 
 #define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
-
-enum sensor
-{
-    FAN_SENSOR = 0,
-    PSU_SENSOR,
-    THERMAL_SENSOR,
-};
 
 typedef struct bmc_info_s
 {
@@ -258,6 +307,13 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t part_num;
     bmc_fru_attr_t serial;
 }bmc_fru_t;
+
+typedef struct board_s
+{
+    int hw_id;
+    int deph_id;
+    int build_id;
+}board_t;
 
 int check_file_exist(char *file_path, long *file_time);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
@@ -283,6 +339,8 @@ uint8_t ufi_shift(uint8_t mask);
 uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
+
+int ufi_get_board_version(board_t *board);
 
 #endif  /* __PLATFORM_LIB_H__ */
 

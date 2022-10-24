@@ -38,7 +38,6 @@
 
 #define SYSFS_EEPROM         "eeprom"
 #define EEPROM_ADDR (0x50)
-#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 
 typedef enum port_type_e {
     TYPE_SFP = 0,
@@ -97,6 +96,8 @@ static const port_attr_t port_attr[] = {
 #define IS_QSFPX(_port)       (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFP(_port)        (port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFPDD(_port)      (port_attr[_port].port_type == TYPE_QSFPDD)
+
+#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
@@ -302,17 +303,14 @@ int onlp_sfpi_dev_read(onlp_oid_id_t id, int devaddr, int addr,
                        uint8_t* dst, int len)
 {
     int port = ONLP_OID_ID_GET(id);
-    int bus = -1;
 
     VALIDATE_PORT(port);
+    int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-
-    devaddr = EEPROM_ADDR;
-    bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_i2c_block_read(bus, devaddr, addr, len, dst, ONLP_I2C_F_FORCE) < 0) {
         check_and_do_i2c_mux_reset(port);

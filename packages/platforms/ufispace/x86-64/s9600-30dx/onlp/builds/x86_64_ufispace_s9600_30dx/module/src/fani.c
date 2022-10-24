@@ -162,7 +162,7 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
         return ONLP_STATUS_E_PARAM;
     }
 
-    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {        
+    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_SYS_FAN_MAX) {        
         hdr->status = 0;
         ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
 
@@ -254,7 +254,7 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     //set rpm field
     info->rpm = rpm;
 
-    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {
+    if (local_id >= ONLP_FAN_0 && local_id <= ONLP_SYS_FAN_MAX) {
         percentage = (info->rpm * 100) / sys_fan_max;
         if (percentage > 100)
             percentage = 100;

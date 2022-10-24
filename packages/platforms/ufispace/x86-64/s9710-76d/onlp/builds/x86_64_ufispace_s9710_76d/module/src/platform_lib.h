@@ -297,10 +297,6 @@ enum onlp_led_id {
 
 #define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
 
-
-#define CPLD_MAX 5  //Number of MB CPLD
-extern const int CPLD_BASE_ADDR[CPLD_MAX];
-
 enum sensor
 {
     FAN_SENSOR = 0,

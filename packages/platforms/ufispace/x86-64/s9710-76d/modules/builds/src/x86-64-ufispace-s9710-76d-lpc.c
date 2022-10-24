@@ -577,7 +577,7 @@ static ssize_t write_mux_reset(struct device *dev,
 
             //unset mux on NIF ports
             _outb((mux_reset_reg_val | 0b00011111), REG_MB_MUX_RESET);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val | 0b00011111);
 
             //unset mux on top board (FAB ports)
             outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
@@ -711,6 +711,7 @@ static _SENSOR_DEVICE_ATTR_RO(board_sku_id,      lpc_callback, ATT_MB_BRD_SKU_ID
 static _SENSOR_DEVICE_ATTR_RO(board_hw_id,       lpc_callback, ATT_MB_BRD_HW_ID);
 static _SENSOR_DEVICE_ATTR_RO(board_id_type,     lpc_callback, ATT_MB_BRD_ID_TYPE);
 static _SENSOR_DEVICE_ATTR_RO(board_build_id,    lpc_callback, ATT_MB_BRD_BUILD_ID);
+static _SENSOR_DEVICE_ATTR_RO(board_deph_id,     lpc_callback, ATT_MB_BRD_DEPH_ID);
 static _SENSOR_DEVICE_ATTR_WO(mux_reset,         mux_reset, ATT_MB_MUX_RESET);
 
 static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_major_ver, lpc_callback, ATT_MB_CPLD_1_MAJOR_VER);
@@ -769,6 +770,7 @@ static struct attribute *mb_cpld_attrs[] = {
     _DEVICE_ATTR(board_hw_id),
     _DEVICE_ATTR(board_id_type),
     _DEVICE_ATTR(board_build_id),
+    _DEVICE_ATTR(board_deph_id),
     _DEVICE_ATTR(mux_ctrl),
     _DEVICE_ATTR(mux_reset),
     NULL,

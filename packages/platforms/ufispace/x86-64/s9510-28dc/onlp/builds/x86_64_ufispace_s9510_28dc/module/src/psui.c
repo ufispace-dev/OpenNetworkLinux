@@ -87,6 +87,36 @@ static onlp_psu_info_t __onlp_psu_info[] = {
 };
 
 /**
+ * @brief Get and check psu local ID
+ * @param id [in] OID
+ * @param local_id [out] The psu local id
+ */
+static int get_psu_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if((ONLP_OID_TYPE_GET(id) != 0) && !ONLP_OID_IS_PSU(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_PSU_0:
+        case ONLP_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+
+/**
  * @brief get psu presnet status
  * @param local_id: psu id
  * @param[out] pw_present: psu present status(0: absence, 1: presence)
@@ -162,11 +192,11 @@ int get_psu_type( int local_id, int *psu_type, bmc_fru_t *fru_in)
         ONLP_TRY(bmc_fru_read(local_id, fru));
     } else {
         fru = fru_in;
-    } 
+    }
 
-    if(strcmp(fru->name.val, "VICTO451AM") == 0) {
+    if(strncmp(fru->name.val, "VICTO451AM", BMC_FRU_ATTR_KEY_VALUE_SIZE) == 0) {
         *psu_type = ONLP_PSU_TYPE_AC;
-    } else if (strcmp(fru->name.val, "YNEB0450AM") == 0) {
+    } else if (strncmp(fru->name.val, "YNEB0450AM", BMC_FRU_ATTR_KEY_VALUE_SIZE) == 0) {
         *psu_type = ONLP_PSU_TYPE_DC48;
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
@@ -332,7 +362,12 @@ int onlp_psui_sw_denit(void)
  */
 int onlp_psui_id_validate(onlp_oid_id_t id)
 {
-    return ONLP_OID_ID_VALIDATE_RANGE(id, 1, ONLP_PSU_MAX-1);
+    int local_id = 0;
+    if(get_psu_local_id(id, &local_id) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -343,7 +378,8 @@ int onlp_psui_id_validate(onlp_oid_id_t id)
 int onlp_psui_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 {
     int ret = ONLP_STATUS_OK;
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+    ONLP_TRY(get_psu_local_id(id, &local_id));
 
     /* Set the onlp_psu_info_t */
     *hdr = __onlp_psu_info[local_id].hdr;
@@ -361,7 +397,8 @@ int onlp_psui_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
  */
 int onlp_psui_info_get(onlp_oid_id_t id, onlp_psu_info_t* info)
 {
-    int local_id = ONLP_OID_ID_GET(id);
+    int local_id = 0;
+    ONLP_TRY(get_psu_local_id(id, &local_id));
 
     /* Set the onlp_psu_info_t */
     memset(info, 0, sizeof(onlp_psu_info_t));
