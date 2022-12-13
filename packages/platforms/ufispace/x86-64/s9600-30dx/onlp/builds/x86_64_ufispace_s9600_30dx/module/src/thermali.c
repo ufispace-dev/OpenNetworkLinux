@@ -60,8 +60,8 @@
         threshold\
     }\
 
-//FIXME    
-static onlp_thermal_info_t thermal_info[] = {    
+//FIXME
+static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
     THERMAL_INFO(ONLP_THERMAL_CPU_PKG, "CPU Package", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_0, "CPU Thermal 0", THERMAL_THRESHOLD_INIT_DEFAULTS),
@@ -72,59 +72,105 @@ static onlp_thermal_info_t thermal_info[] = {
     THERMAL_INFO(ONLP_THERMAL_CPU_5, "CPU Thermal 5", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_6, "CPU Thermal 6", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_CPU_7, "CPU Thermal 7", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_ADC_CPU_TEMP, "ADC_CPU_TEMP", THERMAL_THRESHOLD_CPU_PECI),
+    THERMAL_INFO(ONLP_THERMAL_ENV_CPU, "TEMP_ENV_CPU", THERMAL_THRESHOLD_CPU_PECI),
     THERMAL_INFO(ONLP_THERMAL_CPU_PECI, "TEMP_CPU_PECI", THERMAL_THRESHOLD_CPU_PECI),
-    THERMAL_INFO(ONLP_THERMAL_J2_ENV_1, "TEMP_J2_ENV_1", THERMAL_THRESHOLD_MAC_ENV),
-    THERMAL_INFO(ONLP_THERMAL_J2_DIE_1, "TEMP_J2_DIE_1", THERMAL_THRESHOLD_MAC_DIE),
-    THERMAL_INFO(ONLP_THERMAL_J2_ENV_2, "TEMP_J2_ENV_2", THERMAL_THRESHOLD_MAC_ENV),
-    THERMAL_INFO(ONLP_THERMAL_J2_DIE_2, "TEMP_J2_DIE_2", THERMAL_THRESHOLD_MAC_DIE),
+    THERMAL_INFO(ONLP_THERMAL_ENV_MAC0, "TEMP_ENV_MAC0", THERMAL_THRESHOLD_MAC_ENV),
+    THERMAL_INFO(ONLP_THERMAL_MAC0, "TEMP_MAC0", THERMAL_THRESHOLD_MAC_DIE),
+    THERMAL_INFO(ONLP_THERMAL_ENV_MAC1, "TEMP_ENV_MAC1", THERMAL_THRESHOLD_MAC_ENV),
+    THERMAL_INFO(ONLP_THERMAL_MAC1, "TEMP_MAC1", THERMAL_THRESHOLD_MAC_DIE),
     THERMAL_INFO(ONLP_THERMAL_PSU_0, "PSU-0-Thermal", THERMAL_THRESHOLD_PSU),
     THERMAL_INFO(ONLP_THERMAL_PSU_1, "PSU-1-Thermal", THERMAL_THRESHOLD_PSU),
 };
 
-static int ufi_cpu_thermal_info_get(int id, onlp_thermal_info_t* info)
+/**
+ * @brief Get and check thermal local ID
+ * @param id [in] OID
+ * @param local_id [out] The thermal local id
+ */
+static int get_thermal_local_id(int id, int *local_id)
+{
+    int tmp_id;
+
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_THERMAL(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+
+    switch (tmp_id) {
+        case ONLP_THERMAL_CPU_PKG:
+        case ONLP_THERMAL_CPU_0:
+        case ONLP_THERMAL_CPU_1:
+        case ONLP_THERMAL_CPU_2:
+        case ONLP_THERMAL_CPU_3:
+        case ONLP_THERMAL_CPU_4:
+        case ONLP_THERMAL_CPU_5:
+        case ONLP_THERMAL_CPU_6:
+        case ONLP_THERMAL_CPU_7:
+        case ONLP_THERMAL_ENV_CPU:
+        case ONLP_THERMAL_CPU_PECI:
+        case ONLP_THERMAL_ENV_MAC0:
+        case ONLP_THERMAL_MAC0:
+        case ONLP_THERMAL_ENV_MAC1:
+        case ONLP_THERMAL_MAC1:
+        case ONLP_THERMAL_PSU_0:
+        case ONLP_THERMAL_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+
+static int ufi_cpu_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
     int rv = 0;
-    
+
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1);    
-    
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1);
+
     if(rv < 0) {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (id - ONLP_THERMAL_CPU_PKG) + 1); 
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1);
         if(rv < 0) {
             return rv;
         }
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
-int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
+static int ufi_bmc_thermal_info_get(int local_id, onlp_thermal_info_t* info)
 {
     int rc = 0;
     float data = 0;
     int bmc_attr_id = BMC_ATTR_ID_MAX;
 
-    switch(id)
+    switch(local_id)
     {
-        case ONLP_THERMAL_ADC_CPU_TEMP:
-            bmc_attr_id = BMC_ATTR_ID_ADC_CPU_TEMP;
+        case ONLP_THERMAL_ENV_CPU:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_CPU;
             break;
         case ONLP_THERMAL_CPU_PECI:
             bmc_attr_id = BMC_ATTR_ID_TEMP_CPU_PECI;
             break;
-        case ONLP_THERMAL_J2_ENV_1:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_ENV_1;
+        case ONLP_THERMAL_ENV_MAC0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_MAC0;
             break;
-        case ONLP_THERMAL_J2_DIE_1:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_DIE_1;
+        case ONLP_THERMAL_MAC0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0;
             break;
-        case ONLP_THERMAL_J2_ENV_2:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_ENV_2;
+        case ONLP_THERMAL_ENV_MAC1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_MAC1;
             break;
-        case ONLP_THERMAL_J2_DIE_2:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_DIE_2;
+        case ONLP_THERMAL_MAC1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1;
             break;
         case ONLP_THERMAL_PSU_0:
             bmc_attr_id = BMC_ATTR_ID_PSU0_TEMP;
@@ -142,7 +188,7 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
     info->mcelsius = (int) (data*1000);
-        
+
     return rc;
 }
 
@@ -150,7 +196,7 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
  * @brief Initialize the thermal subsystem.
  */
 int onlp_thermali_init(void)
-{   
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -161,22 +207,25 @@ int onlp_thermali_init(void)
  * @param rv [out] Receives the thermal information.
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
-{   
-    int sensor_id = 0, rc = 0;
-    VALIDATE(id);
-	
-    sensor_id = ONLP_OID_ID_GET(id);
-    
-    *rv = thermal_info[sensor_id];
-    
-    switch (sensor_id) {        
+{
+    int rc = 0;
+    int local_id;
+
+    if(rv == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
+    *rv = thermal_info[local_id];
+
+    switch (local_id) {
         case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
-            rc = ufi_cpu_thermal_info_get(sensor_id, rv);
-            break;        
-        case ONLP_THERMAL_ADC_CPU_TEMP ... ONLP_THERMAL_PSU_1:
-            rc = ufi_bmc_thermal_info_get(rv, sensor_id);
-            break;    
-        default:            
+            rc = ufi_cpu_thermal_info_get(local_id, rv);
+            break;
+        case ONLP_THERMAL_ENV_CPU ... ONLP_THERMAL_PSU_1:
+            rc = ufi_bmc_thermal_info_get(local_id, rv);
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
@@ -193,9 +242,11 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int result = ONLP_STATUS_OK;
     onlp_thermal_info_t info;
-    VALIDATE(id);
-	
-    result = onlp_thermali_info_get(id, &info);
+    int local_id;
+
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
+
+    result = onlp_thermali_info_get(local_id, &info);
     *rv = info.status;
 
     return result;
@@ -208,19 +259,12 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
  */
 int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_thermal_info_t* info = NULL;
-    int thermal_id = 0;
-    VALIDATE(id);
+    int local_id;
 
-    thermal_id = ONLP_OID_ID_GET(id);
-    if(thermal_id >= ONLP_THERMAL_MAX) {
-        result = ONLP_STATUS_E_INVALID;
-    } else {
-        info = &thermal_info[thermal_id];
-        *rv = info->hdr;
-    }
-    return result;
+    ONLP_TRY(get_thermal_local_id(id, &local_id));
+    *rv = thermal_info[local_id].hdr;
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -230,3 +274,4 @@ int onlp_thermali_ioctl(int id, va_list vargs)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
+

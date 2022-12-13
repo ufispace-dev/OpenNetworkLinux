@@ -36,14 +36,14 @@ const int CPLD_I2C_BUS = 1;
 
 bmc_info_t beta_bmc_cache[] =
 {
-    [BMC_ATTR_ID_ADC_CPU_TEMP] = {"ADC_CPU_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_ENV_CPU] = {BETA_TEMP_ENV_CPU, 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
-    [BMC_ATTR_ID_TEMP_J2_ENV_1] = {BETA_TEMP_J2_ENV1, 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_1] = {BETA_TEMP_J2_DIE1, 0},
-    [BMC_ATTR_ID_TEMP_J2_ENV_2] = {BETA_TEMP_J2_ENV2, 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_2] = {BETA_TEMP_J2_DIE2, 0},
-    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
-    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_ENV_MAC0] = {BETA_TEMP_ENV_MAC0, 0},
+    [BMC_ATTR_ID_TEMP_MAC0] = {BETA_TEMP_MAC0, 0},
+    [BMC_ATTR_ID_TEMP_ENV_MAC1] = {BETA_TEMP_ENV_MAC1, 0},
+    [BMC_ATTR_ID_TEMP_MAC1] = {BETA_TEMP_MAC1, 0},
+    [BMC_ATTR_ID_PSU0_TEMP] = {BETA_PSU0_TEMP, 0},
+    [BMC_ATTR_ID_PSU1_TEMP] = {BETA_PSU1_TEMP, 0},
     [BMC_ATTR_ID_FAN0_RPM] = {"FAN0_RPM", 0},
     [BMC_ATTR_ID_FAN1_RPM] = {"FAN1_RPM", 0},
     [BMC_ATTR_ID_FAN2_RPM] = {"FAN2_RPM", 0},
@@ -70,14 +70,14 @@ bmc_info_t beta_bmc_cache[] =
 
 bmc_info_t pvt_bmc_cache[] =
 {
-    [BMC_ATTR_ID_ADC_CPU_TEMP] = {"ADC_CPU_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_ENV_CPU] = {PVT_TEMP_ENV_CPU, 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
-    [BMC_ATTR_ID_TEMP_J2_ENV_1] = {PVT_TEMP_J2_ENV1, 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_1] = {PVT_TEMP_J2_DIE1, 0},
-    [BMC_ATTR_ID_TEMP_J2_ENV_2] = {PVT_TEMP_J2_ENV2, 0},
-    [BMC_ATTR_ID_TEMP_J2_DIE_2] = {PVT_TEMP_J2_DIE2, 0},
-    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
-    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_TEMP_ENV_MAC0] = {PVT_TEMP_ENV_MAC0, 0},
+    [BMC_ATTR_ID_TEMP_MAC0] = {PVT_TEMP_MAC0, 0},
+    [BMC_ATTR_ID_TEMP_ENV_MAC1] = {PVT_TEMP_ENV_MAC1, 0},
+    [BMC_ATTR_ID_TEMP_MAC1] = {PVT_TEMP_MAC1, 0},
+    [BMC_ATTR_ID_PSU0_TEMP] = {PVT_PSU0_TEMP, 0},
+    [BMC_ATTR_ID_PSU1_TEMP] = {PVT_PSU1_TEMP, 0},
     [BMC_ATTR_ID_FAN0_RPM] = {"FAN0_RPM", 0},
     [BMC_ATTR_ID_FAN1_RPM] = {"FAN1_RPM", 0},
     [BMC_ATTR_ID_FAN2_RPM] = {"FAN2_RPM", 0},
@@ -175,7 +175,7 @@ int ufi_get_board_version(board_t *board)
     return rv;
 }
 
-int check_file_exist(char *file_path, long *file_time) 
+int check_file_exist(char *file_path, long *file_time)
 {
     struct stat file_info;
 
@@ -244,7 +244,7 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
             bmc_cache_expired = 1;
         }
     }
-    
+
     return bmc_cache_expired;
 }
 
@@ -259,15 +259,15 @@ int is_float_string(char * str)
 {
     int rv = 0;
     int len;
-    float ignore;    
+    float ignore;
     int ret = 0;
 
     if(str ==NULL)
         return 0;
-	
+
     ret = sscanf(str, "%f %n", &ignore, &len);
 
-    //rv=1 if sscanf return 1 parsed float parameter and the whole inut string characters are parsed as float   
+    //rv=1 if sscanf return 1 parsed float parameter and the whole inut string characters are parsed as float
     rv = (ret==1 && !str[len]);
 
     return rv;
@@ -301,16 +301,16 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 
     ONLP_TRY(file_read_hex(&deph_id, SYSFS_DEPH_ID));
     ONLP_TRY(file_read_hex(&hw_id, SYSFS_HW_ID));
-	
-    //sensor name is different between AST2600 and AST2400 
+
+    //sensor name is different between AST2600 and AST2400
     if (deph_id == 0 && hw_id <= 2) {
         cmd_bmc_sensor_cache = BETA_CMD_BMC_SENSOR_CACHE;
         bmc_cache = beta_bmc_cache;
     } else {
         cmd_bmc_sensor_cache = PVT_CMD_BMC_SENSOR_CACHE;
         bmc_cache = pvt_bmc_cache;
-    }		
-        
+    }
+
     switch(sensor_type) {
         case FAN_SENSOR:
             cache_time = FAN_CACHE_TIME;
@@ -322,7 +322,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             cache_time = THERMAL_CACHE_TIME;
             break;
     }
-    
+
     ONLP_LOCK();
 
     if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
@@ -348,14 +348,14 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {
-                        AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d", 
+                        AIM_LOG_ERROR("%s() write bmc sensor cache failed, retry=%d, cmd=%s, ret=%d",
                             __func__, retry, ipmi_cmd, rv);
                         rv = ONLP_STATUS_E_INTERNAL;
                         goto done;
                     } else {
                         continue;
                     }
-                } else {                    
+                } else {
                     break;
                 }
             }
@@ -364,7 +364,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         //read sensor from cache file and save to bmc_cache
         fp = fopen (BMC_SENSOR_CACHE, "r");
         if(fp == NULL) {
-            AIM_LOG_ERROR("%s() open file failed, file=%s", 
+            AIM_LOG_ERROR("%s() open file failed, file=%s",
                             __func__, BMC_SENSOR_CACHE);
             rv = ONLP_STATUS_E_INTERNAL;
             goto done;
@@ -375,7 +375,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             i=0;
             line_ptr = line;
             token = NULL;
-            
+
             //parse line into fields
             while ((token = strsep (&line_ptr, seps)) != NULL) {
                 sscanf (token, "%[^\n]", line_fields[i++]);
@@ -390,29 +390,29 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                             f_rv = 1;
                         } else {
                             f_rv = 0;
-                        }                        
+                        }
                         bmc_cache[dev_num].data = f_rv;
                     } else {
                         f_rv = atof(line_fields[1]);
                         bmc_cache[dev_num].data = f_rv;
                      }
                      break;
-                }                
+                }
             }
-            
+
             //reset field for next loop
             memset(line_fields[0], 0, sizeof(line_fields[0])); //sensor name
             memset(line_fields[1], 0, sizeof(line_fields[1])); //sensor value
             memset(line_fields[4], 0, sizeof(line_fields[4])); //sensor presence
         }
-        fclose(fp);        
+        fclose(fp);
         init_cache = 0;
-        
+
     }
 
     //read from cache
     *data = bmc_cache[bmc_cache_index].data;
-    
+
 done:
     ONLP_UNLOCK();
     return rv;
@@ -432,14 +432,14 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     long file_last_time = 0;
     int rv = ONLP_STATUS_OK;
 
-    if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {        
+    if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
     bmc_fru_t *fru = &bmc_fru_cache[local_id];
 
     ONLP_LOCK();
-    
+
     if(check_file_exist(fru->cache_files, &file_last_time)) {
         gettimeofday(&new_tv, NULL);
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
@@ -500,7 +500,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
 
             if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
                 memset(fru->name.val, '\0', sizeof(fru->name.val));
-                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));                
+                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
             }
 
             if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
@@ -528,7 +528,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
                 local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
             rv = ONLP_STATUS_E_INTERNAL;
             goto done;
-        }         
+        }
     }
 
     //read from cache
@@ -547,7 +547,7 @@ int read_ioport(int addr, int *reg_val) {
 
     /*set r/w permission of  all 65536 ports*/
     ONLP_TRY(iopl(0));
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -586,7 +586,7 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs)
     uint8_t data[32];
     int len = 0;
     ONLP_TRY(onlp_file_vread(data, sizeof(data), &len, fmt, vargs));
-    
+
     //hex to int
     *value = (int) strtol((char *)data, NULL, 0);
     return 0;
@@ -600,7 +600,7 @@ void check_and_do_i2c_mux_reset(int port)
 {
     char cmd_buf[256] = {0};
     int ret = 0;
-        
+
     if(access(SYSFS_CPLD1_ID, F_OK) != -1 ) {
 
         snprintf(cmd_buf, sizeof(cmd_buf), "cat %s > /dev/null 2>&1", SYSFS_CPLD1_ID);

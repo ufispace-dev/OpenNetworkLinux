@@ -65,10 +65,18 @@ onlp_fan_info_t fan_info[] = {
     {
         { FAN_OID_PSU1_FAN1, "PSU-1 FAN1", 0 },
         ONLP_FAN_STATUS_PRESENT,
+        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
     },
     {
         { FAN_OID_PSU2_FAN1, "PSU-2 FAN1", 0 },
         ONLP_FAN_STATUS_PRESENT,
+        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
     }
 };
 

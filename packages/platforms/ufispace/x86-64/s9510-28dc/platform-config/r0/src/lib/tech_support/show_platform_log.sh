@@ -49,8 +49,9 @@ LS_OPTION="-alu"
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
 LOG_REDIRECT="2>&1"
 
-# GPIO_OFFSET: update by function _update_gpio_offset
-GPIO_OFFSET=0
+# GPIO_MAX: update by function _update_gpio_max
+GPIO_MAX=0
+GPIO_MAX_INIT_FLAG=0
 
 # I2C Bus
 i801_bus=""
@@ -84,26 +85,21 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.4"
+    _banner "Package Version = 1.0.5"
 }
 
-function _update_gpio_offset {
-    _banner "Update GPIO Offset"
+function _update_gpio_max {
+    _banner "Update GPIO MAX"
 
-    max_gpiochip=`ls /sys/class/gpio/ | sort -r | grep -m1 gpiochip`
-    max_gpiochip_num="${max_gpiochip#*gpiochip}"
-
-    if [ -z "${max_gpiochip_num}" ]; then
-        GPIO_OFFSET=0
-    elif [ ${max_gpiochip_num} -lt 256 ]; then
-        GPIO_OFFSET=256
+    GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_gpio_max)
+    if [ $? -eq 1 ]; then
+        GPIO_MAX_INIT_FLAG=0
     else
-        GPIO_OFFSET=0
+        GPIO_MAX_INIT_FLAG=1
     fi
-
-    _echo "[GPIOCHIP MAX    ]: ${max_gpiochip}"
-    _echo "[GPIOCHIP MAX NUM]: ${max_gpiochip_num}"
-    _echo "[GPIO OFFSET     ]: ${GPIO_OFFSET}"
+    
+    _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
+    _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
 
 function _check_env {
@@ -151,7 +147,7 @@ function _check_env {
     _check_bsp_init
 
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _update_gpio_offset
+        _update_gpio_max
     fi
 }
 
@@ -692,10 +688,8 @@ function _show_gpio_sysfs {
 
     _banner "Show GPIO Status"
 
-    gpio_device=`ls /sys/class/gpio/ | sort -r | grep -m1 "gpio[[:digit:]]"`
-    max_gpio=${gpio_device#*gpio}
-    gpio_device=`ls /sys/class/gpio/ | sort | grep -m1 "gpio[[:digit:]]"`
-    min_gpio=${gpio_device#*gpio}
+    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -n | tail -1`
+    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -n | head -1`
     for (( i=${min_gpio}; i<=${max_gpio}; i++ ))
     do
         if [ ! -d "/sys/class/gpio/gpio${i}" ]; then
@@ -828,53 +822,54 @@ function _show_port_status_sysfs {
                          "12" "13" "14" "15" "16" "17" "18" "19" \
                          "20" "21" "22" "23" "24" "25" "26" "27" )
 
-        port_absent_gpio_array=("487" "486" \
-                                "485" "484" \
-                                "375" "374" "373" "372" "371" "370" "369" "368" \
-                                "383" "382" "381" "380" "379" "378" "377" "376" \
-                                "359" "358" "357" "356" "355" "354" "353" "352" )
+        port_absent_gpio_array=("24" "25" \
+                                "26" "27" \
+                                "136" "137" "138" "139" "140" "141" "142" "143" \
+                                "128" "129" "130" "131" "132" "133" "134" "135" \
+                                "152" "153" "154" "155" "156" "157" "158" "159" )
 
-        port_lp_mode_gpio_array=("491" "490" \
-                                 "489" "488" \
+        port_lp_mode_gpio_array=("20" "21" \
+                                 "22" "23" \
                                  "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                  "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                  "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
-        port_reset_gpio_array=("495" "494" \
-                               "493" "492" \
+        port_reset_gpio_array=("16" "17" \
+                               "18" "19" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
-        port_intr_gpio_array=("483" "482" \
-                              "481" "480" \
+        port_intr_gpio_array=("28" "29" \
+                              "30" "31" \
                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
         port_tx_fault_gpio_array=("-1" "-1" \
                                   "-1" "-1" \
-                                  "439" "438" "437" "436" "435" "434" "433" "432" \
-                                  "447" "446" "445" "444" "443" "442" "441" "440" \
-                                  "423" "422" "421" "420" "419" "418" "417" "416" )
+                                  "72" "73" "74" "75" "76" "77" "78" "79" \
+                                  "64" "65" "66" "67" "68" "69" "70" "71" \
+                                  "88" "89" "90" "91" "92" "93" "94" "95" )
 
         port_rx_los_gpio_array=("-1" "-1" \
                                 "-1" "-1" \
-                                "343" "342" "341" "340" "339" "338" "337" "336" \
-                                "351" "350" "349" "348" "347" "346" "345" "344" \
-                                "327" "326" "325" "324" "323" "322" "321" "320" )
+                                "168" "169" "170" "171" "172" "173" "174" "175" \
+                                "160" "161" "162" "163" "164" "165" "166" "167" \
+                                "184" "185" "186" "187" "188" "189" "190" "191" )
 
         port_tx_dis_gpio_array=("-1" "-1" \
                                 "-1" "-1" \
-                                "471" "470" "469" "468" "467" "466" "465" "464" \
-                                "479" "478" "477" "476" "475" "474" "473" "472" \
-                                "455" "454" "453" "452" "451" "450" "449" "448" )
+                                "40" "41" "42" "43" "44" "45" "46" "47" \
+                                "32" "33" "34" "35" "36" "37" "38" "39" \
+                                "56" "57" "58" "59" "60" "61" "62" "63" )
+
 
         port_rate_sel_gpio_array=("-1" "-1" \
                                   "-1" "-1" \
-                                  "407" "406" "405" "404" "403" "402" "401" "400" \
-                                  "415" "414" "413" "412" "411" "410" "409" "408" \
-                                  "391" "390" "389" "388" "387" "386" "385" "384" )
+                                  "104" "105" "106" "107" "108" "109" "110" "111" \
+                                  "96"  "97"  "98"  "99"  "100" "101" "102" "103" \
+                                  "120" "121" "122" "123" "124" "125" "126" "127" )
 
         port_eeprom_bus_array=("13" "12" \
                                "11" "10" \
@@ -882,13 +877,13 @@ function _show_port_status_sysfs {
                                "22" "23" "24" "25" "26" "27" "28" "29" \
                                "30" "31" "32" "33" "34" "35" "36" "37" )
 
-        port_led_g_gpio_array=("395" "393" \
+        port_led_g_gpio_array=("116" "118" \
                                "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
-        port_led_y_gpio_array=("394" "392" \
+        port_led_y_gpio_array=("117" "119" \
                                "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
@@ -899,14 +894,14 @@ function _show_port_status_sysfs {
 
             local gpio_path=0
             # Port Absent Status (0: Present, 1:Absence)
-            gpio_path=$(( ${port_absent_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_absent_gpio_array[${i}]} ))
             if [ "${port_absent_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_absent=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Module Absent]: ${port_absent}"
             fi
 
             # Port Lower Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
-            gpio_path=$(( ${port_lp_mode_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_lp_mode_gpio_array[${i}]} ))
             if [ "${port_lp_mode_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
 
                 port_lp_mode=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
@@ -915,50 +910,50 @@ function _show_port_status_sysfs {
             fi
 
             # Port Reset Status (0:Reset, 1:Normal)
-            gpio_path=$(( ${port_reset_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_reset_gpio_array[${i}]} ))
             if [ "${port_reset_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_reset=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Reset Status]: ${port_reset}"
             fi
 
             # Port Interrupt Status (0: Interrupted, 1:No Interrupt)
-            gpio_path=$(( ${port_intr_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_intr_gpio_array[${i}]} ))
             if [ "${port_intr_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_intr_l=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Interrupt Status (L)]: ${port_intr_l}"
             fi
 
             # Port Tx Fault Status (0:normal, 1:tx fault)
-            gpio_path=$(( ${port_tx_fault_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_tx_fault_gpio_array[${i}]} ))
             if [ "${port_tx_fault_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_tx_fault=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Tx Fault Status]: ${port_tx_fault}"
             fi
 
             # Port Rx Loss Status (0:los undetected, 1: los detected)
-            gpio_path=$(( ${port_rx_los_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_rx_los_gpio_array[${i}]} ))
             if [ "${port_rx_los_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_rx_loss=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Rx Loss Status]: ${port_rx_loss}"
             fi
 
             # Port Tx Disable Status (0:enable tx, 1: disable tx)
-            gpio_path=$(( ${port_tx_dis_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_tx_dis_gpio_array[${i}]} ))
             if [ "${port_tx_dis_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_tx_dis=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Tx Disable Status]: ${port_tx_dis}"
             fi
 
             # Port Rate Select (0: low rate, 1:full rate)
-            gpio_path=$(( ${port_rate_sel_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            gpio_path=$(( ${GPIO_MAX} - ${port_rate_sel_gpio_array[${i}]} ))
             if [ "${port_rate_sel_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_rate_sel=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[Port${i} Port Rate Select]: ${port_rate_sel}"
             fi
 
             # Port LED Status (0: low rate, 1:full rate)
-            local gpio_g_path=$(( ${port_led_g_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            local gpio_y_path=$(( ${port_led_y_gpio_array[${i}]} - ${GPIO_OFFSET} ))
+            local gpio_g_path=$(( ${GPIO_MAX} - ${port_led_g_gpio_array[${i}]} ))
+            local gpio_y_path=$(( ${GPIO_MAX} - ${port_led_y_gpio_array[${i}]} ))
             if [ "${port_led_g_gpio_array[${i}]}" != "-1" ] && [ "${port_led_y_gpio_array[${i}]}" != "-1" ] &&
                 _check_filepath "/sys/class/gpio/gpio${gpio_g_path}/value" &&
                 _check_filepath "/sys/class/gpio/gpio${gpio_y_path}/value"; then
@@ -1008,7 +1003,7 @@ function _show_port_status_sysfs {
 }
 
 function _show_port_status {
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
         _show_port_status_sysfs
     fi
 }

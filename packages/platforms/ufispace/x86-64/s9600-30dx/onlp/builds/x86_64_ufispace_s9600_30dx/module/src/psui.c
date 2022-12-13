@@ -24,7 +24,6 @@
  ***********************************************************/
 #include <onlp/platformi/psui.h>
 #include "platform_lib.h"
-#include <unistd.h>
 
 #define PSU0_PRESENT_MASK      0x01
 #define PSU1_PRESENT_MASK      0x02
@@ -34,13 +33,6 @@
 #define PSU_STATUS_POWER_GOOD  1
 
 #define SYSFS_PSU_STATUS     SYSFS_CPLD1 "cpld_psu_status"
-
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_PSU(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
-    } while(0)
 
 #define PSU_INFO(id, desc, fid, tid)            \
     {                                           \
@@ -61,14 +53,48 @@ static onlp_psu_info_t psu_info[] =
 
 static char *vendors[] = {"DELTA", "FSPGROUP"};
 
-static int ufi_psu_present_get(int id, int *psu_present)
+/**
+ * @brief Get and check psu local ID
+ * @param id [in] OID
+ * @param local_id [out] The psu local id
+ */
+static int get_psu_local_id(int id, int *local_id)
 {
-    int status = 0;
-    int mask = 0;
+    int tmp_id;
 
-    if (id == ONLP_PSU_0) {        
+    if(local_id == NULL) {
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(!ONLP_OID_IS_PSU(id)) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    tmp_id = ONLP_OID_ID_GET(id);
+    switch (tmp_id) {
+        case ONLP_PSU_0:
+        case ONLP_PSU_1:
+            *local_id = tmp_id;
+            return ONLP_STATUS_OK;
+        default:
+            return ONLP_STATUS_E_INVALID;
+    }
+
+    return ONLP_STATUS_E_INVALID;
+}
+
+int get_psu_present_status(int local_id, int *pw_present)
+{
+    int status;
+    int mask;
+
+    if(pw_present == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (local_id == ONLP_PSU_0) {
         mask = PSU0_PRESENT_MASK;
-    } else if (id == ONLP_PSU_1) {
+    } else if (local_id == ONLP_PSU_1) {
         mask = PSU1_PRESENT_MASK;
     } else {
         return ONLP_STATUS_E_INTERNAL;
@@ -76,44 +102,50 @@ static int ufi_psu_present_get(int id, int *psu_present)
 
     ONLP_TRY(file_read_hex(&status, SYSFS_PSU_STATUS));
 
-    *psu_present = ((status & mask)? 0 : 1);
-    
+    *pw_present = ((status & mask)? 0 : 1);
+
     return ONLP_STATUS_OK;
 }
 
-static int ufi_psu_pwgood_get( int id, int *pw_good)
+static int get_psu_pwgood_status(int local_id, int *pw_good)
 {
-    int status = 0;   
-    int mask = 0;
+    int status;
+    int mask;
 
-    if (id == ONLP_PSU_0) {
+    if(pw_good == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (local_id == ONLP_PSU_0) {
         mask = PSU0_PWGOOD_MASK;
-    } else if (id == ONLP_PSU_1) {
+    } else if (local_id == ONLP_PSU_1) {
         mask = PSU1_PWGOOD_MASK;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    if (file_read_hex(&status, SYSFS_PSU_STATUS)) {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+
+    ONLP_TRY(file_read_hex(&status, SYSFS_PSU_STATUS));
 
     *pw_good = ((status & mask)? 1 : 0);
-    
+
     return ONLP_STATUS_OK;
 }
 
 /**
  * @brief get psu type
  * @param local_id: psu id
- * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48) 
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
  * @param fru_in: input fru node. we will use the input node informations to get psu type
  */
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 {
     bmc_fru_t *fru = NULL;
     bmc_fru_t fru_tmp = {0};
-    
+
+    if(local_id != ONLP_PSU_0 && local_id !=  ONLP_PSU_1) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
     if(psu_type == NULL) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -148,27 +180,26 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
         AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
-        return ONLP_STATUS_E_INTERNAL; 
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
 /**
  * @brief Update the information of Model and Serial from PSU EEPROM
- * @param id The PSU Local ID
+ * @param local_id The PSU Local ID
  * @param[out] info Receives the PSU information (model and serial).
  */
-static int update_psui_fru_info(int id, onlp_psu_info_t* info)
+static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
     bmc_fru_t fru = {0};
     int psu_type = ONLP_PSU_TYPE_AC;
-    
+
     //read fru data
-    ONLP_TRY(bmc_fru_read(id, &fru));
+    ONLP_TRY(bmc_fru_read(local_id, &fru));
 
     //update FRU model
-    memset(info->model, 0, sizeof(info->model));   
+    memset(info->model, 0, sizeof(info->model));
     if (strncmp(fru.vendor.val, vendors[1], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) {
         //read product name for FSP
         snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
@@ -181,8 +212,8 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
     memset(info->serial, 0, sizeof(info->serial));
     snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
-    //update FRU type   
-    ONLP_TRY(get_psu_type(id, &psu_type, &fru));
+    //update FRU type
+    ONLP_TRY(get_psu_type(local_id, &psu_type, &fru));
     if(psu_type == ONLP_PSU_TYPE_AC) {
         info->caps |= ONLP_PSU_CAPS_AC;
         info->caps &= ~ONLP_PSU_CAPS_DC48;
@@ -194,14 +225,13 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
     return ONLP_STATUS_OK;
 }
 
-static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
-    int psu_present = 0, pw_good = 0;    
-    int stbmvout = 0, stbmiout = 0;
-    float data = 0;
-    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_stbvout = 0, attr_stbiout = 0;
+static int update_psui_info(int local_id, onlp_psu_info_t *info)
+{
+    int stbmvout, stbmiout;
+    float data;
+    int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
 
-    if (id == ONLP_PSU_0) {
+    if (local_id == ONLP_PSU_0) {
         attr_vin = BMC_ATTR_ID_PSU0_VIN;
         attr_vout = BMC_ATTR_ID_PSU0_VOUT;
         attr_iin = BMC_ATTR_ID_PSU0_IIN;
@@ -216,63 +246,43 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
         attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
         attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
-    
-     /* Get power present status */
-    ONLP_TRY(ufi_psu_present_get(id, &psu_present)); 
-
-    if (psu_present != PSU_STATUS_PRESENT) {
-        info->status &= ~ONLP_PSU_STATUS_PRESENT;
-        info->status |=  ONLP_PSU_STATUS_UNPLUGGED;
-        return ONLP_STATUS_OK;
-    }
-
-    info->status |= ONLP_PSU_STATUS_PRESENT;
-
-    /* Get power good status */
-    ONLP_TRY(ufi_psu_pwgood_get(id, &pw_good));
-
-    if (pw_good != PSU_STATUS_POWER_GOOD) {
-        info->status |= ONLP_PSU_STATUS_FAILED;
-    } else {
-        info->status &= ~ONLP_PSU_STATUS_FAILED;
-    }
 
     /* Get power vin status */
     ONLP_TRY(bmc_sensor_read(attr_vin, PSU_SENSOR, &data));
     info->mvin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VIN;   
-    
+    info->caps |= ONLP_PSU_CAPS_VIN;
+
     /* Get power vout status */
     ONLP_TRY(bmc_sensor_read(attr_vout, PSU_SENSOR, &data));
     info->mvout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VOUT;
-            
+
     /* Get power iin status */
     ONLP_TRY(bmc_sensor_read(attr_iin, PSU_SENSOR, &data));
     info->miin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IIN;
-    
+
     /* Get power iout status */
     ONLP_TRY(bmc_sensor_read(attr_iout, PSU_SENSOR, &data));
-    info->miout = (int) (data*1000);        
-    info->caps |= ONLP_PSU_CAPS_IOUT;   
+    info->miout = (int) (data*1000);
+    info->caps |= ONLP_PSU_CAPS_IOUT;
 
-    /* Get standby power vout */    
+    /* Get standby power vout */
     ONLP_TRY(bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data));
     stbmvout = (int) (data*1000);
-    
+
     /* Get standby power iout */
     ONLP_TRY(bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data));
     stbmiout = (int) (data*1000);
-        
+
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;        
+    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
-    
-    /* Get FRU */
-    ONLP_TRY(update_psui_fru_info(id, info));
-    
+
+    /* Get FRU (model/serial) */
+    ONLP_TRY(update_psui_fru_info(local_id, info));
+
     return ONLP_STATUS_OK;
 }
 
@@ -280,7 +290,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
  * @brief Initialize the PSU subsystem.
  */
 int onlp_psui_init(void)
-{  
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -291,25 +301,21 @@ int onlp_psui_init(void)
  * @param rv [out] Receives the PSU information.
  */
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
-{        
-    int pid = 0;
-    VALIDATE(id);
-    
-    pid = ONLP_OID_ID_GET(id);
+{
+    int local_id;
+
+    ONLP_TRY(get_psu_local_id(id, &local_id));
     memset(rv, 0, sizeof(onlp_psu_info_t));
 
-    /* Set the onlp_oid_hdr_t */
-    *rv = psu_info[pid];
+    *rv = psu_info[local_id];
+    /* update status */
+    ONLP_TRY(onlp_psui_status_get(id, &rv->status));
 
-    switch (pid) {
-        case ONLP_PSU_0:
-        case ONLP_PSU_1:
-            return ufi_psu_status_info_get(pid, rv);
-            break;
-        default:
-            return ONLP_STATUS_E_UNSUPPORTED;
-            break;
+    if((rv->status & ONLP_PSU_STATUS_PRESENT) == 0) {
+        return ONLP_STATUS_OK;
     }
+
+    ONLP_TRY(update_psui_info(local_id, rv));
 
     return ONLP_STATUS_OK;
 }
@@ -321,14 +327,29 @@ int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
  */
 int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_psu_info_t info;
-    VALIDATE(id);
+    int local_id;
+    int pw_present, pw_good;
 
-    result = onlp_psui_info_get(id, &info);
-    *rv = info.status;
+    ONLP_TRY(get_psu_local_id(id, &local_id));
+    ONLP_TRY(get_psu_present_status(local_id, &pw_present));
 
-    return result;
+    if (pw_present != PSU_STATUS_PRESENT) {
+        *rv &= ~ONLP_PSU_STATUS_PRESENT;
+        *rv |=  ONLP_PSU_STATUS_UNPLUGGED;
+    } else {
+        *rv |= ONLP_PSU_STATUS_PRESENT;
+    }
+
+    /* Get power good status */
+    ONLP_TRY(get_psu_pwgood_status(local_id, &pw_good));
+
+    if (pw_good != PSU_STATUS_POWER_GOOD) {
+        *rv |= ONLP_PSU_STATUS_FAILED;
+    } else {
+        *rv &= ~ONLP_PSU_STATUS_FAILED;
+    }
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -338,19 +359,12 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
  */
 int onlp_psui_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_psu_info_t* info;
-    int psu_id = 0;
-    VALIDATE(id);
+    int local_id;
 
-    psu_id = ONLP_OID_ID_GET(id);
-    if(psu_id > ONLP_PSU_1) {
-        result = ONLP_STATUS_E_INVALID;
-    } else {
-        info = &psu_info[psu_id];
-        *rv = info->hdr;
-    }
-    return result;
+    ONLP_TRY(get_psu_local_id(id, &local_id));
+    *rv = psu_info[local_id].hdr;
+
+    return ONLP_STATUS_OK;
 }
 
 /**

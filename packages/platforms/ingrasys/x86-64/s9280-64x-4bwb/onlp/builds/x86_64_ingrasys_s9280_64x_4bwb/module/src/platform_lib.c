@@ -500,9 +500,8 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
     int rv=0, rpm=0, percentage=0;
     int presence=0;
     float data=0;
-    int sys_max_fan_speed = 10000;
-    int psu_max_fan_speed = 10000;
-    int max_fan_speed = 0;
+    int sys_max_fan_speed = MAX_SYS_FAN_RPM;
+    int psu_max_fan_speed = MAX_PSU_FAN_RPM;
 
     //check presence for fantray 1-4
     if (id >= FAN_ID_FAN1 && id <= FAN_ID_FAN4) {
@@ -536,8 +535,7 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= FAN_ID_PSU1_FAN1 && id <= FAN_ID_PSU2_FAN1) {
-        max_fan_speed = psu_max_fan_speed;
-        percentage = (info->rpm*100)/max_fan_speed;
+        percentage = (info->rpm*100)/psu_max_fan_speed;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }

@@ -48,6 +48,11 @@ LOG_REDIRECT="2>&1"
 # GPIO_OFFSET: update by function _update_gpio_offset
 GPIO_OFFSET=0
 
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
+
 # I2C Bus
 i801_bus=""
 ismt_bus=""
@@ -182,7 +187,7 @@ function _check_i2c_device {
 
 function _check_bsp_init {
     _banner "Check BSP Init"
-    
+
     # We use ismt bus device status (cpu eeprom, i2c mux 0 ...) to check bsp init status
     local bus=$(eval "i2cdetect -y ${ismt_bus} ${LOG_REDIRECT} | grep UU")
     ret=$?
@@ -1443,6 +1448,20 @@ function _show_dmesg {
     _echo "${ret}"
 }
 
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"
+
+    _echo "[Elapse Time] ${elapsed_time} seconds"
+}
+
 function _additional_log_collection {
     _banner "Additional Log Collection"
 
@@ -1507,10 +1526,10 @@ function _main {
     _show_bios_info
     _show_dmesg
     _additional_log_collection
+    _show_time
     _compression
 
     echo "#   done..."
 }
 
 _main
-

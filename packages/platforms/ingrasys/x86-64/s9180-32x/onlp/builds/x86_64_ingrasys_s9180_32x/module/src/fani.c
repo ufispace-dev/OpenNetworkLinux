@@ -97,11 +97,19 @@ onlp_fan_info_t fan_info[] = {
     {
         { FAN_OID_PSU_FAN1, "PSU-1 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT,
+        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
     },
     {
         { FAN_OID_PSU_FAN2, "PSU-2 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT,
-    }    
+        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
+    }
 };
 
 /*
@@ -202,7 +210,7 @@ int get_fan_sysfs_id(int id)
 int sys_fan_info_get(onlp_fan_info_t* info, int id)
 {
     int rv, fan_status, fan_rpm, perc_val, percentage;
-    int max_fan_speed = 22000;
+    int max_fan_speed = MAX_SYS_FAN_RPM;
     fan_status = 0;
     fan_rpm = 0;
     int sysfs_id;
@@ -220,7 +228,7 @@ int sys_fan_info_get(onlp_fan_info_t* info, int id)
     if (!sysfs_id) {
         return ONLP_STATUS_E_INTERNAL;
     }
- 
+
     rv = onlp_file_read_int(&fan_status, SYS_FAN_PREFIX "fan%d_alarm", sysfs_id);
     if (rv < 0) {
         return ONLP_STATUS_E_INTERNAL;
@@ -231,17 +239,17 @@ int sys_fan_info_get(onlp_fan_info_t* info, int id)
         info->status |= ONLP_FAN_STATUS_FAILED;
         return ONLP_STATUS_OK;
     }
-        
+
     rv = onlp_file_read_int(&fan_rpm, SYS_FAN_PREFIX "fan%d_input", sysfs_id);
     if (rv < 0) {
         return ONLP_STATUS_E_INTERNAL;
-    }    
+    }
     info->rpm = fan_rpm;
-    
+
     /* get speed percentage*/
     switch (sysfs_id)
     {
-        case FAN_ID_FAN1:    
+        case FAN_ID_FAN1:
         case FAN_ID_FAN2:
         case FAN_ID_FAN3:
         case FAN_ID_FAN4:
@@ -257,19 +265,19 @@ int sys_fan_info_get(onlp_fan_info_t* info, int id)
             break;
         default:
             return ONLP_STATUS_E_INVALID;
-    }   
+    }
     if (rv < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-   
-    percentage = (info->rpm*100)/max_fan_speed; 
+
+    percentage = (info->rpm*100)/max_fan_speed;
     info->percentage = percentage;
-    
+
     return ONLP_STATUS_OK;
 }
 
 int sys_fan_rpm_percent_set(int perc)
-{  
+{
     int rc;
 
     if ( bmc_enable ) {
@@ -277,16 +285,16 @@ int sys_fan_rpm_percent_set(int perc)
     }
 
     rc = onlp_file_write_int(perc, SYS_FAN_PREFIX "pwm%d", FAN_CTRL_SET1);
-    
+
     if (rc < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     rc = onlp_file_write_int(perc, SYS_FAN_PREFIX "pwm%d", FAN_CTRL_SET2);
     if (rc < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-       
+
     return ONLP_STATUS_OK;
 }
 
@@ -313,8 +321,8 @@ int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 
     fid = ONLP_OID_ID_GET(id);
 
-    /* 
-     * Set fan speed 
+    /*
+     * Set fan speed
      * Driver accept value in range between 128 and 255.
      * Value 128 is 50%.
      * Value 200 is 80%.
@@ -332,7 +340,7 @@ int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
 
     switch (fid)
     {
-        case FAN_ID_FAN1:    
+        case FAN_ID_FAN1:
         case FAN_ID_FAN2:
         case FAN_ID_FAN3:
         case FAN_ID_FAN4:
@@ -345,7 +353,7 @@ int onlp_fani_percentage_set(onlp_oid_t id, int percentage)
         default:
             return ONLP_STATUS_E_INVALID;
     }
-    return rc;   
+    return rc;
 }
 
 int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
@@ -375,7 +383,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         case FAN_ID_PSU_FAN2:
             rc = psu_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

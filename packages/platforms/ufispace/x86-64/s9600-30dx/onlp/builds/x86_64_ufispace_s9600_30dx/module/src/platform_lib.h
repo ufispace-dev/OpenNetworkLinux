@@ -38,12 +38,12 @@
             return _rv;                                                 \
         }                                                               \
     } while(0)
-    
+
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
 #define SYSFS_PLTM                   "/sys/devices/platform/"
-#define SYSFS_DEVICES        "/sys/bus/i2c/devices/" 
+#define SYSFS_DEVICES        "/sys/bus/i2c/devices/"
 
 #define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s9600_30dx_lpc/"
 #define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
@@ -63,24 +63,31 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
-#define BETA_TEMP_J2_ENV1 "Temp_J2_ENV1"
-#define BETA_TEMP_J2_ENV2 "Temp_J2_ENV2"
-#define BETA_TEMP_J2_DIE1 "Temp_J2_DIE1"
-#define BETA_TEMP_J2_DIE2 "Temp_J2_DIE2"
-#define PVT_TEMP_J2_ENV1 "TEMP_J2_ENV1"
-#define PVT_TEMP_J2_ENV2 "TEMP_J2_ENV2"
-#define PVT_TEMP_J2_DIE1 "TEMP_J2_DIE1"
-#define PVT_TEMP_J2_DIE2 "TEMP_J2_DIE2"
+#define BETA_TEMP_ENV_CPU "ADC_CPU_TEMP"
+#define BETA_TEMP_ENV_MAC0 "Temp_J2_ENV1"
+#define BETA_TEMP_ENV_MAC1 "Temp_J2_ENV2"
+#define BETA_TEMP_MAC0 "Temp_J2_DIE1"
+#define BETA_TEMP_MAC1 "Temp_J2_DIE2"
+#define BETA_PSU0_TEMP "PSU0_TEMP"
+#define BETA_PSU1_TEMP "PSU1_TEMP"
+
+#define PVT_TEMP_ENV_CPU "TEMP_ENV_CPU"
+#define PVT_TEMP_ENV_MAC0 "TEMP_ENV_MAC0"
+#define PVT_TEMP_ENV_MAC1 "TEMP_ENV_MAC1"
+#define PVT_TEMP_MAC0 "TEMP_MAC0"
+#define PVT_TEMP_MAC1 "TEMP_MAC1"
+#define PVT_PSU0_TEMP "PSU0_TEMP1"
+#define PVT_PSU1_TEMP "PSU1_TEMP1"
 
 #define BETA_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
-                                    "ADC_CPU_TEMP "\
+                                    BETA_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
-                                    BETA_TEMP_J2_ENV1" "\
-                                    BETA_TEMP_J2_DIE1" "\
-                                    BETA_TEMP_J2_ENV2 " "\
-                                    BETA_TEMP_J2_DIE2" "\
-                                    "PSU0_TEMP "\
-                                    "PSU1_TEMP "\
+                                    BETA_TEMP_ENV_MAC0" "\
+                                    BETA_TEMP_MAC0" "\
+                                    BETA_TEMP_ENV_MAC1 " "\
+                                    BETA_TEMP_MAC1" "\
+                                    BETA_PSU0_TEMP" "\
+                                    BETA_PSU1_TEMP" "\
                                     "FAN0_RPM "\
                                     "FAN1_RPM "\
                                     "FAN2_RPM "\
@@ -106,14 +113,14 @@
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define PVT_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
-                                    "ADC_CPU_TEMP "\
+                                    PVT_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
-                                    PVT_TEMP_J2_ENV1" "\
-                                    PVT_TEMP_J2_DIE1" "\
-                                    PVT_TEMP_J2_ENV2 " "\
-                                    PVT_TEMP_J2_DIE2" "\
-                                    "PSU0_TEMP "\
-                                    "PSU1_TEMP "\
+                                    PVT_TEMP_ENV_MAC0" "\
+                                    PVT_TEMP_MAC0" "\
+                                    PVT_TEMP_ENV_MAC1 " "\
+                                    PVT_TEMP_MAC1" "\
+                                    PVT_PSU0_TEMP" "\
+                                    PVT_PSU1_TEMP" "\
                                     "FAN0_RPM "\
                                     "FAN1_RPM "\
                                     "FAN2_RPM "\
@@ -136,7 +143,7 @@
                                     "PSU1_IOUT "\
                                     "PSU1_STBVOUT "\
                                     "PSU1_STBIOUT "\
-                                    "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR                                    
+                                    "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
@@ -176,12 +183,12 @@ enum sensor
 };
 
 enum bmc_attr_id {
-    BMC_ATTR_ID_ADC_CPU_TEMP,
+    BMC_ATTR_ID_TEMP_ENV_CPU,
     BMC_ATTR_ID_TEMP_CPU_PECI,
-    BMC_ATTR_ID_TEMP_J2_ENV_1,
-    BMC_ATTR_ID_TEMP_J2_DIE_1,
-    BMC_ATTR_ID_TEMP_J2_ENV_2,
-    BMC_ATTR_ID_TEMP_J2_DIE_2,
+    BMC_ATTR_ID_TEMP_ENV_MAC0,
+    BMC_ATTR_ID_TEMP_MAC0,
+    BMC_ATTR_ID_TEMP_ENV_MAC1,
+    BMC_ATTR_ID_TEMP_MAC1,
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
     BMC_ATTR_ID_FAN0_RPM,
@@ -211,11 +218,11 @@ enum bmc_attr_id {
 
 enum fru_attr_id {
     FRU_ATTR_ID_PSU0_VENDOR,
-    FRU_ATTR_ID_PSU0_NAME,        
+    FRU_ATTR_ID_PSU0_NAME,
     FRU_ATTR_ID_PSU0_MODEL,
-    FRU_ATTR_ID_PSU0_SERIAL,    
+    FRU_ATTR_ID_PSU0_SERIAL,
     FRU_ATTR_ID_PSU1_VENDOR,
-    FRU_ATTR_ID_PSU1_NAME,        
+    FRU_ATTR_ID_PSU1_NAME,
     FRU_ATTR_ID_PSU1_MODEL,
     FRU_ATTR_ID_PSU1_SERIAL,
     FRU_ATTR_ID_MAX
@@ -233,12 +240,12 @@ enum onlp_thermal_id {
     ONLP_THERMAL_CPU_5,
     ONLP_THERMAL_CPU_6,
     ONLP_THERMAL_CPU_7,
-    ONLP_THERMAL_ADC_CPU_TEMP,
+    ONLP_THERMAL_ENV_CPU,
     ONLP_THERMAL_CPU_PECI,
-    ONLP_THERMAL_J2_ENV_1,
-    ONLP_THERMAL_J2_DIE_1,
-    ONLP_THERMAL_J2_ENV_2,
-    ONLP_THERMAL_J2_DIE_2,
+    ONLP_THERMAL_ENV_MAC0,
+    ONLP_THERMAL_MAC0,
+    ONLP_THERMAL_ENV_MAC1,
+    ONLP_THERMAL_MAC1,
     ONLP_THERMAL_PSU_0,
     ONLP_THERMAL_PSU_1,
     ONLP_THERMAL_MAX,

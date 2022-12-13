@@ -75,7 +75,7 @@
 
 #define THERMAL_NORMAL_DEFAULT      72000
 #define THERMAL_NORMAL_FAN_PERC     50
-    
+
 /* I2C bus */
 #define I2C_BUS_0               0
 #define I2C_BUS_1               1
@@ -96,7 +96,7 @@
 #define I2C_BUS_CPLD3           I2C_BUS_3      /* CPLD 3 */
 #define I2C_BUS_CPLD4           I2C_BUS_4      /* CPLD 4 */
 #define I2C_BUS_CPLD5           I2C_BUS_5      /* CPLD 5 */
-    
+
 /* PSU */
 #define PSU_MUX_MASK            0x01
 
@@ -164,7 +164,7 @@
 
 /* CPLD */
 //#define CPLDx_I2C_ADDR          0x21
-#define QSFP_EEPROM_I2C_ADDR    0x50    
+#define QSFP_EEPROM_I2C_ADDR    0x50
 #define CPLD1_PORTS             12
 #define CPLDx_PORTS             13
 #define CPLD_OFFSET             1
@@ -176,6 +176,8 @@
 #define CPLD_QSFP_PORT_STATUS_KEY   "cpld_qsfp_port_status"
 #define CPLD_SFP_PORT_STATUS_KEY    "cpld_sfp_port_status"
 
+#define MAX_PSU_FAN_RPM             22000
+#define MAX_SYS_FAN_RPM             11500
 
 /** led_oid */
 typedef enum led_oid_e {
@@ -206,7 +208,7 @@ typedef enum thermal_oid_e {
     THERMAL_OID_CPU1 = ONLP_THERMAL_ID_CREATE(1),
     THERMAL_OID_CPU2 = ONLP_THERMAL_ID_CREATE(2),
     THERMAL_OID_CPU3 = ONLP_THERMAL_ID_CREATE(3),
-    THERMAL_OID_CPU4 = ONLP_THERMAL_ID_CREATE(4), 
+    THERMAL_OID_CPU4 = ONLP_THERMAL_ID_CREATE(4),
     THERMAL_OID_REAR_PANEL = ONLP_THERMAL_ID_CREATE(5),
     THERMAL_OID_REAR_MAC = ONLP_THERMAL_ID_CREATE(6),
     THERMAL_OID_MB = ONLP_THERMAL_ID_CREATE(7),
@@ -215,9 +217,9 @@ typedef enum thermal_oid_e {
     THERMAL_OID_FRONT_MAC = ONLP_THERMAL_ID_CREATE(10),
     THERMAL_OID_BMC_BOARD = ONLP_THERMAL_ID_CREATE(11),
     THERMAL_OID_CPU_BOARD = ONLP_THERMAL_ID_CREATE(12),
-    THERMAL_OID_PSU1_1 = ONLP_THERMAL_ID_CREATE(13), 
-    THERMAL_OID_PSU1_2 = ONLP_THERMAL_ID_CREATE(14), 
-    THERMAL_OID_PSU2_1 = ONLP_THERMAL_ID_CREATE(15), 
+    THERMAL_OID_PSU1_1 = ONLP_THERMAL_ID_CREATE(13),
+    THERMAL_OID_PSU1_2 = ONLP_THERMAL_ID_CREATE(14),
+    THERMAL_OID_PSU2_1 = ONLP_THERMAL_ID_CREATE(15),
     THERMAL_OID_PSU2_2 = ONLP_THERMAL_ID_CREATE(16),
 } thermal_oid_t;
 
@@ -246,7 +248,7 @@ typedef enum thermal_id_e {
     { THERMAL_WARNING_DEFAULT, \
       THERMAL_ERROR_DEFAULT,   \
       THERMAL_SHUTDOWN_DEFAULT }
-      
+
 /** Fan_oid */
 typedef enum fan_oid_e {
     FAN_OID_FAN1 = ONLP_FAN_ID_CREATE(1),

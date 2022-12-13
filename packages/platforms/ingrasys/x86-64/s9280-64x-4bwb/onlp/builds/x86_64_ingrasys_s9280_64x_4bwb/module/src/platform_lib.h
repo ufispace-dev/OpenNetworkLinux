@@ -120,6 +120,9 @@
 /* FUCNTION ENABLE */
 #define ENABLE_SYSLED               1
 
+#define MAX_PSU_FAN_RPM             22000
+#define MAX_SYS_FAN_RPM             11500
+
 enum sensor
 {
     FAN_SENSOR = 0,

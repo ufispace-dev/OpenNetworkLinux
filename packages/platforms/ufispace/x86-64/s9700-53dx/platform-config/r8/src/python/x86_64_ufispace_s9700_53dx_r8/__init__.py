@@ -197,16 +197,14 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r8(OnlPlatformUfiSpace):
         #9539_HOST_GPIO_I2C
         self.new_i2c_device('pca9539', 0x74, 0)
         #9555_BEACON_LED
-        self.new_i2c_device('pca9535', 0x20, 7)
+        self.new_i2c_device('pca9555', 0x20, 7)
         #9555_BOARD_ID
-        self.new_i2c_device('pca9535', 0x20, 3)
-        #9539_VOL_MARGIN
-        self.new_i2c_device('pca9535', 0x76, 6)
+        self.new_i2c_device('pca9555', 0x20, 3)
         #9539_CPU_I2C
-        self.new_i2c_device('pca9535', 0x77, 0)
+        self.new_i2c_device('pca9539', 0x77, 0)
 
         # export GPIO
-        for i in range(432, 512):
+        for i in range(448, 512):
             os.system("echo {} > /sys/class/gpio/export".format(i))
 
         # init GPIO direction
@@ -248,8 +246,8 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r8(OnlPlatformUfiSpace):
         os.system("echo low > /sys/class/gpio/gpio480/direction")
 
         # init GPIO direction
-        # 9555_BOARD_ID 0x20, 9539_VOL_MARGIN 0x76, 9539_CPU_I2C 0x77
-        for i in range(432, 480):
+        # 9555_BOARD_ID 0x20, 9539_CPU_I2C 0x77
+        for i in range(448, 480):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         #CPLD

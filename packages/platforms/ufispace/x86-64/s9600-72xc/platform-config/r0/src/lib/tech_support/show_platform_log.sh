@@ -38,8 +38,9 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
 LOG_REDIRECT="2>&1"
 
-# GPIO_OFFSET: update by function _update_gpio_offset
-GPIO_OFFSET=0
+# GPIO_MAX: update by function _update_gpio_max
+GPIO_MAX=0
+GPIO_MAX_INIT_FLAG=0
 
 # CPLD max index
 MAX_CPLD=4
@@ -48,6 +49,8 @@ MAX_CPLD=4
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+SYSFS_LPC="/sys/bus/platform/devices/x86_64_ufispace_s9600_72xc_lpc"
 
 function _echo {
     str="$@"
@@ -72,27 +75,24 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.14"
+    _banner "Package Version = 1.0.1"
 }
 
-function _update_gpio_offset {
-    _banner "Update GPIO Offset"
+function _update_gpio_max {
+    _banner "Update GPIO MAX"
+    local sysfs="/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_gpio_max"
 
-    max_gpiochip=`ls /sys/class/gpio/ | sort -r | grep -m1 gpiochip`
-    max_gpiochip_num="${max_gpiochip#*gpiochip}"
-
-    if [ -z "${max_gpiochip_num}" ]; then
-        GPIO_OFFSET=0
-    elif [ ${max_gpiochip_num} -lt 256 ]; then
-        GPIO_OFFSET=256
+    GPIO_MAX=$(cat ${sysfs})
+    if [ $? -eq 1 ]; then
+        GPIO_MAX_INIT_FLAG=0
     else
-        GPIO_OFFSET=0
+        GPIO_MAX_INIT_FLAG=1
     fi
-
-    _echo "[GPIOCHIP MAX    ]: ${max_gpiochip}"
-    _echo "[GPIOCHIP MAX NUM]: ${max_gpiochip_num}"
-    _echo "[GPIO OFFSET     ]: ${GPIO_OFFSET}"
+    
+    _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
+    _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
+
 
 function _check_env {
     #_banner "Check Environment"
@@ -123,7 +123,7 @@ function _check_env {
     
     # check BSP init
     _check_bsp_init
-    _update_gpio_offset
+    _update_gpio_max
 }
 
 function _check_filepath {
@@ -394,26 +394,20 @@ function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
-    ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
-    else
-        _echo "Get CPU CPLD version info failed ($ret), Exit!!"
-        exit $ret
-    fi
+    sysfs_path="${SYSFS_LPC}/cpu_cpld/cpu_cpld_version"
+    _check_filepath "$sysfs_path"
+    cpu_cpld_ver=$(eval "cat $sysfs_path ${LOG_REDIRECT}")
+    
+    sysfs_path="${SYSFS_LPC}/cpu_cpld/cpu_cpld_build"
+    _check_filepath "$sysfs_path"
+    cpu_cpld_build=$(eval "cat $sysfs_path ${LOG_REDIRECT}")
+    
+    sysfs_path="${SYSFS_LPC}/cpu_cpld/cpu_cpld_version_h"
+    _check_filepath "$sysfs_path"
+    cpu_cpld_ver_h=$(eval "cat $sysfs_path ${LOG_REDIRECT}")
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
-    ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
-    else
-        _echo "Get CPU CPLD build info failed ($ret), Exit!!"
-        exit $ret
-    fi
-
-    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} build ${cpu_cpld_build}" 
-    _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 )).$((cpu_cpld_build))"          
+    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_ver} build ${cpu_cpld_build}" 
+    _echo "[CPU CPLD Version]: ${cpu_cpld_ver_h}"          
 
     if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         # MB CPLD
@@ -1393,11 +1387,12 @@ function _show_disk_info {
     _banner "Show Disk Info"
    
     cmd_array=("lsblk" \
+               "lsblk -O" \
                "parted -l /dev/sda" \
                "fdisk -l /dev/sda" \
                "find /sys/fs/ -name errors_count -print -exec cat {} \;" \
                "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;" \
-			   "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;" \
+               "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;" \
                "df -h")
     
     for (( i=0; i<${#cmd_array[@]}; i++ ))

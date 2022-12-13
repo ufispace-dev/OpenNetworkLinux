@@ -186,8 +186,8 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         self.new_i2c_device('pca9539', 0x74, 1)
-        self.new_i2c_device('pca9535', 0x20, 3)
-        self.new_i2c_device('pca9535', 0x77, 0)
+        self.new_i2c_device('pca9555', 0x20, 3)
+        self.new_i2c_device('pca9539', 0x77, 0)
 
         # export GPIO
         for i in range(464, 512):

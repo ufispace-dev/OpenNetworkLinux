@@ -50,6 +50,7 @@
 
 #define SYSFS_SFP_CONFIG     "cpld_sfp_config"
 #define SYSFS_SFP_STATUS     "cpld_sfp_status"
+#define SYSFS_SFP_PRESENT    "cpld_sfp_present"
 #define SYSFS_QSFP_RESET   "cpld_qsfp_reset"
 #define SYSFS_QSFP_LPMODE  "cpld_qsfp_lpmode"
 #define SYSFS_QSFP_PRESENT "cpld_qsfp_intr_present"
@@ -62,7 +63,7 @@
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "16_23", "24_31", "32_39", "40_47", "0_3", "4_7"};
-const int SFP_BIT_SHIFT[SFP_NUM] = {0, 3};
+const int SFP_BIT_SHIFT[SFP_NUM] = {0, 1, 2, 3};
 
 #define EEPROM_ADDR (0x50)
 
@@ -109,8 +110,10 @@ static int ufi_qsfp_port_to_bit_offset(int port)
 {
     int bit_offset = 0;
 
-    if (IS_QSFPX(port)) {
+    if (IS_QSFP(port)) {
         bit_offset = port % 8;
+    } else if (IS_QSFPDD(port)) {
+        bit_offset = port % 4;
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -190,9 +193,9 @@ static int ufi_sfp_present_get(int port, int *pres_val)
     cpld_addr = ufi_port_to_cpld_addr(port);
 
     //read register
-    if ((rc = file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_STATUS)) < 0) {
-        AIM_LOG_ERROR("Unable to read sysfs %s", SYSFS_SFP_STATUS);
-        AIM_LOG_ERROR(SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_STATUS);
+    if ((rc = file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_PRESENT)) < 0) {
+        AIM_LOG_ERROR("Unable to read sysfs %s", SYSFS_SFP_PRESENT);
+        AIM_LOG_ERROR(SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_PRESENT);
         check_and_do_i2c_mux_reset(port);
         return rc;
     }
@@ -857,17 +860,16 @@ int onlp_sfpi_ioctl(int port, va_list vargs)
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0, expect_size = 256, bus = 0, rc = 0;
-    char eeprom_path[128];
-    char command[256] = "";
-    int ret = ONLP_STATUS_OK;
-    int ret_size = 0;
     VALIDATE_PORT(port);
 
     memset(data, 0, expect_size);
 
-    /*
-    bus = ufi_port_to_eeprom_bus(port);
+    if (onlp_sfpi_is_present(port) != 1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent. \n", port);
+        return ONLP_STATUS_OK;
+    }
 
+    bus = ufi_port_to_eeprom_bus(port);
     if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
@@ -879,52 +881,6 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     if (size != expect_size) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
         return ONLP_STATUS_E_INTERNAL;
-    }
-    */
-
-    if (onlp_sfpi_is_present(port) != 1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent. \n", port);
-        return ONLP_STATUS_OK;
-    }
-
-    if (IS_QSFPX(port)) {
-        bus = ufi_port_to_eeprom_bus(port);
-        if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
-            AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
-            AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
-
-            check_and_do_i2c_mux_reset(port);
-            return rc;
-        }
-
-        if (size != expect_size) {
-            AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-    } else if (IS_SFP(port)) {
-        /* SFP */
-        if (IS_SFP_P0(port)) {
-            /* SFP Port0 */
-            snprintf(command, sizeof(command), "ethtool -m %s raw on length %d > /tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME, expect_size, SFP0_INTERFACE_NAME);
-            snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP0_INTERFACE_NAME);
-        } else if (IS_SFP_P1(port)) {
-            /* SFP Port1 */
-            snprintf(command, sizeof(command), "ethtool -m %s raw on length %d > /tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME, expect_size, SFP1_INTERFACE_NAME);
-            snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", SFP1_INTERFACE_NAME);
-        } else {
-            AIM_LOG_ERROR("unknown SFP ports, port=%d\n", port);
-            return ONLP_STATUS_E_PARAM;
-        }
-
-        ret = system(command);
-        if (ret != 0) {
-            AIM_LOG_ERROR("Unable to read sfp eeprom (port_id=%d), func=%s\n", port, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL;
-        }
-
-        ONLP_TRY(onlp_file_read(data, size, &ret_size, eeprom_path));
-    } else {
-        return ONLP_STATUS_E_PARAM;
     }
 
     return ONLP_STATUS_OK;

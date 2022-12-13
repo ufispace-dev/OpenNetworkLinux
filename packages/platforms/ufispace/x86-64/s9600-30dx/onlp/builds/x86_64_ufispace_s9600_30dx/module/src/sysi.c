@@ -38,12 +38,12 @@
  *            |----[07] ONLP_THERMAL_CPU_5
  *            |----[08] ONLP_THERMAL_CPU_6
  *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_ADC_CPU
+ *            |----[10] ONLP_THERMAL_ENV_CPU
  *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_MAC_ENV_1
- *            |----[13] ONLP_THERMAL_MAC_DIE_1
- *            |----[14] ONLP_THERMAL_MAC_ENV_2
- *            |----[15] ONLP_THERMAL_MAC_DIE_2
+ *            |----[12] ONLP_THERMAL_ENV_MAC0
+ *            |----[13] ONLP_THERMAL_MAC0
+ *            |----[14] ONLP_THERMAL_ENV_MAC1
+ *            |----[15] ONLP_THERMAL_MAC1
  *            |----[01] ONLP_LED_SYS_SYNC
  *            |----[02] ONLP_LED_SYS_SYS
  *            |----[03] ONLP_LED_SYS_FAN
@@ -53,13 +53,13 @@
  *            |----[01] ONLP_PSU_0----[16] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[17] ONLP_THERMAL_PSU_1
- *            |                  |----[06] ONLP_PSU_1_FAN 
+ *            |                  |----[06] ONLP_PSU_1_FAN
  *            |----[01] ONLP_FAN_0
  *            |----[02] ONLP_FAN_1
  *            |----[03] ONLP_FAN_2
  *            |----[04] ONLP_FAN_3
  */
- 
+
 #define SYS_EEPROM_PATH    SYSFS_DEVICES "0-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 
@@ -92,21 +92,21 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {
-        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER, 
+        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER,
                                              CPLD_I2C_BUS, CPLD_BASE_ADDR[i]));
     }
-    
+
     pi->cpld_versions = aim_fstrdup(
         "\n"
         "[CPU CPLD] %s\n"
         "[MB CPLD1] %s\n"
         "[MB CPLD2] %s\n"
         "[MB CPLD3] %s\n",
-        cpu_cpld_ver_out, 
+        cpu_cpld_ver_out,
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],
         mb_cpld_ver_out[2]);
-    
+
     //Get HW Version
     ONLP_TRY(ufi_get_board_version(&board));
 
@@ -123,7 +123,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
@@ -222,8 +222,8 @@ int onlp_sysi_onie_data_get(uint8_t** data, int* size)
             return ONLP_STATUS_OK;
         }
     }
-    
-    AIM_LOG_INFO("Unable to get data from eeprom \n");    
+
+    AIM_LOG_INFO("Unable to get data from eeprom \n");
     aim_free(rdata);
     *size = 0;
     return ONLP_STATUS_E_INTERNAL;
@@ -270,7 +270,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     /* Thermal */
     for (i = ONLP_THERMAL_CPU_PKG; i < ONLP_THERMAL_PSU_0; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
-    }    
+    }
 
     /* LED */
     for (i = ONLP_LED_SYS_SYNC; i < ONLP_LED_MAX; i++) {
@@ -286,7 +286,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     for (i = ONLP_FAN_0; i <= ONLP_SYS_FAN_MAX; i++) {
         *e++ = ONLP_FAN_ID_CREATE(i);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -338,7 +338,7 @@ int onlp_sysi_platform_manage_leds(void)
 int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
 {
     ONLP_TRY(ufi_sysi_platform_info_get(info));
-    
+
     return ONLP_STATUS_OK;
 }
 

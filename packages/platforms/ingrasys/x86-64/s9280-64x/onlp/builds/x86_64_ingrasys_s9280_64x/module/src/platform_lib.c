@@ -43,7 +43,7 @@ int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];    
+    char result[32];
     char *sys_psu_prefix = NULL;
 
     if (thermal_id == THERMAL_ID_PSU1_1) {
@@ -65,7 +65,7 @@ int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
     }
 
     /* check psu status */
-    if ((rc = psu_present_get(&pw_exist, sys_psu_prefix)) 
+    if ((rc = psu_present_get(&pw_exist, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -76,14 +76,14 @@ int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
         return ONLP_STATUS_OK;
     } else {
         info->status |= ONLP_THERMAL_STATUS_PRESENT;
-    } 
-    
-    if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix)) 
+    }
+
+    if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
-    }   
-    
-    if (pw_good != PSU_STATUS_POWER_GOOD) {        
+    }
+
+    if (pw_good != PSU_STATUS_POWER_GOOD) {
         info->mcelsius = 0;
         return ONLP_STATUS_OK;
     }
@@ -101,10 +101,10 @@ int psu_thermal_get(onlp_thermal_info_t* info, int thermal_id)
         n_value = (((value) >> 11) & 0x0F);
         snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
     }
-    
+
     buf = atof((const char *)result);
     info->mcelsius = (int)(buf * 1000);
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -114,7 +114,8 @@ int psu_fan_info_get(onlp_fan_info_t* info, int id)
     int i2c_bus, rc;
     unsigned int tmp_fan_rpm, fan_rpm;
     char *sys_psu_prefix = NULL;
- 
+    int max_fan_speed = MAX_PSU_FAN_RPM;
+
     if (id == FAN_ID_PSU_FAN1) {
         i2c_bus = I2C_BUS_PSU1;
         sys_psu_prefix = SYS_PSU1_PREFIX;
@@ -124,9 +125,9 @@ int psu_fan_info_get(onlp_fan_info_t* info, int id)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     /* check psu status */
-    if ((rc = psu_present_get(&pw_exist, sys_psu_prefix)) 
+    if ((rc = psu_present_get(&pw_exist, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -137,24 +138,25 @@ int psu_fan_info_get(onlp_fan_info_t* info, int id)
         return ONLP_STATUS_OK;
     } else {
         info->status |= ONLP_FAN_STATUS_PRESENT;
-    } 
-    
+    }
+
     if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    if (pw_good != PSU_STATUS_POWER_GOOD) {        
+
+    if (pw_good != PSU_STATUS_POWER_GOOD) {
         info->rpm = 0;
         return ONLP_STATUS_OK;
     }
-        
+
     tmp_fan_rpm = onlp_i2c_readw(i2c_bus, PSU_REG, PSU_FAN_RPM_OFFSET, ONLP_I2C_F_FORCE);
 
     fan_rpm = (unsigned int)tmp_fan_rpm;
     fan_rpm = (fan_rpm & 0x07FF) * (1 << ((fan_rpm >> 11) & 0x1F));
     info->rpm = (int)fan_rpm;
-    
+    info->percentage = (info->rpm*100)/max_fan_speed;
+
     return ONLP_STATUS_OK;
 }
 
@@ -166,17 +168,17 @@ int psu_vout_get(onlp_psu_info_t* info, int i2c_bus)
     char result[32];
     double dvalue;
     memset(result, 0, sizeof(result));
-    
+
     n_value = onlp_i2c_readb(i2c_bus, PSU_REG, PSU_VOUT_OFFSET1, ONLP_I2C_F_FORCE);
     if (n_value < 0) {
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     v_value = onlp_i2c_readw(i2c_bus, PSU_REG, PSU_VOUT_OFFSET2, ONLP_I2C_F_FORCE);
     if (v_value < 0) {
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (n_value & 0x10) {
         n_value = 0xF0 + (n_value & 0x0F);
         n_value = (~n_value) +1;
@@ -186,13 +188,13 @@ int psu_vout_get(onlp_psu_info_t* info, int i2c_bus)
     } else {
         snprintf(result, sizeof(result), "%d", (v_value*(1<<n_value)));
     }
-    
+
     dvalue = atof((const char *)result);
     if (dvalue > 0.0) {
         info->caps |= ONLP_PSU_CAPS_VOUT;
         info->mvout = (int)(dvalue * 1000);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -204,33 +206,33 @@ int psu_iout_get(onlp_psu_info_t* info, int i2c_bus)
     unsigned int temp = 0;
     char result[32];
     memset(result, 0, sizeof(result));
-    double dvalue;   
-    
+    double dvalue;
+
     value = onlp_i2c_readw(i2c_bus, PSU_REG, PSU_IOUT_OFFSET, ONLP_I2C_F_FORCE);
     if (value < 0) {
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     y_value = (value & 0x07FF);
     if ((value & 0x8000)&&(y_value))
     {
         n_value = 0xF0 + (((value) >> 11) & 0x0F);
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
-        if (temp) {           
+        if (temp) {
             snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
         snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
     }
-    
+
     dvalue = atof((const char *)result);
     if (dvalue > 0.0) {
         info->caps |= ONLP_PSU_CAPS_IOUT;
         info->miout = (int)(dvalue * 1000);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -243,32 +245,32 @@ int psu_pout_get(onlp_psu_info_t* info, int i2c_bus)
     char result[32];
     memset(result, 0, sizeof(result));
     double dvalue;
-    
+
     value = onlp_i2c_readw(i2c_bus, PSU_REG, PSU_POUT_OFFSET, ONLP_I2C_F_FORCE);
     if (value < 0) {
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     y_value = (value & 0x07FF);
     if ((value & 0x8000)&&(y_value))
     {
         n_value = 0xF0 + (((value) >> 11) & 0x0F);
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
-        if (temp) {           
+        if (temp) {
             snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
         snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
     }
-    
+
     dvalue = atof((const char *)result);
     if (dvalue > 0.0) {
         info->caps |= ONLP_PSU_CAPS_POUT;
         info->mpout = (int)(dvalue * 1000);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -281,10 +283,10 @@ int psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
     char result[32];
     memset(result, 0, sizeof(result));
     double dvalue;
-        
+
     value = onlp_i2c_readw(i2c_bus, PSU_REG, PSU_PIN_OFFSET, ONLP_I2C_F_FORCE);
     if (value < 0) {
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
 
     y_value = (value & 0x07FF);
@@ -293,20 +295,20 @@ int psu_pin_get(onlp_psu_info_t* info, int i2c_bus)
         n_value = 0xF0 + (((value) >> 11) & 0x0F);
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
-        if (temp) {           
+        if (temp) {
             snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
         snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
     }
-    
+
     dvalue = atof((const char *)result);
     if (dvalue > 0.0) {
         info->caps |= ONLP_PSU_CAPS_PIN;
         info->mpin = (int)(dvalue * 1000);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -317,13 +319,13 @@ int psu_eeprom_get(onlp_psu_info_t* info, int id)
     int data_len, i, rc;
     memset(data, 0, sizeof(data));
     memset(eeprom_path, 0, sizeof(eeprom_path));
-    
+
     if (id == PSU_ID_PSU1) {
         rc = onlp_file_read(data, sizeof(data), &data_len, PSU1_EEPROM_PATH);
     } else {
         rc = onlp_file_read(data, sizeof(data), &data_len, PSU2_EEPROM_PATH);
     }
-    
+
     if (rc == ONLP_STATUS_OK)
     {
         i = 11;
@@ -357,14 +359,14 @@ int psu_eeprom_get(onlp_psu_info_t* info, int id)
         strcpy(info->model, "Missing");
         strcpy(info->serial, "Missing");
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
 
 int psu_present_get(int *pw_exist, char *sys_psu_prefix)
 {
-    int rv, psu_pres;     
+    int rv, psu_pres;
 
     rv = onlp_file_read_int(&psu_pres, "%spsu_abs", sys_psu_prefix);
     if (rv < 0) {
@@ -377,13 +379,13 @@ int psu_present_get(int *pw_exist, char *sys_psu_prefix)
 
 int psu_pwgood_get(int *pw_good, char *sys_psu_prefix)
 {
-    int rv, psu_pwgood;      
-    
+    int rv, psu_pwgood;
+
     rv = onlp_file_read_int(&psu_pwgood, "%spsu_pg", sys_psu_prefix);
     if (rv < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     *pw_good = (psu_pwgood ? 1 : 0);
     return ONLP_STATUS_OK;
 }
@@ -391,21 +393,21 @@ int psu_pwgood_get(int *pw_good, char *sys_psu_prefix)
 int system_led_set(onlp_led_mode_t mode)
 {
     int rc;
-    if(mode == ONLP_LED_MODE_GREEN) {        
+    if(mode == ONLP_LED_MODE_GREEN) {
         rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET, LED_SYS_AND_MASK,
                               LED_SYS_GMASK, ONLP_I2C_F_FORCE);
     }
-    else if(mode == ONLP_LED_MODE_ORANGE) {       
+    else if(mode == ONLP_LED_MODE_ORANGE) {
         rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET, LED_SYS_AND_MASK,
                               LED_SYS_YMASK, ONLP_I2C_F_FORCE);
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (rc < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -427,37 +429,37 @@ int fan_led_set(onlp_led_mode_t mode)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (rc < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
 int psu1_led_set(onlp_led_mode_t mode)
 {
     int rc;
-    if(mode == ONLP_LED_MODE_GREEN) {    
+    if(mode == ONLP_LED_MODE_GREEN) {
         rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
-                              LED_PSU1_AND_MASK, LED_PSU1_GMASK, 
+                              LED_PSU1_AND_MASK, LED_PSU1_GMASK,
                               ONLP_I2C_F_FORCE);
     } else if(mode == ONLP_LED_MODE_ORANGE) {
         rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
-                              LED_PSU1_AND_MASK, LED_PSU1_YMASK, 
+                              LED_PSU1_AND_MASK, LED_PSU1_YMASK,
                               ONLP_I2C_F_FORCE);
     } else if(mode == ONLP_LED_MODE_OFF) {
         rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
-                              LED_PSU1_AND_MASK, LED_PSU1_OFFMASK, 
+                              LED_PSU1_AND_MASK, LED_PSU1_OFFMASK,
                               ONLP_I2C_F_FORCE);
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (rc < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -465,16 +467,16 @@ int psu2_led_set(onlp_led_mode_t mode)
 {
     int rc;
     if(mode == ONLP_LED_MODE_GREEN) {
-        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET, 
-                              LED_PSU2_AND_MASK, LED_PSU2_GMASK, 
+        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
+                              LED_PSU2_AND_MASK, LED_PSU2_GMASK,
                               ONLP_I2C_F_FORCE);
-    } else if(mode == ONLP_LED_MODE_ORANGE) {        
-        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET, 
-                              LED_PSU2_AND_MASK, LED_PSU2_YMASK, 
+    } else if(mode == ONLP_LED_MODE_ORANGE) {
+        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
+                              LED_PSU2_AND_MASK, LED_PSU2_YMASK,
                               ONLP_I2C_F_FORCE);
-    } else if(mode == ONLP_LED_MODE_OFF) {        
-        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET, 
-                              LED_PSU2_AND_MASK, LED_PSU2_OFFMASK, 
+    } else if(mode == ONLP_LED_MODE_OFF) {
+        rc = onlp_i2c_modifyb(I2C_BUS_SYS_LED, LED_REG, LED_OFFSET,
+                              LED_PSU2_AND_MASK, LED_PSU2_OFFMASK,
                               ONLP_I2C_F_FORCE);
     } else {
         return ONLP_STATUS_E_INTERNAL;
@@ -542,18 +544,18 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int cpld_release, cpld_version, cpld_rev;
     int bus_i;
-             
+
     for(bus_i=I2C_BUS_CPLD1; bus_i <= I2C_BUS_CPLD5; ++bus_i) {
        cpld_rev = onlp_i2c_readb(bus_i, CPLD_REG, CPLD_VER_OFFSET, ONLP_I2C_F_FORCE);
        if (cpld_rev < 0) {
-           return ONLP_STATUS_E_INTERNAL; 
+           return ONLP_STATUS_E_INTERNAL;
        }
 
        cpld_release = (((cpld_rev) >> 6 & 0x01));
        cpld_version = (((cpld_rev) & 0x3F));
 
        pi->cpld_versions = aim_fstrdup(
-                   "CPLD is %d version(0:RD 1:Release), Revision is 0x%02x\n", 
+                   "CPLD is %d version(0:RD 1:Release), Revision is 0x%02x\n",
                    cpld_release, cpld_version);
     }
     return ONLP_STATUS_OK;
