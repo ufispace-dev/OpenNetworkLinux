@@ -46,19 +46,19 @@
  *            |----[07] ONLP_THERMAL_CPU_5
  *            |----[08] ONLP_THERMAL_CPU_6
  *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_ADC_CPU_TEMP
+ *            |----[10] ONLP_THERMAL_ENV_CPU
  *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_MAC_ENV_1
- *            |----[13] ONLP_THERMAL_MAC_DIE_1
- *            |----[14] ONLP_THERMAL_MAC_ENV_2
- *            |----[15] ONLP_THERMAL_MAC_DIE_2 
+ *            |----[12] ONLP_THERMAL_ENV_MAC0
+ *            |----[13] ONLP_THERMAL_MAC0
+ *            |----[14] ONLP_THERMAL_ENV_MAC1
+ *            |----[15] ONLP_THERMAL_MAC1
  *            |
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
  */
 /* Static values */
-static onlp_thermal_info_t __onlp_thermal_info[] = { 
+static onlp_thermal_info_t __onlp_thermal_info[] = {
     { }, /* Not used */
     {
         .hdr = {
@@ -81,7 +81,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
         .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },    
+    },
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
@@ -158,11 +158,11 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
         .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },       
+    },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ADC_CPU_TEMP),
-            .description = "ADC_CPU_TEMP",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_CPU),
+            .description = "TEMP_ENV_CPU",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -183,8 +183,8 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_ENV_1),
-            .description = "TEMP_J2_ENV_1",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC0),
+            .description = "TEMP_ENV_MAC0",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -194,8 +194,8 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_DIE_1),
-            .description = "TEMP_J2_DIE_1",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0),
+            .description = "TEMP_MAC0",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -205,8 +205,8 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_ENV_2),
-            .description = "TEMP_J2_ENV_2",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC1),
+            .description = "TEMP_ENV_MAC1",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -216,8 +216,8 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_DIE_2),
-            .description = "TEMP_J2_DIE_2",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1),
+            .description = "TEMP_MAC1",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -246,7 +246,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
         .thresholds = UFI_ONLP_THERMAL_THRESHOLD(65000, 70000, 75000),
-    },            
+    },
 };
 
 /**
@@ -257,15 +257,15 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
 static int update_thermali_cpu_info(int local_id, onlp_thermal_info_t* info)
 {
     int rv = 0;
-    
+
     rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1);    
-    
+                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1);
+
     if(rv < 0) {
         ONLP_TRY(onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1)); 
+                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", (local_id - ONLP_THERMAL_CPU_PKG) + 1));
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -282,23 +282,23 @@ static int update_thermali_from_bmc_info(int local_id, onlp_thermal_info_t* info
 
     switch(local_id)
     {
-        case ONLP_THERMAL_ADC_CPU_TEMP:
-            bmc_attr_id = BMC_ATTR_ID_ADC_CPU_TEMP;
+        case ONLP_THERMAL_ENV_CPU:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_CPU;
             break;
         case ONLP_THERMAL_CPU_PECI:
             bmc_attr_id = BMC_ATTR_ID_TEMP_CPU_PECI;
             break;
-        case ONLP_THERMAL_J2_ENV_1:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_ENV_1;
+        case ONLP_THERMAL_ENV_MAC0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_MAC0;
             break;
-        case ONLP_THERMAL_J2_DIE_1:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_DIE_1;
+        case ONLP_THERMAL_MAC0:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC0;
             break;
-        case ONLP_THERMAL_J2_ENV_2:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_ENV_2;
+        case ONLP_THERMAL_ENV_MAC1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_ENV_MAC1;
             break;
-        case ONLP_THERMAL_J2_DIE_2:
-            bmc_attr_id = BMC_ATTR_ID_TEMP_J2_DIE_2;
+        case ONLP_THERMAL_MAC1:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_MAC1;
             break;
         case ONLP_THERMAL_PSU_0:
             bmc_attr_id = BMC_ATTR_ID_PSU0_TEMP;
@@ -316,9 +316,9 @@ static int update_thermali_from_bmc_info(int local_id, onlp_thermal_info_t* info
 
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
     info->mcelsius = (int) (data*1000);
-        
+
     return rc;
-} 
+}
 
 /**
  * @brief Software initialization of the Thermal module.
@@ -368,17 +368,17 @@ int onlp_thermali_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
     int ret = ONLP_STATUS_OK;
     int local_id = ONLP_OID_ID_GET(id);
     int psu_presence = 0;
-    
+
     /* Set the onlp_oid_hdr_t */
     *hdr = __onlp_thermal_info[local_id].hdr;
 
     /* When the PSU module is unplugged, the psu thermal does not exist. */
     if (local_id == ONLP_THERMAL_PSU_0) {
         ONLP_TRY(get_psu_present_status(ONLP_PSU_0, &psu_presence));
-        hdr->status = psu_presence ? ONLP_OID_STATUS_FLAG_PRESENT : ONLP_OID_STATUS_FLAG_UNPLUGGED;        
+        hdr->status = psu_presence ? ONLP_OID_STATUS_FLAG_PRESENT : ONLP_OID_STATUS_FLAG_UNPLUGGED;
     } else if (local_id == ONLP_THERMAL_PSU_1) {
         ONLP_TRY(get_psu_present_status(ONLP_PSU_1, &psu_presence));
-        hdr->status = psu_presence ? ONLP_OID_STATUS_FLAG_PRESENT : ONLP_OID_STATUS_FLAG_UNPLUGGED;        
+        hdr->status = psu_presence ? ONLP_OID_STATUS_FLAG_PRESENT : ONLP_OID_STATUS_FLAG_UNPLUGGED;
     } else {
         //do nothing, all thermals are present as default setting.
     }
@@ -416,13 +416,13 @@ int onlp_thermali_info_get(onlp_oid_id_t id, onlp_thermal_info_t* info)
         case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
             ret = update_thermali_cpu_info(local_id, info);
             break;
-        case ONLP_THERMAL_ADC_CPU_TEMP ... ONLP_THERMAL_PSU_1:
+        case ONLP_THERMAL_ENV_CPU ... ONLP_THERMAL_PSU_1:
             ret = update_thermali_from_bmc_info(local_id, info);
-            break;    
-        default:    
+            break;
+        default:
             return ONLP_STATUS_E_PARAM;
             break;
-    }   
+    }
 
     return ret;
 }

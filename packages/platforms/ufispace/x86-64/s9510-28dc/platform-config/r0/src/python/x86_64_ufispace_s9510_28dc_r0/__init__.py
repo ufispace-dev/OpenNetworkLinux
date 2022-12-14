@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="24x25 + 2x100 + 2x400"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.15'
+    BSP_VERSION='1.0.16'
 
     def check_bmc_enable(self):
         return 1
@@ -195,8 +195,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             port_name = data[config["type"]][port]["port_name"]
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, config["bus"]), shell=True)
 
-    def init_gpio(self):
-
+    def init_gpio(self, gpio_max):
         # init GPIO sysfs
         self.new_i2c_devices(
             [
@@ -215,26 +214,26 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             ]
         )
 
+        gpio_min = gpio_max - 191
+        gpio_tnumber = (gpio_max + 1)
         # init all GPIO direction to "in"
-        gpio_dir = ["in"] * 512
+        gpio_dir = ["in"] * gpio_tnumber
 
         # init GPIO direction to output low
-        for i in range(491, 487, -1) + \
-                 range(479, 463, -1) + \
-                 range(455, 447, -1) + \
-                 range(395, 391, -1):
-            gpio_dir[i] = "low"
+        for off in range(-20, -24, -1) + \
+                 range(-32, -48, -1) + \
+                 range(-56, -64, -1) + \
+                 range(-116, -120, -1):
+            gpio_dir[gpio_max + off] = "low"
 
         # init GPIO direction to output high
-        for i in range(495, 491, -1) + \
-                 range(415, 399, -1) + \
-                 range(391, 383, -1):
-            gpio_dir[i] = "high"
-
-        msg("GPIO init\n")
+        for off in range(-16, -20, -1) + \
+                 range(-96, -112, -1) + \
+                 range(-120, -128, -1):
+            gpio_dir[gpio_max + off] = "high"
 
         # export GPIO and configure direction
-        for i in range(320, 512):
+        for i in range(gpio_min, gpio_tnumber):
             os.system("echo {} > /sys/class/gpio/export".format(i))
             os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i], i))
 
@@ -264,10 +263,20 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id"
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            msg("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n", status, output, cmd)
+            self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
             output="1"
 
         hw_rev_id = int(output, 10)
+
+        # get gpio max
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_gpio_max"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="511"
+
+        gpio_max = int(output, 10)
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max));
 
         ########### initialize I2C bus 0 ###########
         # i2c_i801 is built-in
@@ -308,7 +317,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         self.bsp_pr("Init gpio");
-        self.init_gpio()
+        self.init_gpio(gpio_max)
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

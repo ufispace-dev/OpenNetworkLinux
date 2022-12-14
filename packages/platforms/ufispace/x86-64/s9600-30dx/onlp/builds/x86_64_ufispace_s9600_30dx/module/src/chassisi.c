@@ -39,12 +39,12 @@
  *            |----[07] ONLP_THERMAL_CPU_5
  *            |----[08] ONLP_THERMAL_CPU_6
  *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_ADC_CPU
+ *            |----[10] ONLP_THERMAL_ENV_CPU
  *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_MAC_ENV_1
- *            |----[13] ONLP_THERMAL_MAC_DIE_1
- *            |----[14] ONLP_THERMAL_MAC_ENV_2
- *            |----[15] ONLP_THERMAL_MAC_DIE_2
+ *            |----[12] ONLP_THERMAL_ENV_MAC0
+ *            |----[13] ONLP_THERMAL_MAC0
+ *            |----[14] ONLP_THERMAL_ENV_MAC1
+ *            |----[15] ONLP_THERMAL_MAC1
  *            |----[01] ONLP_LED_SYS_SYNC
  *            |----[02] ONLP_LED_SYS_SYS
  *            |----[03] ONLP_LED_SYS_FAN
@@ -54,16 +54,16 @@
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
- *            |                  |----[06] ONLP_PSU_1_FAN 
+ *            |                  |----[06] ONLP_PSU_1_FAN
  *            |----[01] ONLP_FAN_0
  *            |----[02] ONLP_FAN_1
  *            |----[03] ONLP_FAN_2
  *            |----[04] ONLP_FAN_3
  */
- 
+
 static onlp_oid_id_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),        
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
@@ -71,12 +71,12 @@ static onlp_oid_id_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_5),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_6),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_7),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ADC_CPU_TEMP),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_CPU),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_ENV_1),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_DIE_1),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_ENV_2),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_J2_DIE_2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC0),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC1),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
     ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),

@@ -37,6 +37,7 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/"
+#define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
@@ -332,4 +333,5 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int ufi_get_board_version(board_t *board);
 int ufi_get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
+int ufi_get_gpio_max(int *gpio_max);
 #endif  /* __PLATFORM_LIB_H__ */
