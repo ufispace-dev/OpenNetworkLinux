@@ -49,6 +49,7 @@
 #define PSU2_EEPROM_PATH            "/sys/bus/i2c/devices/57-0050/eeprom"
 #define BMC_EN_FILE_PATH            "/etc/onl/bmc_en"
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
+#define SYS_LED_INIT_PATH           "/run/sys_led_init"
 #define CMD_BIOS_VER                "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1               "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2               "expr `ipmitool mc info | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"

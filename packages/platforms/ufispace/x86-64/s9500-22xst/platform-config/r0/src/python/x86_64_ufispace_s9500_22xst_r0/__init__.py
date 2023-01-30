@@ -313,6 +313,7 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
 
         self.enable_ipmi_maintenance_mode()
 
+        '''
         msg("Platform hardware initialization done, set SYS_LED as stable green.\n")
         output = subprocess.check_output('iorw -r -b 0x700 -o 0x18 -l 1 -F', shell=True)
         val = output.splitlines()[0].rsplit(' ', 1)[-1]
@@ -324,6 +325,7 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
         os.system("iorw -w -b 0x700 -o 0x1a -l 1 -v {} -F".format(new_val))
 
         msg("****** End S9500-22XST platform initializing ... ******\n")
+        '''
 
         return True
 

@@ -1073,7 +1073,7 @@ write_ioport(int addr, int val) {
         AIM_LOG_ERROR("unable to read cpu cpld version, iopl enable error %d\n", ret);
         return ONLP_STATUS_E_INTERNAL;
     }
-    outb(addr, val);
+    outb(val, addr);
 
     /*set r/w permission of  all 65536 ports*/
     ret = iopl(0);

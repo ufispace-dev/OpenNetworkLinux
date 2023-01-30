@@ -27,8 +27,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "platform_lib.h"
+
+#ifndef SYS_LED_INIT_PATH
+#define SYS_LED_INIT_PATH   "/run/sys_led_init"
+#endif
 
 /*
  * Get the information for the given LED OID.
@@ -63,7 +68,20 @@ static onlp_led_info_t led_info[] =
 int
 onlp_ledi_init(void)
 {
+    char cmd[64];
     lock_init();
+
+    /* Init sys led as stable green only once on Linux boot up */
+    if (access(SYS_LED_INIT_PATH, F_OK)) {
+        onlp_ledi_mode_set(LED_ID_SYS_SYS, ONLP_LED_MODE_GREEN);
+        onlp_ledi_set(LED_ID_SYS_SYS, 1);
+        AIM_LOG_INFO("Light SYS LED as stable green");
+
+        /* Record sys led init */
+        snprintf(cmd, sizeof(cmd), "touch %s", SYS_LED_INIT_PATH);
+        system(cmd);
+    }
+
     return ONLP_STATUS_OK;
 }
 
