@@ -118,6 +118,16 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r3(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # load default kernel driver
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         # lpc driver
         self.insmod("x86-64-ufispace-s9705-48d-lpc")
 

@@ -67,7 +67,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_ACCESS_REG,
     CPLD_REGISTER_VAL,
     CPLD_PORT_START,
-    CPLD_PORTS,    
+    CPLD_PORTS,
     CPLD_VERSION,
     CPLD_ID,
     CPLD_BOARD_TYPE,
@@ -89,7 +89,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_QSFPDD_PORT_STATUS_8,
     CPLD_QSFPDD_PORT_STATUS_9,
     CPLD_QSFPDD_PORT_STATUS_10,
-    CPLD_QSFPDD_PORT_STATUS_11,    
+    CPLD_QSFPDD_PORT_STATUS_11,
     CPLD_QSFPDD_PORT_CONFIG_0,
     CPLD_QSFPDD_PORT_CONFIG_1,
     CPLD_QSFPDD_PORT_CONFIG_2,
@@ -101,7 +101,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_QSFPDD_PORT_CONFIG_8,
     CPLD_QSFPDD_PORT_CONFIG_9,
     CPLD_QSFPDD_PORT_CONFIG_10,
-    CPLD_QSFPDD_PORT_CONFIG_11,    
+    CPLD_QSFPDD_PORT_CONFIG_11,
     CPLD_QSFPDD_PORT_INTERRUPT,
     CPLD_10GMUX_CONFIG,
     CPLD_BMC_STATUS,
@@ -302,7 +302,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_start, S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_ports, S_IRUGO,
                 get_qsfpdd_ports, NULL, CPLD_QSFPDD_PORTS);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_0, S_IRUGO,
-        read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_0);                
+        read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_1, S_IRUGO,
         read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_2, S_IRUGO,
@@ -327,9 +327,9 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_11, S_IRUGO,
         read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_11);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_0, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
-                CPLD_QSFPDD_PORT_CONFIG_0);  
+                CPLD_QSFPDD_PORT_CONFIG_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfpdd_port_config, write_qsfpdd_port_config, 
+                read_qsfpdd_port_config, write_qsfpdd_port_config,
                 CPLD_QSFPDD_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
@@ -357,10 +357,10 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_9, S_IWUSR | S_IRUGO,
                 CPLD_QSFPDD_PORT_CONFIG_9);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_10, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
-                CPLD_QSFPDD_PORT_CONFIG_10);                
+                CPLD_QSFPDD_PORT_CONFIG_10);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_11, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
-                CPLD_QSFPDD_PORT_CONFIG_11);                              
+                CPLD_QSFPDD_PORT_CONFIG_11);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_led_0, S_IWUSR | S_IRUGO,
                 read_qsfpdd_led, write_qsfpdd_led, CPLD_QSFPDD_LED_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_led_1, S_IWUSR | S_IRUGO,
@@ -443,7 +443,7 @@ static struct attribute *apollo_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_status_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_9.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_10.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_status_11.dev_attr.attr,    
+    &sensor_dev_attr_cpld_qsfpdd_port_status_11.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_2.dev_attr.attr,
@@ -454,8 +454,8 @@ static struct attribute *apollo_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_config_7.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_9.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,     
-    &sensor_dev_attr_cpld_qsfpdd_port_config_11.dev_attr.attr,         
+    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_port_config_11.dev_attr.attr,
     &sensor_dev_attr_cpld_10gmux_config.dev_attr.attr,
     &sensor_dev_attr_cpld_bmc_status.dev_attr.attr,
     &sensor_dev_attr_cpld_bmc_watchdog.dev_attr.attr,
@@ -500,8 +500,8 @@ static struct attribute *apollo_cpld2_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_config_7.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_9.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,     
-    &sensor_dev_attr_cpld_qsfpdd_port_config_11.dev_attr.attr,              
+    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_port_config_11.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_2.dev_attr.attr,
@@ -536,6 +536,8 @@ static struct attribute *apollo_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_register_value.dev_attr.attr,
     &sensor_dev_attr_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
+    &sensor_dev_attr_cpld_board_type.dev_attr.attr,
+    &sensor_dev_attr_cpld_ext_board_type.dev_attr.attr,
     &sensor_dev_attr_cpld_interrupt.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_start.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_ports.dev_attr.attr,
@@ -550,7 +552,7 @@ static struct attribute *apollo_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_status_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_9.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_10.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_status_11.dev_attr.attr,    
+    &sensor_dev_attr_cpld_qsfpdd_port_status_11.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_2.dev_attr.attr,
@@ -561,7 +563,7 @@ static struct attribute *apollo_cpld3_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_config_7.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_9.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,     
+    &sensor_dev_attr_cpld_qsfpdd_port_config_10.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_11.dev_attr.attr,
     &sensor_dev_attr_cpld_10gmux_config.dev_attr.attr,
     &sensor_dev_attr_cpld_reset_control.dev_attr.attr,

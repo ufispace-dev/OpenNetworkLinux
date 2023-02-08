@@ -36,18 +36,10 @@
  *            |----[04] ONLP_THERMAL_RAMON_ENV_B
  *            |----[05] ONLP_THERMAL_RAMON_DIE_B
  *            |----[08] ONLP_THERMAL_CPU_PKG
- *            |----[09] ONLP_THERMAL_CPU1
- *            |----[10] ONLP_THERMAL_CPU2
- *            |----[11] ONLP_THERMAL_CPU3
- *            |----[12] ONLP_THERMAL_CPU4
- *            |----[13] ONLP_THERMAL_CPU5
- *            |----[14] ONLP_THERMAL_CPU6
- *            |----[15] ONLP_THERMAL_CPU7
- *            |----[16] ONLP_THERMAL_CPU8
- *            |----[17] ONLP_THERMAL_CPU_BOARD
- *            |----[18] ONLP_THERMAL_BMC_ENV
- *            |----[19] ONLP_THERMAL_ENV_FRONT_T
- *            |----[20] ONLP_THERMAL_ENV_FRONT_B
+ *            |----[09] ONLP_THERMAL_CPU_BOARD
+ *            |----[10] ONLP_THERMAL_BMC_ENV
+ *            |----[11] ONLP_THERMAL_ENV_FRONT_T
+ *            |----[12] ONLP_THERMAL_ENV_FRONT_B
  *            |----[01] ONLP_LED_SYSTEM
  *            |----[02] ONLP_LED_PSU0
  *            |----[03] ONLP_LED_PSU1
@@ -89,18 +81,10 @@ enum onlp_thermal_id {
     ONLP_THERMAL_PSU0        = 6,
     ONLP_THERMAL_PSU1        = 7,
     ONLP_THERMAL_CPU_PKG     = 8,
-    ONLP_THERMAL_CPU1        = 9,
-    ONLP_THERMAL_CPU2        = 10,
-    ONLP_THERMAL_CPU3        = 11,
-    ONLP_THERMAL_CPU4        = 12,
-    ONLP_THERMAL_CPU5        = 13,
-    ONLP_THERMAL_CPU6        = 14,
-    ONLP_THERMAL_CPU7        = 15,
-    ONLP_THERMAL_CPU8        = 16,
-    ONLP_THERMAL_CPU_BOARD   = 17,
-    ONLP_THERMAL_BMC_ENV     = 18,
-    ONLP_THERMAL_ENV_FRONT_T = 19,
-    ONLP_THERMAL_ENV_FRONT_B = 20,
+    ONLP_THERMAL_CPU_BOARD   = 9,
+    ONLP_THERMAL_BMC_ENV     = 10,
+    ONLP_THERMAL_ENV_FRONT_T = 11,
+    ONLP_THERMAL_ENV_FRONT_B = 12,
     ONLP_THERMAL_MAX         = ONLP_THERMAL_ENV_FRONT_B+1,
 };
 

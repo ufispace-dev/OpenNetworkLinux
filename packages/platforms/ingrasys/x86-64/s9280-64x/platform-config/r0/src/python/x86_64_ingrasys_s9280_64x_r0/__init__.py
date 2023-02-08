@@ -193,6 +193,7 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
             self.new_i2c_device('psu%d' % i, 0x50, 19-i)
 
         # _i2c_qsfp_eeprom_init
+        port = 0
         for i in range(1, 65):
             phy_port = fp2phy_array[i-1] + 1
             port_group = (phy_port-1)/8
@@ -206,7 +207,8 @@ class OnlPlatform_x86_64_ingrasys_s9280_64x_r0(OnlPlatformIngrasys):
 
         # _i2c_sfp_eeprom_init
         for i in range(1, 3):
-            self.new_i2c_device('sff8436', 0x50, 28+i)
+            eeprom_bus = 28+i
+            self.new_i2c_device('sff8436', 0x50, eeprom_bus)
             # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, eeprom_bus), shell=True)
             port = port + 1

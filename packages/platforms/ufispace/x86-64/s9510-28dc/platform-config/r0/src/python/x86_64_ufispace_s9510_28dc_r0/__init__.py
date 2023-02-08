@@ -242,7 +242,23 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def baseconfig(self):
+
+        # load default kernel driver
+        os.system("rmmod i2c_ismt")
+        os.system("rmmod i2c_i801")
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_ismt")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         #lpc driver
         self.insmod("x86-64-ufispace-s9510-28dc-lpc")
 
@@ -315,6 +331,9 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
+
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         self.bsp_pr("Init done");
         return True

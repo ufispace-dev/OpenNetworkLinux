@@ -45,8 +45,7 @@ enum cpld_id {
 #define CPLD_CPLDX_INTR_REG               0x14
 #define CPLD_FAN_INTR_REG                 0x15
 #define CPLD_MAC_THERMAL_INTR_REG         0x16
-#define CPLD_MISC_INTR_REG                0x1B
-#define CPLD_SYSTEM_INTR_REG              0x1D
+#define CPLD_SYSTEM_INTR_REG              0x1B
 
 #define CPLD_NTM_MASK_REG                 0x20
 #define CPLD_MAC_MASK_REG                 0x21
@@ -54,7 +53,7 @@ enum cpld_id {
 #define CPLD_THERMAL_SENSOR_MASK_REG      0x23
 #define CPLD_CPLDX_MASK_REG               0x24
 #define CPLD_FAN_MASK_REG                 0x25
-#define CPLD_MISC_MASK_REG                0x2B
+#define CPLD_SYSTEM_MASK_REG              0x2B
 #define CPLD_NTM_EVT_REG                  0x30
 #define CPLD_MAC_EVT_REG                  0x31
 #define CPLD_PSU_EVT_REG                  0x32

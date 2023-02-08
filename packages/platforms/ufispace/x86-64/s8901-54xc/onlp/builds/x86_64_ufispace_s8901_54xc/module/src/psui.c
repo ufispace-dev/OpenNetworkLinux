@@ -63,7 +63,12 @@ static onlp_psu_info_t psu_info[] =
 static char *vendors[] = {"DELTA", "FSPGROUP"};
 static psu_support_info_t psu_support_list[] =
 {
-    {"FSPGROUP", "YNEE0750AM-2R01N01", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_B2F},    
+    //{"FSPGROUP", "YNEB0450BM-2R01P10", ONLP_PSU_TYPE_AC,   ONLP_FAN_STATUS_B2F},
+    {"FSPGROUP", "YNEB0450",           ONLP_PSU_TYPE_AC,   ONLP_FAN_STATUS_B2F},
+    {"FSPGROUP", "YNEB0450AM-2R05N01", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_B2F},
+    {"FSPGROUP", "YNEB0450BM-2A01P10", ONLP_PSU_TYPE_AC,   ONLP_FAN_STATUS_F2B},
+    {"FSPGROUP", "YNEB0450AM-2A01N01", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_F2B},
+    {"FSPGROUP", "YNEE0750AM-2R01N01", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_B2F},
     {"FSPGROUP", "YNEE0750BM-2R01P10", ONLP_PSU_TYPE_AC,   ONLP_FAN_STATUS_B2F},
     {"FSPGROUP", "YNEE0750EM-2A01P10", ONLP_PSU_TYPE_AC,   ONLP_FAN_STATUS_F2B},
     {"FSPGROUP", "YNEE0750AM-2A01N01", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_F2B},
@@ -74,7 +79,7 @@ static int ufi_psu_present_get(int id, int *psu_present)
     int status = 0;
     int mask = 0;
 
-    if (id == ONLP_PSU_0) {        
+    if (id == ONLP_PSU_0) {
         mask = PSU0_PRESENT_MASK;
     } else if (id == ONLP_PSU_1) {
         mask = PSU1_PRESENT_MASK;
@@ -85,13 +90,13 @@ static int ufi_psu_present_get(int id, int *psu_present)
     ONLP_TRY(file_read_hex(&status, SYSFS_PSU_STATUS));
 
     *psu_present = ((status & mask)? 0 : 1);
-    
+
     return ONLP_STATUS_OK;
 }
 
 static int ufi_psu_pwgood_get( int id, int *pw_good)
 {
-    int status = 0;   
+    int status = 0;
     int mask = 0;
 
     if (id == ONLP_PSU_0) {
@@ -101,13 +106,13 @@ static int ufi_psu_pwgood_get( int id, int *pw_good)
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     if (file_read_hex(&status, SYSFS_PSU_STATUS)) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
     *pw_good = ((status & mask)? 1 : 0);
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -162,12 +167,12 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
     bmc_fru_t fru = {0};
     psu_support_info_t psu_support_info = {0};
     int psu_type = ONLP_PSU_TYPE_AC;
-    
+
     //read fru data
     ONLP_TRY(bmc_fru_read(id, &fru));
 
     //update FRU model
-    memset(info->model, 0, sizeof(info->model));   
+    memset(info->model, 0, sizeof(info->model));
     if (strncmp(fru.vendor.val, vendors[1], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) {
         //read product name for FSP
         snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
@@ -180,7 +185,7 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
     memset(info->serial, 0, sizeof(info->serial));
     snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
-    //update FRU type   
+    //update FRU type
     ONLP_TRY(get_psu_support_info(id, &psu_support_info, &fru));
     psu_type = psu_support_info.psu_type;
 
@@ -196,8 +201,8 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
 }
 
 static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
-    int psu_present = 0, pw_good = 0;    
+{
+    int psu_present = 0, pw_good = 0;
     int stbmvout = 0, stbmiout = 0;
     float data = 0;
     int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_stbvout = 0, attr_stbiout = 0;
@@ -217,9 +222,9 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
         attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
         attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
-    
+
      /* Get power present status */
-    ONLP_TRY(ufi_psu_present_get(id, &psu_present)); 
+    ONLP_TRY(ufi_psu_present_get(id, &psu_present));
 
     if (psu_present != PSU_STATUS_PRESENT) {
         info->status &= ~ONLP_PSU_STATUS_PRESENT;
@@ -241,39 +246,39 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     /* Get power vin status */
     ONLP_TRY(bmc_sensor_read(attr_vin, PSU_SENSOR, &data));
     info->mvin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VIN;   
-    
+    info->caps |= ONLP_PSU_CAPS_VIN;
+
     /* Get power vout status */
     ONLP_TRY(bmc_sensor_read(attr_vout, PSU_SENSOR, &data));
     info->mvout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VOUT;
-            
+
     /* Get power iin status */
     ONLP_TRY(bmc_sensor_read(attr_iin, PSU_SENSOR, &data));
     info->miin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IIN;
-    
+
     /* Get power iout status */
     ONLP_TRY(bmc_sensor_read(attr_iout, PSU_SENSOR, &data));
-    info->miout = (int) (data*1000);        
-    info->caps |= ONLP_PSU_CAPS_IOUT;   
+    info->miout = (int) (data*1000);
+    info->caps |= ONLP_PSU_CAPS_IOUT;
 
-    /* Get standby power vout */    
+    /* Get standby power vout */
     ONLP_TRY(bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data));
     stbmvout = (int) (data*1000);
-    
+
     /* Get standby power iout */
     ONLP_TRY(bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data));
     stbmiout = (int) (data*1000);
-        
+
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;        
+    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
-    
+
     /* Get FRU */
     ONLP_TRY(update_psui_fru_info(id, info));
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -281,7 +286,7 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
  * @brief Initialize the PSU subsystem.
  */
 int onlp_psui_init(void)
-{  
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -292,10 +297,10 @@ int onlp_psui_init(void)
  * @param rv [out] Receives the PSU information.
  */
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
-{        
+{
     int pid = 0;
     VALIDATE(id);
-    
+
     pid = ONLP_OID_ID_GET(id);
     memset(rv, 0, sizeof(onlp_psu_info_t));
 

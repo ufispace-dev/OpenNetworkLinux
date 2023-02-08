@@ -131,6 +131,9 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def enable_port_led(self): 
         sysfs_path = "/sys/bus/i2c/devices/2-0030/cpld_misc_ctrl"
         port_led_mask = 0b00100000
@@ -155,6 +158,16 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         return True
 
     def baseconfig(self):
+
+        # load default kernel driver
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
 
         # lpc driver
         self.insmod("x86-64-ufispace-s9310-32d-lpc")
@@ -207,6 +220,9 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         # done bye CPLD at power on          
 
         self.enable_ipmi_maintenance_mode()
+
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         # init i40e
         self.insmod("i40e")

@@ -54,10 +54,14 @@
 //FIXME
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_CPU_PECI "\
-                                    "TEMP_Q2CL_ENV "\
-                                    "TEMP_Q2CL_DIE "\
-                                    "TEMP_Q2CR_ENV "\
-                                    "TEMP_Q2CR_DIE "\
+                                    "TEMP_ENV_CPU "\
+                                    "TEMP_ENV_MAC0 "\
+                                    "TEMP_MAC0 "\
+                                    "TEMP_ENV_MAC1 "\
+                                    "TEMP_MAC1 "\
+                                    "TEMP_ENV_REAR0 "\
+                                    "TEMP_ENV_REAR1 "\
+                                    "TEMP_ENV_FRONT "\
                                     "PSU0_TEMP "\
                                     "PSU1_TEMP "\
                                     "FAN0_RPM "\
@@ -125,13 +129,13 @@ enum sensor
 
 enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_CPU_PECI,
-    BMC_ATTR_ID_TEMP_CPU_BOARD,
-    BMC_ATTR_ID_TEMP_Q2CL_ENV,
-    BMC_ATTR_ID_TEMP_Q2CL_DIE,
-    BMC_ATTR_ID_TEMP_Q2CR_ENV,
-    BMC_ATTR_ID_TEMP_Q2CR_DIE,
-    BMC_ATTR_ID_TEMP_BMC_ENV,
-    BMC_ATTR_ID_TEMP_ENV,
+    BMC_ATTR_ID_TEMP_ENV_CPU,
+    BMC_ATTR_ID_TEMP_ENV_MAC0,
+    BMC_ATTR_ID_TEMP_MAC0,
+    BMC_ATTR_ID_TEMP_ENV_MAC1,
+    BMC_ATTR_ID_TEMP_MAC1,
+    BMC_ATTR_ID_TEMP_ENV_REAR0,
+    BMC_ATTR_ID_TEMP_ENV_REAR1,
     BMC_ATTR_ID_TEMP_ENV_FRONT,
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
@@ -185,13 +189,13 @@ enum onlp_thermal_id {
     ONLP_THERMAL_CPU_6 = 8,
     ONLP_THERMAL_CPU_7 = 9,
     ONLP_THERMAL_CPU_PECI = 10,
-    ONLP_THERMAL_CPU_BOARD = 11,
-    ONLP_THERMAL_Q2CL_ENV = 12,
-    ONLP_THERMAL_Q2CL_DIE = 13,
-    ONLP_THERMAL_Q2CR_ENV = 14,
-    ONLP_THERMAL_Q2CR_DIE = 15,
-    ONLP_THERMAL_BMC_ENV = 16,
-    ONLP_THERMAL_ENV = 17,
+    ONLP_THERMAL_ENV_CPU = 11,
+    ONLP_THERMAL_ENV_MAC0 = 12,
+    ONLP_THERMAL_MAC0 = 13,
+    ONLP_THERMAL_ENV_MAC1 = 14,
+    ONLP_THERMAL_MAC1 = 15,
+    ONLP_THERMAL_ENV_REAR0 = 16,
+    ONLP_THERMAL_ENV_REAR1 = 17,
     ONLP_THERMAL_ENV_FRONT = 18,
     ONLP_THERMAL_PSU_0 = 19,
     ONLP_THERMAL_PSU_1 = 20,

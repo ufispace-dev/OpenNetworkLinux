@@ -19,7 +19,7 @@
  * </bsn.cl>
  ************************************************************
  *
- *
+ * x86_64_ufispace_s9110_32x_config.h
  *
  ***********************************************************/
 
@@ -39,7 +39,7 @@
 #include <global_custom_config.h>
 #endif
 #ifdef X86_64_UFISPACE_S9110_32X_INCLUDE_CUSTOM_CONFIG
-#include <x86_64_ufispace_s9110_32x_custom_config.h>
+#include <x86_64_ufispace_S9110_32X_custom_config.h>
 #endif
 
 /* <auto.start.cdefs(X86_64_UFISPACE_S9110_32X_CONFIG_HEADER).header> */

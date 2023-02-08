@@ -49,6 +49,10 @@
 #define MB_CPLD1_SYSFS_PATH     SYS_DEV "2-0030"
 #define MB_CPLD2_SYSFS_PATH     SYS_DEV "2-0031"
 #define MB_CPLD3_SYSFS_PATH     SYS_DEV "2-0032"
+/* SYS */
+#define CPLD_MAX                3  //Number of MB CPLD
+extern const int CPLD_BASE_ADDR[CPLD_MAX];
+#define CPLD_I2C_BUS            2
 
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)

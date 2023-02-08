@@ -220,6 +220,9 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -253,6 +256,19 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         self.init_i2c_mux_idle_state(i2c_muxs)
 
     def baseconfig(self):
+
+        # load default kernel driver
+        os.system("rmmod i2c_ismt")
+        os.system("rmmod i2c_i801")
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_ismt")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         # lpc driver
         self.insmod(self.DRIVER[DriverType.LPC])
 
@@ -291,6 +307,9 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
+
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         self.bsp_pr("Init done")
 

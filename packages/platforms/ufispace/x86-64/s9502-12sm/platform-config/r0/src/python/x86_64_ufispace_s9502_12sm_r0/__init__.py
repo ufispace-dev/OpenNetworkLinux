@@ -73,6 +73,20 @@ class OnlPlatform_x86_64_ufispace_s9502_12sm_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # load default kernel driver
+        os.system("rmmod i2c_ismt")
+        os.system("rmmod i2c_i801")
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_ismt")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm90")
+        os.system("modprobe ucd9000")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         #CPLD
         self.insmod("x86-64-ufispace-s9502-12sm-lpc")
 

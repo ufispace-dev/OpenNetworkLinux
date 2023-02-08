@@ -90,7 +90,7 @@ static onlp_oid_t __onlp_oid_info[] = {
 
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
-#define SYSFS_CPLD_VER_H   LPC_FMT "cpld_version_h"
+#define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
 #define SYSFS_HW_ID        LPC_FMT "board_hw_id"
 #define SYSFS_BUILD_ID     LPC_FMT "board_build_id"
 #define SYSFS_BIOS_VER     "/sys/class/dmi/id/bios_version"
@@ -102,17 +102,25 @@ static onlp_oid_t __onlp_oid_info[] = {
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int mb_cpld_hw_rev = 0, mb_cpld_build_rev = 0;
-    int len = 0;
+    int len = 0, i = 0;
+    char mb_cpld_ver_out[CPLD_MAX][ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
 
     //get MB CPLD version
-    char mb_cpld_ver[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
-    ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_CPLD_VER_H));
+    for(i=0; i<CPLD_MAX; ++i) {
+        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_MB_CPLD_VER,
+                                             CPLD_I2C_BUS, CPLD_BASE_ADDR[i]));
+    }
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %s\n", mb_cpld_ver);
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n",
+        mb_cpld_ver_out[0],
+        mb_cpld_ver_out[1],
+        mb_cpld_ver_out[2]);
 
     //Get HW Version
     ONLP_TRY(file_read_hex(&mb_cpld_hw_rev, SYSFS_HW_ID));

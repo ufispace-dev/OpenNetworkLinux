@@ -133,6 +133,9 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def bsp_pr(self, pr_msg, level = LEVEL_INFO):
         if level == self.LEVEL_INFO:
             sysfs_bsp_logging = "/sys/devices/platform/x86_64_ufispace_s9300_32d_lpc/bsp/bsp_pr_info"
@@ -149,6 +152,16 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
             msg("Warning: bsp logging sys is not exist\n")
 
     def baseconfig(self):
+
+        # load default kernel driver
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
 
         # lpc driver
         self.insmod("x86-64-ufispace-s9300-32d-lpc")
@@ -196,6 +209,9 @@ class OnlPlatform_x86_64_ufispace_s9300_32d_r0(OnlPlatformUfiSpace):
         # done bye CPLD at power on
 
         self.enable_ipmi_maintenance_mode()
+
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         # init i40e
         self.bsp_pr("Init i40e");

@@ -92,14 +92,14 @@ enum cpld_sysfs_attributes {
     CPLD_THERMAL_SENSOR_INTR,
     CPLD_CPLDX_INTR,
     CPLD_FAN_INTR,
-    CPLD_MISC_INTR,
+    CPLD_SYSTEM_INTR,
     CPLD_NTM_MASK,
     CPLD_MAC_MASK,
     CPLD_PSU_MASK,
     CPLD_THERMAL_SENSOR_MASK,
     CPLD_CPLDX_MASK,
     CPLD_FAN_MASK,
-    CPLD_MISC_MASK,
+    CPLD_SYSTEM_MASK,
     CPLD_NTM_EVT,
     CPLD_MAC_EVT,
     CPLD_PSU_EVT,
@@ -317,7 +317,7 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_fan_intr,    cpld_callback, CPLD_FAN_INTR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_cpldx_intr,      cpld_callback, CPLD_CPLDX_INTR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_ntm_intr,      cpld_callback, CPLD_NTM_INTR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_thermal_sensor_intr, cpld_callback, CPLD_THERMAL_SENSOR_INTR);
-static _SENSOR_DEVICE_ATTR_RO(cpld_misc_intr,   cpld_callback, CPLD_MISC_INTR);
+static _SENSOR_DEVICE_ATTR_RO(cpld_system_intr,   cpld_callback, CPLD_SYSTEM_INTR);
 
 static _SENSOR_DEVICE_ATTR_RW(cpld_mac_mask,    cpld_callback, CPLD_MAC_MASK);
 static _SENSOR_DEVICE_ATTR_RW(cpld_psu_mask,    cpld_callback, CPLD_PSU_MASK);
@@ -325,11 +325,11 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_cpldx_mask, cpld_callback, CPLD_CPLDX_MASK);
 static _SENSOR_DEVICE_ATTR_RW(cpld_ntm_mask, cpld_callback, CPLD_NTM_MASK);
 static _SENSOR_DEVICE_ATTR_RW(cpld_fan_mask, cpld_callback, CPLD_FAN_MASK);
 static _SENSOR_DEVICE_ATTR_RW(cpld_thermal_sensor_mask, cpld_callback, CPLD_THERMAL_SENSOR_MASK);
-static _SENSOR_DEVICE_ATTR_RW(cpld_misc_mask,   cpld_callback, CPLD_MISC_MASK);
+static _SENSOR_DEVICE_ATTR_RW(cpld_system_mask,   cpld_callback, CPLD_SYSTEM_MASK);
 
 static _SENSOR_DEVICE_ATTR_RO(cpld_mac_evt,     cpld_callback, CPLD_MAC_EVT);
 static _SENSOR_DEVICE_ATTR_RO(cpld_psu_evt,     cpld_callback, CPLD_PSU_EVT);
-static _SENSOR_DEVICE_ATTR_RO(cpld_cpldx_psu_evt, cpld_callback, CPLD_CPLDX_EVT);
+static _SENSOR_DEVICE_ATTR_RO(cpld_cpldx_evt, cpld_callback, CPLD_CPLDX_EVT);
 static _SENSOR_DEVICE_ATTR_RO(cpld_ntm_evt, cpld_callback, CPLD_NTM_EVT);
 static _SENSOR_DEVICE_ATTR_RO(cpld_fan_evt, cpld_callback, CPLD_FAN_EVT);
 static _SENSOR_DEVICE_ATTR_RO(cpld_thermal_sensor_evt, cpld_callback, CPLD_THERMAL_SENSOR_EVT);
@@ -501,7 +501,7 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_cpldx_intr),
     _DEVICE_ATTR(cpld_ntm_intr),
 	_DEVICE_ATTR(cpld_thermal_sensor_intr),
-    _DEVICE_ATTR(cpld_misc_intr),
+    _DEVICE_ATTR(cpld_system_intr),
 
     _DEVICE_ATTR(cpld_mac_mask),
     _DEVICE_ATTR(cpld_psu_mask),
@@ -509,11 +509,11 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_ntm_mask),
 	_DEVICE_ATTR(cpld_fan_mask),
 	_DEVICE_ATTR(cpld_thermal_sensor_mask),
-    _DEVICE_ATTR(cpld_misc_mask),
+    _DEVICE_ATTR(cpld_system_mask),
 
     _DEVICE_ATTR(cpld_mac_evt),
     _DEVICE_ATTR(cpld_psu_evt),
-    _DEVICE_ATTR(cpld_cpldx_psu_evt),
+    _DEVICE_ATTR(cpld_cpldx_evt),
     _DEVICE_ATTR(cpld_ntm_evt),
 	_DEVICE_ATTR(cpld_fan_evt),
 	_DEVICE_ATTR(cpld_thermal_sensor_evt),
@@ -892,8 +892,8 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_THERMAL_SENSOR_INTR:
             reg = CPLD_THERMAL_SENSOR_INTR_REG;
             break;
-        case CPLD_MISC_INTR:
-            reg = CPLD_MISC_INTR_REG;
+        case CPLD_SYSTEM_INTR:
+            reg = CPLD_SYSTEM_INTR_REG;
             break;
         case CPLD_MAC_MASK:
             reg = CPLD_MAC_MASK_REG;
@@ -913,8 +913,8 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_THERMAL_SENSOR_MASK:
             reg = CPLD_THERMAL_SENSOR_MASK_REG;
             break;
-        case CPLD_MISC_MASK:
-            reg = CPLD_MISC_MASK_REG;
+        case CPLD_SYSTEM_MASK:
+            reg = CPLD_SYSTEM_MASK_REG;
             break;
         case CPLD_MAC_EVT:
             reg = CPLD_MAC_EVT_REG;
@@ -1350,8 +1350,8 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_FAN_MASK:
             reg = CPLD_FAN_MASK_REG;
             break;
-        case CPLD_MISC_MASK:
-            reg = CPLD_MISC_MASK_REG;
+        case CPLD_SYSTEM_MASK:
+            reg = CPLD_SYSTEM_MASK_REG;
             break;
         case CPLD_MAC_RESET:
             reg = CPLD_MAC_RESET_REG;

@@ -179,6 +179,9 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -191,6 +194,16 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def baseconfig(self):
+
+        # load default kernel driver
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
 
         # lpc driver
         self.insmod("x86-64-ufispace-s9701-78dc-lpc")
@@ -247,6 +260,9 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
             msg("Warning: fail to set mac rov\n")
 
         self.enable_ipmi_maintenance_mode()
+
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.insmod("i40e")

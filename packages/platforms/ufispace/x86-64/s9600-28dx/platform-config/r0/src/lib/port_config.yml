@@ -1,0 +1,68 @@
+---
+QSFP:
+  0:
+    port_name: 0
+  1:
+    port_name: 1
+  2:
+    port_name: 2
+  3:
+    port_name: 3
+  4:
+    port_name: 4
+  5:
+    port_name: 5
+  6:
+    port_name: 6
+  7:
+    port_name: 7
+  8:
+    port_name: 8
+  9:
+    port_name: 9
+  10:
+    port_name: 10
+  11:
+    port_name: 11
+  12:
+    port_name: 12
+  13:
+    port_name: 13
+  14:
+    port_name: 14
+  15:
+    port_name: 15
+  16:
+    port_name: 16
+  17:
+    port_name: 17
+  18:
+    port_name: 18
+  19:
+    port_name: 19
+  20:
+    port_name: 20
+  21:
+    port_name: 21
+  22:
+    port_name: 22
+  23:
+    port_name: 23
+QSFPDD:
+  24:
+    port_name: 24
+  25:
+    port_name: 25
+  26:
+    port_name: 26
+  27:
+    port_name: 27
+SFP:
+  28:
+    port_name: 28
+  29:
+    port_name: 29
+  30:
+    port_name: 30
+  31:
+    port_name: 31

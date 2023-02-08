@@ -112,6 +112,16 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # load default kernel driver
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         #CPLD
         self.insmod("x86-64-ufispace-s9600-32x-lpc")
 
@@ -217,6 +227,9 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
 
         self.enable_ipmi_maintenance_mode()
 
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
+
         self.bsp_pr("Init done");
         return True
 
@@ -230,6 +243,9 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
 
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
+
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
 
     def get_board_id(self):
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/board_id_1"

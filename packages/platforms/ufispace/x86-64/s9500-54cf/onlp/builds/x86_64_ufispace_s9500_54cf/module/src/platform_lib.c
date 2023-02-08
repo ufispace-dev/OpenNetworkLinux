@@ -31,6 +31,9 @@
 #include <sys/time.h>
 #include "platform_lib.h"
 
+/* SYS */
+const int CPLD_BASE_ADDR[CPLD_MAX] = {0x30, 0x31, 0x32};
+
 bmc_info_t bmc_cache[] =
 {
     [BMC_ATTR_ID_TEMP_MAC0]       = {"TEMP_MAC0"       , 0},
@@ -532,21 +535,18 @@ int file_vread_hex(int* value, const char* fmt, va_list vargs)
  */
 void check_and_do_i2c_mux_reset(int port)
 {
-    // only support beta and later
-    if(get_hw_rev_id() > 1) {
-        char cmd_buf[256] = {0};
-        int ret = 0;
+    char cmd_buf[256] = {0};
+    int ret = 0;
 
-        snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
-        ret = system(cmd_buf);
-        if(ret != 0) {
-            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
-                //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
-                memset(cmd_buf, 0, sizeof(cmd_buf));
-                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
-                ret = system(cmd_buf);
-                //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
-            }
+    snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
+    ret = system(cmd_buf);
+    if(ret != 0) {
+        if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+            //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
+            memset(cmd_buf, 0, sizeof(cmd_buf));
+            snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
+            ret = system(cmd_buf);
+            //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
         }
     }
 }

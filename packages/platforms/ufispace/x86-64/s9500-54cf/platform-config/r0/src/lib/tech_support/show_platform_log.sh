@@ -23,6 +23,7 @@ HW_REV=""
 # BSP_INIT_FLAG: set bu function _check_bsp_init
 BSP_INIT_FLAG=""
 
+
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IOGET="${SCRIPTPATH}/ioget"
 
@@ -30,14 +31,6 @@ IOGET="${SCRIPTPATH}/ioget"
 # LOG_FILE_ENABLE=0: Print all the platform info in console
 LOG_FILE_ENABLE=1
 
-# HEADER_PROMPT=1 :print file name at log file first line
-# HEADER_PROMPT=0 :don't print file name at log file first line
-HEADER_PROMPT=1
-
-# ls option
-# LS_OPTION="-alu"                 : show all file, file permission, list time and sort it by name
-# LS_OPTION="-a | cat | sort"      : list one filename per output line and sort it
-LS_OPTION="-alu"
 
 # Log Redirection
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
@@ -45,12 +38,24 @@ LS_OPTION="-alu"
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
 LOG_REDIRECT="2>&1"
 
-# GPIO_OFFSET: update by function _update_gpio_offset
-GPIO_OFFSET=0
+# GPIO_MAX: update by function _update_gpio_max
+GPIO_MAX=0
+GPIO_MAX_INIT_FLAG=0
 
 # I2C Bus
 i801_bus=""
 ismt_bus=""
+
+# CPLD max index
+MAX_CPLD=3
+CPLD_BUS=2
+
+# Execution Time
+start_time=$(date +%s)
+end_time=0
+elapsed_time=0
+
+SYSFS_LPC="/sys/bus/platform/devices/x86_64_ufispace_s9500_54cf_lpc"
 
 function _echo {
     str="$@"
@@ -78,24 +83,21 @@ function _pkg_version {
     _banner "Package Version = 1.0.0"
 }
 
-function _update_gpio_offset {
-    _banner "Update GPIO Offset"
+function _update_gpio_max {
+    _banner "Update GPIO MAX"
+    local sysfs="/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/bsp/bsp_gpio_max"
 
-    max_gpiochip=`ls /sys/class/gpio/ | sort -r | grep -m1 gpiochip`
-    max_gpiochip_num="${max_gpiochip#*gpiochip}"
-
-    if [ -z "${max_gpiochip_num}" ]; then
-        GPIO_OFFSET=0
-    elif [ ${max_gpiochip_num} -lt 256 ]; then
-        GPIO_OFFSET=256
+    GPIO_MAX=$(cat ${sysfs})
+    if [ $? -eq 1 ]; then
+        GPIO_MAX_INIT_FLAG=0
     else
-        GPIO_OFFSET=0
+        GPIO_MAX_INIT_FLAG=1
     fi
 
-    _echo "[GPIOCHIP MAX    ]: ${max_gpiochip}"
-    _echo "[GPIOCHIP MAX NUM]: ${max_gpiochip_num}"
-    _echo "[GPIO OFFSET     ]: ${GPIO_OFFSET}"
+    _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
+    _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
+
 
 function _check_env {
     #_banner "Check Environment"
@@ -121,11 +123,7 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
-        if [ "${HEADER_PROMPT}" == "1" ]; then
-            echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
-        else
-            touch "${LOG_FILE_PATH}"
-        fi
+        echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
 
     # get i2c root
@@ -140,16 +138,13 @@ function _check_env {
 
     # check BSP init
     _check_bsp_init
-
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _update_gpio_offset
-    fi
+    #_update_gpio_max #Not Support
 }
 
 function _check_filepath {
     filepath=$1
     if [ -z "${filepath}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!"
         return ${FALSE}
     elif [ ! -f "$filepath" ]; then
         _echo "ERROR: No such file: ${filepath}"
@@ -165,7 +160,7 @@ function _check_i2c_device {
     i2c_addr=$2
 
     if [ -z "${i2c_addr}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     fi
 
@@ -175,7 +170,7 @@ function _check_i2c_device {
     if [ $ret -eq 0 ]; then
         return ${TRUE}
     else
-        _echo "ERROR: No such device: Bus:i2c_bus, Address: ${i2c_addr}"
+        _echo "ERROR: No such device: ${i2c_addr}"
         return ${FALSE}
     fi
 }
@@ -183,10 +178,9 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # We use ismt bus device status (cpu eeprom, i2c mux 0 ...) to check bsp init status
-    local bus=$(eval "i2cdetect -y ${ismt_bus} ${LOG_REDIRECT} | grep UU")
+    i2c_bus_0=$(eval "i2cdetect -y ${i801_bus} ${LOG_REDIRECT} | grep UU")
     ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${bus}" ] ; then
+    if [ $ret -eq 0 ] && [ ! -z "${i2c_bus_0}" ] ; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -241,17 +235,13 @@ function _show_system_info {
 
 function _show_grub {
 
-    local grub_path="/boot/grub/grub.cfg"
-    if [ ! -f "${grub_path}" ]; then
-        grub_path="/mnt/onl/boot/grub/grub.cfg"
-        if [ ! -f "${grub_path}" ]; then
-            return 0
-        fi
+    if [ ! -f "/boot/grub/grub.cfg" ]; then
+        return 0
     fi
 
     _banner "Show GRUB Info"
 
-    grub_info=`cat ${grub_path}`
+    grub_info=`cat /boot/grub/grub.cfg`
 
     _echo "[GRUB Info     ]:"
     _echo "${grub_info}"
@@ -261,8 +251,8 @@ function _show_grub {
 function _show_driver {
     _banner "Show Kernel Driver"
 
-    cmd_array=("lsmod | sort" \
-               "cat /lib/modules/$(uname -r)/modules.builtin | sort")
+    cmd_array=("lsmod" \
+               "cat /lib/modules/$(uname -r)/modules.builtin")
 
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do
@@ -276,22 +266,22 @@ function _show_driver {
 function _pre_log {
     _banner "Pre Log"
 
-    _show_i2c_tree_bus
-    _show_i2c_tree_bus
-    _show_i2c_tree_bus
+    _show_i2c_tree_bus_0
+    _show_i2c_tree_bus_0
+    _show_i2c_tree_bus_0
 }
 
 function _show_board_info {
     _banner "Show Board Info"
 
-    # CPLD 0x700 Register Definition
+    # CPLD1 0x700 Register Definition
     build_rev_id_array=(0 1 2 3)
     build_rev_array=(1 2 3 4)
     hw_rev_id_array=(0 1 2 3)
+    deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    deph_name_array=("NPI" "GA")
-    model_id_array=($((2#00000110)))
+    model_id_array=($((2#11111110)))
     model_name_array=("S9500-54CF")
 
     model_id=`${IOGET} 0x700`
@@ -327,15 +317,19 @@ function _show_board_info {
         hw_rev=${hw_rev_ga_array[${hw_rev_id}]}
     fi
 
-    # Build Rev D[3:4]
+    # Build Rev D[3:5]
     build_rev_id=$(((board_rev_id & 2#00011000) >> 3))
     build_rev=${build_rev_array[${build_rev_id}]}
 
-    # MODEL ID D[0:3]
-    model_id=$(((model_id & 2#00001111) >> 0))
-    if [ $model_id -eq ${model_id_array[0]} ]; then
-       model_name=${model_name_array[0]}
-    else
+    # MODEL ID D[0:7]
+    for (( i=0; i<${#model_id_array[@]}; i++ )); do
+        if [ $model_id -eq ${model_id_array[$i]} ]; then
+            model_name=${model_name_array[$i]}
+            break
+        fi
+    done
+
+    if [ -z "$model_name" ]; then
        _echo "Invalid model_id: ${model_id}"
        exit 1
     fi
@@ -350,13 +344,10 @@ function _bios_version {
     _banner "Show BIOS Version"
 
     bios_ver=$(eval "dmidecode -s bios-version ${LOG_REDIRECT}")
-    bios_boot_rom=`${IOGET} 0x75b`
+    bios_boot_rom=`${IOGET} 0x602`
     if [ $? -eq 0 ]; then
         bios_boot_rom=`echo ${bios_boot_rom} | awk -F" " '{print $NF}'`
     fi
-
-    # BIOS BOOT SEL D[0:1]
-    bios_boot_rom=$(((bios_boot_rom & 2#00000011) >> 0))
 
     _echo "[BIOS Vesion  ]: ${bios_ver}"
     _echo "[BIOS Boot ROM]: ${bios_boot_rom}"
@@ -372,6 +363,39 @@ function _bmc_version {
     _echo "[BMC ROM1 Ver  ]: ${bmc_rom1_ver}"
     _echo "[BMC ROM2 Ver  ]: ${bmc_rom2_ver}"
     _echo "[BMC Active ROM]: ${bmc_active_rom}"
+}
+
+function _cpld_version_i2c {
+    _banner "Show CPLD Version (I2C)"
+
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        # MB CPLD
+        mb_cpld_base_addr=0x30
+        ver_reg=0x2
+        build_reg=0x4
+        ver_val=""
+        build_val=""
+
+
+        _check_i2c_device "${ismt_bus}" "0x72"
+        value=$(eval "i2cget -y -f "${ismt_bus}" 0x72 ${LOG_REDIRECT}")
+        ret=$?
+
+        if [ ${ret} -eq 0 ]; then
+            for (( i=0; i<MAX_CPLD; i++ )); do
+                cpld_addr=$(($mb_cpld_base_addr+$i))
+                i2cset -y -f "${ismt_bus}" 0x72 0x1
+                _check_i2c_device "${ismt_bus}" "$cpld_addr"
+                ver_val=$(eval "i2cget -y -f "${ismt_bus}" $cpld_addr $ver_reg ${LOG_REDIRECT}")
+                build_val=$(eval "i2cget -y -f "${ismt_bus}" $cpld_addr $build_reg ${LOG_REDIRECT}")
+                i2cset -y -f "${ismt_bus}" 0x72 0x0
+                _echo "[MB CPLD$(( $i+1 )) Version]: $(( (ver_val & 2#11000000) >> 6 )).$(( ver_val & 2#00111111 )).$(( build_val & 2#11111111 ))"
+            done
+        fi
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
 }
 
 function _cpld_version_lpc {
@@ -402,11 +426,17 @@ function _cpld_version_lpc {
 function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
-        if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/cpld_version_h"; then
-            mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/cpld_version_h ${LOG_REDIRECT}")
-            _echo "[MB CPLD Version]: ${mb_cpld_ver}"
-        fi
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        # MB CPLD
+        mb_cpld_base_addr=30
+        cpld_ver_h_attr="cpld_version_h"
+
+        for (( i=0; i<MAX_CPLD; i++ )); do
+            sysfs_path="/sys/bus/i2c/devices/${CPLD_BUS}-00$(($mb_cpld_base_addr+$i))"
+            _check_filepath "$sysfs_path/$cpld_ver_h_attr"
+            version_str=$(eval "cat $sysfs_path/$cpld_ver_h_attr ${LOG_REDIRECT}")
+            _echo "[MB CPLD$(( $i+1 )) Version]: $version_str"
+        done
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -417,77 +447,27 @@ function _cpld_version {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         _cpld_version_sysfs
     else
-        _cpld_version_lpc
+        _cpld_version_i2c
     fi
 }
-
-function _ucd_version {
-
-    _banner "Show UCD Version"
-
-    if [ "${MODEL_NAME}" != "S9500-54CF" ]; then
-        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
-        exit 1
-    fi
-
-    #get ucd version via BMC
-    ucd_ver_raw=$(eval "ipmitool raw 0x3c 0x8 0x0 ${LOG_REDIRECT}")
-    ret=$?
-
-    #check return code
-    if [ ! $ret -eq 0 ] ; then
-        _echo "Require BMC v2.02 or later to get UCD version"
-        return $ret
-    fi
-
-    #convert hex to ascii
-    ucd_ver_ascii=`echo $ucd_ver_raw | xxd -r -p`
-
-    #get ucd date via BMC
-    ucd_date_raw=$(eval "ipmitool raw 0x3c 0x8 0x1 ${LOG_REDIRECT}")
-    ret=$?
-
-    #check return code
-    if [ ! $ret -eq 0 ] ; then
-        _echo "Require BMC v2.02 or later to get UCD version"
-        return $ret
-    fi
-
-    #convert hex to ascii
-    ucd_date_ascii=`echo $ucd_date_raw | xxd -r -p`
-
-    _echo "[${brd[i]} UCD REVISION RAW]: ${ucd_ver_raw}"
-    _echo "[${brd[i]} UCD DATE RAW    ]: ${ucd_date_raw}"
-    _echo "[${brd[i]} MFR_REVISION    ]: ${ucd_ver_ascii}"
-    _echo "[${brd[i]} MFR_DATE        ]: ${ucd_date_ascii}"
-}
-
 
 function _show_version {
     _bios_version
     _bmc_version
     _cpld_version
-    # _ucd_version # Not support
 }
 
-function _show_i2c_tree_bus {
+function _show_i2c_tree_bus_0 {
     _banner "Show I2C Tree Bus 0"
 
     ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
 
-    _echo "[I2C Tree 0]:"
-    _echo "${ret}"
-
-    _banner "Show I2C Tree Bus 1"
-
-    ret=$(eval "i2cdetect -y 1 ${LOG_REDIRECT}")
-
-    _echo "[I2C Tree 1]:"
+    _echo "[I2C Tree]:"
     _echo "${ret}"
 }
 
 function _show_i2c_mux_devices {
-    local bus=$1
+    local i2c_bus=$1
     local chip_addr=$2
     local channel_num=$3
     local chip_dev_desc=$4
@@ -498,7 +478,7 @@ function _show_i2c_mux_devices {
         exit 99
     fi
 
-    _check_i2c_device "$bus" "$chip_addr"
+    _check_i2c_device "${i2c_bus}" "$chip_addr"
     ret=$?
     if [ "$ret" == "0" ]; then
         _echo "TCA9548 Mux ${chip_dev_desc}"
@@ -507,12 +487,12 @@ function _show_i2c_mux_devices {
         do
             _echo "TCA9548 Mux ${chip_dev_desc} - Channel ${i}"
             # open mux channel
-            i2cset -y ${bus} ${chip_addr} $(( 2 ** ${i} ))
+            i2cset -y ${i2c_bus} ${chip_addr} $(( 2 ** ${i} ))
             # dump i2c tree
-            ret=$(eval "i2cdetect -y ${bus} ${LOG_REDIRECT}")
+            ret=$(eval "i2cdetect -y ${i2c_bus} ${LOG_REDIRECT}")
             _echo "${ret}"
             # close mux channel
-            i2cset -y ${bus} ${chip_addr} 0x0
+            i2cset -y ${i2c_bus} ${chip_addr} 0x0
             _echo ""
         done
     fi
@@ -525,73 +505,48 @@ function _show_i2c_tree_bus_mux_i2c {
     local i=0
     local chip_addr1=""
     local chip_addr2=""
+    local chip_addr3=""
+    local chip_addr1_chann=""
+    local chip_addr2_chann=""
 
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        ## ROOT_SFP-0x75
+        _show_i2c_mux_devices "${i801_bus}" "0x75" "8" "ROOT_SFP_0x75"
 
-        chip_addr1="0x76"
+        ## ROOT_CPLD-0x72
+        _show_i2c_mux_devices "${ismt_bus}" "0x72" "8" "ROOT_0x72"
+
+        ## ROOT_SFP-0x72-Channel(0~7)-0x76-Channel(0~7)
+        chip_addr1="0x75"
+        chip_addr2="0x76"
         _check_i2c_device "${i801_bus}" "${chip_addr1}"
         ret=$?
         if [ "$ret" == "0" ]; then
-
-            # Name                  | Alpha_MUX#
-            # ----------------------|-------------
-            # 9546_ROOT_TIMING      |  MUX0
-            # 9546_ROOT_SFP         |  MUX2
-            # 9546_CHILD_SFP_0_1   |  MUX7
-            # 9548_CHILD_SFP_2_9    |  MUX3
-            # 9548_CHILD_SFP_10_17  |  MUX4
-            # 9548_CHILD_SFP_18_25  |  MUX5
-            # 9548_CHILD_SFP_26_29  |  MUX6
-
-            ## (9546_ROOT_SFP)-0x76
-            _show_i2c_mux_devices "${i801_bus}" "${chip_addr1}" "4" "(9546_ROOT_SFP)-0x76"
-
-            ## (9546_ROOT_SFP)-0x76(3)
-            #                                |-(9546_CHILD_QSFP_0_1)-0x70
-            #                                |-(9548_CHILD_SFP_2_9)-0x71
-            #                                |-(9548_CHILD_SFP_10_17)-0x72
-            #                                |-(9548_CHILD_SFP_18_25)-0x73
-            #                                |-(9548_CHILD_SFP_26_29)-0x74
-            i2cset -y ${i801_bus} ${chip_addr1} $(( 2 ** 3 ))
-
-            chip_addr2="0x70"
-            _check_i2c_device "${i801_bus}" "${chip_addr2}"
-            ret=$?
-            if [ "$ret" == "0" ]; then
-                _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "4" "(9546_CHILD_QSFP_0_1)-0x70"
-            fi
-
-            chip_addr2="0x71"
-            _check_i2c_device "${i801_bus}" "${chip_addr2}"
-            ret=$?
-            if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_2_9)-0x71"
-            fi
-
-            chip_addr2="0x72"
-            _check_i2c_device "${i801_bus}" "${chip_addr2}"
-            ret=$?
-            if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_10_17)-0x72"
-            fi
-
-            chip_addr2="0x73"
-            _check_i2c_device "${i801_bus}" "${chip_addr2}"
-            ret=$?
-            if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_18_25)-0x73"
-            fi
-
-            chip_addr2="0x74"
-            _check_i2c_device "${i801_bus}" "${chip_addr2}"
-            ret=$?
-            if [ "$ret" == "0" ]; then
-            _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "(9548_CHILD_SFP_26_29)-0x74"
-            fi
-
-            i2cset -y ${i801_bus} ${chip_addr1} 0x0
+            for (( chip_addr1_chann=0; chip_addr1_chann<=7; chip_addr1_chann++ ))
+            do
+                # open mux channel - 0x72 (chip_addr1)
+                i2cset -y 0 ${chip_addr1} $(( 2 ** ${chip_addr1_chann} ))
+                _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "ROOT-${chip_addr1}-${chip_addr1_chann}-${chip_addr2}"
+                # close mux channel - 0x72 (chip_addr1)
+                i2cset -y 0 ${chip_addr1} 0x0
+            done
         fi
 
+        ## ROOT_QSFP_QSFPDD-0x75-Channel(5~6)-0x76-Channel(0~7)
+        chip_addr1="0x75"
+        chip_addr2="0x76"
+        _check_i2c_device "${i801_bus}" "${chip_addr1}"
+        ret=$?
+        if [ "$ret" == "0" ]; then
+            for (( chip_addr1_chann=5; chip_addr1_chann<=6; chip_addr1_chann++ ))
+            do
+                # open mux channel - 0x75 (chip_addr1)
+                i2cset -y 0 ${chip_addr1} $(( 2 ** ${chip_addr1_chann} ))
+                _show_i2c_mux_devices "${i801_bus}" "${chip_addr2}" "8" "ROOT-${chip_addr1}-${chip_addr1_chann}-${chip_addr2}"
+                # close mux channel - 0x75 (chip_addr1)
+                i2cset -y 0 ${chip_addr1} 0x0
+            done
+        fi
     else
         echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -601,21 +556,23 @@ function _show_i2c_tree_bus_mux_i2c {
 function _show_i2c_tree {
     _banner "Show I2C Tree"
 
-    _show_i2c_tree_bus
+    _show_i2c_tree_bus_0
 
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         _echo "TBD"
     else
         _show_i2c_tree_bus_mux_i2c
     fi
+
+    _show_i2c_tree_bus_0
 }
 
 function _show_i2c_device_info {
     _banner "Show I2C Device Info"
 
     local pca954x_device_id=("")
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
-        pca954x_device_id=("0x76")
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        pca954x_device_id=("0x75")
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -636,8 +593,10 @@ function _show_i2c_device_info {
 function _show_sys_devices {
     _banner "Show System Devices"
 
-    _echo "[Command]: ls /sys/class/gpio/ ${LS_OPTION}"
-    ret=$(eval "ls /sys/class/gpio/ ${LS_OPTION}")
+    _echo "[Command]: ls /sys/class/gpio/"
+    #ret=($(ls /sys/class/gpio/))
+    #_echo "#${ret[*]}"
+    ret=`ls -al /sys/class/gpio/`
     _echo "${ret}"
 
     local file_path="/sys/kernel/debug/gpio"
@@ -648,72 +607,26 @@ function _show_sys_devices {
     fi
 
     _echo ""
-    _echo "[Command]: ls /sys/bus/i2c/devices/ ${LS_OPTION}"
-    ret=$(eval ls /sys/bus/i2c/devices/ ${LS_OPTION})
+    _echo "[Command]: ls /sys/bus/i2c/devices/"
+    #ret=($(ls /sys/bus/i2c/devices/))
+    #_echo "#${ret[*]}"
+    ret=`ls -al /sys/bus/i2c/devices/`
     _echo "${ret}"
 
     _echo ""
-    _echo "[Command]: ls /dev/ ${LS_OPTION}"
-    ret=$(eval ls /dev/ ${LS_OPTION})
+    _echo "[Command]: ls -al /dev/"
+    #ret=($(ls -al /dev/))
+    #_echo "#${ret[*]}"
+    ret=`ls -al /dev/`
     _echo "${ret}"
-}
-
-
-function _show_gpio_sysfs {
-
-    _banner "Show GPIO Status"
-
-    gpio_device=`ls /sys/class/gpio/ | sort -r | grep -m1 "gpio[[:digit:]]"`
-    max_gpio=${gpio_device#*gpio}
-    gpio_device=`ls /sys/class/gpio/ | sort | grep -m1 "gpio[[:digit:]]"`
-    min_gpio=${gpio_device#*gpio}
-    for (( i=${min_gpio}; i<=${max_gpio}; i++ ))
-    do
-        if [ ! -d "/sys/class/gpio/gpio${i}" ]; then
-            continue
-        fi
-
-        if _check_filepath "/sys/class/gpio/gpio${i}/direction"; then
-            gpio_dir=$(eval "cat /sys/class/gpio/gpio${i}/direction")
-        else
-            gpio_dir="N/A"
-        fi
-
-        if _check_filepath "/sys/class/gpio/gpio${i}/value"; then
-            gpio_value=$(eval "cat /sys/class/gpio/gpio${i}/value")
-        else
-            gpio_value="N/A"
-        fi
-
-        if _check_filepath "/sys/class/gpio/gpio${i}/active_low"; then
-            gpio_active=$(eval "cat /sys/class/gpio/gpio${i}/active_low")
-        else
-            gpio_active="N/A"
-        fi
-
-        _echo "[GPIO Pin]: ${i} ,[Direction]: ${gpio_dir} ,[Value]: ${gpio_value} ,[Active Low] : ${gpio_active}"
-    done
-}
-
-function _show_gpio {
-
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_gpio_sysfs
-    fi
 }
 
 function _show_cpu_eeprom_i2c {
     _banner "Show CPU EEPROM"
 
-    #read six times return empty content
+    #first read return empty content
     cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
-
-    #seventh read return correct content
+    #second read return correct content
     cpu_eeprom=$(eval "i2cdump -y ${ismt_bus} 0x57 c")
     _echo "[CPU EEPROM]:"
     _echo "${cpu_eeprom}"
@@ -739,16 +652,16 @@ function _show_psu_status_cpld_sysfs {
     _banner "Show PSU Status (CPLD)"
 
     bus_id=""
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
-        bus_id="1"
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        bus_id=${CPLD_BUS}
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
 
     # Read PSU Status
-    _check_filepath "/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/psu_status"
-    cpld_psu_status_reg=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/psu_status ${LOG_REDIRECT}")
+    _check_filepath "/sys/bus/i2c/devices/${bus_id}-0030/cpld_psu_status"
+    cpld_psu_status_reg=$(eval "cat /sys/bus/i2c/devices/${bus_id}-0030/cpld_psu_status ${LOG_REDIRECT}")
 
     # Read PSU0 Power Good Status (1: power good, 0: not providing power)
     psu0_power_ok=$(((cpld_psu_status_reg & 2#00010000) >> 4))
@@ -788,139 +701,102 @@ function _show_rov {
     fi
 }
 
-function _show_port_status_sysfs {
-    _banner "Show Port Status / EEPROM"
+function _show_sfp_port_status_sysfs {
+    _banner "Show SFP Port Status / EEPROM"
+    echo "    Show SFP Port Status / EEPROM, please wait..."
 
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
+    bus_id=""
+    port_status_cpld_addr_array=""
+    port_status_sysfs_idx_array=""
+    port_status_bit_idx_array=""
 
-        port_name_array=("0" "1" \
-                         "2"  "3"  "4"  "5"  "6"  "7"  "8"  "9"  "10" "11" \
-                         "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" \
-                         "22" "23" "24" "25" "26" "27" "28" "29")
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        bus_id="2"
+        sfp_port_eeprom_bus_id_base=18
 
-        port_absent_gpio_array=("485" "484" \
-                                "375" "374" "373" "372" "371" "370" "369" "368" "383" "382" \
-                                "381" "380" "379" "378" "377" "376" "359" "358" "357" "356" \
-                                "355" "354" "353" "352" "367" "366" "365" "364")
+        port_status_cpld_addr_array=("0031" "0031" "0031" "0031" "0031" "0031" "0031" "0031" \
+                                     "0031" "0031" "0031" "0031" "0031" "0031" "0031" "0031" \
+                                     "0031" "0031" "0031" "0031" "0031" "0031" "0031" "0031" \
+                                     "0032" "0032" "0032" "0032" "0032" "0032" "0032" "0032" \
+                                     "0032" "0032" "0032" "0032" "0032" "0032" "0032" "0032" \
+                                     "0032" "0032" "0032" "0032" "0032" "0032" "0032" "0032" \
+                                     "0032" "0032" "0032" "0032" "0032" "0032")
 
-        port_lp_mode_gpio_array=("489" "488" \
-                                 "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
-                                 "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1"\
-                                 "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1")
+        port_status_sysfs_idx_array=("0_7" "0_7" "0_7" "0_7" "0_7" "0_7" "0_7" "0_7" \
+                                     "8_15" "8_15" "8_15" "8_15" "8_15" "8_15" "8_15" "8_15" \
+                                     "16_23" "16_23" "16_23" "16_23" "16_23" "16_23" "16_23" "16_23" \
+                                     "24_31" "24_31" "24_31" "24_31" "24_31" "24_31" "24_31" "24_31" \
+                                     "32_39" "32_39" "32_39" "32_39" "32_39" "32_39" "32_39" "32_39" \
+                                     "40_47" "40_47" "40_47" "40_47" "40_47" "40_47" "40_47" "40_47" \
+                                     "48_53" "48_53" "48_53" "48_53" "48_53" "48_53")
 
-        port_reset_gpio_array=("493" "492" \
-                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
-                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1"\
-                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1")
+        port_status_bit_idx_array=("0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5" "6" "7" \
+                                   "0" "1" "2" "3" "4" "5")
 
-        port_intr_gpio_array=("481" "480" \
-                              "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
-                              "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1"\
-                              "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1")
-
-        port_tx_fault_gpio_array=("-1" "-1" \
-                                  "439" "438" "437" "436" "435" "434" "433" "432" "447" "446" \
-                                  "445" "444" "443" "442" "441" "440" "423" "422" "421" "420" \
-                                  "419" "418" "417" "416" "431" "430" "429" "428")
-
-        port_rx_los_gpio_array=("-1" "-1" \
-                                "343" "342" "341" "340" "339" "338" "337" "336" "351" "350" \
-                                "349" "348" "347" "346" "345" "344" "327" "326" "325" "324" \
-                                "323" "322" "321" "320" "335" "334" "333" "332")
-
-        port_tx_dis_gpio_array=("-1" "-1" \
-                                "471" "470" "469" "468" "467" "466" "465" "464" "479" "478" \
-                                "477" "476" "475" "474" "473" "472" "455" "454" "453" "452" \
-                                "451" "450" "449" "448" "463" "462" "461" "460")
-
-        port_rate_sel_gpio_array=("-1" "-1" \
-                                  "407" "406" "405" "404" "403" "402" "401" "400" "415" "414" \
-                                  "413" "412" "411" "410" "409" "408" "391" "390" "389" "388" \
-                                  "387" "386" "385" "384" "399" "398" "397" "396")
-
-        port_eeprom_bus_array=("11" "10" \
-                               "14" "15" "16" "17" "18" "19" "20" "21" "22" "23" \
-                               "24" "25" "26" "27" "28" "29" "30" "31" "32" "33"\
-                               "34" "35" "36" "37" "38" "39" "40" "41")
-
-        for (( i=0; i<${#port_name_array[@]}; i++ ))
+        for (( i=0; i<${#port_status_cpld_addr_array[@]}; i++ ))
         do
+            # Module SFP Port RX LOS (0:Undetected, 1:Detected)
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_sfp_rx_los_${port_status_sysfs_idx_array[${i}]}"
+            _check_filepath $sysfs
+            port_rx_los_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
 
-            local gpio_path=0
-            # Port Absent Status (0: Present, 1:Absence)
-            gpio_path=$(( ${port_absent_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_absent_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_absent=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Module Absent]: ${port_absent}"
-            fi
+            port_rx_los=$(( (port_rx_los_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
-            # Port Lower Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
-            gpio_path=$(( ${port_lp_mode_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_lp_mode_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
+            # Module SFP Port Absent Status (0:Present, 1:Absence)
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_sfp_present_${port_status_sysfs_idx_array[${i}]}"
+            _check_filepath $sysfs
+            port_absent_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
+            port_absent=$(( (port_absent_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
-                port_lp_mode=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
+            # Module SFP Port TX FAULT (0:Undetected, 1:Detected)
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_sfp_tx_fault_${port_status_sysfs_idx_array[${i}]}"
+            _check_filepath $sysfs
+            port_tx_fault_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
+            port_tx_fault=$(( (port_tx_fault_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
-                _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
-            fi
+            # Module SFP Port TX DISABLE (0:Disabled, 1:Enabled)
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_sfp_tx_disable_${port_status_sysfs_idx_array[${i}]}"
+            _check_filepath $sysfs
+            port_tx_disable_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
+            port_tx_disable=$(( (port_tx_fault_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
-            # Port Reset Status (0:Reset, 1:Normal)
-            gpio_path=$(( ${port_reset_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_reset_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_reset=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Reset Status]: ${port_reset}"
-            fi
+            # Module SFP Port Dump EEPROM
+            if [ "${port_absent}" == "0" ]; then
+                sysfs="/sys/bus/i2c/devices/$((sfp_port_eeprom_bus_id_base + i))-0050/eeprom"
+                _check_filepath $sysfs
 
-            # Port Interrupt Status (0: Interrupted, 1:No Interrupt)
-            gpio_path=$(( ${port_intr_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_intr_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_intr_l=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Interrupt Status (L)]: ${port_intr_l}"
-            fi
-
-            # Port Tx Fault Status (0:normal, 1:tx fault)
-            gpio_path=$(( ${port_tx_fault_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_tx_fault_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_tx_fault=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Tx Fault Status]: ${port_tx_fault}"
-            fi
-
-            # Port Rx Loss Status (0:los undetected, 1: los detected)
-            gpio_path=$(( ${port_rx_los_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_rx_los_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_rx_loss=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Rx Loss Status]: ${port_rx_loss}"
-            fi
-
-            # Port Tx Disable Status (0:enable tx, 1: disable tx)
-            gpio_path=$(( ${port_tx_dis_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_tx_dis_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_tx_dis=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Tx Disable Status]: ${port_tx_dis}"
-            fi
-
-            # Port Rate Select (0: low rate, 1:full rate)
-            gpio_path=$(( ${port_rate_sel_gpio_array[${i}]} - ${GPIO_OFFSET} ))
-            if [ "${port_rate_sel_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
-                port_rate_sel=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Port Rate Select]: ${port_rate_sel}"
-            fi
-
-            # Port Dump EEPROM
-            local eeprom_path="/sys/bus/i2c/devices/${port_eeprom_bus_array[${i}]}-0050/eeprom"
-            if [ "${port_absent}" == "0" ] && _check_filepath "${eeprom_path}"; then
-                port_eeprom=$(eval "dd if=${eeprom_path} bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
-                if [ "${LOG_FILE_ENABLE}" == "1" ]; then
-                    hexdump -C "${eeprom_path}" > ${LOG_FOLDER_PATH}/port${i}_eeprom.log 2>&1
+                port_eeprom_p0_1st=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
+                port_eeprom_p0_2nd=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
+                if [ -z "$port_eeprom_p0_1st" ]; then
+                    port_eeprom_p0_1st="ERROR!!! The result is empty. It should read failed ($sysfs)!!"
                 fi
-                if [ -z "$port_eeprom" ]; then
-                    port_eeprom="ERROR!!! The result is empty. It should read failed (${eeprom_path})!!"
+
+                # Full EEPROM Log
+                if [ "${LOG_FILE_ENABLE}" == "1" ]; then
+                    hexdump -C $sysfs > ${LOG_FOLDER_PATH}/sfp_port${i}_eeprom.log 2>&1
                 fi
             else
-                port_eeprom="N/A"
+                port_eeprom_p0_1st="N/A"
+                port_eeprom_p0_2nd="N/A"
             fi
 
-            _echo "[Port${i} EEPROM Page0-1]:"
-            _echo "${port_eeprom}"
+            _echo "[SFP Port${i} RX LOS Reg Raw]: ${port_rx_los_reg}"
+            _echo "[SFP Port${i} RX LOS]: ${port_rx_los}"
+            _echo "[SFP Port${i} Module Absent Reg Raw]: ${port_absent_reg}"
+            _echo "[SFP Port${i} Module Absent]: ${port_absent}"
+            _echo "[SFP Port${i} TX FAULT Reg Raw]: ${port_tx_fault_reg}"
+            _echo "[SFP Port${i} TX FAULT]: ${port_tx_fault}"
+            _echo "[SFP Port${i} TX DISABLE Reg Raw]: ${port_tx_disable_reg}"
+            _echo "[SFP Port${i} TX DISABLE]: ${port_tx_disable}"
+            _echo "[Port${i} EEPROM Page0-0(1st)]:"
+            _echo "${port_eeprom_p0_1st}"
+            _echo "[Port${i} EEPROM Page0-0(2nd)]:"
+            _echo "${port_eeprom_p0_2nd}"
             _echo ""
         done
     else
@@ -929,40 +805,65 @@ function _show_port_status_sysfs {
     fi
 }
 
-function _show_port_status {
+function _show_sfp_port_status {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_port_status_sysfs
+        _show_sfp_port_status_sysfs
+    fi
+}
+
+function _show_qsfp_port_status_sysfs {
+    # Not Support
+    return 0
+}
+
+function _show_qsfp_port_status {
+    # Not Support
+    return 0
+    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+        _show_qsfp_port_status_sysfs
+    fi
+}
+
+function _show_mgmt_sfp_status_sysfs {
+    # Not Support
+    return 0
+}
+
+function _show_mgmt_sfp_status {
+    # Not Support
+    return 0
+    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+        _show_mgmt_sfp_status_sysfs
     fi
 }
 
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
-    cpu_temp_array=("1" "4" "6" "10" "16")
-
-    for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
+    for ((i=1;i<=14;i++))
     do
-        if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input" ]; then
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit"
-            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
-            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
-            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
-        elif [ -f "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input" ]; then
-            _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input"
-            _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max"
-            _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_crit"
-            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
-            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
-            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
+        if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_input" ]; then
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_input"
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_max"
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_crit"
+            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_input ${LOG_REDIRECT}")
+            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_max ${LOG_REDIRECT}")
+            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_crit ${LOG_REDIRECT}")
+        elif [ -f "/sys/devices/platform/coretemp.0/temp${i}_input" ]; then
+            _check_filepath "/sys/devices/platform/coretemp.0/temp${i}_input"
+            _check_filepath "/sys/devices/platform/coretemp.0/temp${i}_max"
+            _check_filepath "/sys/devices/platform/coretemp.0/temp${i}_crit"
+            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/temp${i}_input ${LOG_REDIRECT}")
+            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/temp${i}_max ${LOG_REDIRECT}")
+            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/temp${i}_crit ${LOG_REDIRECT}")
         else
-            _echo "sysfs of CPU core temperature not found!!!"
+            _echo "sysfs of CPU Temp${i} temperature not found!!!"
+            continue
         fi
 
-        _echo "[CPU Core Temp${cpu_temp_array[${i}]} Input   ]: ${temp_input}"
-        _echo "[CPU Core Temp${cpu_temp_array[${i}]} Max     ]: ${temp_max}"
-        _echo "[CPU Core Temp${cpu_temp_array[${i}]} Crit    ]: ${temp_crit}"
+        _echo "[CPU Core Temp${i} Input   ]: ${temp_input}"
+        _echo "[CPU Core Temp${i} Max     ]: ${temp_max}"
+        _echo "[CPU Core Temp${i} Crit    ]: ${temp_crit}"
         _echo ""
     done
 }
@@ -973,181 +874,38 @@ function _show_cpu_temperature {
     fi
 }
 
-function _show_cpld_interrupt_sysfs {
-    _banner "Show CPLD Interrupt"
-
-    psu_interrupt=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/psu_intr")
-    fan_interrupt=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/fan_intr")
-    port_interrupt=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/port_intr")
-
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
-        _echo "[PSU Interrupt Reg Raw    ]: ${psu_interrupt}"
-        _echo "[FAN Interrupt Reg Raw    ]: ${fan_interrupt}"
-        _echo "[Port Interrupt Reg Raw   ]: ${port_interrupt}"
-        _echo ""
-    else
-        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
-        exit 1
-    fi
-
-}
-
-function _show_cpld_interrupt {
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_cpld_interrupt_sysfs
-    fi
-}
-
 function _show_system_led_sysfs {
     _banner "Show System LED"
 
-    if [ "${MODEL_NAME}" == "S9500-54CF" ]; then
-        if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_ctrl_1" &&
-           _check_filepath "/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_ctrl_2" &&
-           _check_filepath "/sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_status_1"; then
-
-            led_ctrl_1=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_ctrl_1 ${LOG_REDIRECT}")
-            led_ctrl_2=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_ctrl_2 ${LOG_REDIRECT}")
-            led_status_1=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9500_54cf_lpc/mb_cpld/led_status_1 ${LOG_REDIRECT}")
-
-            # System LED
-            sys_color=$(((led_ctrl_1 & 2#00010000) >>4)) # (1: green, 0: yellow)
-            sys_blink=$(((led_ctrl_1 & 2#01000000) >>6)) # (1: blinking, 0: solid)
-            sys_onoff=$(((led_ctrl_1 & 2#10000000) >>7)) # (1: on, 0: off)
-
-            LED_YELLOW_SOLID="YELLOW SOLID"
-            LED_YELLOW_BLINKING="YELLOW BLINKING"
-            LED_GREEN_SOLID="GREEN SOLID"
-            LED_GREEN_BLINKING="GREEN BLINKING"
-            LED_OFF="OFF"
-
-            case "${sys_onoff}_${sys_color}_${sys_blink}" in
-                '1_0_0')
-                    sys_str=${YELLOW_SOLID}
-                    ;;
-                '1_0_1')
-                    sys_str=${LED_YELLOW_BLINKING}
-                    ;;
-                '1_1_0')
-                    sys_str=${LED_GREEN_SOLID}
-                    ;;
-                '1_1_1')
-                    sys_str=${LED_GREEN_BLINKING}
-                    ;;
-                *)
-                    sys_str=${LED_OFF}
-            esac
-
-            # FAN LED
-            fan_color=$(((led_status_1 & 2#00000001) >>0)) # (1: green, 0: yellow)
-            fan_blink=$(((led_status_1 & 2#00000100) >>2)) # (1: blinking, 0: solid)
-            fan_onoff=$(((led_status_1 & 2#00001000) >>3)) # (1: on, 0: off)
-            case "${fan_onoff}_${fan_color}_${fan_blink}" in
-                '1_0_0')
-                    fan_str=${YELLOW_SOLID}
-                    ;;
-                '1_0_1')
-                    fan_str=${LED_YELLOW_BLINKING}
-                    ;;
-                '1_1_0')
-                    fan_str=${LED_GREEN_SOLID}
-                    ;;
-                '1_1_1')
-                    fan_str=${LED_GREEN_BLINKING}
-                    ;;
-                *)
-                    fan_str=${LED_OFF}
-            esac
-
-
-            # PSU LED
-            psu_color=$(((led_status_1 & 2#00010000) >>4)) # (1: green, 0: yellow)
-            psu_blink=$(((led_status_1 & 2#01000000) >>6)) # (1: blinking, 0: solid)
-            psu_onoff=$(((led_status_1 & 2#10000000) >>7)) # (1: on, 0: off)
-            case "${psu_onoff}_${psu_color}_${psu_blink}" in
-                '1_0_0')
-                    psu_str=${YELLOW_SOLID}
-                    ;;
-                '1_0_1')
-                    psu_str=${LED_YELLOW_BLINKING}
-                    ;;
-                '1_1_0')
-                    psu_str=${LED_GREEN_SOLID}
-                    ;;
-                '1_1_1')
-                    psu_str=${LED_GREEN_BLINKING}
-                    ;;
-                *)
-                    psu_str=${LED_OFF}
-            esac
-
-
-            # Sync LED
-            sync_color=$(((led_ctrl_2 & 2#00000001) >>0)) # (1: green, 0: yellow)
-            sync_blink=$(((led_ctrl_2 & 2#00000100) >>2)) # (1: blinking, 0: solid)
-            sync_onoff=$(((led_ctrl_2 & 2#00001000) >>3)) # (1: on, 0: off)
-            case "${sync_onoff}_${sync_color}_${sync_blink}" in
-                '1_0_0')
-                    sync_str=${YELLOW_SOLID}
-                    ;;
-                '1_0_1')
-                    sync_str=${LED_YELLOW_BLINKING}
-                    ;;
-                '1_1_0')
-                    sync_str=${LED_GREEN_SOLID}
-                    ;;
-                '1_1_1')
-                    sync_str=${LED_GREEN_BLINKING}
-                    ;;
-                *)
-                    sync_str=${LED_OFF}
-            esac
-
-
-            # GNSS LED
-            gnss_color=$(((led_ctrl_1 & 2#00000001) >>0)) # (1: green, 0: yellow)
-            gnss_blink=$(((led_ctrl_1 & 2#00000100) >>2)) # (1: blinking, 0: solid)
-            gnss_onoff=$(((led_ctrl_1 & 2#00001000) >>3)) # (1: on, 0: off)
-            case "${gnss_onoff}_${gnss_color}_${gnss_blink}" in
-                '1_0_0')
-                    gnss_str=${YELLOW_SOLID}
-                    ;;
-                '1_0_1')
-                    gnss_str=${LED_YELLOW_BLINKING}
-                    ;;
-                '1_1_0')
-                    gnss_str=${LED_GREEN_SOLID}
-                    ;;
-                '1_1_1')
-                    gnss_str=${LED_GREEN_BLINKING}
-                    ;;
-                *)
-                    gnss_str=${LED_OFF}
-            esac
-
-            _echo "[System LED Color   ]: ${sys_color}"
-            _echo "[System LED Blinking]: ${sys_blink}"
-            _echo "[System LED ON-OFF  ]: ${sys_onoff}"
-            _echo "[System LED STRING  ]: ${sys_str}"
-            _echo "[FAN LED Color      ]: ${fan_color}"
-            _echo "[FAN LED Blinking   ]: ${fan_blink}"
-            _echo "[FAN LED ON-OFF     ]: ${fan_onoff}"
-            _echo "[FAN LED STRING     ]: ${fan_str}"
-            _echo "[PSU LED Color      ]: ${psu_color}"
-            _echo "[PSU LED Blinking   ]: ${psu_blink}"
-            _echo "[PSU LED ON-OFF     ]: ${psu_onoff}"
-            _echo "[PSU LED STRING     ]: ${psu_str}"
-            _echo "[SYNC LED Color     ]: ${sync_color}"
-            _echo "[SYNC LED Blinking  ]: ${sync_blink}"
-            _echo "[SYNC LED ON-OFF    ]: ${sync_onoff}"
-            _echo "[SYNC LED STRING    ]: ${sync_str}"
-            _echo "[GNSS LED Color     ]: ${gnss_color}"
-            _echo "[GNSS LED Blinking  ]: ${gnss_blink}"
-            _echo "[GNSS LED ON-OFF    ]: ${gnss_onoff}"
-            _echo "[GNSS LED STRING    ]: ${gnss_str}"
-        else
-            _echo "FILE led_ctrl_1, led_ctrl_2, or led_status_1 not exist, exit!!!"
-        fi
+    if [[ "${MODEL_NAME}" == *"S9500-54CF"* ]]; then
+        led_fan_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_fan"
+        led_gnss_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_gnss"
+        led_sync_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_sync"
+        led_sys_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_sys"
+        led_psu0_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_psu_0"
+        led_psu1_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_psu_1"
+        led_id_path="/sys/bus/i2c/devices/${CPLD_BUS}-0030/cpld_system_led_id"
+        _check_filepath ${led_fan_path}
+        _check_filepath ${led_gnss_path}
+        _check_filepath ${led_sync_path}
+        _check_filepath ${led_sys_path}
+        _check_filepath ${led_psu0_path}
+        _check_filepath ${led_psu1_path}
+        _check_filepath ${led_id_path}
+        system_led_fan=$(eval "cat ${led_fan_path} ${LOG_REDIRECT}")
+        system_led_gnss=$(eval "cat ${led_gnss_path} ${LOG_REDIRECT}")
+        system_led_sync=$(eval "cat ${led_sync_path} ${LOG_REDIRECT}")
+        system_led_sys=$(eval "cat ${led_sys_path} ${LOG_REDIRECT}")
+        system_led_psu0=$(eval "cat ${led_psu0_path} ${LOG_REDIRECT}")
+        system_led_psu1=$(eval "cat ${led_psu1_path} ${LOG_REDIRECT}")
+        system_led_id=$(eval "cat ${led_id_path} ${LOG_REDIRECT}")
+        _echo "[System LED - Fan ]: ${system_led_fan}"
+        _echo "[System LED - GNSS]: ${system_led_gnss}"
+        _echo "[System LED - SYNC]: ${system_led_sync}"
+        _echo "[System LED - SYS ]: ${system_led_sys}"
+        _echo "[System LED - PSU0]: ${system_led_psu0}"
+        _echo "[System LED - PSU1]: ${system_led_psu1}"
+        _echo "[System LED - ID  ]: ${system_led_id}"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -1176,6 +934,20 @@ function _show_beacon_led {
 function _show_ioport {
     _banner "Show ioport (LPC)"
 
+    base=0x600
+    offset=0x0
+    reg=$(( ${base} + ${offset} ))
+    reg=`printf "0x%X\n" ${reg}`
+    ret=""
+
+    while [ "${reg}" != "0x700" ]
+    do
+        ret=`${IOGET} "${reg}"`
+        offset=$(( ${offset} + 1 ))
+        reg=$(( ${base} + ${offset} ))
+        reg=`printf "0x%X\n" ${reg}`
+        _echo "${ret}"
+    done
 
     base=0x700
     offset=0x0
@@ -1191,6 +963,28 @@ function _show_ioport {
         reg=`printf "0x%X\n" ${reg}`
         _echo "${ret}"
     done
+
+    base=0x700
+    offset=0x0
+    reg=$(( ${base} + ${offset} ))
+    reg=`printf "0x%X\n" ${reg}`
+    ret=""
+
+    while [ "${reg}" != "0xF00" ]
+    do
+        ret=`${IOGET} "${reg}"`
+        offset=$(( ${offset} + 1 ))
+        reg=$(( ${base} + ${offset} ))
+        reg=`printf "0x%X\n" ${reg}`
+        _echo "${ret}"
+    done
+
+    ret=$(eval "${IOGET} 0x501 ${LOG_REDIRECT}")
+    _echo "${ret}"
+    ret=$(eval "${IOGET} 0xf000 ${LOG_REDIRECT}")
+    _echo "${ret}"
+    ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
+    _echo "${ret}"
 }
 
 function _show_onlpdump {
@@ -1246,11 +1040,15 @@ function _show_onlps {
     fi
 }
 
+#require skld cpu cpld 1.12.016 and later
 function _show_cpld_error_log {
     # Not Support
     return 0
 }
 
+# Note: In order to prevent affecting MCE mechanism,
+#       the function will not clear the 0x425 and 0x429 registers at step 1.1/1.2,
+#       and only use to show the current correctable error count.
 function _show_memory_correctable_error_count {
     # Not Support
     return 0
@@ -1259,43 +1057,39 @@ function _show_memory_correctable_error_count {
 function _show_usb_info {
     _banner "Show USB Info"
 
-
     _echo "[Command]: lsusb -t"
     ret=$(eval "lsusb -t ${LOG_REDIRECT}")
     _echo "${ret}"
     _echo ""
 
-    # FIXME
-    # _echo "[Command]: lsusb -v"
-    # ret=$(eval "lsusb -v ${LOG_REDIRECT}")
-    # _echo "${ret}"
-    # _echo ""
+    _echo "[Command]: lsusb -v"
+    ret=$(eval "lsusb -v ${LOG_REDIRECT}")
+    _echo "${ret}"
+    _echo ""
 
-    # FIXME no /sys/bus/usb/devices/*/idVendor sysfs
-    # _echo "[Command]: grep 046b /sys/bus/usb/devices/*/idVendor"
-    # ret=$(eval "grep 046b /sys/bus/usb/devices/*/idVendor ${LOG_REDIRECT}")
-    # _echo "${ret}"
-    # _echo ""
+    _echo "[Command]: grep 046b /sys/bus/usb/devices/*/idVendor"
+    ret=$(eval "grep 046b /sys/bus/usb/devices/*/idVendor ${LOG_REDIRECT}")
+    _echo "${ret}"
+    _echo ""
 
-    # FIXME no following sysfs
-    # # check usb auth
-    # _echo "[USB Port Authentication]: "
-    # usb_auth_file_array=("/sys/bus/usb/devices/usb1/authorized" \
-    #                      "/sys/bus/usb/devices/usb1/authorized_default" \
-    #                      "/sys/bus/usb/devices/1-4/authorized" \
-    #                      "/sys/bus/usb/devices/1-4.1/authorized" \
-    #                      "/sys/bus/usb/devices/1-4:1.0/authorized" )
+    # check usb auth
+    _echo "[USB Port Authentication]: "
+    usb_auth_file_array=("/sys/bus/usb/devices/usb1/authorized" \
+                         "/sys/bus/usb/devices/usb1/authorized_default" \
+                         "/sys/bus/usb/devices/1-3/authorized" \
+                         "/sys/bus/usb/devices/1-3.1/authorized" \
+                         "/sys/bus/usb/devices/1-3:1.0/authorized" )
 
-    # for (( i=0; i<${#usb_auth_file_array[@]}; i++ ))
-    # do
-    #     _check_filepath "${usb_auth_file_array[$i]}"
-    #     if [ -f "${usb_auth_file_array[$i]}" ]; then
-    #         ret=$(eval "cat ${usb_auth_file_array[$i]} ${LOG_REDIRECT}")
-    #         _echo "${usb_auth_file_array[$i]}: $ret"
-    #     else
-    #         _echo "${usb_auth_file_array[$i]}: -1"
-    #     fi
-    # done
+    for (( i=0; i<${#usb_auth_file_array[@]}; i++ ))
+    do
+        _check_filepath "${usb_auth_file_array[$i]}"
+        if [ -f "${usb_auth_file_array[$i]}" ]; then
+            ret=$(eval "cat ${usb_auth_file_array[$i]} ${LOG_REDIRECT}")
+            _echo "${usb_auth_file_array[$i]}: $ret"
+        else
+            _echo "${usb_auth_file_array[$i]}: -1"
+        fi
+    done
 }
 
 function _show_scsi_device_info {
@@ -1342,11 +1136,12 @@ function _show_disk_info {
     _banner "Show Disk Info"
 
     cmd_array=("lsblk" \
-               "parted -l" \
+               "lsblk -O" \
+               "parted -l /dev/sda" \
                "fdisk -l /dev/sda" \
                "find /sys/fs/ -name errors_count -print -exec cat {} \;" \
                "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;" \
-			   "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;" \
+               "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;" \
                "df -h")
 
     for (( i=0; i<${#cmd_array[@]}; i++ ))
@@ -1376,14 +1171,6 @@ function _show_lspci {
     ret=`lspci`
     _echo "${ret}"
     _echo ""
-
-    _echo "[PCI Bridge Hotplug Status]: "
-    pci_device_id=($(lspci | grep "PLX Technology" | awk '{print $1}'))
-    for i in "${pci_device_id[@]}"
-    do
-        ret=`lspci -vvv -s ${i} | grep HotPlug`
-        _echo "${i} ${ret}"
-    done
 }
 
 function _show_lspci_detail {
@@ -1449,6 +1236,9 @@ function _show_bios_info {
 function _show_bmc_info {
     _banner "Show BMC Info"
 
+    #FIXME
+    #ipmitool fru -v
+    #ipmitool i2c bus=2 0x80 0x1 0x5c (mux ctrl)
     cmd_array=("ipmitool mc info" "ipmitool lan print" "ipmitool sel info" \
                "ipmitool fru -v" "ipmitool power status" \
                "ipmitool channel info 0xf" "ipmitool channel info 0x1" \
@@ -1466,7 +1256,7 @@ function _show_bmc_info {
 }
 
 function _show_bmc_device_status {
-    # Not Support
+    #Not Support
     return 0
 }
 
@@ -1479,8 +1269,19 @@ function _show_bmc_sensors {
 }
 
 function _show_bmc_sel_raw_data {
-    # Not Support
-    return 0
+    _banner "Show BMC SEL Raw Data"
+    echo "    Show BMC SEL Raw Data, please wait..."
+
+    if [ "${LOG_FILE_ENABLE}" == "1" ]; then
+        _echo "[SEL RAW Data]:"
+        ret=$(eval "ipmitool sel save ${LOG_FOLDER_PATH}/sel_raw_data.log > /dev/null ${LOG_REDIRECT}")
+        _echo "The file is located at ${LOG_FOLDER_NAME}/sel_raw_data.log"
+    else
+        _echo "[SEL RAW Data]:"
+        ret=$(eval "ipmitool sel save /tmp/log/sel_raw_data.log > /dev/null ${LOG_REDIRECT}")
+        cat /tmp/log/sel_raw_data.log
+        rm /tmp/log/sel_raw_data.log
+    fi
 }
 
 function _show_bmc_sel_elist {
@@ -1537,6 +1338,8 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
+        #_echo "copy /var/log/syslog* to ${LOG_FOLDER_PATH}"
+        #cp /var/log/syslog*  "${LOG_FOLDER_PATH}"
 
         if [ -f "/var/log/kern.log" ]; then
             _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
@@ -1548,6 +1351,20 @@ function _additional_log_collection {
             cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
         fi
     fi
+}
+
+function _show_time {
+    _banner "Show Execution Time"
+    end_time=$(date +%s)
+    elapsed_time=$(( end_time - start_time ))
+
+    ret=`date -d @${start_time}`
+    _echo "[Start Time ] ${ret}"
+
+    ret=`date -d @${end_time}`
+    _echo "[End Time   ] ${ret}"
+
+    _echo "[Elapse Time] ${elapsed_time} seconds"
 }
 
 function _compression {
@@ -1573,20 +1390,19 @@ function _main {
     _show_i2c_device_info
     _show_sys_devices
     _show_cpu_eeprom
-    _show_gpio
     _show_psu_status_cpld
-#   _show_rov # Not support
-    _show_port_status
+    _show_rov
+    _show_sfp_port_status
+    _show_qsfp_port_status
+    _show_mgmt_sfp_status
     _show_cpu_temperature
-    _show_cpld_interrupt
     _show_system_led
-#   _show_beacon_led # Not support
+    _show_beacon_led
     _show_ioport
     _show_onlpdump
     _show_onlps
     _show_system_info
-#   _show_cpld_error_log # Not support
-#   _show_memory_correctable_error_count # Not support
+    _show_cpld_error_log
     _show_grub
     _show_driver
     _show_usb_info
@@ -1599,12 +1415,13 @@ function _main {
     _show_bios_info
     _show_bmc_info
     _show_bmc_sensors
-#   _show_bmc_device_status # Not support
-#   _show_bmc_sel_raw_data # Not support
+    _show_bmc_device_status
+    _show_bmc_sel_raw_data
     _show_bmc_sel_elist
     _show_bmc_sel_elist_detail
     _show_dmesg
     _additional_log_collection
+    _show_time
     _compression
 
     echo "#   done..."
