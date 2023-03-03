@@ -49,7 +49,7 @@
 #define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9110_32x_lpc/bsp/"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
-#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
+#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x72 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9110_32x_lpc/mb_cpld/mux_reset_all"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
 #define SYSFS_CPLD1                 SYSFS_DEVICES "2-0030/"
@@ -81,8 +81,6 @@
 #define THERMAL_PSU_TEMP1_SHUTDOWN       75
 #define THERMAL_STATE_NOT_SUPPORT        0
 
-#define BMC_ATTR_STATUS_ABS         0
-#define BMC_ATTR_STATUS_PRES        1
 #define PSU_STATUS_ABS              0
 #define PSU_STATUS_PRES             1
 
@@ -168,6 +166,9 @@
 #define BMC_FAN_DIR_UNK   0
 #define BMC_FAN_DIR_B2F   1
 #define BMC_FAN_DIR_F2B   2
+#define BMC_ATTR_STATUS_ABS         0
+#define BMC_ATTR_STATUS_PRES        1
+#define BMC_ATTR_INVALID_VAL        999999
 
 enum sensor
 {

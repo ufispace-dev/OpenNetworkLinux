@@ -207,10 +207,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # We use i801 bus device status (system eeprom, i2c mux 0 ...) to check bsp init status
-    local bus=$(eval "i2cdetect -y ${i801_bus} ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${bus}" ] ; then
+    # As our bsp init status, we look at bsp_version. 
+    if [ -f "/sys/devices/platform/x86_64_ufispace_s9110_32x_lpc/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -636,11 +634,11 @@ function _show_i2c_tree_bus_mux_i2c {
 
             ## (9548_ROOT_PORT)-0x72
             _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "9548_ROOT_PORT-${chip_addr1}"
-            local chip_addr2_array=("0x73" "0x73" "0x73" "0x73", "0x73")
+            local chip_addr2_array=("0x73" "0x73" "0x73" "0x73" "0x73")
             local mux_name_array=("9548_CHILD_QSFP_0_7" "9548_CHILD_QSFP_8_15" \
-                                  "9548_CHILD_QSFP_16_23" "9548_CHILD_QSFP_24_31", "9548_CHILD_SFP_0_1")
+                                  "9548_CHILD_QSFP_16_23" "9548_CHILD_QSFP_24_31" "9548_CHILD_SFP_0_1")
 
-            for (( chip_addr1_chann=0; chip_addr1_chann<=${#chip_addr2_array[@]}; chip_addr1_chann++ ))
+            for (( chip_addr1_chann=0; chip_addr1_chann<${#chip_addr2_array[@]}; chip_addr1_chann++ ))
             do
                 local chip_addr2=${chip_addr2_array[${chip_addr1_chann}]}
                 local mux_name=${mux_name_array[${chip_addr1_chann}]}
@@ -660,7 +658,7 @@ function _show_i2c_tree_bus_mux_i2c {
         _check_i2c_device "${bus}" "${chip_addr1}"
         ret=$?
         if [ "$ret" == "0" ]; then
-            local cpld_chann = 0
+            local cpld_chann=0
             i2cset -y ${bus} ${chip_addr1} $(( 2 ** ${cpld_chann} ))
             _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "9548_ROOT_CPLD-${cpld_chann}-${chip_addr1}"
             i2cset -y ${bus} ${chip_addr1} 0x0

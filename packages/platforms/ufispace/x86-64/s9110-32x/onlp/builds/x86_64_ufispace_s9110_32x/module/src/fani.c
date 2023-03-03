@@ -130,68 +130,126 @@ static int get_bmc_fan_info(int local_id, onlp_fan_info_t* info)
     float data=0;
     int sys_max_fan_speed = SYS_FAN_FRONT_MAX_RPM;
     int psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
-    int bmc_attr = fan_attr[local_id].rpm;
+    int presence;
+    int dir =BMC_FAN_DIR_UNK;
 
-    //get fan rpm
-    ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &data));
-    rpm = (int) data;
+    *info = fan_info[local_id];
+    /* present */
+    if (local_id >= ONLP_FAN_0_F && local_id <= ONLP_FAN_3_R) {
+        int bmc_attr = fan_attr[local_id].present;
+        ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &data));
+        presence = (int) data;
 
-    //set rpm field
-    info->rpm = rpm;
-
-    switch(local_id) {
-        case ONLP_FAN_0_F:
-        case ONLP_FAN_1_F:
-        case ONLP_FAN_2_F:
-        case ONLP_FAN_3_F:
-        {
-            sys_max_fan_speed = SYS_FAN_FRONT_MAX_RPM;
-            percentage = (info->rpm*100)/sys_max_fan_speed;
-            info->percentage = (percentage >= 100) ? 100:percentage;
-            info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-            break;
+        if(presence == BMC_ATTR_STATUS_PRES) {
+            info->status |= ONLP_FAN_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_PRESENT;
         }
-        case ONLP_FAN_0_R:
-        case ONLP_FAN_1_R:
-        case ONLP_FAN_2_R:
-        case ONLP_FAN_3_R:
-        {
-            sys_max_fan_speed = SYS_FAN_REAR_MAX_RPM;
-            percentage = (info->rpm*100)/sys_max_fan_speed;
-            info->percentage = (percentage >= 100) ? 100:percentage;
-            info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-            break;
+    } else if(local_id == ONLP_PSU_0_FAN){
+        ONLP_TRY(get_psu_present_status(ONLP_PSU_0, &presence));
+        if( presence == PSU_STATUS_PRES ) {
+            info->status |= ONLP_FAN_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_PRESENT;
         }
-        case ONLP_PSU_0_FAN:
-        case ONLP_PSU_1_FAN:
-        {
-            int psu_type = ONLP_PSU_TYPE_AC;
-            if(local_id == ONLP_PSU_0_FAN) {
-                ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
-            } else if(local_id == ONLP_PSU_1_FAN) {
-                ONLP_TRY(get_psu_type(ONLP_PSU_1, &psu_type, NULL));
-            } else {
-                AIM_LOG_ERROR("unknown fan id (%d), func=%s", local_id, __FUNCTION__);
-                return ONLP_STATUS_E_PARAM;
-            }
-
-            if(psu_type == ONLP_PSU_TYPE_AC) {
-                psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
-            }else if(psu_type == ONLP_PSU_TYPE_DC48) {
-                psu_max_fan_speed = PSU_FAN_RPM_MAX_DC;
-            }else {
-                psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
-            }
-
-            percentage = (info->rpm*100)/psu_max_fan_speed;
-            info->percentage = (percentage >= 100) ? 100:percentage;
-            info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-            break;
+    } else if(local_id == ONLP_PSU_1_FAN){
+        ONLP_TRY(get_psu_present_status(ONLP_PSU_1, &presence));
+        if( presence == PSU_STATUS_PRES ) {
+            info->status |= ONLP_FAN_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_PRESENT;
         }
-        default:
-            return ONLP_STATUS_E_INVALID;
     }
 
+    /* direction */
+    if(info->status & ONLP_FAN_STATUS_PRESENT) {
+        int bmc_oem_attr = fan_attr[local_id].dir;
+        // get fan dir
+        ONLP_TRY(read_bmc_oem(bmc_oem_attr, &dir));
+        if(dir == BMC_FAN_DIR_B2F) {
+            info->status |= ONLP_FAN_STATUS_B2F;
+            info->status &= ~ONLP_FAN_STATUS_F2B;
+        } else if(dir == BMC_FAN_DIR_F2B){
+            info->status |= ONLP_FAN_STATUS_F2B;
+            info->status &= ~ONLP_FAN_STATUS_B2F;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_F2B;
+            info->status &= ~ONLP_FAN_STATUS_B2F;
+            AIM_LOG_ERROR("unknown dir fan id (%d), func=%s", local_id, __FUNCTION__);
+        }
+    } else {
+        info->status &= ~ONLP_FAN_STATUS_F2B;
+        info->status &= ~ONLP_FAN_STATUS_B2F;
+    }
+
+    /* contents */
+    if(info->status & ONLP_FAN_STATUS_PRESENT) {
+        //get fan rpm
+        int bmc_attr = fan_attr[local_id].rpm;
+        ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &data));
+        rpm = (int) data;
+
+        if(rpm == BMC_ATTR_INVALID_VAL) {
+            info->status |= ONLP_FAN_STATUS_FAILED;
+            return ONLP_STATUS_OK;
+        }
+
+        //set rpm field
+        info->rpm = rpm;
+
+        switch(local_id) {
+            case ONLP_FAN_0_F:
+            case ONLP_FAN_1_F:
+            case ONLP_FAN_2_F:
+            case ONLP_FAN_3_F:
+            {
+                sys_max_fan_speed = SYS_FAN_FRONT_MAX_RPM;
+                percentage = (info->rpm*100)/sys_max_fan_speed;
+                info->percentage = (percentage >= 100) ? 100:percentage;
+                info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+                break;
+            }
+            case ONLP_FAN_0_R:
+            case ONLP_FAN_1_R:
+            case ONLP_FAN_2_R:
+            case ONLP_FAN_3_R:
+            {
+                sys_max_fan_speed = SYS_FAN_REAR_MAX_RPM;
+                percentage = (info->rpm*100)/sys_max_fan_speed;
+                info->percentage = (percentage >= 100) ? 100:percentage;
+                info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+                break;
+            }
+            case ONLP_PSU_0_FAN:
+            case ONLP_PSU_1_FAN:
+            {
+                int psu_type = ONLP_PSU_TYPE_AC;
+                if(local_id == ONLP_PSU_0_FAN) {
+                    ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
+                } else if(local_id == ONLP_PSU_1_FAN) {
+                    ONLP_TRY(get_psu_type(ONLP_PSU_1, &psu_type, NULL));
+                } else {
+                    AIM_LOG_ERROR("unknown fan id (%d), func=%s", local_id, __FUNCTION__);
+                    return ONLP_STATUS_E_PARAM;
+                }
+
+                if(psu_type == ONLP_PSU_TYPE_AC) {
+                    psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
+                }else if(psu_type == ONLP_PSU_TYPE_DC48) {
+                    psu_max_fan_speed = PSU_FAN_RPM_MAX_DC;
+                }else {
+                    psu_max_fan_speed = PSU_FAN_RPM_MAX_AC;
+                }
+
+                percentage = (info->rpm*100)/psu_max_fan_speed;
+                info->percentage = (percentage >= 100) ? 100:percentage;
+                info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+                break;
+            }
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    }
     return ONLP_STATUS_OK;
 }
 
@@ -214,13 +272,6 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
     int local_id;
 
     ONLP_TRY(get_fan_local_id(id, &local_id));
-    *rv = fan_info[local_id];
-    ONLP_TRY(onlp_fani_status_get(id, &rv->status));
-
-    if((rv->status & ONLP_FAN_STATUS_PRESENT) == 0) {
-        return ONLP_STATUS_OK;
-    }
-
     ONLP_TRY(get_bmc_fan_info(local_id, rv));
 
     return ONLP_STATUS_OK;
@@ -236,61 +287,12 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 int onlp_fani_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
-    int presence;
-    float data=0;
-    int dir=BMC_FAN_DIR_UNK;
+    onlp_fan_info_t info ={0};
 
     ONLP_TRY(get_fan_local_id(id, &local_id));
+    ONLP_TRY(get_bmc_fan_info(local_id, &info));
+    *rv = info.status;
 
-    if (local_id >= ONLP_FAN_0_F && local_id <= ONLP_FAN_3_R) {
-
-        int bmc_attr = fan_attr[local_id].present;
-
-        ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &data));
-        presence = (int) data;
-
-        if(presence == BMC_ATTR_STATUS_PRES) {
-            *rv |= ONLP_FAN_STATUS_PRESENT;
-        } else {
-            *rv &= ~ONLP_FAN_STATUS_PRESENT;
-            return ONLP_STATUS_OK;
-        }
-    } else if(local_id == ONLP_PSU_0_FAN){
-        ONLP_TRY(get_psu_present_status(ONLP_PSU_0, &presence));
-        if( presence == PSU_STATUS_PRES ) {
-            *rv |= ONLP_FAN_STATUS_PRESENT;
-        } else {
-            *rv &= ~ONLP_FAN_STATUS_PRESENT;
-        }
-    } else if(local_id == ONLP_PSU_1_FAN){
-        ONLP_TRY(get_psu_present_status(ONLP_PSU_1, &presence));
-        if( presence == PSU_STATUS_PRES ) {
-            *rv |= ONLP_FAN_STATUS_PRESENT;
-        } else {
-            *rv &= ~ONLP_FAN_STATUS_PRESENT;
-        }
-    }
-
-    if(*rv & ONLP_FAN_STATUS_PRESENT) {
-
-        int bmc_oem_attr = fan_attr[local_id].dir;
-        // get fan dir
-        ONLP_TRY(read_bmc_oem(bmc_oem_attr, &dir));
-        if(dir == BMC_FAN_DIR_B2F) {
-            *rv |= ONLP_FAN_STATUS_B2F;
-            *rv &= ~ONLP_FAN_STATUS_F2B;
-        } else if(dir == BMC_FAN_DIR_F2B){
-            *rv |= ONLP_FAN_STATUS_F2B;
-            *rv &= ~ONLP_FAN_STATUS_B2F;
-        } else {
-            *rv &= ~ONLP_FAN_STATUS_F2B;
-            *rv &= ~ONLP_FAN_STATUS_B2F;
-            AIM_LOG_ERROR("unknown dir fan id (%d), func=%s", local_id, __FUNCTION__);
-        }
-    } else {
-        *rv &= ~ONLP_FAN_STATUS_F2B;
-        *rv &= ~ONLP_FAN_STATUS_B2F;
-    }
     return ONLP_STATUS_OK;
 }
 

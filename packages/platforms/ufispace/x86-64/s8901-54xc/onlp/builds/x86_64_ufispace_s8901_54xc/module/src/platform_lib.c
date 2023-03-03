@@ -57,6 +57,11 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_FAN2_PRSNT_L] = {"FAN2_PRSNT_L", 0},
     [BMC_ATTR_ID_FAN3_PRSNT_L] = {"FAN3_PRSNT_L", 0},
     [BMC_ATTR_ID_FAN4_PRSNT_L] = {"FAN4_PRSNT_L", 0},
+    [BMC_ATTR_ID_FAN0_DIR] = {"FAN0_DIR", 0},
+    [BMC_ATTR_ID_FAN1_DIR] = {"FAN1_DIR", 0},
+    [BMC_ATTR_ID_FAN2_DIR] = {"FAN2_DIR", 0},
+    [BMC_ATTR_ID_FAN3_DIR] = {"FAN3_DIR", 0},
+    [BMC_ATTR_ID_FAN4_DIR] = {"FAN4_DIR", 0},
     [BMC_ATTR_ID_PSU0_VIN] = {"PSU0_VIN", 0},
     [BMC_ATTR_ID_PSU0_VOUT] = {"PSU0_VOUT", 0},
     [BMC_ATTR_ID_PSU0_IIN] = {"PSU0_IIN",0},
@@ -490,6 +495,116 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     *data = *fru;
 
 done:
+    ONLP_UNLOCK();
+    return rv;
+}
+
+int bmc_fan_dir_read(int bmc_cache_index, float *data)
+{
+    struct timeval new_tv;
+    FILE *fp = NULL;
+    char ipmi_cmd[1024] = {0};
+    int rv = ONLP_STATUS_OK;
+    int bmc_cache_expired = 0;
+    long file_last_time = 0;
+    static int init_cache = 1;
+    int retry = 0, retry_max = 2;
+    char line[BMC_FRU_LINE_SIZE] = {'\0'};
+    char *line_ptr = NULL;
+    char line_fields[20][BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char seps[] = " ";
+    char *token;
+    int i = 0;
+
+    ONLP_LOCK();
+
+    if(check_file_exist(BMC_FANDIR_CACHE, &file_last_time)) {
+        gettimeofday(&new_tv, NULL);
+        if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, FANDIR_CACHE_TIME)) {
+            bmc_cache_expired = 1;
+        } else {
+            bmc_cache_expired = 0;
+        }
+    } else {
+        bmc_cache_expired = 1;
+    }
+
+    //update cache
+    if(bmc_cache_expired == 1 || init_cache == 1) {
+        if (bmc_cache_expired == 1) {
+            // detect bmc status
+            if(bmc_check_alive() != ONLP_STATUS_OK) {
+                rv = ONLP_STATUS_E_INTERNAL;
+                goto exit;
+            }
+            // get data from bmc
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_FAN_DIR_CACHE, IPMITOOL_CMD_TIMEOUT);
+            for (retry = 0; retry < retry_max; ++retry) {
+                if ((rv=system(ipmi_cmd)) != 0) {
+                    if (retry == retry_max-1) {
+                        AIM_LOG_ERROR("%s() write bmc fan direction cache failed, retry=%d, cmd=%s, ret=%d",
+                            __func__, retry, ipmi_cmd, rv);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto exit;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        //read sensor from cache file and save to bmc_cache
+        fp = fopen(BMC_FANDIR_CACHE, "r");
+        if(fp == NULL) {
+            AIM_LOG_ERROR("%s() open file failed, file=%s",
+                            __func__, BMC_SENSOR_CACHE);
+            rv = ONLP_STATUS_E_INTERNAL;
+            goto exit;
+        }
+
+        //read file line for fan tray dir parsing
+        if(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
+            line_ptr = line;
+            token = NULL;
+            i = 0;
+            //parse line into fields
+            while((token = strsep (&line_ptr, seps)) != NULL) {
+                sscanf(token, "%[^\n]", line_fields[i++]);
+            }
+
+            for(i=BMC_ATTR_ID_FAN0_DIR; i<=BMC_ATTR_ID_FAN4_DIR; i++) {
+                bmc_cache[i].data = atof(line_fields[i-BMC_ATTR_ID_FAN0_DIR]);
+            }
+        }
+
+        //read file line for psu fan dir parsing
+        /*
+        if(fgets(line,BMC_FRU_LINE_SIZE,fp) != NULL) {
+            line_ptr = line;
+            token = NULL;
+            i = 0;
+            //parse line into fields
+            memset(line_fields, 0, sizeof(line_fields));
+            while((token = strsep (&line_ptr, seps)) != NULL) {
+                sscanf(token, "%[^\n]", line_fields[i++]);
+            }
+
+            for(i=BMC_ATTR_ID_PSU0_FAN1_DIR; i<=BMC_ATTR_ID_PSU1_FAN1_DIR; i++) {
+                bmc_cache[i].data = atof(line_fields[i-BMC_ATTR_ID_PSU0_FAN1_DIR]);
+            }
+        }
+        */
+
+        fclose(fp);
+        init_cache = 0;
+    }
+
+    //read from cache
+    *data = bmc_cache[bmc_cache_index].data;
+
+exit:
     ONLP_UNLOCK();
     return rv;
 }

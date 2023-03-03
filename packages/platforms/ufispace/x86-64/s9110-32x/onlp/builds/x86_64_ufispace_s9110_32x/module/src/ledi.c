@@ -162,6 +162,7 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
     int led_val = 0,led_color = 0, led_blink = 0, led_onoff =0;
     int color_bit = 0, blink_bit = 0, onoff_bit = 0;
 
+    *info = led_info[local_id];
 
     ONLP_TRY(get_led_sysfs(led_attr[local_id].attr,&sysfs));
     ONLP_TRY(read_file_hex(&led_val, sysfs));
@@ -209,13 +210,6 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
     int local_id;
 
     ONLP_TRY(get_led_local_id(id, &local_id));
-    *rv = led_info[local_id];
-    ONLP_TRY(onlp_ledi_status_get(id, &rv->status));
-
-    if((rv->status & ONLP_LED_STATUS_PRESENT) == 0) {
-        return ONLP_STATUS_OK;
-    }
-
     ONLP_TRY(get_sys_led_info(local_id, rv));
 
     return ONLP_STATUS_OK;
@@ -229,9 +223,11 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
+    onlp_led_info_t info ={0};
 
     ONLP_TRY(get_led_local_id(id, &local_id));
-    *rv = led_info[local_id].status;
+    ONLP_TRY(get_sys_led_info(local_id, &info));
+    *rv = info.status;
 
     return ONLP_STATUS_OK;
 }

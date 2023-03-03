@@ -90,28 +90,35 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     psu_support_info_t psu_support_info = {0};
     int bmc_attr_id = BMC_ATTR_ID_MAX;
     int fan_present_id = BMC_ATTR_ID_MAX;
+    int fan_dir_id = -1;
+    int dir = 0;
 
     switch(id)
     {
         case ONLP_FAN_0:
             bmc_attr_id = BMC_ATTR_ID_FAN0_RPM;
             fan_present_id = BMC_ATTR_ID_FAN0_PRSNT_L;
+            fan_dir_id = BMC_ATTR_ID_FAN0_DIR;
             break;
         case ONLP_FAN_1:
             bmc_attr_id = BMC_ATTR_ID_FAN1_RPM;
             fan_present_id = BMC_ATTR_ID_FAN1_PRSNT_L;
+            fan_dir_id = BMC_ATTR_ID_FAN1_DIR;
             break;
         case ONLP_FAN_2:
             bmc_attr_id = BMC_ATTR_ID_FAN2_RPM;
             fan_present_id = BMC_ATTR_ID_FAN2_PRSNT_L;
+            fan_dir_id = BMC_ATTR_ID_FAN2_DIR;
             break;
         case ONLP_FAN_3:
             bmc_attr_id = BMC_ATTR_ID_FAN3_RPM;
             fan_present_id = BMC_ATTR_ID_FAN3_PRSNT_L;
+            fan_dir_id = BMC_ATTR_ID_FAN3_DIR;
             break;
         case ONLP_FAN_4:
             bmc_attr_id = BMC_ATTR_ID_FAN4_RPM;
             fan_present_id = BMC_ATTR_ID_FAN4_PRSNT_L;
+            fan_dir_id = BMC_ATTR_ID_FAN4_DIR;
             break;
         case ONLP_PSU_0_FAN:
             bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
@@ -158,6 +165,20 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
             percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+
+        /* get fan direction status from BMC */
+        ONLP_TRY(bmc_fan_dir_read(fan_dir_id, &data));
+
+        dir = (int)data;
+        if(dir == FAN_DIR_B2F) {
+            /* B2F */
+            info->status |= ONLP_FAN_STATUS_B2F;
+            info->status &= ~ONLP_FAN_STATUS_F2B;
+        } else {
+            /* F2B */
+            info->status |= ONLP_FAN_STATUS_F2B;
+            info->status &= ~ONLP_FAN_STATUS_B2F;
+        }
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
         //get psu support info
         if(id == ONLP_PSU_0_FAN) {
@@ -186,6 +207,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
             percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+
         //clear and set fan direction
         info->status &= ~ONLP_FAN_STATUS_F2B;
         info->status &= ~ONLP_FAN_STATUS_B2F;

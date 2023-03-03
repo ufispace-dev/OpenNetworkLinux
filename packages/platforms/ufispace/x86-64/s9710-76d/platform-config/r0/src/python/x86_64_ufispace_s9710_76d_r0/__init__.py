@@ -125,7 +125,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # init SFP+ EEPROM
         for bus in range(109, 111):
-            self.new_i2c_device('sff8436', 0x50, bus)
+            self.new_i2c_device('optoe2', 0x50, bus)
             # update port_name            
             if data is not None:
                 port = bus - 109

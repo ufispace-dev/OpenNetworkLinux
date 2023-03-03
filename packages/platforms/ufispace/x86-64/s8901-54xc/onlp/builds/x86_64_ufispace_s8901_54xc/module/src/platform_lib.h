@@ -42,22 +42,22 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
-#define SYSFS_PLTM                   "/sys/devices/platform/"
-#define SYSFS_DEVICES        "/sys/bus/i2c/devices/"
+#define SYSFS_PLTM         "/sys/devices/platform/"
+#define SYSFS_DEVICES      "/sys/bus/i2c/devices/"
 
-#define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s8901_54xc_lpc/"
+#define SYSFS_LPC          SYSFS_PLTM "x86_64_ufispace_s8901_54xc_lpc/"
 #define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
-#define SYSFS_HW_ID           SYSFS_LPC_MB_CPLD "board_hw_id"
-#define SYSFS_DEPH_ID        SYSFS_LPC_MB_CPLD "board_deph_id"
-#define SYSFS_BUILD_ID       SYSFS_LPC_MB_CPLD "board_build_id"
-#define SYSFS_EXT_ID           SYSFS_LPC_MB_CPLD "board_ext_id"
+#define SYSFS_HW_ID        SYSFS_LPC_MB_CPLD "board_hw_id"
+#define SYSFS_DEPH_ID      SYSFS_LPC_MB_CPLD "board_deph_id"
+#define SYSFS_BUILD_ID     SYSFS_LPC_MB_CPLD "board_build_id"
+#define SYSFS_EXT_ID       SYSFS_LPC_MB_CPLD "board_ext_id"
 #define SYSFS_MUX_RESET    SYSFS_LPC_MB_CPLD "mux_reset"
-#define SYSFS_CPLD1            SYSFS_DEVICES "2-0030/"
-#define SYSFS_CPLD2            SYSFS_DEVICES "2-0031/"
-#define SYSFS_CPLD1_ID       SYSFS_CPLD1 "cpld_id"
+#define SYSFS_CPLD1        SYSFS_DEVICES "2-0030/"
+#define SYSFS_CPLD2        SYSFS_DEVICES "2-0031/"
+#define SYSFS_CPLD1_ID     SYSFS_CPLD1 "cpld_id"
 
-#define SYS_FMT                     SYSFS_DEVICES "%d-%04x/%s"
-#define SYS_FMT_OFFSET       SYSFS_DEVICES "%d-%04x/%s_%s"
+#define SYS_FMT            SYSFS_DEVICES "%d-%04x/%s"
+#define SYS_FMT_OFFSET     SYSFS_DEVICES "%d-%04x/%s_%s"
 
 #define SYS_CPU_CORETEMP_PREFIX     SYSFS_PLTM "coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    SYSFS_PLTM "coretemp.0/"
@@ -117,6 +117,7 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
+
 /* SYS */
 #define CPLD_MAX      2  //Number of MB CPLD
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
@@ -127,10 +128,20 @@ extern const int CPLD_I2C_BUS;
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
 #define IPMITOOL_CMD_TIMEOUT    10
+#define FANDIR_CACHE_TIME       60
 
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
+
+/* FAN DIR */
+#define BMC_FANDIR_CACHE        "/tmp/bmc_fandir_cache"
+#define FAN_DIR_UNKNOWN         0
+#define FAN_DIR_B2F             1
+#define FAN_DIR_F2B             2
+
+#define CMD_BMC_FAN_TRAY_DIR    "timeout %ds ipmitool raw 0x3c 0x31 0x0 | xargs"IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_FAN_DIR_CACHE   CMD_BMC_FAN_TRAY_DIR" > "BMC_FANDIR_CACHE
 
 enum sensor
 {
@@ -161,6 +172,11 @@ enum bmc_attr_id {
     BMC_ATTR_ID_FAN2_PRSNT_L,
     BMC_ATTR_ID_FAN3_PRSNT_L,
     BMC_ATTR_ID_FAN4_PRSNT_L,
+    BMC_ATTR_ID_FAN0_DIR,
+    BMC_ATTR_ID_FAN1_DIR,
+    BMC_ATTR_ID_FAN2_DIR,
+    BMC_ATTR_ID_FAN3_DIR,
+    BMC_ATTR_ID_FAN4_DIR,
     BMC_ATTR_ID_PSU0_VIN,
     BMC_ATTR_ID_PSU0_VOUT,
     BMC_ATTR_ID_PSU0_IIN,
@@ -301,6 +317,7 @@ typedef struct board_s
 int check_file_exist(char *file_path, long *file_time);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
+int bmc_fan_dir_read(int bmc_cache_index, float *data);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
 int parse_bmc_sdr_cmd(char *cmd_out, int cmd_out_size, char *tokens[], int token_size, const char *sensor_id_str, int *idx);

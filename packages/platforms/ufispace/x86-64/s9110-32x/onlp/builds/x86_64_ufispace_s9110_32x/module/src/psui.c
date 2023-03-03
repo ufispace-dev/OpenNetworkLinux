@@ -232,62 +232,95 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 
 static int update_psui_info(int local_id, onlp_psu_info_t *info)
 {
-    int stbmvout, stbmiout;
+    int pw_present, pw_good;
+    int stbmvout = 0, stbmiout = 0;
     float data;
     int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
 
-    if (local_id == ONLP_PSU_0) {
-        attr_vin = BMC_ATTR_ID_PSU0_VIN;
-        attr_vout = BMC_ATTR_ID_PSU0_VOUT;
-        attr_iin = BMC_ATTR_ID_PSU0_IIN;
-        attr_iout = BMC_ATTR_ID_PSU0_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
+    *info = psu_info[local_id];
+    ONLP_TRY(get_psu_present_status(local_id, &pw_present));
+
+    if (pw_present != PSU_STATUS_PRES) {
+        info->status &= ~ONLP_PSU_STATUS_PRESENT;
+        info->status |=  ONLP_PSU_STATUS_UNPLUGGED;
     } else {
-        attr_vin = BMC_ATTR_ID_PSU1_VIN;
-        attr_vout = BMC_ATTR_ID_PSU1_VOUT;
-        attr_iin = BMC_ATTR_ID_PSU1_IIN;
-        attr_iout = BMC_ATTR_ID_PSU1_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
+        info->status |= ONLP_PSU_STATUS_PRESENT;
     }
 
-    /* Get power vin status */
-    ONLP_TRY(read_bmc_sensor(attr_vin , PSU_SENSOR, &data));
-    info->mvin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VIN;
+    if(info->status & ONLP_PSU_STATUS_PRESENT) {
+        /* Get power good status */
+        ONLP_TRY(get_psu_pwgood_status(local_id, &pw_good));
 
-    /* Get power vout status */
-    ONLP_TRY(read_bmc_sensor(attr_vout, PSU_SENSOR, &data));
-    info->mvout = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VOUT;
+        if (pw_good != PSU_STATUS_PWR_GD) {
+            info->status |= ONLP_PSU_STATUS_FAILED;
+        } else {
+            info->status &= ~ONLP_PSU_STATUS_FAILED;
+        }
 
-    /* Get power iin status */
-    ONLP_TRY(read_bmc_sensor(attr_iin, PSU_SENSOR, &data));
-    info->miin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_IIN;
+        if (local_id == ONLP_PSU_0) {
+            attr_vin = BMC_ATTR_ID_PSU0_VIN;
+            attr_vout = BMC_ATTR_ID_PSU0_VOUT;
+            attr_iin = BMC_ATTR_ID_PSU0_IIN;
+            attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+            attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
+            attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
+        } else {
+            attr_vin = BMC_ATTR_ID_PSU1_VIN;
+            attr_vout = BMC_ATTR_ID_PSU1_VOUT;
+            attr_iin = BMC_ATTR_ID_PSU1_IIN;
+            attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+            attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
+            attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
+        }
 
-    /* Get power iout status */
-    ONLP_TRY(read_bmc_sensor(attr_iout, PSU_SENSOR, &data));
-    info->miout = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_IOUT;
+        /* Get power vin status */
+        ONLP_TRY(read_bmc_sensor(attr_vin , PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->mvin = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_VIN;
+        }
 
-    /* Get standby power vout */
-    ONLP_TRY(read_bmc_sensor(attr_stbvout, PSU_SENSOR, &data));
-    stbmvout = (int) (data*1000);
+        /* Get power vout status */
+        ONLP_TRY(read_bmc_sensor(attr_vout, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->mvout = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_VOUT;
+        }
 
-    /* Get standby power iout */
-    ONLP_TRY(read_bmc_sensor(attr_stbiout, PSU_SENSOR, &data));
-    stbmiout = (int) (data*1000);
+        /* Get power iin status */
+        ONLP_TRY(read_bmc_sensor(attr_iin, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->miin = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_IIN;
+        }
 
-    /* Get power in and out */
-    info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
-    info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
+        /* Get power iout status */
+        ONLP_TRY(read_bmc_sensor(attr_iout, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->miout = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_IOUT;
+        }
 
-    /* Get FRU (model/serial) */
-    ONLP_TRY(update_psui_fru_info(local_id, info));
+        /* Get standby power vout */
+        ONLP_TRY(read_bmc_sensor(attr_stbvout, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            stbmvout = (int) (data*1000);
+        }
 
+        /* Get standby power iout */
+        ONLP_TRY(read_bmc_sensor(attr_stbiout, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            stbmiout = (int) (data*1000);
+        }
+
+        /* Get power in and out */
+        info->mpin = info->miin * info->mvin / 1000;
+        info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
+        info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
+
+        /* Get FRU (model/serial) */
+        ONLP_TRY(update_psui_fru_info(local_id, info));
+    }
     return ONLP_STATUS_OK;
 }
 
@@ -310,16 +343,6 @@ int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
     int local_id;
 
     ONLP_TRY(get_psu_local_id(id, &local_id));
-    memset(rv, 0, sizeof(onlp_psu_info_t));
-
-    *rv = psu_info[local_id];
-    /* update status */
-    ONLP_TRY(onlp_psui_status_get(id, &rv->status));
-
-    if((rv->status & ONLP_PSU_STATUS_PRESENT) == 0) {
-        return ONLP_STATUS_OK;
-    }
-
     ONLP_TRY(update_psui_info(local_id, rv));
 
     return ONLP_STATUS_OK;
@@ -333,26 +356,11 @@ int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* rv)
 int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
-    int pw_present, pw_good;
+    onlp_psu_info_t info ={0};
 
     ONLP_TRY(get_psu_local_id(id, &local_id));
-    ONLP_TRY(get_psu_present_status(local_id, &pw_present));
-
-    if (pw_present != PSU_STATUS_PRES) {
-        *rv &= ~ONLP_PSU_STATUS_PRESENT;
-        *rv |=  ONLP_PSU_STATUS_UNPLUGGED;
-    } else {
-        *rv |= ONLP_PSU_STATUS_PRESENT;
-    }
-
-    /* Get power good status */
-    ONLP_TRY(get_psu_pwgood_status(local_id, &pw_good));
-
-    if (pw_good != PSU_STATUS_PWR_GD) {
-        *rv |= ONLP_PSU_STATUS_FAILED;
-    } else {
-        *rv &= ~ONLP_PSU_STATUS_FAILED;
-    }
+    ONLP_TRY(update_psui_info(local_id, &info));
+    *rv = info.status;
 
     return ONLP_STATUS_OK;
 }

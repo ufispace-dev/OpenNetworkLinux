@@ -345,8 +345,12 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
                             bmc_cache[i].data = BMC_ATTR_STATUS_ABS;
                         }
                     } else {
-                        /* other attribut, got from bmc */
-                        bmc_cache[i].data = atof(line_fields[1]);
+                        /* other attribute, got from bmc */
+                        if(strcmp(line_fields[1], "") == 0) {
+                            bmc_cache[i].data = BMC_ATTR_INVALID_VAL;
+                        } else {
+                            bmc_cache[i].data = atof(line_fields[1]);
+                        }
                     }
                     break;
                 }

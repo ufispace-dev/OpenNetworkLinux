@@ -181,15 +181,28 @@ static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t* info)
     int rv = 0;
     int attr = 0;
 
-    attr = thrm_attr[local_id].attr;
-    rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX "temp%d_input", attr);
+    *info = thermal_info[local_id];
+    temp_thld_t temp_thld = {0};
+    ONLP_TRY(get_thermal_thld(local_id, &temp_thld));
+    info->thresholds.warning = MILLI(temp_thld.warning);
+    info->thresholds.error = MILLI(temp_thld.error);
+    info->thresholds.shutdown = MILLI(temp_thld.shutdown);
 
-    if(rv < 0) {
+    /* present */
+    info->status |= ONLP_THERMAL_STATUS_PRESENT;
+
+    /* contents */
+    if(info->status & ONLP_THERMAL_STATUS_PRESENT) {
+        attr = thrm_attr[local_id].attr;
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", attr);
+                                SYS_CPU_CORETEMP_PREFIX "temp%d_input", attr);
+
         if(rv < 0) {
-            return rv;
+            rv = onlp_file_read_int(&info->mcelsius,
+                                SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", attr);
+            if(rv < 0) {
+                return rv;
+            }
         }
     }
 
@@ -199,12 +212,49 @@ static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t* info)
 static int get_bmc_thermal_info(int local_id, onlp_thermal_info_t* info)
 {
     float data = 0;
-    int bmc_attr = thrm_attr[local_id].attr;
 
-    ONLP_TRY(read_bmc_sensor(bmc_attr, THERMAL_SENSOR, &data));
+    *info = thermal_info[local_id];
+    temp_thld_t temp_thld = {0};
+    ONLP_TRY(get_thermal_thld(local_id, &temp_thld));
+    info->thresholds.warning = MILLI(temp_thld.warning);
+    info->thresholds.error = MILLI(temp_thld.error);
+    info->thresholds.shutdown = MILLI(temp_thld.shutdown);
 
-    info->mcelsius = (int) (data*1000);
+    /* present */
+    if(local_id == ONLP_THERMAL_PSU_0 || local_id == ONLP_THERMAL_PSU_1) {
+        /* When the PSU module is unplugged, the psu thermal does not exist. */
+        int psu_local_id = ONLP_PSU_MAX;
 
+        if(local_id == ONLP_THERMAL_PSU_0) {
+             psu_local_id = ONLP_PSU_0;
+        } else {
+             psu_local_id = ONLP_PSU_1;
+        }
+
+        int psu_present = 0;
+        ONLP_TRY(get_psu_present_status(psu_local_id, &psu_present));
+        if (psu_present == PSU_STATUS_PRES) {
+            info->status |= ONLP_THERMAL_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_THERMAL_STATUS_PRESENT;
+        }
+    }else{
+        info->status |= ONLP_THERMAL_STATUS_PRESENT;
+    }
+
+    /* contents */
+    if(info->status & ONLP_THERMAL_STATUS_PRESENT) {
+        int bmc_attr = thrm_attr[local_id].attr;
+        ONLP_TRY(read_bmc_sensor(bmc_attr, THERMAL_SENSOR, &data));
+
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->status &= ~ONLP_THERMAL_STATUS_FAILED;
+            info->mcelsius = (int) (data*1000);
+        }else{
+            info->status |= ONLP_THERMAL_STATUS_FAILED;
+            info->mcelsius = 0;
+        }
+    }
     return ONLP_STATUS_OK;
 }
 
@@ -231,21 +281,8 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     }
 
     ONLP_TRY(get_thermal_local_id(id, &local_id));
-    *rv = thermal_info[local_id];
 
-    temp_thld_t temp_thld = {0};
-    ONLP_TRY(get_thermal_thld(local_id, &temp_thld));
-    rv->thresholds.warning = MILLI(temp_thld.warning);
-    rv->thresholds.error = MILLI(temp_thld.error);
-    rv->thresholds.shutdown = MILLI(temp_thld.shutdown);
-
-    /* update status  */
-    ONLP_TRY(onlp_thermali_status_get(id, &rv->status));
-
-    if((rv->status & ONLP_THERMAL_STATUS_PRESENT) == 0) {
-        return ONLP_STATUS_OK;
-    }
-
+    /* update info  */
     if(thrm_attr[local_id].type == TYPE_THRM_ATTR_SYSFS)
         ONLP_TRY(get_cpu_thermal_info(local_id, rv));
     else
@@ -263,27 +300,16 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 {
 
     int local_id;
+    onlp_thermal_info_t info ={0};
 
     ONLP_TRY(get_thermal_local_id(id, &local_id));
-    *rv = thermal_info[local_id].status;
-    /* When the PSU module is unplugged, the psu thermal does not exist. */
-    if(local_id == ONLP_THERMAL_PSU_0 || local_id == ONLP_THERMAL_PSU_1) {
-        int psu_local_id = ONLP_PSU_MAX;
 
-        if(local_id == ONLP_THERMAL_PSU_0) {
-             psu_local_id = ONLP_PSU_0;
-        } else {
-             psu_local_id = ONLP_PSU_1;
-        }
+    if(thrm_attr[local_id].type == TYPE_THRM_ATTR_SYSFS)
+        ONLP_TRY(get_cpu_thermal_info(local_id, &info));
+    else
+        ONLP_TRY(get_bmc_thermal_info(local_id, &info));
 
-        int psu_present = 0;
-        ONLP_TRY(get_psu_present_status(psu_local_id, &psu_present));
-        if (psu_present == 0) {
-            *rv = ONLP_THERMAL_STATUS_FAILED;
-        } else if (psu_present == 1) {
-            *rv = ONLP_THERMAL_STATUS_PRESENT;
-        }
-    }
+    *rv = info.status;
 
     return ONLP_STATUS_OK;
 }

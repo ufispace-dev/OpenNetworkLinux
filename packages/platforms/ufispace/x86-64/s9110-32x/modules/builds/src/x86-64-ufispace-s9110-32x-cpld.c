@@ -1017,9 +1017,6 @@ static ssize_t cpld_show(struct device *dev,
         case DBG_CPLD_SFP_ABS_0_1:
         case DBG_CPLD_SFP_RXLOS_0_1:
         case DBG_CPLD_SFP_TXFLT_0_1:
-
-        //BSP DEBUG
-        case BSP_DEBUG:
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
             data_type = attr_reg[attr->index].data_type;
