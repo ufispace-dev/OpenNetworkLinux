@@ -26,12 +26,12 @@
 #include <onlplib/file.h>
 #include "x86_64_ingrasys_s9180_32x_log.h"
 #include "platform_lib.h"
-      
+
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
     { { THERMAL_OID_FRONT_MAC, "Front MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {62700,  66000, 69000}
+                ONLP_THERMAL_CAPS_ALL, 0, {80000,  85000, 90000}
     },
     { { THERMAL_OID_ASIC, "ASIC Core Temp", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
@@ -55,23 +55,23 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     { { THERMAL_OID_PSU1_1, "PSU-1 Thermal 1", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
+                ONLP_THERMAL_CAPS_ALL, 0, {70000,  75000, 75000}
     },
     { { THERMAL_OID_PSU1_2, "PSU-1 Thermal 2", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
+                ONLP_THERMAL_CAPS_ALL, 0, {60000,  65000, 65000}
     },
     { { THERMAL_OID_PSU2_1, "PSU-2 Thermal 1", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
+                ONLP_THERMAL_CAPS_ALL, 0, {70000,  75000, 75000}
     },
     { { THERMAL_OID_PSU2_2, "PSU-2 Thermal 2", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
+                ONLP_THERMAL_CAPS_ALL, 0, {60000,  65000, 65000}
     },
     { { THERMAL_OID_CPU_BOARD, "CPU Board", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {59774,  62920, 66066}
+                ONLP_THERMAL_CAPS_ALL, 0, {78000,  80000, 82000}
     },
     { { THERMAL_OID_PSU1_NEAR, "Near PSU 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
@@ -83,11 +83,11 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     { { THERMAL_OID_MAC_REAR, "Rear MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {5727,  60260, 63273}
+                ONLP_THERMAL_CAPS_ALL, 0, {80000,  85000, 90000}
     },
     { { THERMAL_OID_QSFP_NEAR, "Near QSFP Port", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {55508,  58430, 61351}
+                ONLP_THERMAL_CAPS_ALL, 0, {58900,  62000, 65100}
     }
 };
 
@@ -95,7 +95,7 @@ static onlp_thermal_info_t thermal_info[] = {
  * This will be called to intiialize the thermali subsystem.
  */
 int onlp_thermali_init(void)
-{    
+{
     return ONLP_STATUS_OK;
 }
 
@@ -118,7 +118,7 @@ static int sys_thermal_info_get(onlp_thermal_info_t* info, int id)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -140,7 +140,7 @@ static int cpu_thermal_info_get(onlp_thermal_info_t* info, int id)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -156,7 +156,7 @@ int psu_thermal_info_get(onlp_thermal_info_t* info, int id)
     if(rv == ONLP_STATUS_E_INTERNAL) {
         return rv;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -166,7 +166,7 @@ static int cpu_board_thermal_info_get(onlp_thermal_info_t* info)
 
     if ( bmc_enable ) {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_BMC_CPU_BOARD_TEMP_PREFIX "temp1_input");		
+                            SYS_BMC_CPU_BOARD_TEMP_PREFIX "temp1_input");
     } else {
         rv = onlp_file_read_int(&info->mcelsius,
                             SYS_CPU_BOARD_TEMP_PREFIX "temp1_input");
@@ -180,7 +180,7 @@ static int cpu_board_thermal_info_get(onlp_thermal_info_t* info)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -189,7 +189,7 @@ static int psu_near_thermal_info_get(onlp_thermal_info_t* info, int id)
     int rv;
 
     if (id == THERMAL_ID_PSU1_NEAR) {
-        if ( bmc_enable ) {	
+        if ( bmc_enable ) {
             return ONLP_STATUS_E_UNSUPPORTED;
         } else {
             rv = onlp_file_read_int(&info->mcelsius,
@@ -214,7 +214,7 @@ static int psu_near_thermal_info_get(onlp_thermal_info_t* info, int id)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -222,11 +222,11 @@ static int mac_rear_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
-    if ( bmc_enable ) {	
+    if ( bmc_enable ) {
         return ONLP_STATUS_E_UNSUPPORTED;
     } else {
         rv = onlp_file_read_int(&info->mcelsius,
-                            SYS_MAC_REAR_TEMP_PREFIX "temp1_input");    
+                            SYS_MAC_REAR_TEMP_PREFIX "temp1_input");
     }
 
     if (rv == ONLP_STATUS_E_INTERNAL) {
@@ -237,7 +237,7 @@ static int mac_rear_thermal_info_get(onlp_thermal_info_t* info)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -245,7 +245,7 @@ static int qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
 {
     int rv;
 
-    if ( bmc_enable ) {	
+    if ( bmc_enable ) {
         return ONLP_STATUS_E_UNSUPPORTED;
     } else {
         rv = onlp_file_read_int(&info->mcelsius,
@@ -260,7 +260,7 @@ static int qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
         info->status &= ~1;
         return 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -275,10 +275,10 @@ static int qsfp_near_thermal_info_get(onlp_thermal_info_t* info)
  * structure even if the sensor described by the OID is not present.
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
-{   
+{
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);
-    
+
     *info = thermal_info[sensor_id];
     info->caps |= ONLP_THERMAL_CAPS_GET_TEMPERATURE;
 
@@ -312,7 +312,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
         case THERMAL_ID_QSFP_NEAR:
             rc = qsfp_near_thermal_info_get(info);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
