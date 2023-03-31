@@ -344,7 +344,7 @@ function _cpld_version_i2c {
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))"
 
     if [ "${MODEL_NAME}" == "S9600-64X" ]; then
-        # MB CPLD S9600-32X
+        # MB CPLD S9600-64X
         mb_cpld1_ver=""
         mb_cpld2_ver=""
         mb_cpld3_ver=""

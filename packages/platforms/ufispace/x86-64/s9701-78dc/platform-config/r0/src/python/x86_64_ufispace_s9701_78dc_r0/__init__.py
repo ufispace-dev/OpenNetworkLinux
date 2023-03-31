@@ -265,6 +265,7 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
         self.disable_bmc_watchdog()
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
+        self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9701-78dc-r0/onl/epdm_cli init 10G")

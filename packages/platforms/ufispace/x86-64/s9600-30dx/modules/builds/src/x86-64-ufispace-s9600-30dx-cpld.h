@@ -36,6 +36,7 @@ enum cpld_id {
 
 #define CPLD_SYSTEM_MASK_REG              0x2C
 #define CPLD_EVT_CTRL_REG                 0x3F
+#define CPLD_BIT_REG                      0xFF
 
 /* CPLD 1 registers */
 #define CPLD_BOARD_ID_0_REG               0x00

@@ -303,6 +303,7 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.bsp_pr("Init i40e")
+        self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
 
         # init bcm82752

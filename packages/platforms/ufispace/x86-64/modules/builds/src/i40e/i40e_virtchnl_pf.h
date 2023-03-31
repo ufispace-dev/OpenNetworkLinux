@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #ifndef _I40E_VIRTCHNL_PF_H_
 #define _I40E_VIRTCHNL_PF_H_
@@ -11,7 +11,6 @@
 #define I40E_VIRTCHNL_SUPPORTED_QTYPES 2
 
 #define I40E_DEFAULT_NUM_MDD_EVENTS_ALLOWED	3
-#define I40E_DEFAULT_NUM_INVALID_MSGS_ALLOWED	10
 
 #define I40E_VLAN_PRIORITY_SHIFT	13
 #define I40E_VLAN_MASK			0xFFF
@@ -21,6 +20,7 @@
 
 #define I40E_VF_STATE_WAIT_COUNT	20
 #define I40E_VFR_WAIT_COUNT		100
+#define I40E_VF_RESET_TIME_MIN		30000000	// time in nsec
 
 /* Various queue ctrls */
 enum i40e_queue_ctrl {
@@ -108,6 +108,8 @@ struct i40e_vf {
 	s16 port_vlan_id;
 	bool pf_set_mac;	/* The VMM admin set the VF MAC address */
 	bool trusted;
+	bool source_pruning;
+	u64 reset_timestamp;
 
 	/* VSI indices - actual VSI pointers are maintained in the PF structure
 	 * When assigned, these will be non-zero, because VSI 0 is always
@@ -119,9 +121,6 @@ struct i40e_vf {
 	u8 num_queue_pairs;	/* num of qps assigned to VF vsis */
 	u8 num_req_queues;	/* num of requested qps */
 	u64 num_mdd_events;	/* num of mdd events detected */
-	/* num of continuous malformed or invalid msgs detected */
-	u64 num_invalid_msgs;
-	u64 num_valid_msgs;	/* num of valid msgs detected */
 
 	unsigned long vf_caps;	/* vf's adv. capabilities */
 	unsigned long vf_states;	/* vf's runtime states */
@@ -165,6 +164,7 @@ struct i40e_vf {
 	struct hlist_head cloud_filter_list;
 	u16 num_cloud_filters;
 	struct i40e_vf_tc_info tc_info;
+	struct virtchnl_vlan_caps vlan_v2_caps;
 };
 
 void i40e_free_vfs(struct i40e_pf *pf);

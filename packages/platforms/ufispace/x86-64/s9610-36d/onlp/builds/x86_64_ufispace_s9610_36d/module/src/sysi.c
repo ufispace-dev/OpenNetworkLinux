@@ -70,7 +70,7 @@
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/0-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 
-#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\r\n'"
+#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\\r\\n'"
 #define SYSFS_BIOS_VER "/sys/class/dmi/id/bios_version"
 
 #define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc/cpu_cpld/cpu_cpld_version_h"

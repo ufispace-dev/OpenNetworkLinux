@@ -254,8 +254,8 @@ function _show_board_info {
 
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
-    _echo "[Board Type/Rev Reg Raw ]: ${board_info}"
-    _echo "[Board Type and Revision]: ${model_name} ${hw_rev} ${build_rev}"
+    _echo "[Board Type/Rev Reg Raw  (BOT)]: ${board_info}"
+    _echo "[Board Type and Revision (BOT)]: ${model_name} ${hw_rev} ${build_rev}"
 
     if [ "${model_name}" == "NCF" ]; then
         _check_filepath "/sys/bus/i2c/devices/2-0032/cpld_board_type"
@@ -1614,7 +1614,7 @@ function _show_cpu_temperature_sysfs {
             temp_max=$(eval "cat /sys/devices/platform/coretemp.0/temp${i}_max ${LOG_REDIRECT}")
             temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/temp${i}_crit ${LOG_REDIRECT}")
         else
-            _echo "sysfs of CPU core temperature not found!!!"
+            continue
         fi
 
         _echo "[CPU Core Temp${i} Input   ]: ${temp_input}"

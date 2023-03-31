@@ -26,6 +26,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
+#include <linux/gpio.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -113,6 +114,7 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_INFO,
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
+    ATT_BSP_GPIO_MAX,
     ATT_MAX
 };
 
@@ -295,6 +297,19 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
     BSP_LOG_W("reg_val=%s", str);
 
     return count;
+}
+
+/* get gpio max value */
+static ssize_t read_gpio_max(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_MAX) {
+        return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+    }
+    return -1;
 }
 
 /* get cpu cpld version in human readable format */
@@ -532,21 +547,17 @@ static ssize_t read_bsp_callback(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    int str_len=0;
     char *str=NULL;
 
     switch(attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             str = bsp_reg;
-            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;
@@ -645,9 +656,10 @@ static SENSOR_DEVICE_ATTR(alert_disable,    S_IRUGO, read_lpc_callback, NULL, AT
 //SENSOR_DEVICE_ATTR - BSP
 static SENSOR_DEVICE_ATTR(bsp_version,      S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug,        S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
 static SENSOR_DEVICE_ATTR(bsp_pr_info,      S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR(bsp_pr_err,       S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_ERR);
-static SENSOR_DEVICE_ATTR(bsp_reg,          S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
 
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
@@ -689,9 +701,10 @@ static struct attribute *i2c_alert_attrs[] = {
 static struct attribute *bsp_attrs[] = {
     &sensor_dev_attr_bsp_version.dev_attr.attr,
     &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    &sensor_dev_attr_bsp_reg.dev_attr.attr,
     &sensor_dev_attr_bsp_pr_info.dev_attr.attr,
     &sensor_dev_attr_bsp_pr_err.dev_attr.attr,
-    &sensor_dev_attr_bsp_reg.dev_attr.attr,
+    &sensor_dev_attr_bsp_gpio_max.dev_attr.attr,
     NULL,
 };
 

@@ -115,7 +115,6 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
         # load default kernel driver
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
-        os.system("modprobe gpio_pca953x")
         os.system("modprobe i2c_mux_pca954x")
         os.system("modprobe coretemp")
         os.system("modprobe lm75")
@@ -181,10 +180,6 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
 
         # Get board ID
         hw_build_rev = self.get_board_id()
-
-        # init GPIO sysfs
-        self.bsp_pr("Init gpio");
-        self.init_gpio(hw_build_rev)
 
         # init Temperature
         self.bsp_pr("Init Thermal");
@@ -262,47 +257,6 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
         hw_build_id = (deph_id << 2) + hw_rev
 
         return hw_build_id
-
-    def init_gpio(self, hw_build_rev):
-
-        # Alpha
-        if hw_build_rev == 1:
-            # init GPIO sysfs
-            self.new_i2c_devices(
-                [
-                    ('pca9535', 0x20, 3),  # 9555_BOARD_ID
-                    ('pca9535', 0x77, 0),  # 9539_CPU_I2C
-                    ('pca9535', 0x76, 6)  # 9539_VOL_MARGIN
-
-                ]
-            )
-            # export GPIO
-            for i in range(464, 512):
-                os.system("echo {} > /sys/class/gpio/export".format(i))
-            # init GPIO direction
-            # 9555_BOARD_ID 0x20, 9539_VOL_MARGIN 0x76, 9539_CPU_I2C 0x77
-            for i in range(464, 512):
-                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
-            msg("Alpha GPIO init\n")
-
-        # Beta and later
-        elif hw_build_rev >= 2:
-            # init GPIO sysfs
-            self.new_i2c_devices(
-                [
-                    ('pca9535', 0x77, 0),  # 9539_CPU_I2C
-                    ('pca9535', 0x76, 6)  # 9539_VOL_MARGIN
-
-                ]
-            )
-            # export GPIO
-            for i in range(480, 512):
-                os.system("echo {} > /sys/class/gpio/export".format(i))
-            # init GPIO direction
-            # 9555_BOARD_ID 0x20, 9539_VOL_MARGIN 0x76, 9539_CPU_I2C 0x77
-            for i in range(480, 512):
-                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
-            msg("Beta and later GPIO init\n")
 
     def init_temperature(self, hw_build_rev):
         # init Temperature

@@ -225,6 +225,7 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
         self.disable_bmc_watchdog()
 
         # init i40e
+        self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
 
         # enable port led

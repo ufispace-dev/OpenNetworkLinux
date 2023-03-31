@@ -86,6 +86,7 @@ enum cpld_sysfs_attributes {
     CPLD_MINOR_VER,
     CPLD_BUILD_VER,
     CPLD_VERSION_H,
+
     CPLD_MAC_INTR,
     CPLD_GBOX_INTR,
     CPLD_PHY_INTR,
@@ -204,6 +205,9 @@ enum cpld_sysfs_attributes {
     DBG_CPLD_QSFPDD_INTR_PRESENT_24_29,
     DBG_CPLD_QSFPDD_INTR_FUSE_16_23,
     DBG_CPLD_QSFPDD_INTR_FUSE_24_29,
+
+    //BIT
+    CPLD_BIT,
 
     //BSP DEBUG
     BSP_DEBUG
@@ -418,10 +422,13 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_24_29, cpld_callback, CPLD_QSFP
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_16_23, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_16_23);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_24_29, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_24_29);
 
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_16_23, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_16_23);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_present_24_29, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_24_29);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_16_23,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_16_23);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_qsfpdd_intr_fuse_24_29,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_24_29);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_16_23, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_16_23);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_24_29, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_24_29);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_16_23,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_16_23);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_24_29,    cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_24_29);
+
+//BIT
+static _SENSOR_DEVICE_ATTR_RW(cpld_bit, cpld_callback, CPLD_BIT);
 
 //BSP DEBUG
 static _SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, BSP_DEBUG);
@@ -499,6 +506,9 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_mac_thermal_intr),
     _DEVICE_ATTR(dbg_cpld_thermal_sensor_intr),
     _DEVICE_ATTR(dbg_cpld_misc_intr),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -556,6 +566,9 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_qsfp_intr_fuse_0_7),
     _DEVICE_ATTR(dbg_cpld_qsfp_intr_fuse_8_15),
     _DEVICE_ATTR(dbg_cpld_sfp_status),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -609,6 +622,9 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_24_29),
     _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_16_23),
     _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_24_29),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -1144,6 +1160,10 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = DBG_CPLD_QSFPDD_INTR_FUSE_24_29_REG;
             break;
 
+        //BIT
+        case CPLD_BIT:
+            reg = CPLD_BIT_REG;
+            break;
 
         default:
             dev_err(dev, "%s() error, attr->index=%d\n", __func__, attr->index);
@@ -1351,6 +1371,11 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case DBG_CPLD_QSFPDD_INTR_FUSE_24_29:
             reg = DBG_CPLD_QSFPDD_INTR_FUSE_24_29_REG;
+            break;
+
+        //BIT
+        case CPLD_BIT:
+            reg = CPLD_BIT_REG;
             break;
 
         default:

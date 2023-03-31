@@ -4,6 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
+import commands
 import subprocess
 import time
 import fcntl
@@ -58,11 +59,11 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9705.48"
     PORT_COUNT=48
     PORT_CONFIG="48x400"
-     
+
     def check_bmc_enable(self):
         return 1
 
-    def check_i2c_status(self): 
+    def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9705_48d_lpc/cpu_cpld/mux_reset"
 
         # Check I2C status
@@ -87,27 +88,27 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
         # init QSFPDD EEPROM
         for bus in range(21, 69):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
-            
+
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
-        
-    def init_i2c_mux_idle_state(self, muxs):        
+
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -115,6 +116,19 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
             if os.path.exists(sysfs_idle_state):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
+
+    def get_gpio_max(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9705_48d_lpc/bsp/bsp_gpio_max"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            msg("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            msg("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="511"
+
+        gpio_max = int(output, 10)
+        msg("GPIO MAX: {}\n".format(gpio_max))
+
+        return gpio_max
 
     def baseconfig(self):
 
@@ -136,7 +150,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
@@ -150,10 +164,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
 
         #clk free run
         self.set_clk_freerun()
-        
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
-        
+
         i2c_muxs = [
             ('pca9548', 0x75, 0),
             ('pca9546', 0x71, 0),
@@ -166,12 +180,12 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x70, 19),
             ('pca9548', 0x70, 20),
         ]
-            
+
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-        
+
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
@@ -188,7 +202,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
 
         # init Temperature
         self.new_i2c_devices(
-            [               
+            [
                 # CPU Board Temp
                 ('tmp75', 0x4F, 0),
             ]
@@ -199,32 +213,35 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
         self.new_i2c_device('pca9555', 0x20, 3)
         self.new_i2c_device('pca9539', 0x77, 0)
 
+        #get gpio_max
+        gpio_max = self.get_gpio_max()
+
         # export GPIO
-        for i in range(464, 512):
+        for i in range(gpio_max-47, gpio_max+1):
             os.system("echo {} > /sys/class/gpio/export".format(i))
 
         # init GPIO direction
         # pca9539 0x74
-        os.system("echo high > /sys/class/gpio/gpio511/direction")
-        os.system("echo high > /sys/class/gpio/gpio510/direction")
-        os.system("echo in > /sys/class/gpio/gpio509/direction")
-        os.system("echo in > /sys/class/gpio/gpio508/direction")
-        os.system("echo in > /sys/class/gpio/gpio507/direction")
-        os.system("echo in > /sys/class/gpio/gpio506/direction")
-        os.system("echo in > /sys/class/gpio/gpio505/direction")
-        os.system("echo in > /sys/class/gpio/gpio504/direction")
-        os.system("echo in > /sys/class/gpio/gpio503/direction")
-        os.system("echo in > /sys/class/gpio/gpio502/direction")
-        os.system("echo low > /sys/class/gpio/gpio501/direction")
-        os.system("echo low > /sys/class/gpio/gpio500/direction")
-        os.system("echo low > /sys/class/gpio/gpio499/direction")
-        os.system("echo high > /sys/class/gpio/gpio498/direction")
-        os.system("echo in > /sys/class/gpio/gpio497/direction")
-        os.system("echo high > /sys/class/gpio/gpio496/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max)    + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-1)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-2)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-3)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-4)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-5)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-6)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-7)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-8)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-9)  + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-10) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-11) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-12) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-13) + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-14) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-15) + "/direction")
 
         # init GPIO direction
         # pca9535 0x20, pca9539 0x77
-        for i in range(464, 496):
+        for i in range(gpio_max-47, gpio_max-15):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         #CPLD
@@ -237,31 +254,31 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
         os.system("echo '0' > /sys/bus/i2c/devices/2-0033/cpld_led_clk_src")
 
         #config mac rov
-        
+
         cpld_addr=[30, 32]
         cpld_bus=2
         rov_bus=[5,4]
-        
-        # vid to mac vdd value mapping 
+
+        # vid to mac vdd value mapping
         vdd_val_array=( 0.82,  0.82,  0.80,  0.82,  0.84,  0.86,  0.82,  0.78 )
-        # vid to rov reg value mapping 
+        # vid to rov reg value mapping
         rov_reg_array=( 0x73, 0x73, 0x6f, 0x73, 0x77, 0x7b, 0x73, 0x6b )
-        
+
         for index, cpld in enumerate(cpld_addr):
             #get rov from cpld
             reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_10gmux_config".format(cpld_bus, cpld), shell=True)
             reg_val = int(reg_val_str, 16)
             vid = reg_val & 0x7
             mac_vdd_val = vdd_val_array[vid]
-            rov_reg_val = rov_reg_array[vid]            
+            rov_reg_val = rov_reg_array[vid]
             #set rov to mac
             msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg_val) )
-            os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], 0x70, 0x21, rov_reg_val))            
+            os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], 0x70, 0x21, rov_reg_val))
 
         self.enable_ipmi_maintenance_mode()
         self.disable_bmc_watchdog()
 
-        return True        
+        return True
 
     def set_clk_freerun(self):
         addr = 0x64
@@ -380,16 +397,16 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
         os.system("i2cset -y 0 0x71 0x2")
 
         #Step 1: write in the preamble
-        for i in range(len(CLKGEN_CONFIG["FREE_RUN"]["write_preamble"])):        
+        for i in range(len(CLKGEN_CONFIG["FREE_RUN"]["write_preamble"])):
             hidata = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["HiData"]
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["value"]
             out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
             if out != "":
-                msg("Set write_preamble hidata {} for CLKGEN failed.".format(i))                       
+                msg("Set write_preamble hidata {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
             if out != "":
-                msg("Set write_preamble lowdata {} for CLKGEN failed.".format(i))            
+                msg("Set write_preamble lowdata {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
             if int(out, 16) != set_value:
                 msg("Get write_preamble {} for CLKGEN failed.{}=/={}".format(i, int(out, 16), set_value))
@@ -406,10 +423,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
             if (hidata == 0x2 and lowdata == 0x9d) or (hidata == 0x2 and lowdata == 0xa9):
                 out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
                 if out != "":
-                    msg("Set perform_freerun {} for CLKGEN failed.".format(i))                                    
+                    msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cset -y {} {} 0x1 {} w".format(bus, addr, lowdata), shell=True)
                 if out != "":
-                    msg("Set word data perform_freerun {} for CLKGEN failed.".format(i))                    
+                    msg("Set word data perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cget -y {} {} {} w".format(bus, addr, lowdata), shell=True)
                 if int(out, 16) != set_value:
                     msg("Get word data perform_freerun {} for compare failed.{}=/={}".format(i, int(out, 16), set_value))
@@ -419,7 +436,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
                 if out != "":
-                    msg("Set perform_freerun {} for CLKGEN failed.".format(i))                    
+                    msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
                 if int(out, 16) != set_value:
                     msg("Get perform_freerun {} for CLKGEN failed.{}=/={}".format(i, int(out, 16), set_value))
@@ -428,13 +445,13 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
         for i in range(len(CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"])):
             hidata = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["HiData"]
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["LowData"]
-            set_value = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["value"]                    
+            set_value = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["value"]
             out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
             if out != "":
-                msg("Set write_soft_rst {} for CLKGEN failed.".format(i))                    
+                msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
             if out != "":
-                msg("Set write_soft_rst {} for CLKGEN failed.".format(i))                    
+                msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
             if int(out, 16) != set_value:
                 msg("Get write_soft_rst {} for CLKGEN diff.{}=/={}".format(i, int(out, 16), set_value))
@@ -456,4 +473,3 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r0(OnlPlatformUfiSpace):
 
         #close channel for CLKGEN
         os.system("i2cset -y 0 0x71 0x0")
-

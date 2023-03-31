@@ -36,7 +36,7 @@
 
 #include "platform_lib.h"
 
-#define CMD_BIOS_VER  "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
+#define CMD_BIOS_VER  "dmidecode -s bios-version | tail -1 | tr -d '\\r\\n'"
 #define CMD_BMC_VER_1 "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2 "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3 "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
@@ -134,6 +134,14 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     char ucd_date_t[8], ucd_date_b[8];
     int ucd_len=0, ucd_date_len=6;
 
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
+
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
     memset(bmc_out2, 0, sizeof(bmc_out2));
@@ -144,6 +152,9 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     memset(ucd_ver_b, 0, sizeof(ucd_ver_b));
     memset(ucd_date_t, 0, sizeof(ucd_date_t));
     memset(ucd_date_b, 0, sizeof(ucd_date_b));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version
     ONLP_TRY(read_ioport(cpu_cpld_addr, &cpu_cpld_ver));
@@ -166,11 +177,11 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
 
     info->cpld_versions = aim_fstrdup(
         "\n"
-        "    [CPU CPLD] %d.%02d\n"
-        "    [MB CPLD1] %d.%02d\n"
-        "    [MB CPLD2] %d.%02d\n"
-        "    [MB CPLD3] %d.%02d\n"
-        "    [MB CPLD4] %d.%02d\n",
+        "[CPU CPLD] %d.%02d\n"
+        "[MB CPLD1] %d.%02d\n"
+        "[MB CPLD2] %d.%02d\n"
+        "[MB CPLD3] %d.%02d\n"
+        "[MB CPLD4] %d.%02d\n",
         cpu_cpld_ver_major, cpu_cpld_ver_minor,
         cpld_ver_major[0], cpld_ver_minor[0],
         cpld_ver_major[1], cpld_ver_minor[1],
@@ -223,19 +234,35 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         parse_ucd_out(ucd_out_b, ucd_ver_b, 0, ucd_len);
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     info->other_versions = aim_fstrdup(
             "\n"
-            "    [HW   ] %d\n"
-            "    [BUILD] %d\n"
-            "    [BIOS ] %s\n"
-            "    [BMC  ] %d.%d.%d\n"
-            "    [UCD-T] %s %s\n"
-            "    [UCD-B] %s %s\n",
+            "[HW   ] %d\n"
+            "[BUILD] %d\n"
+            "[BIOS ] %s\n"
+            "[BMC  ] %d.%d.%d\n"
+            "[UCD-T] %s %s\n"
+            "[UCD-B] %s %s\n"
+            "[MU   ] %s (%s)\n",
             mb_cpld1_hw_rev,
             mb_cpld1_build_rev,
             bios_out,
             atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-            ucd_ver_t, ucd_date_t, ucd_ver_b, ucd_date_b);
+            ucd_ver_t, ucd_date_t, ucd_ver_b, ucd_date_b,
+            strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }

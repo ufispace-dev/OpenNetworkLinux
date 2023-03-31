@@ -4,6 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
+import commands
 import subprocess
 import time
 import fcntl
@@ -58,11 +59,11 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
     SYS_OBJECT_ID=".9700.23"
     PORT_COUNT=23
     PORT_CONFIG="10x400 + 13x400"
-     
+
     def check_bmc_enable(self):
         return 1
 
-    def check_i2c_status(self): 
+    def check_i2c_status(self):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9700_23d_lpc/cpu_cpld/mux_reset"
 
         # Check I2C status
@@ -87,34 +88,34 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
         # init QSFPDD NIF EEPROM
         for bus in range(25, 35):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
 
         # init QSFPDD FAB EEPROM
         for bus in range(41, 54):
             self.new_i2c_device('optoe1', 0x50, bus)
-            # update port_name            
+            # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
-            
+
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
-        
-    def init_i2c_mux_idle_state(self, muxs):        
+
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -122,6 +123,19 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
             if os.path.exists(sysfs_idle_state):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
+
+    def get_gpio_max(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9700_23d_lpc/bsp/bsp_gpio_max"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            msg("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            msg("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="511"
+
+        gpio_max = int(output, 10)
+        msg("GPIO MAX: {}\n".format(gpio_max))
+
+        return gpio_max
 
     def baseconfig(self):
 
@@ -143,13 +157,13 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
 
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
-        
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
-        
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
-        
+
         i2c_muxs = [
             ('pca9548', 0x75, 0),
             ('pca9548', 0x72, 0),
@@ -159,12 +173,12 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
             ('pca9548', 0x76, 15),
             ('pca9548', 0x76, 16),
         ]
-            
+
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-        
+
         self.insmod("x86-64-ufispace-eeprom-mb")
         self.insmod("optoe")
 
@@ -181,7 +195,7 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
 
         # init Temperature
         self.new_i2c_devices(
-            [               
+            [
                 # CPU Board Temp
                 ('tmp75', 0x4F, 0),
             ]
@@ -197,51 +211,54 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
         #9539_CPU_I2C
         self.new_i2c_device('pca9539', 0x77, 0)
 
+        #get gpio_max
+        gpio_max = self.get_gpio_max()
+
         # export GPIO
-        for i in range(448, 512):
+        for i in range(gpio_max-63, gpio_max+1):
             os.system("echo {} > /sys/class/gpio/export".format(i))
 
         # init GPIO direction
         # 9539_HOST_GPIO_I2C 0x74
-        os.system("echo high > /sys/class/gpio/gpio511/direction")
-        os.system("echo high > /sys/class/gpio/gpio510/direction")
-        os.system("echo in > /sys/class/gpio/gpio509/direction")
-        os.system("echo in > /sys/class/gpio/gpio508/direction")
-        os.system("echo in > /sys/class/gpio/gpio507/direction")
-        os.system("echo in > /sys/class/gpio/gpio506/direction")
-        os.system("echo in > /sys/class/gpio/gpio505/direction")
-        os.system("echo in > /sys/class/gpio/gpio504/direction")
-        os.system("echo in > /sys/class/gpio/gpio503/direction")
-        os.system("echo in > /sys/class/gpio/gpio502/direction")
-        os.system("echo in > /sys/class/gpio/gpio501/direction")
-        os.system("echo low > /sys/class/gpio/gpio500/direction")
-        os.system("echo low > /sys/class/gpio/gpio499/direction")
-        os.system("echo high > /sys/class/gpio/gpio498/direction")
-        os.system("echo in > /sys/class/gpio/gpio497/direction")
-        os.system("echo high > /sys/class/gpio/gpio496/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max)    + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-1)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-2)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-3)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-4)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-5)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-6)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-7)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-8)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-9)  + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-10) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-11) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-12) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-13) + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-14) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-15) + "/direction")
 
         # init GPIO direction
         # 9555_BEACON_LED 0x20
-        os.system("echo in > /sys/class/gpio/gpio495/direction")
-        os.system("echo high > /sys/class/gpio/gpio494/direction")
-        os.system("echo low > /sys/class/gpio/gpio493/direction")
-        os.system("echo low > /sys/class/gpio/gpio492/direction")
-        os.system("echo low > /sys/class/gpio/gpio491/direction")
-        os.system("echo low > /sys/class/gpio/gpio490/direction")
-        os.system("echo low > /sys/class/gpio/gpio489/direction")
-        os.system("echo low > /sys/class/gpio/gpio488/direction")
-        os.system("echo in > /sys/class/gpio/gpio487/direction")
-        os.system("echo low > /sys/class/gpio/gpio486/direction")
-        os.system("echo low > /sys/class/gpio/gpio485/direction")
-        os.system("echo high > /sys/class/gpio/gpio484/direction")
-        os.system("echo low > /sys/class/gpio/gpio483/direction")
-        os.system("echo low > /sys/class/gpio/gpio482/direction")
-        os.system("echo low > /sys/class/gpio/gpio481/direction")
-        os.system("echo low > /sys/class/gpio/gpio480/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-16) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-17) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-18) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-19) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-20) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-21) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-22) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-23) + "/direction")
+        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-24) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-25) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-26) + "/direction")
+        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-27) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-28) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-29) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-30) + "/direction")
+        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-31) + "/direction")
 
         # init GPIO direction
         # 9555_BOARD_ID 0x20, 9539_CPU_I2C 0x77
-        for i in range(448, 480):
+        for i in range(gpio_max-63, gpio_max-31):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         #CPLD
@@ -250,28 +267,28 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r6(OnlPlatformUfiSpace):
             self.new_i2c_device("s9700_23d_cpld" + str(i+1), addr, 1)
 
         #config mac rov
-        
+
         cpld_addr=[30]
         cpld_bus=1
         rov_addr=0x76
         rov_reg=0x21
         rov_bus=[4]
-        
-        # vid to mac vdd value mapping 
+
+        # vid to mac vdd value mapping
         vdd_val_array=( 0.82,  0.82,  0.76,  0.78,  0.80,  0.84,  0.86,  0.88 )
-        # vid to rov reg value mapping 
+        # vid to rov reg value mapping
         rov_reg_array=( 0x73, 0x73, 0x67, 0x6b, 0x6f, 0x77, 0x7b, 0x7f )
-        
+
         for index, cpld in enumerate(cpld_addr):
             #get rov from cpld
             reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_psu_status_0".format(cpld_bus, cpld), shell=True)
             reg_val = int(reg_val_str, 16)
             vid = (reg_val & 0xe) >> 1
             mac_vdd_val = vdd_val_array[vid]
-            rov_reg_val = rov_reg_array[vid]            
+            rov_reg_val = rov_reg_array[vid]
             #set rov to mac
             msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg_val) )
-            os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], rov_addr, rov_reg, rov_reg_val))            
+            os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], rov_addr, rov_reg, rov_reg_val))
 
         self.enable_ipmi_maintenance_mode()
         self.disable_bmc_watchdog()

@@ -65,7 +65,7 @@ static onlp_led_info_t led_info[] =
     {                                           \
         { ONLP_LED_ID_CREATE(ONLP_LED_ID), "Chassis LED 1 (ID LED)", POID_0 },\
         LED_STATUS,                             \
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING,                               \
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING,                               \
     },
     CHASSIS_LED_INFO(ONLP_LED_SYS,  "Chassis LED 2 (SYS LED)"),
     CHASSIS_LED_INFO(ONLP_LED_POE,  "Chassis LED 3 (POE LED)"),
@@ -117,12 +117,6 @@ int sys_led_info_get(onlp_led_info_t* info, int local_id)
     led_blink = mask_shift(led_val, LED_BLINK_MASK);
     led_onoff = mask_shift(led_val, LED_ONOFF_MASK);
 
-    //special case
-    if(local_id == ONLP_LED_ID) {
-        //only green for color
-        led_color = ONLP_LED_MODE_GREEN;
-    }
-
     //onoff
     if(led_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
@@ -132,6 +126,10 @@ int sys_led_info_get(onlp_led_info_t* info, int local_id)
             info->mode = ONLP_LED_MODE_YELLOW;
         } else {
             info->mode = ONLP_LED_MODE_GREEN;
+        }
+        // id led case
+        if(local_id == ONLP_LED_ID) {
+            info->mode = ONLP_LED_MODE_BLUE;
         }
         //blinking
         if(led_blink == 1) {
@@ -230,7 +228,16 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
  */
 int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
-    if (on_or_off) {
+    int local_id;
+    VALIDATE(id);
+
+    local_id = ONLP_OID_ID_GET(id);
+
+    if(on_or_off) {
+        // id led case
+        if(local_id == ONLP_LED_ID) {
+            return onlp_ledi_mode_set(id, ONLP_LED_MODE_BLUE);
+        }
         return onlp_ledi_mode_set(id, ONLP_LED_MODE_GREEN);
     } else {
         return onlp_ledi_mode_set(id, ONLP_LED_MODE_OFF);
@@ -277,10 +284,13 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 
     int led_val = 0,led_color = 0, led_blink = 0, led_onoff = 0;
 
-    // only led_id support set function
+    // only led_id and sys led support set function
     switch(local_id) {
         case ONLP_LED_ID:
             fsname = SYSFS_LED_ID_NAME;
+            break;
+        case ONLP_LED_SYS:
+            fsname = SYSFS_LED_SYS_NAME;
             break;
         default:
             return ONLP_STATUS_E_UNSUPPORTED;
@@ -288,11 +298,13 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 
     switch(mode) {
         case ONLP_LED_MODE_GREEN:
+        case ONLP_LED_MODE_BLUE:
             led_color=1;
             led_blink=0;
             led_onoff=1;
             break;
         case ONLP_LED_MODE_GREEN_BLINKING:
+        case ONLP_LED_MODE_BLUE_BLINKING:
             led_color=1;
             led_blink=1;
             led_onoff=1;

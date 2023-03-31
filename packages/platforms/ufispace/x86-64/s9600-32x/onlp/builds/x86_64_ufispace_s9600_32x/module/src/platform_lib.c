@@ -714,6 +714,14 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG;
     int mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
 
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
+
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -721,6 +729,9 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     memset(bmc_out3, 0, sizeof(bmc_out3));
     memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version readable string
     ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len,
@@ -771,16 +782,32 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
         "[HW   ] %d\n"
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n",
+        "[BMC  ] %d.%d.%d\n"
+        "[MU   ] %s (%s)\n",
         mb_cpld1_hw_rev,
         mb_cpld1_build_rev,
         bios_out,
-        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }

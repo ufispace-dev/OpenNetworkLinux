@@ -63,7 +63,7 @@
 #define SYS_EEPROM_PATH    SYSFS_DEVICES "0-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 
-#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\r\n'"
+#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\\r\\n'"
 #define SYSFS_BIOS_VER "/sys/class/dmi/id/bios_version"
 
 #define SYSFS_CPU_CPLD_VER SYSFS_LPC "cpu_cpld/cpu_cpld_version_h"

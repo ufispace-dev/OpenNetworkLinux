@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #ifndef _I40E_H_
 #define _I40E_H_
@@ -32,6 +32,16 @@
 #include <linux/if_vlan.h>
 #include <linux/if_bridge.h>
 #include "kcompat.h"
+
+/* AF_XDP is currently only supported in kernel versions 4.20 to 5.1,
+ * and only on redhat */
+#include  <linux/version.h>
+#if (defined(CONFIG_SUSE_KERNEL) || defined(UBUNTU_VERSION_CODE) || \
+     LINUX_VERSION_CODE >= KERNEL_VERSION(5,2,0))
+#undef HAVE_AF_XDP_ZC_SUPPORT
+#undef HAVE_MEM_TYPE_XSK_BUFF_POOL
+#endif /* CONFIG_SUSE_KERNEL || UBUNTU_VERSION_CODE || LINUX_VERSION_CODE > 5.0 */
+
 #ifdef HAVE_IOMMU_PRESENT
 #include <linux/iommu.h>
 #endif
@@ -46,6 +56,12 @@
 #ifdef __TC_MQPRIO_MODE_MAX
 #include <net/pkt_cls.h>
 #endif
+#ifdef HAVE_UDP_TUNNEL_NIC_INFO
+#include <net/udp_tunnel.h>
+#endif /* HAVE_UDP_TUNNEL_NIC_INFO */
+#ifdef HAVE_AF_XDP_NETDEV_UMEM
+#include <net/xdp_sock.h>
+#endif /* HAVE_AF_XDP_NETDEV_UMEM */
 #include "i40e_type.h"
 #include "i40e_prototype.h"
 #include "i40e_client.h"
@@ -57,6 +73,15 @@
 #ifdef HAVE_XDP_SUPPORT
 #include <linux/bpf_trace.h>
 #endif
+
+#ifdef HAVE_AF_XDP_ZC_SUPPORT
+#include "i40e_xsk.h"
+#ifndef HAVE_MEM_TYPE_XSK_BUFF_POOL
+#include <net/xdp_sock.h>
+#else
+#include <net/xdp_sock_drv.h>
+#endif
+#endif /* HAVE_AF_XDP_ZC_SUPPORT */
 
 /* Useful i40e defaults */
 #define I40E_MAX_VEB			16
@@ -134,6 +159,8 @@ bool i40e_is_l4mode_enabled(void);
 #define I40E_TRY_LINK_TIMEOUT	(4 * HZ)
 
 /* BW rate limiting */
+#define I40E_BW_MBIT_PS_DIVISOR	125000 /* rate / (1000000 / 8) Mbps */
+#define I40E_MINIMUM_BW_MAX_TX_RATE	50 /* Minimum usable value of max tx rate for BW limit*/
 #define I40E_BW_CREDIT_DIVISOR		50 /* 50Mbps per BW credit */
 #define I40E_MAX_BW_INACTIVE_ACCUM	4  /* accumulate 4 credits max */
 
@@ -171,7 +198,9 @@ enum i40e_state_t {
 	__I40E_VF_DISABLE,
 	__I40E_RECOVERY_MODE,
 	__I40E_MACVLAN_SYNC_PENDING,
+#ifndef HAVE_UDP_TUNNEL_NIC_INFO
 	__I40E_UDP_FILTER_SYNC_PENDING,
+#endif /* HAVE_UDP_TUNNEL_NIC_INFO */
 	__I40E_TEMP_LINK_POLLING,
 	__I40E_CLIENT_SERVICE_REQUESTED,
 	__I40E_CLIENT_L2_CHANGE,
@@ -179,6 +208,7 @@ enum i40e_state_t {
 	__I40E_VIRTCHNL_OP_PENDING,
 	__I40E_VFS_RELEASING,
 	__I40E_VF_RESETS_DISABLED,	/* disable resets during i40e_remove */
+	__I40E_IN_REMOVE,
 	/* This must be last as it determines the size of the BITMAP */
 	__I40E_STATE_SIZE__,
 };
@@ -578,8 +608,13 @@ struct i40e_pf {
 	struct list_head l3_flex_pit_list;
 	struct list_head l4_flex_pit_list;
 
+#ifndef HAVE_UDP_TUNNEL_NIC_INFO
 	struct i40e_udp_port_config udp_ports[I40E_MAX_PF_UDP_OFFLOAD_PORTS];
 	u16 pending_udp_bitmap;
+#else
+	struct udp_tunnel_nic_shared udp_tunnel_shared;
+	struct udp_tunnel_nic_info udp_tunnel_nic;
+#endif /* HAVE_UDP_TUNNEL_NIC_INFO */
 
 	struct hlist_head cloud_filter_list;
 	u16 num_cloud_filters;
@@ -652,6 +687,9 @@ struct i40e_pf {
 #define I40E_FLAG_BASE_R_FEC			BIT(26)
 #define I40E_FLAG_TOTAL_PORT_SHUTDOWN		BIT(27)
 #define I40E_FLAG_MULTIPLE_TRAFFIC_CLASSES	BIT(28)
+#define I40E_FLAG_CLS_FLOWER			BIT(29)
+#define I40E_FLAG_VF_VLAN_PRUNING		BIT(30)
+#define I40E_FLAG_VF_SOURCE_PRUNING		BIT(31)
 
 	/* flag to enable/disable vf base mode support */
 	bool vf_base_mode_only;
@@ -666,6 +704,7 @@ struct i40e_pf {
 	u32 tx_sluggish_count;
 	u32 hw_csum_rx_error;
 	u32 led_status;
+	bool led_status_blink;
 	u16 corer_count; /* Core reset count */
 	u16 globr_count; /* Global reset count */
 	u16 empr_count; /* EMP reset count */
@@ -811,6 +850,7 @@ struct i40e_pf {
 #endif /* HAVE_PTP_1588_CLOCK */
 #ifdef I40E_ADD_PROBES
 	u64 tcp_segs;
+	u64 udp_segs;
 	u64 tx_tcp_cso;
 	u64 tx_udp_cso;
 	u64 tx_sctp_cso;
@@ -855,9 +895,6 @@ struct i40e_pf {
 	bool dcb_user_reconfig;
 	/* List to keep previous DDP profiles to be rolled back in the future */
 	struct list_head ddp_old_prof;
-#if IS_ENABLED(CONFIG_MFD_CORE)
-	int peer_idx;
-#endif
 };
 
 /**
@@ -968,8 +1005,10 @@ struct i40e_vsi {
 	u32 tx_busy;
 	u64 tx_linearize;
 	u64 tx_force_wb;
+	u64 tx_stopped;
 	u32 rx_buf_failed;
 	u32 rx_page_failed;
+	u64 rx_page_reuse;
 
 	/* These are containers of ring pointers, allocated at run-time */
 	struct i40e_ring **rx_rings;
@@ -1052,11 +1091,22 @@ struct i40e_vsi {
 #ifdef ETHTOOL_GRXRINGS
 #endif
 
+#ifdef HAVE_AF_XDP_ZC_SUPPORT
+#ifndef HAVE_AF_XDP_NETDEV_UMEM
+	/* AF_XDP zero-copy */
+	struct xdp_umem **xsk_umems;
+	u16 num_xsk_umems_used;
+	u16 num_xsk_umems;
+#endif /* HAVE_AF_XDP_NETDEV_UMEM */
+	unsigned long *af_xdp_zc_qps; /* tracks AF_XDP ZC enabled qps */
+#endif /* HAVE_AF_XDP_ZC_SUPPORT */
 } ____cacheline_internodealigned_in_smp;
 
 struct i40e_netdev_priv {
 	struct i40e_vsi *vsi;
 };
+
+extern struct ida i40e_client_ida;
 
 /* struct that defines an interrupt vector */
 struct i40e_q_vector {
@@ -1262,7 +1312,7 @@ int i40e_vsi_release(struct i40e_vsi *vsi);
 int i40e_vsi_mem_alloc(struct i40e_pf *pf, enum i40e_vsi_type type);
 int i40e_vsi_setup_rx_resources(struct i40e_vsi *vsi);
 int i40e_vsi_setup_tx_resources(struct i40e_vsi *vsi);
-int i40e_vsi_config_tc(struct i40e_vsi *vsi, u8 enabled_tc);
+i40e_status i40e_vsi_config_tc(struct i40e_vsi *vsi, u8 enabled_tc);
 int i40e_vsi_request_irq_msix(struct i40e_vsi *vsi, char *basename);
 void i40e_service_event_schedule(struct i40e_pf *pf);
 void i40e_notify_client_of_vf_msg(struct i40e_vsi *vsi, u32 vf_id,
@@ -1396,12 +1446,13 @@ int i40e_ptp_alloc_pins(struct i40e_pf *pf);
 #endif /* HAVE_PTP_1588_CLOCK */
 u8 i40e_pf_get_num_tc(struct i40e_pf *pf);
 int i40e_update_adq_vsi_queues(struct i40e_vsi *vsi, int vsi_offset);
-int i40e_vsi_get_bw_info(struct i40e_vsi *vsi);
+i40e_status i40e_vsi_get_bw_info(struct i40e_vsi *vsi);
 int i40e_is_vsi_uplink_mode_veb(struct i40e_vsi *vsi);
+i40e_status i40e_configure_source_pruning(struct i40e_vsi *vsi, bool enable);
 i40e_status i40e_get_partition_bw_setting(struct i40e_pf *pf);
 i40e_status i40e_set_partition_bw_setting(struct i40e_pf *pf);
 i40e_status i40e_commit_partition_bw_setting(struct i40e_pf *pf);
-int i40e_set_bw_limit(struct i40e_vsi *vsi, u16 seid, u64 max_tx_rate);
+i40e_status i40e_set_bw_limit(struct i40e_vsi *vsi, u16 seid, u64 max_tx_rate);
 int i40e_add_del_cloud_filter_ex(struct i40e_pf *pf,
 				 struct i40e_cloud_filter *filter,
 				 bool add);
@@ -1424,12 +1475,67 @@ int i40e_queue_pair_enable(struct i40e_vsi *vsi, int queue_pair);
 
 static inline bool i40e_enabled_xdp_vsi(struct i40e_vsi *vsi)
 {
-	return !!vsi->xdp_prog;
+	return !!READ_ONCE(vsi->xdp_prog);
 }
 
 int i40e_restore_ingress_egress_mirror(struct i40e_vsi *src_vsi, int mirror,
 				       u16 rule_type, u16 *rule_id);
 int i40e_vsi_configure_tc_max_bw(struct i40e_vsi *vsi);
 int i40e_veb_configure_tc_max_bw(struct i40e_veb *veb, u8 enabled_tc);
+
+#ifdef HAVE_AF_XDP_ZC_SUPPORT
+static inline struct xdp_umem *i40e_xsk_umem(struct i40e_ring *ring)
+{
+	bool xdp_on = i40e_enabled_xdp_vsi(ring->vsi);
+	int qid = ring->queue_index;
+
+	if (ring_is_xdp(ring))
+		qid -= ring->vsi->alloc_queue_pairs;
+
+#ifdef HAVE_AF_XDP_NETDEV_UMEM
+	if (!xdp_on || !test_bit(qid, ring->vsi->af_xdp_zc_qps))
+#else
+	if (!ring->vsi->xsk_umems || !ring->vsi->xsk_umems[qid] || !xdp_on)
+#endif /* HAVE_AF_XDP_NETDEV_UMEM */
+		return NULL;
+
+#ifdef HAVE_AF_XDP_NETDEV_UMEM
+#ifdef HAVE_NETDEV_BPF_XSK_POOL
+	return xsk_get_pool_from_qid(ring->vsi->netdev, qid)->umem;
+#else
+	return xsk_get_pool_from_qid(ring->vsi->netdev, qid);
+#endif /* HAVE_NETDEV_BPF_XSK_POOL */
+#else
+	return ring->vsi->xsk_umems[qid];
+#endif /* HAVE_AF_XDP_NETDEV_UMEM */
+}
+#endif
+
+/**
+ * i40e_get_pf_count - get PCI PF Count.
+ * @hw: pointer to a hw.
+ *
+ * Reports the function number of the highest PCI physical
+ * function plus 1 as it is loaded from the NVM.
+ *
+ * Return: PCI PF Count.
+ **/
+static inline int i40e_get_pf_count(struct i40e_hw *hw) {
+	return rd32(hw, I40E_GLGEN_PCIFCNCNT)
+		& I40E_GLGEN_PCIFCNCNT_PCIPFCNT_MASK;
+}
+
+/**
+ * i40e_is_tc_mqprio_enabled - check if TC MQPRIO is enabled on PF
+ * @pf: pointer to a pf.
+ *
+ * Check and return value of flag I40E_FLAG_TC_MQPRIO.
+ *
+ * Return: I40E_FLAG_TC_MQPRIO set state.
+ **/
+static inline u32 i40e_is_tc_mqprio_enabled(struct i40e_pf *pf)
+{
+	return pf->flags & I40E_FLAG_TC_MQPRIO;
+}
 
 #endif /* _I40E_H_ */

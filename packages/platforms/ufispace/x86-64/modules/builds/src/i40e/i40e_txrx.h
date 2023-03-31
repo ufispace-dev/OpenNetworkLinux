@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #ifndef _I40E_TXRX_H_
 #define _I40E_TXRX_H_
@@ -117,8 +117,10 @@ enum i40e_dyn_idx_t {
 #define I40E_PACKET_HDR_PAD (ETH_HLEN + ETH_FCS_LEN + (VLAN_HLEN * 2))
 #ifdef I40E_32BYTE_RX
 #define i40e_rx_desc i40e_32byte_rx_desc
+#define i40e_rx_wb_qw0 i40e_32b_rx_wb_wq0
 #else
 #define i40e_rx_desc i40e_16byte_rx_desc
+#define i40e_rx_wb_qw0 i40e_16b_rx_wb_qw0
 #endif
 
 #ifdef HAVE_STRUCT_DMA_ATTRS
@@ -282,10 +284,15 @@ static inline unsigned int i40e_txd_use_count(unsigned int size)
 #endif /* HAVE_PTP_1588_CLOCK */
 #define I40E_TX_FLAGS_FD_SB		BIT(9)
 #define I40E_TX_FLAGS_TUNNEL		BIT(10)
+#define I40E_TX_FLAGS_HW_OUTER_VLAN	BIT(11)
 #define I40E_TX_FLAGS_VLAN_MASK		0xffff0000
 #define I40E_TX_FLAGS_VLAN_PRIO_MASK	0xe0000000
 #define I40E_TX_FLAGS_VLAN_PRIO_SHIFT	29
 #define I40E_TX_FLAGS_VLAN_SHIFT	16
+
+#define I40E_TX_FLAGS_VLAN		(I40E_TX_FLAGS_HW_OUTER_VLAN | \
+					 I40E_TX_FLAGS_HW_VLAN | \
+					 I40E_TX_FLAGS_SW_VLAN)
 
 struct i40e_tx_buffer {
 	struct i40e_tx_desc *next_to_watch;
@@ -304,17 +311,29 @@ struct i40e_tx_buffer {
 
 struct i40e_rx_buffer {
 	dma_addr_t dma;
+	union {
+		struct {
 #ifdef CONFIG_I40E_DISABLE_PACKET_SPLIT
-	struct sk_buff *skb;
+			struct sk_buff *skb;
 #else
-	struct page *page;
+			struct page *page;
 #if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
-	__u32 page_offset;
+			__u32 page_offset;
 #else
-	__u16 page_offset;
+			__u16 page_offset;
 #endif
-	__u16 pagecnt_bias;
+			__u16 pagecnt_bias;
 #endif /* CONFIG_I40E_DISABLE_PACKET_SPLIT */
+		};
+#ifdef HAVE_AF_XDP_ZC_SUPPORT
+#ifndef HAVE_MEM_TYPE_XSK_BUFF_POOL
+		struct {
+			void *addr;
+			u64 handle;
+		};
+#endif /* HAVE_MEM_TYPE_XSK_BUFF_POOL */
+#endif /* HAVE_AF_XDP_ZC_SUPPORT */
+	};
 };
 
 struct i40e_queue_stats {
@@ -339,6 +358,7 @@ struct i40e_tx_queue_stats {
 	u64 tx_done_old;
 	u64 tx_linearize;
 	u64 tx_force_wb;
+	u64 tx_stopped;
 	int prev_pkt_ctr;
 };
 
@@ -377,6 +397,9 @@ struct i40e_ring {
 	union {
 		struct i40e_tx_buffer *tx_bi;
 		struct i40e_rx_buffer *rx_bi;
+#ifdef HAVE_MEM_TYPE_XSK_BUFF_POOL
+		struct xdp_buff **rx_bi_zc;
+#endif /* HAVE_MEM_TYPE_XSK_BUFF_POOL */
 	};
 	DECLARE_BITMAP(state, __I40E_RING_STATE_NBITS);
 	u16 queue_index;		/* Queue number of ring */
@@ -397,6 +420,7 @@ struct i40e_ring {
 	/* used in interrupt processing */
 	u16 next_to_use;
 	u16 next_to_clean;
+	u16 xdp_tx_active;
 
 	u8 atr_sample_rate;
 	u8 atr_count;
@@ -409,6 +433,7 @@ struct i40e_ring {
 #define I40E_TXR_FLAGS_WB_ON_ITR		BIT(0)
 #define I40E_RXR_FLAGS_BUILD_SKB_ENABLED	BIT(1)
 #define I40E_TXR_FLAGS_XDP			BIT(2)
+#define I40E_TXR_FLAGS_L2TAG2			BIT(3)
 
 	/* stats structs */
 	struct i40e_queue_stats	stats;
@@ -444,6 +469,20 @@ struct i40e_ring {
 #ifdef HAVE_XDP_BUFF_RXQ
 	struct xdp_rxq_info xdp_rxq;
 #endif
+
+#ifdef HAVE_AF_XDP_ZC_SUPPORT
+#ifdef HAVE_NETDEV_BPF_XSK_POOL
+	struct xsk_buff_pool *xsk_pool;
+#else
+struct xdp_umem *xsk_umem;
+#endif /* HAVE_NETDEV_BFP_XSK_POOL */
+#ifndef HAVE_MEM_TYPE_XSK_BUFF_POOL
+struct zero_copy_allocator zca; /* ZC allocator anchor */
+#endif /* HAVE_MEM_TYPE_XSK_BUFF_POOL */
+#ifdef HAVE_XSK_BATCHED_DESCRIPTOR_INTERFACES
+	struct xdp_desc *xsk_descs;      /* For storing descriptors in the AF_XDP ZC path */
+#endif /* HAVE_XSK_BATCHED_DESCRIPTOR_INTERFACES */
+#endif /* HAVE_AF_XD_ZC_SUPPORT */
 } ____cacheline_internodealigned_in_smp;
 
 static inline bool ring_uses_build_skb(struct i40e_ring *ring)
@@ -548,6 +587,10 @@ int i40e_xdp_xmit(struct net_device *dev, int n, struct xdp_frame **frames,
 #else
 int i40e_xdp_xmit(struct net_device *dev, struct xdp_buff *xdp);
 #endif
+#ifdef HAVE_MEM_TYPE_XSK_BUFF_POOL
+int i40e_alloc_rx_bi(struct i40e_ring *rx_ring);
+#endif /* HAVE_MEM_TYPE_XSK_BUFF_POOL */
+
 void i40e_xdp_flush(struct net_device *dev);
 
 #ifdef HAVE_XDP_SUPPORT

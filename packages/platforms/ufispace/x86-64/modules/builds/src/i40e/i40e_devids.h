@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #define _I40E_DEVIDS_H_
 
@@ -23,20 +23,24 @@
 #define I40E_DEV_ID_10G_B		0x104F
 #define I40E_DEV_ID_10G_SFP		0x104E
 #define I40E_DEV_ID_5G_BASE_T_BC	0x101F
+#define I40E_DEV_ID_1G_BASE_T_BC	0x0DD2
 #define I40E_IS_X710TL_DEVICE(d) \
 	(((d) == I40E_DEV_ID_10G_BASE_T_BC) || \
-	((d) == I40E_DEV_ID_5G_BASE_T_BC))
+	((d) == I40E_DEV_ID_5G_BASE_T_BC) || \
+	((d) == I40E_DEV_ID_1G_BASE_T_BC))
 #define I40E_DEV_ID_KX_X722		0x37CE
 #define I40E_DEV_ID_QSFP_X722		0x37CF
 #define I40E_DEV_ID_SFP_X722		0x37D0
 #define I40E_DEV_ID_1G_BASE_T_X722	0x37D1
 #define I40E_DEV_ID_10G_BASE_T_X722	0x37D2
 #define I40E_DEV_ID_SFP_I_X722		0x37D3
+#define I40E_DEV_ID_SFP_X722_A		0x0DDA
 
 #define i40e_is_40G_device(d)		((d) == I40E_DEV_ID_QSFP_A  || \
 					 (d) == I40E_DEV_ID_QSFP_B  || \
 					 (d) == I40E_DEV_ID_QSFP_C)
 
 #define i40e_is_25G_device(d)		((d) == I40E_DEV_ID_25G_B  || \
-					 (d) == I40E_DEV_ID_25G_SFP28)
+					 (d) == I40E_DEV_ID_25G_SFP28  || \
+					 (d) == I40E_DEV_ID_XXV710_N3000)
 

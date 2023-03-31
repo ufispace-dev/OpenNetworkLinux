@@ -215,6 +215,7 @@ class OnlPlatform_x86_64_ufispace_s9301_32d_r0(OnlPlatformUfiSpace):
 
         # init i40e
         self.bsp_pr("Init i40e");
+        self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
 
         # enable port led

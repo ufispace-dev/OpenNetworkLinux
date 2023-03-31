@@ -101,7 +101,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.1"
 }
 
 function _update_gpio_max {
@@ -756,8 +756,8 @@ function _show_gpio_sysfs {
 
     _banner "Show GPIO Status"
 
-    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | tail -n 1`
-    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | head -n 1`
+    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed --expression='s/gpio//g' | sort -V | tail -n 1`
+    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed --expression='s/gpio//g' | sort -V | head -n 1`
 
     for (( i=${min_gpio}; i<=${max_gpio}; i++ ))
     do
@@ -1069,10 +1069,7 @@ function _show_qsfp_status {
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
-    #cpu_temp_array=("2" "4" "6" "8" "10" "12" "14" "16")
-
-    #for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
-    for (( i=0; i<16; i++ ))
+    for (( i=0; i<=16; i++ ))
     do
         if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_input" ]; then
             _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${i}_input"

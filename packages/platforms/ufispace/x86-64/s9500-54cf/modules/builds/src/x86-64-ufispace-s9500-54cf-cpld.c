@@ -1263,7 +1263,7 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = DBG_CPLD_SFP_TX_FAULT_16_23_REG;
             break;
         case DBG_CPLD_SFP_TX_FAULT_24_31:
-            reg = DBG_CPLD_SFP_TX_FAULT_16_23_REG;
+            reg = DBG_CPLD_SFP_TX_FAULT_24_31_REG;
             break;
         case DBG_CPLD_SFP_TX_FAULT_32_39:
             reg = DBG_CPLD_SFP_TX_FAULT_32_39_REG;
@@ -1284,7 +1284,7 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = DBG_CPLD_SFP_RX_LOS_16_23_REG;
             break;
         case DBG_CPLD_SFP_RX_LOS_24_31:
-            reg = DBG_CPLD_SFP_RX_LOS_16_23_REG;
+            reg = DBG_CPLD_SFP_RX_LOS_24_31_REG;
             break;
         case DBG_CPLD_SFP_RX_LOS_32_39:
             reg = DBG_CPLD_SFP_RX_LOS_32_39_REG;
@@ -1528,7 +1528,7 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = DBG_CPLD_SFP_TX_FAULT_16_23_REG;
             break;
         case DBG_CPLD_SFP_TX_FAULT_24_31:
-            reg = DBG_CPLD_SFP_TX_FAULT_16_23_REG;
+            reg = DBG_CPLD_SFP_TX_FAULT_24_31_REG;
             break;
         case DBG_CPLD_SFP_TX_FAULT_32_39:
             reg = DBG_CPLD_SFP_TX_FAULT_32_39_REG;
@@ -1549,7 +1549,7 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = DBG_CPLD_SFP_RX_LOS_16_23_REG;
             break;
         case DBG_CPLD_SFP_RX_LOS_24_31:
-            reg = DBG_CPLD_SFP_RX_LOS_16_23_REG;
+            reg = DBG_CPLD_SFP_RX_LOS_24_31_REG;
             break;
         case DBG_CPLD_SFP_RX_LOS_32_39:
             reg = DBG_CPLD_SFP_RX_LOS_32_39_REG;

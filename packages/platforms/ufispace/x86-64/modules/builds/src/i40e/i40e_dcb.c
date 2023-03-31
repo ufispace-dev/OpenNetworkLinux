@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #include "i40e_adminq.h"
 #include "i40e_prototype.h"
@@ -905,7 +905,7 @@ i40e_status i40e_init_dcb(struct i40e_hw *hw, bool enable_mib_change)
 		return I40E_ERR_NOT_READY;
 
 	/* Get the LLDP AdminStatus for the current port */
-	adminstatus = lldp_cfg.adminstatus >> (hw->port * 4);
+	adminstatus = (u8)(lldp_cfg.adminstatus >> (hw->port * 4));
 	adminstatus &= 0xF;
 
 	/* LLDP agent disabled */

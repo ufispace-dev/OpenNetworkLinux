@@ -4,6 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
+import commands
 import subprocess
 import time
 import fcntl
@@ -115,12 +116,12 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         else:
             msg("Warning: bsp_pr sysfs does not exist\n")
 
-    def init_sys_eeprom(self):    
+    def init_sys_eeprom(self):
         addr_sys_eeprom = 0x53
         bus_sys_eeprom = 5
 
         self.bsp_pr("Init System EEPROM")
-        
+
         # load driver
         self.insmod(self.DRIVER[DriverType.SYS_EEPROM])
 
@@ -146,10 +147,10 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         addr_eeprom = 0x50
 
         self.bsp_pr("Init Port EEPROM")
-        
+
         # load driver
         self.insmod(self.DRIVER[DriverType.OPTOE])
-        
+
         # open port name config file
         with open(self.PORT_CFG, 'r') as yaml_file:
             data = yaml.safe_load(yaml_file)
@@ -168,7 +169,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
     def init_gpio(self):
         self.bsp_pr("Init GPIO")
-        
+
         # init GPIO sysfs
         self.new_i2c_devices(
             [
@@ -179,15 +180,18 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
             ]
         )
 
+        #get gpio_max
+        gpio_max = self.get_gpio_max()
+
         # init all GPIO direction to "in"
-        gpio_dir = ["in"] * 512
+        gpio_dir = ["in"] * (gpio_max+1)
 
         # init GPIO direction to output high
-        for i in range(416, 512):
+        for i in range(gpio_max-95, gpio_max+1):
             gpio_dir[i] = "high"
-        
+
         # export GPIO and configure direction
-        for i in range(416, 512):
+        for i in range(gpio_max-95, gpio_max+1):
             os.system("echo {} > /sys/class/gpio/export".format(i))
             os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i], i))
 
@@ -195,20 +199,20 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         bus = 2
         addrs = (0x30, 0x31)
         dev_name_prefix = "s8901_54xc_cpld"
-        
+
         self.bsp_pr("Init CPLD")
-        
+
         # load driver
         self.insmod(self.DRIVER[DriverType.CPLD])
-        
+
         # create i2c device
         for i, addr in enumerate(addrs):
             self.new_i2c_device(dev_name_prefix + str(i+1), addr, bus)
 
         # enable event ctrl
-        for _, addr in enumerate(addrs):        
+        for _, addr in enumerate(addrs):
             subprocess.call("echo 1 > /sys/bus/i2c/devices/{}-{:0>4x}/cpld_evt_ctrl".format(bus, addr), shell=True)
-        
+
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
 
@@ -236,7 +240,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
     def init_mux(self, bus_i801, bus_ismt):
         self.bsp_pr("Init I2C Mux")
-        
+
         i2c_muxs = [
             ('pca9548', 0x70, bus_ismt),  # 9548_CPLD
             ('pca9548', 0x71, bus_ismt),  # 9548_FRU
@@ -254,6 +258,19 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
+
+    def get_gpio_max(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc/bsp/bsp_gpio_max"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            self.bsp_pr("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="511"
+
+        gpio_max = int(output, 10)
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max));
+
+        return gpio_max
 
     def baseconfig(self):
 
@@ -290,13 +307,13 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         os.system("i2cget -y {} 0x31 0x2 > /dev/null 2>&1".format(bus_ismt))
         os.system("i2cset -y {} 0x70 0x0 > /dev/null 2>&1".format(bus_ismt))
 
-        # init I2C Mux        
+        # init I2C Mux
         self.init_mux(bus_i801, bus_ismt)
 
         # init SYS EEPROM devices
         self.init_sys_eeprom()
-        
-        # init port EEPROM        
+
+        # init port EEPROM
         self.init_port_eeprom()
 
         # init GPIO sysfs

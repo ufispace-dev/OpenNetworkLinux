@@ -22,6 +22,7 @@
  * ONLP System Platform Interface.
  *
  ***********************************************************/
+#include <unistd.h>
 #include <onlp/platformi/sysi.h>
 #include "platform_lib.h"
 
@@ -47,7 +48,7 @@
  *            |----[16] ONLP_THERMAL_ENV_1
  *            |----[17] ONLP_THERMAL_ENV_2
  *            |----[18] ONLP_THERMAL_EXT_ENV_1
- *            |----[19] ONLP_THERMAL_EXT_ENV_2 
+ *            |----[19] ONLP_THERMAL_EXT_ENV_2
  *            |----[01] ONLP_LED_SYS_SYNC
  *            |----[02] ONLP_LED_SYS_SYS
  *            |----[03] ONLP_LED_SYS_FAN
@@ -56,7 +57,7 @@
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU_0
  *            |                  |----[05] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU_1
- *            |                  |----[06] ONLP_PSU_1_FAN 
+ *            |                  |----[06] ONLP_PSU_1_FAN
  *            |----[01] ONLP_FAN_F_0
  *            |----[02] ONLP_FAN_R_0
  *            |----[03] ONLP_FAN_F_1
@@ -66,11 +67,11 @@
  *            |----[07] ONLP_FAN_F_3
  *            |----[08] ONLP_FAN_R_3
  */
- 
+
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/0-0057/eeprom"
 #define SYS_EEPROM_SIZE    512
 
-#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\r\n'"
+#define CMD_BIOS_VER       "cat /sys/class/dmi/id/bios_version | tr -d '\\r\\n'"
 #define SYSFS_BIOS_VER "/sys/class/dmi/id/bios_version"
 
 #define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/cpu_cpld_version_h"
@@ -89,38 +90,49 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = "";
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
 
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
+
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
     memset(bmc_out2, 0, sizeof(bmc_out2));
     memset(bmc_out3, 0, sizeof(bmc_out3));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version
     ONLP_TRY(onlp_file_read((uint8_t*)&cpu_cpld_ver_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_CPU_CPLD_VER));
 
     //get MB CPLD version
     for(i=0; i<CPLD_MAX; ++i) {
-        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER, 
+        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER,
                                              CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
     }
-    
-    pi->cpld_versions = aim_fstrdup(            
+
+    pi->cpld_versions = aim_fstrdup(
         "\n"
         "[CPU CPLD] %s\n"
         "[MB CPLD1] %s\n"
         "[MB CPLD2] %s\n"
         "[MB CPLD3] %s\n"
-        "[MB CPLD4] %s\n" 
-        "[MB CPLD5] %s\n", 
-        cpu_cpld_ver_out, 
+        "[MB CPLD4] %s\n"
+        "[MB CPLD5] %s\n",
+        cpu_cpld_ver_out,
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],
         mb_cpld_ver_out[2],
         mb_cpld_ver_out[3],
-        mb_cpld_ver_out[4]);    
-    
+        mb_cpld_ver_out[4]);
+
     //Get HW Build Version
     ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-    
+
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 0 & 0x03));
     mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
 
@@ -137,7 +149,7 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
@@ -146,16 +158,32 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
         "[HW   ] %d\n"
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n",
+        "[BMC  ] %d.%d.%d\n"
+        "[MU   ] %s (%s)\n",
         mb_cpld1_hw_rev,
         mb_cpld1_build_rev,
         bios_out,
-        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }
@@ -237,8 +265,8 @@ int onlp_sysi_onie_data_get(uint8_t** data, int* size)
             return ONLP_STATUS_OK;
         }
     }
-    
-    AIM_LOG_INFO("Unable to get data from eeprom \n");    
+
+    AIM_LOG_INFO("Unable to get data from eeprom \n");
     aim_free(rdata);
     *size = 0;
     return ONLP_STATUS_E_INTERNAL;
@@ -285,7 +313,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     /* Thermal */
     for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_OP2_3; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
-    }    
+    }
 
     /* LED */
     for (i = ONLP_LED_SYS_SYNC; i < ONLP_LED_MAX; i++) {
@@ -301,7 +329,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     for (i = ONLP_FAN_F_0; i <= ONLP_FAN_R_3; i++) {
         *e++ = ONLP_FAN_ID_CREATE(i);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -355,7 +383,7 @@ int onlp_sysi_platform_manage_leds(void)
 int onlp_sysi_platform_info_get(onlp_platform_info_t* info)
 {
     ONLP_TRY(ufi_sysi_platform_info_get(info));
-    
+
     return ONLP_STATUS_OK;
 }
 

@@ -648,3 +648,95 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
         reg_val = reg_val | (1 << bit);
     return reg_val;
 }
+
+/**
+ * @brief read cpld register
+ * @param cpld_id The CPLD id (CPLD_1 - CPLD_3)
+ * @param reg The CPLD register to read (0x00-0xff)
+ * @param[out] reg_val The value of register (0x00-0xff)
+ */
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val)
+{
+    char cmd[1024] = {0};
+    char cmd_output[8] = {0};
+
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d - %d.", CPLD_1, CPLD_3);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0xff) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val == NULL) {
+        AIM_LOG_ERROR("reg_val is null");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //init cmd
+    snprintf(cmd, sizeof(cmd), CMD_I2C_GET, CPLD_I2C_BUS, CPLD_BASE_ADDR[cpld_id], reg);
+
+    //read cpld reg
+    if (exec_cmd(cmd, cmd_output, sizeof(cmd_output)) < 0) {
+            AIM_LOG_ERROR("read cpld reg failed, cmd=%s\n", cmd);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    *reg_val = (uint8_t) strtol(cmd_output, NULL, 16);
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief write cpld register
+ * @param cpld_id The CPLD id (CPLD_1 - CPLD_3)
+ * @param reg The CPLD register to write (0x00-0xff)
+ * @param reg_val The value to write (0x00-0xff)
+ */
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val)
+{
+    char cmd[1024] = {0};
+    char cmd_output[8] = {0};
+
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d - %d.", CPLD_1, CPLD_3);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0xff) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val < 0x0 || reg_val > 0xff) {
+        AIM_LOG_ERROR("Invalid reg value, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //init cmd
+    snprintf(cmd, sizeof(cmd), CMD_I2C_SET, CPLD_I2C_BUS, CPLD_BASE_ADDR[cpld_id], reg, reg_val);
+
+    //write cpld reg
+    if (exec_cmd(cmd, cmd_output, sizeof(cmd_output)) < 0) {
+            AIM_LOG_ERROR("write cpld reg failed, cmd=%s\n", cmd);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+int ufi_get_cpu_rev(int *rev_sku, int *rev_hw, int *rev_build)
+{
+    if (rev_sku == NULL || rev_hw == NULL || rev_build == NULL) {
+        AIM_LOG_ERROR("rev_sku, rev_hw or rev_build is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(rev_sku, "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/cpu_cpld/cpu_rev_sku"));
+    ONLP_TRY(file_read_hex(rev_hw, "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/cpu_cpld/cpu_rev_hw"));
+    ONLP_TRY(file_read_hex(rev_build, "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/cpu_cpld/cpu_rev_build"));
+
+    return ONLP_STATUS_OK;
+}

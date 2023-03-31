@@ -66,6 +66,8 @@
 #define MDELAY_RESET_INTERVAL             (100)
 #define MDELAY_RESET_FINISH               (500)
 
+#define MULTIBIT_SET(addr, mask, value) (((addr)&((0xff)^(mask)))|((value)&(mask)))
+
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -267,7 +269,7 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
     // set multi bit
     } else if (mask_len > 1) {
         reg_val_now = _read_lpc_reg(reg, MASK_ALL);
-        reg_val = ((reg_val << shift) & mask) & reg_val_now;
+        reg_val = MULTIBIT_SET(reg_val_now, mask, reg_val<<shift);
     }
 
     mutex_lock(&lpc_data->access_lock);

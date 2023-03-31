@@ -274,6 +274,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
 
         self.bsp_pr("Init bcm82752");
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
+        self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init")

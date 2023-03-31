@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2013 - 2021 Intel Corporation. */
+/* Copyright(c) 2013 - 2022 Intel Corporation. */
 
 #include "i40e_type.h"
 #include "i40e_adminq.h"
@@ -32,6 +32,7 @@ i40e_status i40e_set_mac_type(struct i40e_hw *hw)
 		case I40E_DEV_ID_10G_B:
 		case I40E_DEV_ID_10G_SFP:
 		case I40E_DEV_ID_5G_BASE_T_BC:
+		case I40E_DEV_ID_1G_BASE_T_BC:
 		case I40E_DEV_ID_20G_KR2:
 		case I40E_DEV_ID_20G_KR2_A:
 		case I40E_DEV_ID_25G_B:
@@ -46,6 +47,7 @@ i40e_status i40e_set_mac_type(struct i40e_hw *hw)
 		case I40E_DEV_ID_1G_BASE_T_X722:
 		case I40E_DEV_ID_10G_BASE_T_X722:
 		case I40E_DEV_ID_SFP_I_X722:
+		case I40E_DEV_ID_SFP_X722_A:
 			hw->mac.type = I40E_MAC_X722;
 			break;
 		default:
@@ -153,8 +155,8 @@ const char *i40e_stat_str(struct i40e_hw *hw, i40e_status stat_err)
 		return "I40E_ERR_INVALID_MAC_ADDR";
 	case I40E_ERR_DEVICE_NOT_SUPPORTED:
 		return "I40E_ERR_DEVICE_NOT_SUPPORTED";
-	case I40E_ERR_MASTER_REQUESTS_PENDING:
-		return "I40E_ERR_MASTER_REQUESTS_PENDING";
+	case I40E_ERR_PRIMARY_REQUESTS_PENDING:
+		return "I40E_ERR_PRIMARY_REQUESTS_PENDING";
 	case I40E_ERR_INVALID_LINK_SETTINGS:
 		return "I40E_ERR_INVALID_LINK_SETTINGS";
 	case I40E_ERR_AUTONEG_NOT_COMPLETE:
@@ -1150,7 +1152,6 @@ static enum i40e_media_type i40e_get_media_type(struct i40e_hw *hw)
 	enum i40e_media_type media;
 
 	switch (hw->phy.link_info.phy_type) {
-	case I40E_PHY_TYPE_10GBASE_ER:
 	case I40E_PHY_TYPE_10GBASE_SR:
 	case I40E_PHY_TYPE_10GBASE_LR:
 	case I40E_PHY_TYPE_1000BASE_SX:
@@ -1488,6 +1489,35 @@ u32 i40e_led_get(struct i40e_hw *hw)
 	}
 
 	return mode;
+}
+
+/**
+ * i40e_led_get_blink - return current LED blink setting
+ * @hw: pointer to the hw struct
+ *
+ * The value returned is the LED_BLINK bit as defined in the
+ * GPIO register definitions (0 = no blink, 1 = do blink).
+ **/
+bool i40e_led_get_blink(struct i40e_hw *hw)
+{
+	bool blink = 0;
+	int i;
+
+	/* as per the documentation GPIO 22-29 are the LED
+	 * GPIO pins named LED0..LED7
+	 */
+	for (i = I40E_LED0; i <= I40E_GLGEN_GPIO_CTL_MAX_INDEX; i++) {
+		u32 gpio_val = i40e_led_is_mine(hw, i);
+
+		if (!gpio_val)
+			continue;
+
+		blink = (gpio_val & I40E_GLGEN_GPIO_CTL_LED_BLINK_MASK) >>
+			I40E_GLGEN_GPIO_CTL_LED_BLINK_SHIFT;
+		break;
+	}
+
+	return blink;
 }
 
 /**
@@ -3859,7 +3889,7 @@ static void i40e_parse_discover_capabilities(struct i40e_hw *hw, void *buff,
 	 */
 	if (hw->num_ports != 0) {
 		hw->partition_id = (hw->pf_id / hw->num_ports) + 1;
-		hw->num_partitions = num_functions / hw->num_ports;
+		hw->num_partitions = (u16)(num_functions / hw->num_ports);
 	}
 
 	/* additional HW specific goodies that might
@@ -4796,7 +4826,6 @@ static i40e_status i40e_validate_filter_settings(struct i40e_hw *hw,
 				struct i40e_filter_control_settings *settings)
 {
 	u32 fcoe_cntx_size, fcoe_filt_size;
-	u32 pe_cntx_size, pe_filt_size;
 	u32 fcoe_fmax;
 
 	u32 val;
@@ -4841,8 +4870,6 @@ static i40e_status i40e_validate_filter_settings(struct i40e_hw *hw,
 	case I40E_HASH_FILTER_SIZE_256K:
 	case I40E_HASH_FILTER_SIZE_512K:
 	case I40E_HASH_FILTER_SIZE_1M:
-		pe_filt_size = I40E_HASH_FILTER_BASE_SIZE;
-		pe_filt_size <<= (u32)settings->pe_filt_num;
 		break;
 	default:
 		return I40E_ERR_PARAM;
@@ -4859,8 +4886,6 @@ static i40e_status i40e_validate_filter_settings(struct i40e_hw *hw,
 	case I40E_DMA_CNTX_SIZE_64K:
 	case I40E_DMA_CNTX_SIZE_128K:
 	case I40E_DMA_CNTX_SIZE_256K:
-		pe_cntx_size = I40E_DMA_CNTX_BASE_SIZE;
-		pe_cntx_size <<= (u32)settings->pe_cntx_num;
 		break;
 	default:
 		return I40E_ERR_PARAM;
@@ -5810,6 +5835,7 @@ i40e_status i40e_write_phy_register(struct i40e_hw *hw,
 	case I40E_DEV_ID_10G_BASE_T4:
 	case I40E_DEV_ID_10G_BASE_T_BC:
 	case I40E_DEV_ID_5G_BASE_T_BC:
+	case I40E_DEV_ID_1G_BASE_T_BC:
 	case I40E_DEV_ID_10G_BASE_T_X722:
 	case I40E_DEV_ID_25G_B:
 	case I40E_DEV_ID_25G_SFP28:
@@ -5848,6 +5874,7 @@ i40e_status i40e_read_phy_register(struct i40e_hw *hw,
 	case I40E_DEV_ID_10G_BASE_T4:
 	case I40E_DEV_ID_10G_BASE_T_BC:
 	case I40E_DEV_ID_5G_BASE_T_BC:
+	case I40E_DEV_ID_1G_BASE_T_BC:
 	case I40E_DEV_ID_10G_BASE_T_X722:
 	case I40E_DEV_ID_25G_B:
 	case I40E_DEV_ID_25G_SFP28:
@@ -7002,7 +7029,8 @@ i40e_validate_profile(struct i40e_hw *hw, struct i40e_profile_segment *profile,
 	u32 sec_off;
 	u32 i;
 
-	if (track_id == I40E_DDP_TRACKID_INVALID) {
+	if (track_id == I40E_DDP_TRACKID_INVALID ||
+	    track_id == I40E_DDP_TRACKID_RDONLY) {
 		i40e_debug(hw, I40E_DEBUG_PACKAGE, "Invalid track_id\n");
 		return I40E_NOT_SUPPORTED;
 	}

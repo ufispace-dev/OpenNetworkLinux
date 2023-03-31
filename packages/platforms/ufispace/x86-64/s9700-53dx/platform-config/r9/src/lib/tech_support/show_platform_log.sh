@@ -36,8 +36,9 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT=""            : show the error message in console
 LOG_REDIRECT="2> /dev/null"
 
-# GPIO_OFFSET: update by function _update_gpio_offset
-GPIO_OFFSET=0
+# GPIO_MAX: update by function _update_gpio_max
+GPIO_MAX=0
+GPIO_MAX_INIT_FLAG=0
 
 # Execution Time
 start_time=$(date +%s)
@@ -75,26 +76,22 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.9"
+    _banner "Package Version = 1.0.10"
 }
 
-function _update_gpio_offset {
-    _banner "Update GPIO Offset"
-
-    max_gpiochip=`ls /sys/class/gpio/ | sort -r | grep -m1 gpiochip`
-    max_gpiochip_num="${max_gpiochip#*gpiochip}"
-
-    if [ -z "${max_gpiochip_num}" ]; then
-        GPIO_OFFSET=0
-    elif [ ${max_gpiochip_num} -lt 256 ]; then
-        GPIO_OFFSET=256
+function _update_gpio_max {
+    _banner "Update GPIO MAX"
+    local sysfs="/sys/devices/platform/x86_64_ufispace_s9700_53dx_lpc/bsp/bsp_gpio_max"
+    
+    GPIO_MAX=$(cat ${sysfs})
+    if [ $? -eq 1 ]; then
+        GPIO_MAX_INIT_FLAG=0
     else
-        GPIO_OFFSET=0
+        GPIO_MAX_INIT_FLAG=1
     fi
-
-    _echo "[GPIOCHIP MAX    ]: ${max_gpiochip}"
-    _echo "[GPIOCHIP MAX NUM]: ${max_gpiochip_num}"
-    _echo "[GPIO OFFSET     ]: ${GPIO_OFFSET}"
+    
+    _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
+    _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
 
 function _check_env {
@@ -126,7 +123,7 @@ function _check_env {
     
     # check BSP init
     _check_bsp_init
-    _update_gpio_offset
+    _update_gpio_max
 }
 
 function _check_filepath {
@@ -1634,10 +1631,10 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0031" "0032" "0033")
         
         # CPLD to CPU Interrupt
-        _check_filepath "/sys/class/gpio/gpio$((508-${GPIO_OFFSET}))/value"
-        _check_filepath "/sys/class/gpio/gpio$((503-${GPIO_OFFSET}))/value"
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((508-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-        cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((503-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-8))/value"
+        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+        cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-8))/value ${LOG_REDIRECT}")
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD34 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo ""
@@ -1686,14 +1683,14 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0039" "003a" "003b" "003c")
 
         # CPLD to CPU Interrupt
-        _check_filepath "/sys/class/gpio/gpio$((508-${GPIO_OFFSET}))/value"
-        _check_filepath "/sys/class/gpio/gpio$((507-${GPIO_OFFSET}))/value"
-        _check_filepath "/sys/class/gpio/gpio$((506-${GPIO_OFFSET}))/value"
-        _check_filepath "/sys/class/gpio/gpio$((505-${GPIO_OFFSET}))/value"
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((508-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((507-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-        cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((506-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-        cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((505-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-5))/value"
+        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-6))/value"
+        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
+        cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-5))/value ${LOG_REDIRECT}")
+        cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-6))/value ${LOG_REDIRECT}")
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD3  to CPU INT (L)]: ${cpld3_to_cpu_interrupt_l}"
         _echo "[CPLD4  to CPU INT (L)]: ${cpld4_to_cpu_interrupt_l}"
@@ -1749,8 +1746,8 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0031" "0032")
         
         # CPLD to CPU Interrupt
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((508-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((507-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
+        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD3  to CPU INT (L)]: ${cpld3_to_cpu_interrupt_l}"
         _echo ""
@@ -1801,7 +1798,7 @@ function _show_cpld_interrupt_sysfs {
 }
 
 function _show_cpld_interrupt {
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
         _show_cpld_interrupt_sysfs
     fi
 }
@@ -1843,19 +1840,19 @@ function _show_beacon_led_sysfs {
         beacon_led=$(eval "cat /sys/bus/i2c/devices/2-0033/cpld_beacon ${LOG_REDIRECT}")
         _echo "[Beacon LED]: ${beacon_led}"
     elif [ "${MODEL_NAME}" == "NCP1-1" ] || [ "${MODEL_NAME}" == "NCP2-1" ]; then
-        for ((i=480;i<=486;i++))
+        for ((i=31;i>=25;i--))
         do
-            _check_filepath "/sys/class/gpio/gpio$((${i}-${GPIO_OFFSET}))/value"
-            beacon_lled=$(eval "cat /sys/class/gpio/gpio$((${i}-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-            _echo "[Left Beacon LED${i} ]: ${beacon_lled}"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
+            beacon_lled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+            _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_lled}"
         done
 
         # Right LED
-        for ((i=488;i<=494;i++))
+        for ((i=23;i>=17;i--))
         do
-            _check_filepath "/sys/class/gpio/gpio$((${i}-${GPIO_OFFSET}))/value"
-            beacon_rled=$(eval "cat /sys/class/gpio/gpio$((${i}-${GPIO_OFFSET}))/value ${LOG_REDIRECT}")
-            _echo "[Right Beacon LED${i}]: ${beacon_rled}"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
+            beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+            _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
         done
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1864,7 +1861,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
         _show_beacon_led_sysfs
     fi
 }
@@ -2123,7 +2120,7 @@ function _show_onie_upgrade_info {
 function _show_disk_info {
     _banner "Show Disk Info"
    
-    cmd_array=("lsblk" "parted -l /dev/sda" "fdisk -l /dev/sda" "cat /sys/fs/*/*/errors_count")
+    cmd_array=("lsblk" "lsblk -O" "parted -l /dev/sda" "fdisk -l /dev/sda" "cat /sys/fs/*/*/errors_count")
     
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do

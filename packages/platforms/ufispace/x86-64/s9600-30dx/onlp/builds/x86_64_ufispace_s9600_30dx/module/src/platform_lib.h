@@ -42,20 +42,19 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
-#define SYSFS_PLTM                   "/sys/devices/platform/"
-#define SYSFS_DEVICES        "/sys/bus/i2c/devices/"
+#define SYSFS_PLTM                  "/sys/devices/platform/"
+#define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
 
-#define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s9600_30dx_lpc/"
-#define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
-#define SYSFS_HW_ID           SYSFS_LPC_MB_CPLD "board_hw_id"
-#define SYSFS_DEPH_ID        SYSFS_LPC_MB_CPLD "board_deph_id"
-#define SYSFS_BUILD_ID       SYSFS_LPC_MB_CPLD "board_build_id"
-//#define SYSFS_EXT_ID           SYSFS_LPC_MB_CPLD "board_ext_id"
-#define SYSFS_MUX_RESET    SYSFS_LPC_MB_CPLD "mux_reset"
-#define SYSFS_CPLD1            SYSFS_DEVICES "1-0030/"
-#define SYSFS_CPLD1_ID       SYSFS_CPLD1 "cpld_id"
+#define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9600_30dx_lpc/"
+#define SYSFS_LPC_MB_CPLD           SYSFS_LPC "mb_cpld/"
+#define SYSFS_HW_ID                 SYSFS_LPC_MB_CPLD "board_hw_id"
+#define SYSFS_DEPH_ID               SYSFS_LPC_MB_CPLD "board_deph_id"
+#define SYSFS_BUILD_ID              SYSFS_LPC_MB_CPLD "board_build_id"
+#define SYSFS_MUX_RESET             SYSFS_LPC_MB_CPLD "mux_reset"
+#define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"
+#define SYSFS_CPLD1_ID              SYSFS_CPLD1 "cpld_id"
 #define SYS_FMT                     SYSFS_DEVICES "%d-%04x/%s"
-#define SYS_FMT_OFFSET       SYSFS_DEVICES "%d-%04x/%s_%s"
+#define SYS_FMT_OFFSET              SYSFS_DEVICES "%d-%04x/%s_%s"
 #define SYS_CPU_CORETEMP_PREFIX     SYSFS_PLTM "coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    SYSFS_PLTM "coretemp.0/"
 
@@ -79,7 +78,7 @@
 #define PVT_PSU0_TEMP "PSU0_TEMP1"
 #define PVT_PSU1_TEMP "PSU1_TEMP1"
 
-#define BETA_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+#define BETA_CMD_BMC_SENSOR_CACHE   "timeout %ds ipmitool sdr -c get "\
                                     BETA_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
                                     BETA_TEMP_ENV_MAC0" "\
@@ -112,7 +111,7 @@
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
-#define PVT_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+#define PVT_CMD_BMC_SENSOR_CACHE    "timeout %ds ipmitool sdr -c get "\
                                     PVT_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
                                     PVT_TEMP_ENV_MAC0" "\
@@ -159,9 +158,14 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
+enum cpld_id_e {
+  CPLD_1,
+  CPLD_2,
+  CPLD_3,
+  CPLD_MAX
+};
 
 /* SYS */
-#define CPLD_MAX      3  //Number of MB CPLD
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
 extern const int CPLD_I2C_BUS;
 
@@ -174,6 +178,10 @@ extern const int CPLD_I2C_BUS;
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
+
+/* I2C Get/Set command*/
+#define CMD_I2C_GET "i2cget -f -y %d %d %d"
+#define CMD_I2C_SET "i2cset -f -y %d %d %d %d"
 
 enum sensor
 {
@@ -356,12 +364,12 @@ int bmc_fru_read(int local_id, bmc_fru_t *data);
 void check_and_do_i2c_mux_reset(int port);
 
 uint8_t ufi_shift(uint8_t mask);
-
 uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
-
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
-
 int ufi_get_board_version(board_t *board);
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val);
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val);
+int ufi_get_cpu_rev(int *rev_sku, int *rev_hw, int *rev_build);
 
 #endif  /* __PLATFORM_LIB_H__ */
 
