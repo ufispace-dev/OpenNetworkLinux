@@ -233,8 +233,8 @@ static struct i2c_driver emerson700_pmbus_driver = {
 
 module_i2c_driver(emerson700_pmbus_driver);
 
+#endif /* #if LINUX_VERSION_CODE < KERNEL_VERSION(5,4,0) */
+
 MODULE_AUTHOR("Audi Hsu	");
 MODULE_DESCRIPTION("Emerson 700 PMBus driver");
 MODULE_LICENSE("GPL");
-
-#endif /* #if LINUX_VERSION_CODE < KERNEL_VERSION(5,4,0) */
