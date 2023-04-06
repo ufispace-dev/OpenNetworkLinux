@@ -79,6 +79,8 @@
 #define THERMAL_NORMAL_DEFAULT      72000
 #define THERMAL_NORMAL_FAN_PERC     50
 
+#define POID_0                      0
+
 /* I2C bus */
 #define I2C_BUS_0               0
 #define I2C_BUS_1               1
