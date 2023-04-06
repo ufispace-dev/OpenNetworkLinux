@@ -28,88 +28,30 @@
 #include <onlplib/i2c.h>
 #include "platform_lib.h"
 
+#define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
+#define FAN_CAPS   ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
+#define CHASSIS_INFO(oid, des)                  \
+    {                                           \
+        {oid, des, POID_0},                     \
+        FAN_STATUS,                             \
+        FAN_CAPS,                               \
+        0,                                      \
+        0,                                      \
+        ONLP_FAN_MODE_INVALID,                  \
+    }
+
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
-    {
-        { FAN_OID_FAN1, "FANTRAY 1-A", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN2, "FANTRAY 1-B", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN3, "FANTRAY 2-A", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN4, "FANTRAY 2-B", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN5, "FANTRAY 3-A", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN6, "FANTRAY 3-B", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN7, "FANTRAY 4-A", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_FAN8, "FANTRAY 4-B", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_PSU_FAN1, "PSU-1 FAN", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    },
-    {
-        { FAN_OID_PSU_FAN2, "PSU-2 FAN", 0 },
-        ONLP_FAN_STATUS_PRESENT,
-        ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
-        0,
-        0,
-        ONLP_FAN_MODE_INVALID,
-    }
+    CHASSIS_INFO(FAN_OID_FAN1    , "FANTRAY 1-A"),
+    CHASSIS_INFO(FAN_OID_FAN2    , "FANTRAY 1-B"),
+    CHASSIS_INFO(FAN_OID_FAN3    , "FANTRAY 2-A"),
+    CHASSIS_INFO(FAN_OID_FAN4    , "FANTRAY 2-B"),
+    CHASSIS_INFO(FAN_OID_FAN5    , "FANTRAY 3-A"),
+    CHASSIS_INFO(FAN_OID_FAN6    , "FANTRAY 3-B"),
+    CHASSIS_INFO(FAN_OID_FAN7    , "FANTRAY 4-A"),
+    CHASSIS_INFO(FAN_OID_FAN8    , "FANTRAY 4-B"),
+    CHASSIS_INFO(FAN_OID_PSU_FAN1, "PSU-1 FAN"),
+    CHASSIS_INFO(FAN_OID_PSU_FAN2, "PSU-2 FAN"),
 };
 
 /*
