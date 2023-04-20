@@ -28,7 +28,7 @@
 /* This is definitions for x86-64-ufispace-s9110-32x*/
 /* OID map*/
 /*
- * [01] CHASSIS
+ * [01] CHASSIS - Beta and before
  *            |----[01]ONLP_THERMAL_CPU_PKG
  *            |----[02]ONLP_THERMAL_MAC
  *            |----[03]ONLP_THERMAL_MAC_HWM
@@ -56,9 +56,37 @@
  *            |----[06] ONLP_FAN_2_R
  *            |----[07] ONLP_FAN_3_F
  *            |----[08] ONLP_FAN_3_R
+ * 
+ * [01] CHASSIS - after Beta
+ *            |----[01]ONLP_THERMAL_CPU_PKG
+ *            |----[02]ONLP_THERMAL_MAC
+ *            |----[03]ONLP_THERMAL_MAC_HWM
+ *            |----[04]ONLP_THERMAL_ENV_MACCASE
+ *            |----[05]ONLP_THERMAL_ENV_SSDCASE
+ *            |----[06]ONLP_THERMAL_ENV_PSUCASE
+ *            |----[07]ONLP_THERMAL_ENV_BMC
+ *            |
+ *            |----[01] ONLP_LED_SYS_SYS
+ *            |----[02] ONLP_LED_SYS_FAN
+ *            |----[03] ONLP_LED_SYS_PSU_0
+ *            |----[04] ONLP_LED_SYS_PSU_1
+ *            |----[05] ONLP_LED_SYS_ID
+ *            |
+ *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
+ *                               |----[09] ONLP_PSU_0_FAN
+ *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU_1
+ *                               |----[10] ONLP_PSU_1_FAN
+ *            |
+ *            |----[01] ONLP_FAN_0_F
+ *            |----[02] ONLP_FAN_0_R
+ *            |----[03] ONLP_FAN_1_F
+ *            |----[04] ONLP_FAN_1_R
+ *            |----[05] ONLP_FAN_2_F
+ *            |----[06] ONLP_FAN_2_R
+ * 
  */
 
-static onlp_oid_t __onlp_oid_info[] = {
+static onlp_oid_t __onlp_oid_beta_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HWM),
@@ -84,6 +112,32 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_FAN_ID_CREATE(ONLP_FAN_2_R),
     ONLP_FAN_ID_CREATE(ONLP_FAN_3_F),
     ONLP_FAN_ID_CREATE(ONLP_FAN_3_R),
+};
+
+static onlp_oid_t __onlp_oid_info[] = {
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HWM),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MACCASE),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_SSDCASE),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_PSUCASE),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_BMC),
+
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_0),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_1),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS_ID),
+
+    ONLP_PSU_ID_CREATE(ONLP_PSU_0),
+    ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0_F),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0_R),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1_F),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1_R),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_2_F),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_2_R),
 };
 
 #define SYS_EEPROM_PATH    "/sys/bus/i2c/devices/1-0057/eeprom"
@@ -274,7 +328,16 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     memset(table, 0, max*sizeof(onlp_oid_t));
-    memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
+
+    board_t board = {0};
+    ONLP_TRY(get_board_version(&board));
+    if(board.hw_rev <= BRD_BETA) {
+        memset(table, 0, max*sizeof(onlp_oid_t));
+        memcpy(table, __onlp_oid_beta_info, sizeof(__onlp_oid_beta_info));
+    } else {
+        memset(table, 0, max*sizeof(onlp_oid_t));
+        memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
+    }
 
     return ONLP_STATUS_OK;
 }

@@ -452,28 +452,28 @@ int psu_eeprom_get(onlp_psu_info_t* info, int id)
         i = 11;
 
         /* Manufacturer Name */
-        data_len = (data[i]&0x0f);
+        data_len = (data[i]&0x3f);
         i++;
         i += data_len;
 
         /* Product Name */
-        data_len = (data[i]&0x0f);
+        data_len = (data[i]&0x3f);
         i++;
         memcpy(info->model, (char *) &(data[i]), data_len);
         i += data_len;
 
         /* Product part,model number */
-        data_len = (data[i]&0x0f);
+        data_len = (data[i]&0x3f);
         i++;
         i += data_len;
 
         /* Product Version */
-        data_len = (data[i]&0x0f);
+        data_len = (data[i]&0x3f);
         i++;
         i += data_len;
 
         /* Product Serial Number */
-        data_len = (data[i]&0x0f);
+        data_len = (data[i]&0x3f);
         i++;
         memcpy(info->serial, (char *) &(data[i]), data_len);
     } else {

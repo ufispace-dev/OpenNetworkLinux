@@ -674,7 +674,7 @@ int vread_file_hex(int* value, const char* fmt, va_list vargs)
 void check_and_do_i2c_mux_reset(int port)
 {
     // only support beta and later
-    if(get_hw_rev_id() > 1) {
+    if(get_hw_rev_id() >= BRD_BETA) {
         char cmd_buf[256] = {0};
         int ret = 0;
 

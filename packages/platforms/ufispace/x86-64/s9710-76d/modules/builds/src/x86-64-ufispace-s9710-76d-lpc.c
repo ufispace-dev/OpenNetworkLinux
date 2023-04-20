@@ -29,12 +29,12 @@
 #include <linux/gpio.h>
 
 #define BSP_LOG_R(fmt, args...) \
-    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
 #define BSP_LOG_W(fmt, args...) \
-    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
-#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\n", ##args)
 
 #define _SENSOR_DEVICE_ATTR_RO(_name, _func, _index)     \
     SENSOR_DEVICE_ATTR(_name, S_IRUGO, read_##_func, NULL, _index)
@@ -71,6 +71,7 @@
 #define REG_CPU_STATUS_1                  (REG_BASE_CPU + 0x02)
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
+#define REG_CPU_CTRL_V2                   (REG_BASE_CPU + 0x0B)
 #define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
@@ -96,6 +97,7 @@
 #define MASK_ALL                          (0xFF)
 #define MASK_CPLD_MAJOR_VER               (0b11000000)
 #define MASK_CPLD_MINOR_VER               (0b00111111)
+#define MASK_HOST_TO_MB_I2C_RST           (0b00000001)
 #define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
@@ -105,6 +107,7 @@ enum lpc_sysfs_attributes {
     ATT_CPU_CPLD_VERSION_H,
     ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_BIOS_BOOT_CFG,
+    ATT_CPU_HOST_TO_MB_I2C_RST,
     ATT_CPU_CPLD_BUILD,
 
     ATT_CPU_CPLD_MAJOR_VER,
@@ -451,6 +454,10 @@ static ssize_t read_lpc_callback(struct device *dev,
             reg = REG_CPU_CTRL_1;
             mask = 0x80;
             break;
+        case ATT_CPU_HOST_TO_MB_I2C_RST:
+            reg = REG_CPU_CTRL_V2;
+            mask = MASK_HOST_TO_MB_I2C_RST;
+            break;
         case ATT_CPU_CPLD_BUILD:
             reg = REG_CPU_CPLD_BUILD;
             break;
@@ -551,6 +558,10 @@ static ssize_t write_lpc_callback(struct device *dev,
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
+        case ATT_CPU_HOST_TO_MB_I2C_RST:
+            reg = REG_CPU_CTRL_V2;
+            mask = MASK_HOST_TO_MB_I2C_RST;
+            break;
         //Thermal
         case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
             reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
@@ -569,6 +580,7 @@ static ssize_t write_mux_reset(struct device *dev,
     u8 val = 0;
     u8 mux_reset_reg_val = 0;
     u8 misc_reset_reg_val = 0;
+    u8 host_to_mb_i2c_reset_reg_val = 0;
     static int mux_reset_flag = 0;
 
     if (kstrtou8(buf, 0, &val) < 0)
@@ -590,14 +602,23 @@ static ssize_t write_mux_reset(struct device *dev,
             _outb((misc_reset_reg_val & 0b11011111), REG_MB_MISC_RESET);
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MISC_RESET, misc_reset_reg_val & 0b11011111);
 
+            //reset top level mux on MB (0x71-0x73)
+            host_to_mb_i2c_reset_reg_val = inb(REG_CPU_CTRL_V2);
+            _outb((host_to_mb_i2c_reset_reg_val & ~MASK_HOST_TO_MB_I2C_RST), REG_CPU_CTRL_V2);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_V2, host_to_mb_i2c_reset_reg_val & ~MASK_HOST_TO_MB_I2C_RST);
+
             //unset mux on NIF ports
             _outb((mux_reset_reg_val | 0b00011111), REG_MB_MUX_RESET);
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val | 0b00011111);
 
             //unset mux on top board (FAB ports)
-            outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
-            mdelay(500);
+            _outb((misc_reset_reg_val | 0b00100000), REG_MB_MISC_RESET);
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x",REG_MB_MISC_RESET, misc_reset_reg_val | 0b00100000);
+
+            //unset top level mux on MB (0x71-0x73)
+            outb((host_to_mb_i2c_reset_reg_val | MASK_HOST_TO_MB_I2C_RST), REG_CPU_CTRL_V2);
+            mdelay(500);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x",REG_CPU_CTRL_V2, host_to_mb_i2c_reset_reg_val | MASK_HOST_TO_MB_I2C_RST);
 
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
@@ -701,11 +722,12 @@ static ssize_t write_bsp_pr_callback(struct device *dev,
 }
 
 //SENSOR_DEVICE_ATTR - CPU
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version,   lpc_callback, ATT_CPU_CPLD_VERSION);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h, cpu_cpld_version_h, ATT_CPU_CPLD_VERSION_H);
-static _SENSOR_DEVICE_ATTR_RO(boot_rom,           lpc_callback, ATT_CPU_BIOS_BOOT_ROM);
-static _SENSOR_DEVICE_ATTR_RO(boot_cfg,           lpc_callback, ATT_CPU_BIOS_BOOT_CFG);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build,     lpc_callback, ATT_CPU_CPLD_BUILD);
+static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version,     lpc_callback, ATT_CPU_CPLD_VERSION);
+static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h,   cpu_cpld_version_h, ATT_CPU_CPLD_VERSION_H);
+static _SENSOR_DEVICE_ATTR_RO(boot_rom,             lpc_callback, ATT_CPU_BIOS_BOOT_ROM);
+static _SENSOR_DEVICE_ATTR_RO(boot_cfg,             lpc_callback, ATT_CPU_BIOS_BOOT_CFG);
+static _SENSOR_DEVICE_ATTR_RW(host_to_mb_i2c_reset, lpc_callback, ATT_CPU_HOST_TO_MB_I2C_RST);
+static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build,       lpc_callback, ATT_CPU_CPLD_BUILD);
 
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_major_ver, lpc_callback, ATT_CPU_CPLD_MAJOR_VER);
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_minor_ver, lpc_callback, ATT_CPU_CPLD_MINOR_VER);
@@ -763,6 +785,7 @@ static _SENSOR_DEVICE_ATTR_RW(temp_op2_3,      lpc_callback, ATT_TEMP_OP2_3);
 static struct attribute *cpu_cpld_attrs[] = {
     _DEVICE_ATTR(cpu_cpld_version),
     _DEVICE_ATTR(cpu_cpld_version_h),
+    _DEVICE_ATTR(host_to_mb_i2c_reset),
     _DEVICE_ATTR(cpu_cpld_build),
     _DEVICE_ATTR(cpu_cpld_major_ver),
     _DEVICE_ATTR(cpu_cpld_minor_ver),

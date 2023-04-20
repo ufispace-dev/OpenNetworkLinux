@@ -89,6 +89,7 @@ static const fan_attr_t fan_attr[] = {
 static int get_fan_local_id(int id, int *local_id)
 {
     int tmp_id;
+    board_t board = {0};
 
     if(local_id == NULL) {
         return ONLP_STATUS_E_PARAM;
@@ -99,23 +100,41 @@ static int get_fan_local_id(int id, int *local_id)
     }
 
     tmp_id = ONLP_OID_ID_GET(id);
-    switch (tmp_id) {
-        case ONLP_FAN_0_F:
-        case ONLP_FAN_0_R:
-        case ONLP_FAN_1_F:
-        case ONLP_FAN_1_R:
-        case ONLP_FAN_2_F:
-        case ONLP_FAN_2_R:
-        case ONLP_FAN_3_F:
-        case ONLP_FAN_3_R:
-        case ONLP_PSU_0_FAN:
-        case ONLP_PSU_1_FAN:
-            *local_id = tmp_id;
-            return ONLP_STATUS_OK;
-        default:
-            return ONLP_STATUS_E_INVALID;
-    }
+    ONLP_TRY(get_board_version(&board));
 
+    if(board.hw_rev <= BRD_BETA) {
+        switch (tmp_id) {
+            case ONLP_FAN_0_F:
+            case ONLP_FAN_0_R:
+            case ONLP_FAN_1_F:
+            case ONLP_FAN_1_R:
+            case ONLP_FAN_2_F:
+            case ONLP_FAN_2_R:
+            case ONLP_FAN_3_F:
+            case ONLP_FAN_3_R:
+            case ONLP_PSU_0_FAN:
+            case ONLP_PSU_1_FAN:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    } else {
+        switch (tmp_id) {
+            case ONLP_FAN_0_F:
+            case ONLP_FAN_0_R:
+            case ONLP_FAN_1_F:
+            case ONLP_FAN_1_R:
+            case ONLP_FAN_2_F:
+            case ONLP_FAN_2_R:
+            case ONLP_PSU_0_FAN:
+            case ONLP_PSU_1_FAN:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    }
     return ONLP_STATUS_E_INVALID;
 }
 

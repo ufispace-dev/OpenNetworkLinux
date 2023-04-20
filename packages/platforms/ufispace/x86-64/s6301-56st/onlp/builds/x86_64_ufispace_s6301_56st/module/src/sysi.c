@@ -28,16 +28,6 @@
 /* EEPROM */
 #define SYS_EEPROM_PATH         SYS_DEV "1-0056/eeprom"
 #define SYS_EEPROM_SIZE         512
-/* SYSFS ATTR */
-#define LPC_MB_SKU_ID_ATTR      "board_sku_id"
-#define LPC_MB_HW_ID_ATTR       "board_hw_id"
-#define LPC_MB_ID_TYPE_ATTR     "board_id_type"
-#define LPC_MB_BUILD_ID_ATTR    "board_build_id"
-#define LPC_MB_DEPH_ID_ATTR     "board_deph_id"
-#define LPC_MB_EXT_ID_ATTR      "board_ext_id"
-#define LPC_MB_CPLD_VER_ATTR    "mb_cpld_1_version_h"
-
-#define SYSFS_BIOS_VER          "/sys/class/dmi/id/bios_version"
 
 /* This is definitions for x86-64-ufispace-s6301-56st */
 /* OID map*/

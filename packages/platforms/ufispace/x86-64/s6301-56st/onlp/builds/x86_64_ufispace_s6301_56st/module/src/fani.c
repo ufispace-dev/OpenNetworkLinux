@@ -65,17 +65,45 @@ onlp_fan_info_t fan_info[] = {
 int sys_fan_info_get(onlp_fan_info_t* info, int local_id)
 {
     int rpm = 0;
-    int hwm_id, sysfs_id;
+    int hwm_id, sysfs_id, gpio_off, fan_dir;
+    int hw_rev_id, gpio_max;
 
     hwm_id = UCD_HWM_ID;
     if( local_id == ONLP_FAN_0) {
         sysfs_id = 1;
+        gpio_off = FAN0_DIR_GPIO_OFF;
     } else {
         sysfs_id = 2;
+        gpio_off = FAN1_DIR_GPIO_OFF;
     }
 
     //get fan rpm
     ONLP_TRY(onlp_file_read_int(&rpm, SYS_HWMON_FMT "fan%d_input", hwm_id, sysfs_id));
+
+
+    // get fan dir
+    hw_rev_id = get_hw_rev_id();
+    if(hw_rev_id <= HW_REV_ALPHA) {
+        goto SKIP_FAN_DIR_DETECT;
+    }
+
+    gpio_max = get_gpio_max();
+    ONLP_TRY(onlp_file_read_int(&fan_dir, SYS_GPIO_FMT, gpio_max - gpio_off));
+    if(fan_dir == FAN_DIR_F2B) {
+        /* F2B */
+        info->status |= ONLP_FAN_STATUS_F2B;
+        info->status &= ~ONLP_FAN_STATUS_B2F;
+    } else {
+        /* B2F */
+        info->status |= ONLP_FAN_STATUS_B2F;
+        info->status &= ~ONLP_FAN_STATUS_F2B;
+    }
+
+    // get fan fru
+    strcpy(info->model, "not supported");
+    strcpy(info->serial, "not supported");
+
+SKIP_FAN_DIR_DETECT:
     info->rpm = rpm;
     info->percentage = (info->rpm*100)/SYS_FAN_RPM_MAX;
     info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;

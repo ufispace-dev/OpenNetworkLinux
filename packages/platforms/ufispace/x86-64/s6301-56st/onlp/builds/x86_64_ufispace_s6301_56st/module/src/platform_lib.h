@@ -85,11 +85,33 @@
 #define PSU_PMBUS_VOUT1             0x20
 #define PSU_PMBUS_VOUT2             0x8B
 #define PSU_PMBUS_IOUT              0x8C
+#define PSU_PMBUS_VIN               0x88
+#define PSU_PMBUS_IIN               0x89
 #define PSU_PMBUS_POUT              0x96
 #define PSU_PMBUS_PIN               0x97
 #define PSU_PMBUS_THERMAL1          0x8D
 #define PSU_PMBUS_ADDR_0            0x58
 #define PSU_PMBUS_ADDR_1            0x59
+
+/* FAN DIR */
+#define FAN0_DIR_GPIO_OFF           51
+#define FAN1_DIR_GPIO_OFF           52
+#define FAN_DIR_B2F                 0
+#define FAN_DIR_F2B                 1
+
+/* SYSFS ATTR */
+#define LPC_MB_SKU_ID_ATTR          "board_sku_id"
+#define LPC_MB_HW_ID_ATTR           "board_hw_id"
+#define LPC_MB_ID_TYPE_ATTR         "board_id_type"
+#define LPC_MB_BUILD_ID_ATTR        "board_build_id"
+#define LPC_MB_DEPH_ID_ATTR         "board_deph_id"
+#define LPC_MB_EXT_ID_ATTR          "board_ext_id"
+#define LPC_MB_CPLD_VER_ATTR        "mb_cpld_1_version_h"
+#define SYSFS_BIOS_VER              "/sys/class/dmi/id/bios_version"
+
+/* VALUES */
+#define MIN_GPIO_MAX                128
+#define HW_REV_ALPHA                1
 
 /* fan_id */
 enum onlp_fan_id {
@@ -133,8 +155,6 @@ enum onlp_thermal_id {
     ONLP_THERMAL_MAX,
 };
 
-
-
 int psu_present_get(int *present, int local_id);
 
 int psu_pwgood_get(int *pw_good, int local_id);
@@ -151,5 +171,8 @@ int mask_shift(int val, int mask);
 
 void check_and_do_i2c_mux_reset(int port);
 
+int get_hw_rev_id();
+
+int get_gpio_max();
 
 #endif  /* __PLATFORM_LIB_H__ */

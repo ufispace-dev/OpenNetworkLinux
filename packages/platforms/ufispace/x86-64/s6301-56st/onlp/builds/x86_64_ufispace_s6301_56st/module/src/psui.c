@@ -126,6 +126,10 @@ int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
         return ONLP_STATUS_E_INVALID;
     }
 
+    // get fan fru
+    strcpy(info->model, "not supported");
+    strcpy(info->serial, "not supported");
+
     /* check psu status */
     ONLP_TRY(psu_present_get(&psu_present, psu_id));
     ONLP_TRY(psu_pwgood_get(&psu_pwgood, psu_id));
@@ -157,41 +161,62 @@ int psu_eeprom_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
 {
     uint8_t data[256];
     int data_len, i;
+    int hw_rev_id;
+    int _rv;
     memset(data, 0, sizeof(data));
 
-    // currently eeprom not available
-    return ONLP_STATUS_OK;
+    // check hw revision
+    hw_rev_id = get_hw_rev_id();
+    if(hw_rev_id <= HW_REV_ALPHA) {
+        strcpy(info->model, "not supported");
+        strcpy(info->serial, "not supported");
+        goto SKIP_EEPROM_PARSER;
+    }
 
-    ONLP_TRY(onlp_file_read(data, sizeof(data), &data_len, SYS_FMT, i2c_bus, i2c_addr, SYS_EEPROM));
+    // read psu eeprom
+    _rv = onlp_file_read(data, sizeof(data), &data_len, SYS_FMT, i2c_bus, i2c_addr, SYS_EEPROM);
+    if(ONLP_FAILURE(_rv)) {
+        strcpy(info->model, "not available");
+        strcpy(info->serial, "not available");
+        goto SKIP_EEPROM_PARSER;
+    }
+
+    // check if dummy content
+    if(data[0] == 0xff) {
+        strcpy(info->model, "not available");
+        strcpy(info->serial, "not available");
+        goto SKIP_EEPROM_PARSER;
+    }
 
     i = 11;
 
     /* Manufacturer Name */
-    data_len = (data[i]&0x0f);
+    data_len = (data[i]&0x3f);
     i++;
     i += data_len;
 
     /* Product Name */
-    data_len = (data[i]&0x0f);
+    data_len = (data[i]&0x3f);
     i++;
     memcpy(info->model, (char *) &(data[i]), data_len);
     i += data_len;
 
     /* Product part,model number */
-    data_len = (data[i]&0x0f);
+    data_len = (data[i]&0x3f);
     i++;
     i += data_len;
 
     /* Product Version */
-    data_len = (data[i]&0x0f);
+    data_len = (data[i]&0x3f);
     i++;
     i += data_len;
 
     /* Product Serial Number */
-    data_len = (data[i]&0x0f);
+    data_len = (data[i]&0x3f);
     i++;
     memcpy(info->serial, (char *) &(data[i]), data_len);
 
+SKIP_EEPROM_PARSER:
     return ONLP_STATUS_OK;
 }
 
@@ -233,6 +258,44 @@ int psu_vout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     return ONLP_STATUS_OK;
 }
 
+int psu_vin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
+{
+    int value;
+    unsigned int y_value = 0;
+    unsigned char n_value = 0;
+    unsigned int temp = 0;
+    char result[32];
+    memset(result, 0, sizeof(result));
+    double dvalue;
+
+    value = onlp_i2c_readw(i2c_bus, i2c_addr, PSU_PMBUS_VIN, ONLP_I2C_F_FORCE);
+    if(value < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    y_value = (value & 0x07FF);
+    if((value & 0x8000)&&(y_value))
+    {
+        n_value = 0xF0 + (((value) >> 11) & 0x0F);
+        n_value = (~n_value) +1;
+        temp = (unsigned int)(1<<n_value);
+        if(temp) {
+            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+        }
+    } else {
+        n_value = (((value) >> 11) & 0x0F);
+        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+    }
+
+    dvalue = atof((const char *)result);
+    if(dvalue > 0.0) {
+        info->caps |= ONLP_PSU_CAPS_VIN;
+        info->mvin = (int)(dvalue * 1000);
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int psu_iout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
 {
     int value;
@@ -266,6 +329,44 @@ int psu_iout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     if(dvalue > 0.0) {
         info->caps |= ONLP_PSU_CAPS_IOUT;
         info->miout = (int)(dvalue * 1000);
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+int psu_iin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
+{
+    int value;
+    unsigned int y_value = 0;
+    unsigned char n_value = 0;
+    unsigned int temp = 0;
+    char result[32];
+    memset(result, 0, sizeof(result));
+    double dvalue;
+
+    value = onlp_i2c_readw(i2c_bus, i2c_addr, PSU_PMBUS_IIN, ONLP_I2C_F_FORCE);
+    if(value < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    y_value = (value & 0x07FF);
+    if((value & 0x8000)&&(y_value))
+    {
+        n_value = 0xF0 + (((value) >> 11) & 0x0F);
+        n_value = (~n_value) +1;
+        temp = (unsigned int)(1<<n_value);
+        if(temp) {
+            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+        }
+    } else {
+        n_value = (((value) >> 11) & 0x0F);
+        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+    }
+
+    dvalue = atof((const char *)result);
+    if(dvalue > 0.0) {
+        info->caps |= ONLP_PSU_CAPS_IIN;
+        info->miin = (int)(dvalue * 1000);
     }
 
     return ONLP_STATUS_OK;
@@ -377,6 +478,9 @@ int psu_status_info_get(int local_id, onlp_psu_info_t *info)
     /* Get psu iout status */
     ONLP_TRY(psu_iout_get(info, i2c_bus, pmbus_i2c_addr));
 
+    /* Get psu iin status */
+    ONLP_TRY(psu_iin_get(info, i2c_bus, pmbus_i2c_addr));
+
     /* Get psu pout status */
     ONLP_TRY(psu_pout_get(info, i2c_bus, pmbus_i2c_addr));
 
@@ -385,6 +489,9 @@ int psu_status_info_get(int local_id, onlp_psu_info_t *info)
 
     /* Get psu vout status */
     ONLP_TRY(psu_vout_get(info, i2c_bus, pmbus_i2c_addr));
+
+    /* Get psu vin status */
+    ONLP_TRY(psu_vin_get(info, i2c_bus, pmbus_i2c_addr));
 
     return ONLP_STATUS_OK;
 }

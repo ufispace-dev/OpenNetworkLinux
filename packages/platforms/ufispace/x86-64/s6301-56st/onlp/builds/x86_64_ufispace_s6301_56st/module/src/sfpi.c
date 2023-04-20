@@ -32,8 +32,6 @@
 #define VALIDATE_PORT(p) { if ((p < SFP_START_NUM) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
-#define MIN_GPIO_MAX   128
-
 enum port_status_type_e {
     PST_ABS = 0,
     PST_RXLOS,
@@ -61,26 +59,11 @@ static const port_attr_t port_attr[] = {
     [7] ={15,   39,     47,     23,     17},
 };
 
-static int gpio_max = 0;
-
-static int gpio_max_init() {
-
-    ONLP_TRY(onlp_file_read_int(&gpio_max, GPIO_MAX_SYSFS));
-
-    if(gpio_max < MIN_GPIO_MAX) {
-      AIM_LOG_ERROR("GPIO_BASE %d is not enough for init, please check kernel config\n", gpio_max);
-      return ONLP_STATUS_E_INTERNAL;
-    }
-
-    return ONLP_STATUS_OK;
-}
-
 static int port_status_gpio_get(int port, int type, int* gpio_num) {
     int port_index, offset;
+    int gpio_max;
 
-    if(gpio_max == 0) {
-        ONLP_TRY(gpio_max_init());
-    }
+    gpio_max = get_gpio_max();
 
     port_index = port - SFP_START_NUM;
     switch(type) {
@@ -115,7 +98,6 @@ static int port_eeprom_bus_get(int port) {
  */
 int onlp_sfpi_init(void)
 {
-    ONLP_TRY(gpio_max_init());
     return ONLP_STATUS_OK;
 }
 

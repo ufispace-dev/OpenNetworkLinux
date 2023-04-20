@@ -294,6 +294,13 @@ typedef enum bmc_data_type_e {
     BMC_DATA_FLOAT,
 } bmc_data_te_t;
 
+typedef enum brd_rev_id_e {
+    BRD_PROTO,
+    BRD_ALPHA,
+    BRD_BETA,
+    BRD_PVT,
+} brd_rev_id_t;
+
 typedef struct bmc_info_s
 {
     char name[20];

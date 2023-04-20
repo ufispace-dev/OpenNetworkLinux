@@ -23,6 +23,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="48x1 + 8x10"
     LEVEL_INFO=1
     LEVEL_ERR=2
+    HW_REV_ALPHA=1
 
     bus_i801=0
     bus_ismt=1
@@ -30,6 +31,16 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
     def check_bmc_enable(self):
         return 0
+
+    def get_hw_rev_id(self):
+        # get hardware revision
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56st_lpc/mb_cpld/board_hw_id"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="0"
+        hw_rev_id = int(output, 10)
+        return hw_rev_id
 
     def check_i2c_status(self):
         sysfs_mux_reset = "{}/mb_cpld/mux_reset".format(self.lpc_sysfs_path)
@@ -87,6 +98,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         os.system("modprobe gpio_pca953x")
         os.system("modprobe i2c_mux_pca954x")
         os.system("modprobe coretemp")
+        os.system("modprobe eeprom")
 
         #CPLD
         self.insmod("x86-64-ufispace-s6301-56st-lpc")
@@ -97,12 +109,14 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         bmc_enable = self.check_bmc_enable()
         msg("bmc enable : %r\n" % (True if bmc_enable else False))
 
+        # check i2c bus status
+        hw_rev_id = self.get_hw_rev_id()
+
         # record the result for onlp
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         # init i2c muxs
         self.bsp_pr("Init i2c MUXs");
-
 
         i2c_muxs = [
             ('pca9546', 0x72, self.bus_ismt),    #9546_2
@@ -131,11 +145,11 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         self.bsp_pr("Init gpio");
-        self.init_gpio()
+        self.init_gpio(hw_rev_id)
 
         # init HWM/Temp
         self.bsp_pr("Init HWMON");
-        self.init_hwmon()
+        self.init_hwmon(hw_rev_id)
 
         # reset port led
         os.system("echo 0 > {}/mb_cpld/port_led_clear".format(self.lpc_sysfs_path))
@@ -145,17 +159,24 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Init done");
         return True
 
-    def init_gpio(self):
+    def init_gpio(self, hw_rev_id):
 
         # init GPIO sysfs
-        self.new_i2c_devices(
-            [
+        if hw_rev_id > self.HW_REV_ALPHA:
+            gpio_exp = [
+                ('pca9535', 0x20, 6), #9535_MOD_ABS_0_7
+                ('pca9535', 0x21, 7), #9535_RS_TXDIS_0_7
+                ('pca9535', 0x22, 8), #9535_TXFLT_RXLOS_0_7
+                ('pca9554', 0x21, 3), #9554_FAN_DIR
+            ]
+        else:
+            gpio_exp = [
                 ('pca9535', 0x20, 6), #9535_MOD_ABS_0_7
                 ('pca9535', 0x21, 7), #9535_RS_TXDIS_0_7
                 ('pca9535', 0x22, 8), #9535_TXFLT_RXLOS_0_7
             ]
-        )
 
+        self.new_i2c_devices(gpio_exp)
 
         # get gpio max
         cmd = "cat {}/bsp/bsp_gpio_max".format(self.lpc_sysfs_path)
@@ -187,6 +208,14 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         for i in range(index_start, index_end):
             os.system("echo %d > /sys/class/gpio/export" % i)
 
+        if hw_rev_id > self.HW_REV_ALPHA:
+            # FAN_DIR
+            gpios_num = 8
+            index_end = index_start
+            index_start = index_end - gpios_num
+            for i in range(index_start, index_end):
+                os.system("echo %d > /sys/class/gpio/export" % i)
+
     def init_eeprom(self):
         port = 48
 
@@ -203,17 +232,25 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         self.new_i2c_device('eeprom', 0x50, self.bus_ismt+1)
         self.new_i2c_device('eeprom', 0x51, self.bus_ismt+1)
 
-    def init_hwmon(self):
+    def init_hwmon(self, hw_rev_id):
 
         os.system("modprobe ucd9000")
         os.system("modprobe lm75")
 
         # init hwmon/tmp
-        self.new_i2c_devices(
-            [
+        if hw_rev_id > self.HW_REV_ALPHA:
+            hwms = [
+                ('tmp75', 0x49, 3),    # TMP75 Thermal Sensor
+                ('tmp75', 0x4A, 3),    # TMP75 Thermal Sensor
+                ('ucd90124', 0x34, 5), # UCD90124 HWMON
+            ]
+        else:
+            hwms = [
                 ('tmp75', 0x49, 3),    # TMP75 Thermal Sensor
                 ('tmp75', 0x4A, 3),    # TMP75 Thermal Sensor
                 ('ucd90124', 0x34, 1), # UCD90124 HWMON
             ]
-        )
+
+
+        self.new_i2c_devices(hwms)
 

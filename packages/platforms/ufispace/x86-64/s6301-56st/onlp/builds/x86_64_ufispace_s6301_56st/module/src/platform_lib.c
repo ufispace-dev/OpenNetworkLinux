@@ -120,3 +120,41 @@ void check_and_do_i2c_mux_reset(int port)
     }
 }
 
+/**
+ * @brief Get hw re version
+ * @param board [out] hw rev id
+ */
+int get_hw_rev_id()
+{
+    int hw_rev_id;
+
+    //Get HW Version
+    if(onlp_file_read_int(&hw_rev_id, LPC_MB_CPLD_PATH "/" LPC_MB_HW_ID_ATTR) != ONLP_STATUS_OK) {
+        hw_rev_id = 0;
+    }
+
+    return hw_rev_id;
+}
+
+/**
+ * @brief init gpio max value
+ * @param board [out] gpio max value
+ */
+int get_gpio_max() {
+
+    int gpio_max;
+
+    //Get HW Version
+    if(onlp_file_read_int(&gpio_max, GPIO_MAX_SYSFS) != ONLP_STATUS_OK) {
+        gpio_max = 512;
+    }
+
+    if(gpio_max < MIN_GPIO_MAX) {
+      gpio_max = 512;
+      AIM_LOG_ERROR("GPIO_BASE %d is not enough for init, please check kernel config\n", gpio_max);
+    }
+
+    return gpio_max;
+}
+
+
