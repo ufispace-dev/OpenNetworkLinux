@@ -316,6 +316,16 @@ class OnlRfsBuilder(object):
         self.kwargs = kwargs
         self.arch = arch
         self.kwargs['ARCH'] = arch
+
+        # debian 9/stretch moved to archive.debian.org
+        if arch == 'amd64':
+            cmd = ('lsb_release', '-c', '-s',)
+            codename = subprocess.check_output(cmd,
+                                               universal_newlines=True).strip()
+            if codename == 'stretch':
+                self.DEFAULTS['DEBIAN_MIRROR'] = 'archive.debian.org/debian/'
+
+
         self.kwargs.update(self.DEFAULTS)
         self.__load(config)
         self.__validate()
