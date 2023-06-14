@@ -303,6 +303,16 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
             led_blink=0;
             led_onoff=1;
             break;
+        case ONLP_LED_MODE_YELLOW:
+            led_color=0;
+            led_blink=0;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_YELLOW_BLINKING:
+            led_color=0;
+            led_blink=1;
+            led_onoff=1;
+            break;
         case ONLP_LED_MODE_GREEN_BLINKING:
         case ONLP_LED_MODE_BLUE_BLINKING:
             led_color=1;

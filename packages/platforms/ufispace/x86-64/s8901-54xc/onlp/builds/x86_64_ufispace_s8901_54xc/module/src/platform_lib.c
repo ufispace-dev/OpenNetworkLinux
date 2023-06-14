@@ -449,7 +449,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         while(1) {
             char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
             char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+            if(fscanf(fp ,"%[^:]:%[^\n]\n", key, val) != 2) {
                 break;
             }
 

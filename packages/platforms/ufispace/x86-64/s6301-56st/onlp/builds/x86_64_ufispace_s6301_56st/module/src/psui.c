@@ -62,6 +62,77 @@ static onlp_psu_info_t psu_info[] =
     PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1),
 };
 
+static psu_support_info_t psu_support_list[] =
+{
+    {"ASPOWER", "U1A-K10150-DRB-13", ONLP_PSU_TYPE_AC, ONLP_FAN_STATUS_F2B},
+    {"ASPOWER", "U1A-K0150-B-13", ONLP_PSU_TYPE_AC, ONLP_FAN_STATUS_B2F},
+    {"ASPOWER", "U1D-K0150-A-13", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_F2B},
+    {"ASPOWER", "U1D-K0150-B-13", ONLP_PSU_TYPE_DC48, ONLP_FAN_STATUS_B2F},
+};
+
+/**
+ * @brief get psu type
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
+ * @param fru: psu fru info. we will use the fru informations to get psu type
+ */
+int get_psu_type(int *psu_type, psu_fru_t *fru)
+{
+    int i, max;
+
+    *psu_type = ONLP_PSU_TYPE_INVALID;
+
+    if(psu_type == NULL || fru == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if(!fru->ready) {
+        return ONLP_STATUS_OK;
+    }
+
+
+    max = sizeof(psu_support_list)/sizeof(*psu_support_list);
+    for (i = 0; i < max; ++i) {
+        if ((strncmp(fru->vendor, psu_support_list[i].vendor, ONLP_CONFIG_INFO_STR_MAX)==0) &&
+            (strncmp(fru->part_num, psu_support_list[i].part_num, ONLP_CONFIG_INFO_STR_MAX)==0)) {
+            *psu_type = psu_support_list[i].type;
+            break;
+        }
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief get psu fan direction
+ * @param[out] fan_dir: psu fan direction(ONLP_FAN_STATUS_F2B, ONLP_FAN_STATUS_B2F)
+ * @param fru: psu fru info. we will use the fru informations to get psu type
+ */
+int get_psu_fan_dir(int *fan_dir, psu_fru_t *fru)
+{
+    int i, max;
+
+    if(fan_dir == NULL || fru == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    *fan_dir = ONLP_FAN_STATUS_F2B;
+
+    if(!fru->ready) {
+        return ONLP_STATUS_OK;
+    }
+
+    max = sizeof(psu_support_list)/sizeof(*psu_support_list);
+    for (i = 0; i < max; ++i) {
+        if ((strncmp(fru->vendor, psu_support_list[i].vendor, ONLP_CONFIG_INFO_STR_MAX)==0) &&
+            (strncmp(fru->part_num, psu_support_list[i].part_num, ONLP_CONFIG_INFO_STR_MAX)==0)) {
+            *fan_dir = psu_support_list[i].fan_dir;
+            break;
+        }
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int psu_present_get(int *present, int local_id)
 {
     int val, val_mask;
@@ -108,19 +179,99 @@ int psu_pwgood_get(int *pw_good, int local_id)
     return ONLP_STATUS_OK;
 }
 
+int psu_fru_get(psu_fru_t* fru, int i2c_bus, int i2c_addr)
+{
+    uint8_t data[256];
+    int data_len, i;
+    int hw_rev_id;
+    int _rv;
+    memset(data, 0, sizeof(data));
+
+    fru->ready = false;
+
+    // check hw revision
+    hw_rev_id = get_hw_rev_id();
+    if(hw_rev_id <= HW_REV_ALPHA) {
+        strcpy(fru->vendor, "not supported");
+        strcpy(fru->model, "not supported");
+        strcpy(fru->part_num, "not supported");
+        strcpy(fru->serial, "not supported");
+        goto SKIP_EEPROM_PARSER;
+    }
+
+    // read psu eeprom
+    _rv = onlp_file_read(data, sizeof(data), &data_len, SYS_FMT, i2c_bus, i2c_addr, SYS_EEPROM);
+    if(ONLP_FAILURE(_rv)) {
+        strcpy(fru->vendor, "not available");
+        strcpy(fru->model, "not available");
+        strcpy(fru->part_num, "not available");
+        strcpy(fru->serial, "not available");
+        goto SKIP_EEPROM_PARSER;
+    }
+
+    // check if dummy content
+    if(data[0] == 0xff) {
+        strcpy(fru->vendor, "not available");
+        strcpy(fru->model, "not available");
+        strcpy(fru->part_num, "not available");
+        strcpy(fru->serial, "not available");
+        goto SKIP_EEPROM_PARSER;
+    }
+
+    i = 11;
+
+    /* Manufacturer Name */
+    data_len = (data[i]&0x3f);
+    i++;
+    memcpy(fru->vendor, (char *) &(data[i]), data_len);
+    i += data_len;
+
+    /* Product Name */
+    data_len = (data[i]&0x3f);
+    i++;
+    memcpy(fru->model, (char *) &(data[i]), data_len);
+    i += data_len;
+
+    /* Product part,model number */
+    data_len = (data[i]&0x3f);
+    i++;
+    memcpy(fru->part_num, (char *) &(data[i]), data_len);
+    i += data_len;
+
+    /* Product Version */
+    data_len = (data[i]&0x3f);
+    i++;
+    i += data_len;
+
+    /* Product Serial Number */
+    data_len = (data[i]&0x3f);
+    i++;
+    memcpy(fru->serial, (char *) &(data[i]), data_len);
+
+    fru->ready = true;
+
+SKIP_EEPROM_PARSER:
+    return ONLP_STATUS_OK;
+}
+
 int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
 {
     int i2c_bus, i2c_addr, psu_id, psu_present, psu_pwgood;
     unsigned int tmp_fan_rpm, fan_rpm;
     int max_fan_speed = PSU_FAN_RPM_MAX;
+    psu_fru_t fru;
+    int eeprom_i2c_addr, fan_dir = ONLP_FAN_STATUS_F2B;
+    memset(&fru, 0, sizeof(fru));
 
     if(local_id == ONLP_PSU_0_FAN) {
         i2c_bus = PSU_BUS_ID;
         i2c_addr = PSU_PMBUS_ADDR_0;
+        eeprom_i2c_addr = PSU_EEPROM_ADDR_0;
         psu_id = ONLP_PSU_0;
     } else if(local_id == ONLP_PSU_1_FAN) {
         i2c_bus = PSU_BUS_ID;
         i2c_addr = PSU_PMBUS_ADDR_1;
+        eeprom_i2c_addr = PSU_EEPROM_ADDR_1;
         psu_id = ONLP_PSU_1;
     } else {
         return ONLP_STATUS_E_INVALID;
@@ -154,69 +305,21 @@ int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
     info->rpm = (int)fan_rpm;
     info->percentage = (info->rpm*100)/max_fan_speed;
 
-    return ONLP_STATUS_OK;
-}
-
-int psu_eeprom_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
-{
-    uint8_t data[256];
-    int data_len, i;
-    int hw_rev_id;
-    int _rv;
-    memset(data, 0, sizeof(data));
-
-    // check hw revision
-    hw_rev_id = get_hw_rev_id();
-    if(hw_rev_id <= HW_REV_ALPHA) {
-        strcpy(info->model, "not supported");
-        strcpy(info->serial, "not supported");
-        goto SKIP_EEPROM_PARSER;
+    // get fan dir
+    /* Get psu fru from eeprom */
+    ONLP_TRY(psu_fru_get(&fru, i2c_bus, eeprom_i2c_addr));
+    ONLP_TRY(get_psu_fan_dir(&fan_dir, &fru));
+    if(fan_dir == ONLP_FAN_STATUS_B2F) {
+        /* B2F */
+        info->status |= ONLP_FAN_STATUS_B2F;
+        info->status &= ~ONLP_FAN_STATUS_F2B;
+    } else {
+        /* F2B */
+        info->status |= ONLP_FAN_STATUS_F2B;
+        info->status &= ~ONLP_FAN_STATUS_B2F;
     }
 
-    // read psu eeprom
-    _rv = onlp_file_read(data, sizeof(data), &data_len, SYS_FMT, i2c_bus, i2c_addr, SYS_EEPROM);
-    if(ONLP_FAILURE(_rv)) {
-        strcpy(info->model, "not available");
-        strcpy(info->serial, "not available");
-        goto SKIP_EEPROM_PARSER;
-    }
 
-    // check if dummy content
-    if(data[0] == 0xff) {
-        strcpy(info->model, "not available");
-        strcpy(info->serial, "not available");
-        goto SKIP_EEPROM_PARSER;
-    }
-
-    i = 11;
-
-    /* Manufacturer Name */
-    data_len = (data[i]&0x3f);
-    i++;
-    i += data_len;
-
-    /* Product Name */
-    data_len = (data[i]&0x3f);
-    i++;
-    memcpy(info->model, (char *) &(data[i]), data_len);
-    i += data_len;
-
-    /* Product part,model number */
-    data_len = (data[i]&0x3f);
-    i++;
-    i += data_len;
-
-    /* Product Version */
-    data_len = (data[i]&0x3f);
-    i++;
-    i += data_len;
-
-    /* Product Serial Number */
-    data_len = (data[i]&0x3f);
-    i++;
-    memcpy(info->serial, (char *) &(data[i]), data_len);
-
-SKIP_EEPROM_PARSER:
     return ONLP_STATUS_OK;
 }
 
@@ -451,6 +554,9 @@ int psu_pin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
 int psu_status_info_get(int local_id, onlp_psu_info_t *info)
 {
     int i2c_bus, pmbus_i2c_addr, eeprom_i2c_addr;
+    psu_fru_t fru;
+    int psu_type;
+    memset(&fru, 0, sizeof(fru));
 
     if(local_id == ONLP_PSU_0) {
         i2c_bus = PSU_BUS_ID;
@@ -464,8 +570,19 @@ int psu_status_info_get(int local_id, onlp_psu_info_t *info)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    /* Get psu eeprom */
-    ONLP_TRY(psu_eeprom_get(info, i2c_bus, eeprom_i2c_addr));
+    /* Get psu fru from eeprom */
+    ONLP_TRY(psu_fru_get(&fru, i2c_bus, eeprom_i2c_addr));
+    strcpy(info->model, fru.part_num);
+    strcpy(info->serial, fru.serial);
+    /* Get PSU type */
+    ONLP_TRY(get_psu_type(&psu_type, &fru));
+    if(psu_type == ONLP_PSU_TYPE_AC) {
+        info->caps |= ONLP_PSU_CAPS_AC;
+        info->caps &= ~ONLP_PSU_CAPS_DC48;
+    } else if(psu_type == ONLP_PSU_TYPE_DC48){
+        info->caps &= ~ONLP_PSU_CAPS_AC;
+        info->caps |= ONLP_PSU_CAPS_DC48;
+    }
 
     if((info->status & ONLP_PSU_STATUS_UNPLUGGED)) {
         return ONLP_STATUS_OK;

@@ -28,21 +28,35 @@
 #define PSU_STATUS_PWR_FAIL    0
 #define PSU_STATUS_PWR_GD      1
 
-#define PSU_INFO(id, desc, fid, tid)            \
-    {                                           \
-        { ONLP_PSU_ID_CREATE(id), desc, POID_0,\
-            {                                   \
-                ONLP_FAN_ID_CREATE(fid),        \
-                ONLP_THERMAL_ID_CREATE(tid),    \
-            }                                   \
-        }                                       \
-    }
-
 static onlp_psu_info_t psu_info[] =
 {
     { }, /* Not used */
-    PSU_INFO(ONLP_PSU_0, "PSU-0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU_0),
-    PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU_1),
+    {
+        .hdr = {
+            .id = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
+            .description = "PSU-0",
+            .poid = POID_0,
+            .coids = {
+                ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
+                ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_0)
+            }
+        },
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+            .description = "PSU-1",
+            .poid = POID_0,
+            .coids = {
+                ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
+                ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_1)
+            }
+        },
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
 };
 
 static psu_support_info_t psu_support_list[] =
@@ -56,6 +70,7 @@ typedef struct
     int cpld_attr;
     int abs;
     int pwrgd;
+    int fru_id;
 } psu_attr_t;
 
 typedef enum cpld_attr_idx_e {
@@ -63,9 +78,9 @@ typedef enum cpld_attr_idx_e {
 } cpld_attr_idx_t;
 
 static const psu_attr_t psu_attr[] = {
-    /*              attr      abs  pwrgd */
-    [ONLP_PSU_0] = {CPLD_PSU, 0   , 4},
-    [ONLP_PSU_1] = {CPLD_PSU, 1   , 5},
+    /*              attr      abs  pwrgd  fru_id */
+    [ONLP_PSU_0] = {CPLD_PSU, 0   , 4   , BMC_FRU_IDX_ONLP_PSU_0},
+    [ONLP_PSU_1] = {CPLD_PSU, 1   , 5   , BMC_FRU_IDX_ONLP_PSU_1},
 };
 
 static int get_psu_sysfs(cpld_attr_idx_t idx, char** str)
@@ -174,7 +189,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 
     if(fru_in == NULL) {
         fru = &fru_tmp;
-        ONLP_TRY(read_bmc_fru(local_id, fru));
+        ONLP_TRY(read_bmc_fru(psu_attr[local_id].fru_id, fru));
     } else {
         fru = fru_in;
     }
@@ -207,7 +222,7 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
     int psu_type = ONLP_PSU_TYPE_AC;
 
     //read fru data
-    ONLP_TRY(read_bmc_fru(local_id, &fru));
+    ONLP_TRY(read_bmc_fru(psu_attr[local_id].fru_id, &fru));
 
     //update FRU model
     memset(info->model, 0, sizeof(info->model));

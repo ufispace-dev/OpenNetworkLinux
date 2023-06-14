@@ -90,7 +90,7 @@ typedef enum cpld_attr_idx_e {
 
 static const led_attr_t led_attr[] = {
 /*  led attribute            action         attr           color blink onoff */
-    [ONLP_LED_SYS_SYS]    = {ACTION_LED_RO, CPLD_LED_SYS  ,4     ,6    ,7},
+    [ONLP_LED_SYS_SYS]    = {ACTION_LED_RW, CPLD_LED_SYS  ,4     ,6    ,7},
     [ONLP_LED_SYS_FAN]    = {ACTION_LED_RO, CPLD_LED_FAN  ,0     ,2    ,3},
     [ONLP_LED_SYS_PSU_0]  = {ACTION_LED_RO, CPLD_LED_PSU  ,0     ,2    ,3},
     [ONLP_LED_SYS_PSU_1]  = {ACTION_LED_RO, CPLD_LED_PSU  ,4     ,6    ,7},

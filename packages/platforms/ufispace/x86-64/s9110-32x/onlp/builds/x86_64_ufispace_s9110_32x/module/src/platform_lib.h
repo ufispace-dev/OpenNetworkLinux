@@ -42,6 +42,9 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
@@ -233,6 +236,18 @@ enum bmc_oem_id {
     BMC_OEM_IDX_PSU_1_FAN_DIR,
 };
 
+/* fru_id */
+enum bmc_fru_id {
+    BMC_FRU_IDX_ONLP_PSU_0,
+    BMC_FRU_IDX_ONLP_PSU_1,
+    BMC_FRU_IDX_FAN_TRAY_0,
+    BMC_FRU_IDX_FAN_TRAY_1,
+    BMC_FRU_IDX_FAN_TRAY_2,
+    BMC_FRU_IDX_FAN_TRAY_3,
+
+    BMC_FRU_IDX_INVALID = -1,
+};
+
 /* fan_id */
 enum onlp_fan_id {
     ONLP_FAN_0_F = 1,
@@ -363,7 +378,7 @@ void init_lock();
 
 int check_bmc_alive(void);
 int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data);
-int read_bmc_fru(int local_id, bmc_fru_t *data);
+int read_bmc_fru(int fru_id, bmc_fru_t *data);
 int read_bmc_oem(int bmc_oem_id, int *data);
 
 void check_and_do_i2c_mux_reset(int port);

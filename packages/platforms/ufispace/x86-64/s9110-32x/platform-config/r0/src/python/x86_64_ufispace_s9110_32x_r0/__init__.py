@@ -62,9 +62,11 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="32x100 + 1x10"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.2'
+    BSP_VERSION='1.0.4'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
+    PATH_SYSTEM_LED="/sys/bus/i2c/devices/2-0030/cpld_system_led_sys"
+    SYSTEM_LED_GREEN=0b10010000
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9110_32x_lpc"
     PATH_LPC_GRP_BSP=PATH_LPC+"/bsp"
     PATH_LPC_GRP_MB_CPLD=PATH_LPC+"/mb_cpld"
@@ -279,6 +281,18 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
 
+    def set_system_led_green(self):
+        if os.path.exists(self.PATH_SYSTEM_LED):
+            with open(self.PATH_SYSTEM_LED, "r+") as f:
+                led_reg = f.read()
+
+                #write green to system led
+                f.write("{}".format(self.SYSTEM_LED_GREEN))
+
+                self.bsp_pr("Current System LED: {} -> 0x{:02x}".format(led_reg, self.SYSTEM_LED_GREEN))
+        else:
+            self.bsp_pr("System LED sysfs not exist")
+
     def baseconfig(self):
 
         # load default kernel driver
@@ -343,6 +357,9 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
 
         # disable bmc watchdog
         self.disable_bmc_watchdog()
+
+        # set system led to green
+        self.set_system_led_green()
 
         self.bsp_pr("Init done")
         return True

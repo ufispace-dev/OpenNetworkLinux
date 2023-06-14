@@ -201,6 +201,8 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         index_start = index_end - gpios_num
         for i in range(index_start, index_end):
             os.system("echo %d > /sys/class/gpio/export" % i)
+            os.system("echo out > /sys/class/gpio/gpio%d/direction" % i)
+            os.system("echo 0 > /sys/class/gpio/gpio%d/value" % i)
 
         # TX_FLT RX_LOS Port 0-7 0x22
         index_end = index_start

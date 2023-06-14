@@ -71,7 +71,7 @@ bmc_info_t bmc_cache[] =
 
 static bmc_fru_t bmc_fru_cache[] =
 {
-    [ONLP_PSU_0] = {
+    [BMC_FRU_IDX_ONLP_PSU_0] = {
         .bmc_fru_id = 1,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_1",
@@ -81,7 +81,7 @@ static bmc_fru_t bmc_fru_cache[] =
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
 
     },
-    [ONLP_PSU_1] = {
+    [BMC_FRU_IDX_ONLP_PSU_1] = {
         .bmc_fru_id = 2,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_2",
@@ -90,6 +90,42 @@ static bmc_fru_t bmc_fru_cache[] =
         .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
     },
+    [BMC_FRU_IDX_FAN_TRAY_0] = {
+        .bmc_fru_id = 3,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_3",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_1] = {
+        .bmc_fru_id = 4,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_4",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_2] = {
+        .bmc_fru_id = 5,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_5",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_3] = {
+        .bmc_fru_id = 6,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_6",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    }
 };
 
 /*
@@ -370,10 +406,10 @@ done:
 
 /**
  * @brief bmc fru read
- * @param local_id The psu local id
+ * @param fru_id The fru id
  * @param data [out] The psu fru information.
  */
-int read_bmc_fru(int local_id, bmc_fru_t *data)
+int read_bmc_fru(int fru_id, bmc_fru_t *data)
 {
     struct timeval new_tv;
     int cache_time = PSU_CACHE_TIME;
@@ -381,11 +417,23 @@ int read_bmc_fru(int local_id, bmc_fru_t *data)
     long file_last_time = 0;
     int rv = ONLP_STATUS_OK;
 
-    if((local_id != ONLP_PSU_0 && local_id != ONLP_PSU_1)  || (data == NULL)) {
+    if((data == NULL)) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    bmc_fru_t *fru = &bmc_fru_cache[local_id];
+    switch(fru_id){
+        case BMC_FRU_IDX_ONLP_PSU_0:
+        case BMC_FRU_IDX_ONLP_PSU_1:
+        case BMC_FRU_IDX_FAN_TRAY_0:
+        case BMC_FRU_IDX_FAN_TRAY_1:
+        case BMC_FRU_IDX_FAN_TRAY_2:
+        case BMC_FRU_IDX_FAN_TRAY_3:
+            break;
+        default:
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    bmc_fru_t *fru = &bmc_fru_cache[fru_id];
 
     ONLP_LOCK();
 
@@ -473,13 +521,23 @@ int read_bmc_fru(int local_id, bmc_fru_t *data)
         fru->init_done = 1;
 
         //Check output is correct
-        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d", local_id);
-            rv = ONLP_STATUS_E_INTERNAL;
-            goto done;
+        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
+                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+
+        if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+
+        if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+
+        if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
         }
     }
 

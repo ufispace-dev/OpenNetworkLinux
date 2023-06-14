@@ -155,6 +155,30 @@ enum onlp_thermal_id {
     ONLP_THERMAL_MAX,
 };
 
+enum onlp_psu_type_e {
+  ONLP_PSU_TYPE_AC,
+  ONLP_PSU_TYPE_DC12,
+  ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+  ONLP_PSU_TYPE_COUNT,
+  ONLP_PSU_TYPE_INVALID = -1
+};
+
+typedef struct psu_support_info_s {
+    char vendor[ONLP_CONFIG_INFO_STR_MAX];
+    char part_num[ONLP_CONFIG_INFO_STR_MAX];
+    int type;
+    int fan_dir;
+} psu_support_info_t;
+
+typedef struct psu_fru_s {
+    bool ready;
+    char vendor[ONLP_CONFIG_INFO_STR_MAX];
+    char model[ONLP_CONFIG_INFO_STR_MAX];
+    char part_num[ONLP_CONFIG_INFO_STR_MAX];
+    char serial[ONLP_CONFIG_INFO_STR_MAX];
+} psu_fru_t;
+
 int psu_present_get(int *present, int local_id);
 
 int psu_pwgood_get(int *pw_good, int local_id);

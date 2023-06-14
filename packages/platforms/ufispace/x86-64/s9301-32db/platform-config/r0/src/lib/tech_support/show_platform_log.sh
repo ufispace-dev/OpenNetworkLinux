@@ -255,7 +255,7 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00001000)))
+    model_id_array=($((2#00010001)))
     model_name_array=("TD4 S9301-32DB")
 
     model_id=`${IOGET} 0xE00`

@@ -32,32 +32,153 @@
 #define PSU_FAN_RPM_MAX_AC      26500
 #define PSU_FAN_RPM_MAX_DC      29000
 
-#define CHASSIS_INFO(id, des)                               \
-    {                                                           \
-        { ONLP_FAN_ID_CREATE(id), des, POID_0},\
-        FAN_STATUS,                                             \
-        FAN_CAPS,                                               \
-        0,                                                      \
-        0,                                                      \
-        ONLP_FAN_MODE_INVALID,                                  \
-    }
-
 /*
  * Get the fan information.
  */
 
 onlp_fan_info_t fan_info[] = {
-    { }, /* Not used */
-    CHASSIS_INFO(ONLP_FAN_0_F  , "Chassis Fan - 0 Front"),
-    CHASSIS_INFO(ONLP_FAN_0_R  , "Chassis Fan - 0 Rear"),
-    CHASSIS_INFO(ONLP_FAN_1_F  , "Chassis Fan - 1 Front"),
-    CHASSIS_INFO(ONLP_FAN_1_R  , "Chassis Fan - 1 Rear"),
-    CHASSIS_INFO(ONLP_FAN_2_F  , "Chassis Fan - 2 Front"),
-    CHASSIS_INFO(ONLP_FAN_2_R  , "Chassis Fan - 2 Rear"),
-    CHASSIS_INFO(ONLP_FAN_3_F  , "Chassis Fan - 3 Front"),
-    CHASSIS_INFO(ONLP_FAN_3_R  , "Chassis Fan - 3 Rear"),
-    CHASSIS_INFO(ONLP_PSU_0_FAN, "PSU-0-Fan"),
-    CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU-1-Fan"),
+    { },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0_F),
+            .description = "Chassis Fan - 0 Front",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = 
+        COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0_R),
+            .description = "Chassis Fan - 0 Rear",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1_F),
+            .description = "Chassis Fan - 1 Front",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1_R),
+            .description = "Chassis Fan - 1 Rear",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2_F),
+            .description = "Chassis Fan - 2 Front",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2_R),
+            .description = "Chassis Fan - 2 Rear",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3_F),
+            .description = "Chassis Fan - 3 Front",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3_R),
+            .description = "Chassis Fan - 3 Rear",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_AVAILABLE,
+        .serial = COMM_STR_NOT_AVAILABLE,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
+            .description = "PSU-0-Fan",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
+    },
+    {
+        .hdr = {
+            .id = ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
+            .description = "PSU-1-Fan",
+            .poid = POID_0,
+        },
+        .status = FAN_STATUS,
+        .caps = FAN_CAPS,
+        .rpm = 0,
+        .percentage = 0,
+        .mode = ONLP_FAN_MODE_INVALID,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
+    },
 };
 
 typedef struct
@@ -65,20 +186,21 @@ typedef struct
     int present;
     int rpm;
     int dir;
+    int fru_id;
 } fan_attr_t;
 
 static const fan_attr_t fan_attr[] = {
-    /*                   present                   rpm                        dir  */
-    [ONLP_FAN_0_F]   = { BMC_ATTR_ID_FAN0_PRSNT_L, BMC_ATTR_ID_FAN0_RPM_F   , BMC_OEM_IDX_FAN_0_F_DIR},
-    [ONLP_FAN_0_R]   = { BMC_ATTR_ID_FAN0_PRSNT_L, BMC_ATTR_ID_FAN0_RPM_R   , BMC_OEM_IDX_FAN_0_R_DIR},
-    [ONLP_FAN_1_F]   = { BMC_ATTR_ID_FAN1_PRSNT_L, BMC_ATTR_ID_FAN1_RPM_F   , BMC_OEM_IDX_FAN_1_F_DIR},
-    [ONLP_FAN_1_R]   = { BMC_ATTR_ID_FAN1_PRSNT_L, BMC_ATTR_ID_FAN1_RPM_R   , BMC_OEM_IDX_FAN_1_R_DIR},
-    [ONLP_FAN_2_F]   = { BMC_ATTR_ID_FAN2_PRSNT_L, BMC_ATTR_ID_FAN2_RPM_F   , BMC_OEM_IDX_FAN_2_F_DIR},
-    [ONLP_FAN_2_R]   = { BMC_ATTR_ID_FAN2_PRSNT_L, BMC_ATTR_ID_FAN2_RPM_R   , BMC_OEM_IDX_FAN_2_R_DIR},
-    [ONLP_FAN_3_F]   = { BMC_ATTR_ID_FAN3_PRSNT_L, BMC_ATTR_ID_FAN3_RPM_F   , BMC_OEM_IDX_FAN_3_F_DIR},
-    [ONLP_FAN_3_R]   = { BMC_ATTR_ID_FAN3_PRSNT_L, BMC_ATTR_ID_FAN3_RPM_R   , BMC_OEM_IDX_FAN_3_R_DIR},
-    [ONLP_PSU_0_FAN] = { BMC_ATTR_ID_INVALID     , BMC_ATTR_ID_PSU0_FAN     , BMC_OEM_IDX_PSU_0_FAN_DIR},
-    [ONLP_PSU_1_FAN] = { BMC_ATTR_ID_INVALID     , BMC_ATTR_ID_PSU1_FAN     , BMC_OEM_IDX_PSU_1_FAN_DIR},
+    /*                   present                   rpm                        dir                         fru_id*/
+    [ONLP_FAN_0_F]   = { BMC_ATTR_ID_FAN0_PRSNT_L, BMC_ATTR_ID_FAN0_RPM_F   , BMC_OEM_IDX_FAN_0_F_DIR  , BMC_FRU_IDX_FAN_TRAY_0},
+    [ONLP_FAN_0_R]   = { BMC_ATTR_ID_FAN0_PRSNT_L, BMC_ATTR_ID_FAN0_RPM_R   , BMC_OEM_IDX_FAN_0_R_DIR  , BMC_FRU_IDX_FAN_TRAY_0},
+    [ONLP_FAN_1_F]   = { BMC_ATTR_ID_FAN1_PRSNT_L, BMC_ATTR_ID_FAN1_RPM_F   , BMC_OEM_IDX_FAN_1_F_DIR  , BMC_FRU_IDX_FAN_TRAY_1},
+    [ONLP_FAN_1_R]   = { BMC_ATTR_ID_FAN1_PRSNT_L, BMC_ATTR_ID_FAN1_RPM_R   , BMC_OEM_IDX_FAN_1_R_DIR  , BMC_FRU_IDX_FAN_TRAY_1},
+    [ONLP_FAN_2_F]   = { BMC_ATTR_ID_FAN2_PRSNT_L, BMC_ATTR_ID_FAN2_RPM_F   , BMC_OEM_IDX_FAN_2_F_DIR  , BMC_FRU_IDX_FAN_TRAY_2},
+    [ONLP_FAN_2_R]   = { BMC_ATTR_ID_FAN2_PRSNT_L, BMC_ATTR_ID_FAN2_RPM_R   , BMC_OEM_IDX_FAN_2_R_DIR  , BMC_FRU_IDX_FAN_TRAY_2},
+    [ONLP_FAN_3_F]   = { BMC_ATTR_ID_FAN3_PRSNT_L, BMC_ATTR_ID_FAN3_RPM_F   , BMC_OEM_IDX_FAN_3_F_DIR  , BMC_FRU_IDX_FAN_TRAY_3},
+    [ONLP_FAN_3_R]   = { BMC_ATTR_ID_FAN3_PRSNT_L, BMC_ATTR_ID_FAN3_RPM_R   , BMC_OEM_IDX_FAN_3_R_DIR  , BMC_FRU_IDX_FAN_TRAY_3},
+    [ONLP_PSU_0_FAN] = { BMC_ATTR_ID_INVALID     , BMC_ATTR_ID_PSU0_FAN     , BMC_OEM_IDX_PSU_0_FAN_DIR, BMC_FRU_IDX_INVALID},
+    [ONLP_PSU_1_FAN] = { BMC_ATTR_ID_INVALID     , BMC_ATTR_ID_PSU1_FAN     , BMC_OEM_IDX_PSU_1_FAN_DIR, BMC_FRU_IDX_INVALID},
 };
 
 /**
@@ -136,6 +258,33 @@ static int get_fan_local_id(int id, int *local_id)
         }
     }
     return ONLP_STATUS_E_INVALID;
+}
+
+/**
+ * @brief Update the information of Model and Serial from FAN EEPROM
+ * @param local_id The FAN Local ID
+ * @param[out] info Receives the FAN information (model and serial).
+ */
+static int update_fani_fru_info(int local_id, onlp_fan_info_t* info)
+{
+    bmc_fru_t fru = {0};
+
+    if(fan_attr[local_id].fru_id == BMC_FRU_IDX_INVALID) {
+        return ONLP_STATUS_OK;
+    }
+
+    //read fru data
+    ONLP_TRY(read_bmc_fru(fan_attr[local_id].fru_id, &fru));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -268,6 +417,9 @@ static int get_bmc_fan_info(int local_id, onlp_fan_info_t* info)
             default:
                 return ONLP_STATUS_E_INVALID;
         }
+
+        /* Get FRU (model/serial) */
+        ONLP_TRY(update_fani_fru_info(local_id, info));
     }
     return ONLP_STATUS_OK;
 }

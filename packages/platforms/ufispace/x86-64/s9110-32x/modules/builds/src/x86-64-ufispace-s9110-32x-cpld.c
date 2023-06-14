@@ -482,7 +482,7 @@ static SENSOR_DEVICE_ATTR_RW(cpld_misc_ctrl_2         , cpld, CPLD_MISC_CTRL_2);
 static SENSOR_DEVICE_ATTR_RO(cpld_mac_temp            , cpld, CPLD_MAC_TEMP);
 
 static SENSOR_DEVICE_ATTR_RO(cpld_system_led_psu      , cpld, CPLD_SYSTEM_LED_PSU);
-static SENSOR_DEVICE_ATTR_RO(cpld_system_led_sys      , cpld, CPLD_SYSTEM_LED_SYS);
+static SENSOR_DEVICE_ATTR_RW(cpld_system_led_sys      , cpld, CPLD_SYSTEM_LED_SYS);
 static SENSOR_DEVICE_ATTR_RO(cpld_system_led_fan      , cpld, CPLD_SYSTEM_LED_FAN);
 static SENSOR_DEVICE_ATTR_RW(cpld_system_led_id       , cpld, CPLD_SYSTEM_LED_ID);
 
