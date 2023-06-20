@@ -33,40 +33,40 @@
 
 bmc_info_t bmc_cache[] =
 {
-    [BMC_ATTR_ID_TEMP_MAC]           = {BMC_ATTR_NAME_TEMP_MAC          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_MAC_HWM]       = {BMC_ATTR_NAME_TEMP_MAC_HWM      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_ENV_MACCASE]   = {BMC_ATTR_NAME_TEMP_ENV_MACCASE  , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_ENV_SSDCASE]   = {BMC_ATTR_NAME_TEMP_ENV_SSDCASE  , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_ENV_PSUCASE]   = {BMC_ATTR_NAME_TEMP_ENV_PSUCASE  , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_ENV_BMC]       = {BMC_ATTR_NAME_TEMP_ENV_BMC      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_TEMP1]         = {BMC_ATTR_NAME_PSU0_TEMP1        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_TEMP1]         = {BMC_ATTR_NAME_PSU1_TEMP1        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN0_RPM_F]         = {BMC_ATTR_NAME_FAN0_RPM_F        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN0_RPM_R]         = {BMC_ATTR_NAME_FAN0_RPM_R        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN1_RPM_F]         = {BMC_ATTR_NAME_FAN1_RPM_F        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN1_RPM_R]         = {BMC_ATTR_NAME_FAN1_RPM_R        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN2_RPM_F]         = {BMC_ATTR_NAME_FAN2_RPM_F        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN2_RPM_R]         = {BMC_ATTR_NAME_FAN2_RPM_R        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN3_RPM_F]         = {BMC_ATTR_NAME_FAN3_RPM_F        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN3_RPM_R]         = {BMC_ATTR_NAME_FAN3_RPM_R        , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_FAN]           = {BMC_ATTR_NAME_PSU0_FAN1         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_FAN]           = {BMC_ATTR_NAME_PSU1_FAN1         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_FAN0_PRSNT_L]       = {BMC_ATTR_NAME_FAN0_PRSNT_L      , BMC_DATA_BOOL , 0},
-    [BMC_ATTR_ID_FAN1_PRSNT_L]       = {BMC_ATTR_NAME_FAN1_PRSNT_L      , BMC_DATA_BOOL , 0},
-    [BMC_ATTR_ID_FAN2_PRSNT_L]       = {BMC_ATTR_NAME_FAN2_PRSNT_L      , BMC_DATA_BOOL , 0},
-    [BMC_ATTR_ID_FAN3_PRSNT_L]       = {BMC_ATTR_NAME_FAN3_PRSNT_L      , BMC_DATA_BOOL , 0},
-    [BMC_ATTR_ID_PSU0_VIN]           = {BMC_ATTR_NAME_PSU0_VIN          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_VOUT]          = {BMC_ATTR_NAME_PSU0_VOUT         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_IIN]           = {BMC_ATTR_NAME_PSU0_IIN          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_IOUT]          = {BMC_ATTR_NAME_PSU0_IOUT         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_STBVOUT]       = {BMC_ATTR_NAME_PSU0_STBVOUT      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU0_STBIOUT]       = {BMC_ATTR_NAME_PSU0_STBIOUT      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_VIN]           = {BMC_ATTR_NAME_PSU1_VIN          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_VOUT]          = {BMC_ATTR_NAME_PSU1_VOUT         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_IIN]           = {BMC_ATTR_NAME_PSU1_IIN          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_IOUT]          = {BMC_ATTR_NAME_PSU1_IOUT         , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_STBVOUT]       = {BMC_ATTR_NAME_PSU1_STBVOUT      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT]       = {BMC_ATTR_NAME_PSU1_STBIOUT      , BMC_DATA_FLOAT, 0}
+    [BMC_ATTR_ID_TEMP_MAC]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_MAC          , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_MAC_HWM]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_MAC_HWM      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_ENV_MACCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_MACCASE  , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_ENV_SSDCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_SSDCASE  , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_ENV_PSUCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_PSUCASE  , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_ENV_BMC]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_BMC      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_TEMP1]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_TEMP1        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_TEMP1]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_TEMP1        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN0_RPM_F]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN0_RPM_F        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN0_RPM_R]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN0_RPM_R        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN1_RPM_F]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN1_RPM_F        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN1_RPM_R]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN1_RPM_R        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN2_RPM_F]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN2_RPM_F        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN2_RPM_R]         = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN2_RPM_R        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN3_RPM_F]         = {HW_PLAT_BETA , BMC_ATTR_NAME_FAN3_RPM_F        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN3_RPM_R]         = {HW_PLAT_BETA , BMC_ATTR_NAME_FAN3_RPM_R        , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_FAN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_FAN1         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_FAN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_FAN1         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_FAN0_PRSNT_L]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN0_PRSNT_L      , BMC_DATA_BOOL , 0},
+    [BMC_ATTR_ID_FAN1_PRSNT_L]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN1_PRSNT_L      , BMC_DATA_BOOL , 0},
+    [BMC_ATTR_ID_FAN2_PRSNT_L]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_FAN2_PRSNT_L      , BMC_DATA_BOOL , 0},
+    [BMC_ATTR_ID_FAN3_PRSNT_L]       = {HW_PLAT_BETA , BMC_ATTR_NAME_FAN3_PRSNT_L      , BMC_DATA_BOOL , 0},
+    [BMC_ATTR_ID_PSU0_VIN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_VIN          , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_VOUT]          = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_VOUT         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_IIN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_IIN          , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_IOUT]          = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_IOUT         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_STBVOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_STBVOUT      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU0_STBIOUT      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_VIN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_VIN          , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_VOUT]          = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_VOUT         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_IIN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_IIN          , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_IOUT]          = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_IOUT         , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_STBVOUT      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_STBIOUT      , BMC_DATA_FLOAT, 0}
 };
 
 static bmc_fru_t bmc_fru_cache[] =
@@ -322,11 +322,24 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
             char bmc_token[1024] = {0};
             int i = 0;
             for(i = BMC_ATTR_ID_START; i <= BMC_ATTR_ID_LAST; i++) {
-                char tmp_str[1024] = {0};
-                int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0? (sizeof(bmc_token) - strlen(bmc_token) - 1):0;
-                snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
-                strncat(bmc_token, tmp_str, copy_size);
+                int plat = 0;
+                if(board.hw_rev == BRD_PROTO)
+                    plat = HW_PLAT_PROTO;
+                else if(board.hw_rev == BRD_ALPHA)
+                    plat = HW_PLAT_ALPHA;
+                else if(board.hw_rev == BRD_BETA)
+                    plat = HW_PLAT_BETA;
+                else if(board.hw_rev == BRD_PVT)
+                    plat = HW_PLAT_PVT;
+                else
+                    plat = HW_PLAT_PVT;
 
+                if(bmc_cache[i].plat & plat) {
+                    char tmp_str[1024] = {0};
+                    int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0? (sizeof(bmc_token) - strlen(bmc_token) - 1):0;
+                    snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
+                    strncat(bmc_token, tmp_str, copy_size);
+                }
             }
 
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, IPMITOOL_CMD_TIMEOUT, bmc_token);

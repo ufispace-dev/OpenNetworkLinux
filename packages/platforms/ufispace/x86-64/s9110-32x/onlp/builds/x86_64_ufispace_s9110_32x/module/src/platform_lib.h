@@ -316,8 +316,18 @@ typedef enum brd_rev_id_e {
     BRD_PVT,
 } brd_rev_id_t;
 
+enum hw_plat
+{
+    HW_PLAT_PROTO     = 0x1,
+    HW_PLAT_ALPHA     = 0x2,
+    HW_PLAT_BETA      = 0x4,
+    HW_PLAT_PVT       = 0x8,
+    HW_PLAT_ALL       = 0xf,
+};
+
 typedef struct bmc_info_s
 {
+    int plat;
     char name[20];
     int data_type;
     float data;
