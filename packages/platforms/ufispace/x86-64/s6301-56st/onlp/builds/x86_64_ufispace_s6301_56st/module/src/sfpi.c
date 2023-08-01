@@ -25,11 +25,11 @@
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
-#define IS_SFP(_port)   (_port >= SFP_START_NUM && _port < PORT_NUM)
+#define IS_SFP(_port)   (_port >= sfp_start_num && _port <= sfp_end_num)
 
 #define EEPROM_ADDR     (0x50)
 
-#define VALIDATE_PORT(p) { if ((p < SFP_START_NUM) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_PORT(p) { if ((p < sfp_start_num) || (p > sfp_end_num)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 enum port_status_type_e {
@@ -59,13 +59,37 @@ static const port_attr_t port_attr[] = {
     [7] ={15,   39,     47,     23,     17},
 };
 
+int sfp_start_num = 0;
+int sfp_end_num = 0;
+
+static void port_index_update() {
+    int ext_id, rv;
+    if(sfp_start_num != 0) {
+        return;
+    }
+
+    // read ext_id to identify port start index
+    rv = file_read_hex(&ext_id, LPC_MB_CPLD_PATH "/" LPC_MB_EXT_ID_ATTR);
+    if(ONLP_FAILURE(rv)) {
+        AIM_LOG_ERROR("read ext_id fail");
+        return;
+    }
+
+    if(ext_id == SKU_NPOE_1BASE) {
+        sfp_start_num = SFP_1BASE_START_NUM;
+    } else {
+        sfp_start_num = SFP_0BASE_START_NUM;
+    }
+    sfp_end_num = sfp_start_num + SFP_PLUS_NUM - 1;
+}
+
 static int port_status_gpio_get(int port, int type, int* gpio_num) {
     int port_index, offset;
     int gpio_max;
 
     gpio_max = get_gpio_max();
 
-    port_index = port - SFP_START_NUM;
+    port_index = port - sfp_start_num;
     switch(type) {
         case PST_ABS:
             offset = port_attr[port_index].abs_gpin;
@@ -89,7 +113,7 @@ static int port_status_gpio_get(int port, int type, int* gpio_num) {
 
 static int port_eeprom_bus_get(int port) {
     int port_index;
-    port_index = port - SFP_START_NUM;;
+    port_index = port - sfp_start_num;;
     return port_attr[port_index].eeprom_bus;
 }
 
@@ -98,6 +122,7 @@ static int port_eeprom_bus_get(int port) {
  */
 int onlp_sfpi_init(void)
 {
+    port_index_update();
     return ONLP_STATUS_OK;
 }
 
@@ -108,7 +133,8 @@ int onlp_sfpi_init(void)
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
-    for(p = SFP_START_NUM; p < PORT_NUM; p++) {
+    port_index_update();
+    for(p = sfp_start_num; p <= sfp_end_num; p++) {
         AIM_BITMAP_SET(bmap, p);
     }
     return ONLP_STATUS_OK;
@@ -125,6 +151,8 @@ int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
     int abs = 0, present = 0;
+
+    port_index_update();
 
     VALIDATE_PORT(port);
 
@@ -152,7 +180,9 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     int p = 0;
     int rc = 0;
 
-    for (p = SFP_START_NUM; p < PORT_NUM; p++) {
+    port_index_update();
+
+    for(p = sfp_start_num; p <= sfp_end_num; p++) {
         rc = onlp_sfpi_is_present(p);
         AIM_BITMAP_MOD(dst, p, rc);
     }
@@ -168,8 +198,10 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
     int i=0, value=0, rc=0;
 
+    port_index_update();
+
     /* Populate bitmap - SFP and SFP+ ports*/
-    for(i = SFP_START_NUM; i < PORT_NUM; i++) {
+    for(i = sfp_start_num; i <= sfp_end_num; i++) {
         if((rc=onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value)) != ONLP_STATUS_OK) {
             return ONLP_STATUS_E_INTERNAL;
         } else {
@@ -188,6 +220,8 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0, bus = 0, rc = 0;
+
+    port_index_update();
 
     VALIDATE_PORT(port);
 
@@ -218,6 +252,8 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
  */
 int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = port_eeprom_bus_get(port);
@@ -238,6 +274,8 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
  */
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = port_eeprom_bus_get(port);
@@ -262,6 +300,8 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
  */
 int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = port_eeprom_bus_get(port);
@@ -282,6 +322,8 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
  */
 int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = port_eeprom_bus_get(port);
@@ -306,6 +348,8 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
  */
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int bus = port_eeprom_bus_get(port);
 
@@ -328,6 +372,8 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
  */
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
     int rc = 0;
     int bus = port_eeprom_bus_get(port);
@@ -354,6 +400,8 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     char eeprom_path[512];
     FILE* fp;
     int bus = 0;
+
+    port_index_update();
 
     //sfp dom is on 0x51 (2nd 256 bytes)
     //qsfp dom is on lower page 0x00
@@ -422,6 +470,8 @@ int onlp_sfpi_post_insert(int port, sff_info_t* info)
  */
 int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
 {
+    port_index_update();
+
     VALIDATE_PORT(port);
 
     //set unsupported as default value
@@ -453,13 +503,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
     int rc, gpio_num;
 
-    VALIDATE_PORT(port);
+    port_index_update();
 
-    //port range check
-    if(port < SFP_START_NUM || port >= PORT_NUM) {
-        AIM_LOG_ERROR("%s() invalid port, port=%d", __func__, port);
-        return ONLP_STATUS_E_UNSUPPORTED;
-    }
+    VALIDATE_PORT(port);
 
     switch(control)
     {
@@ -496,6 +542,8 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     int rc, type;
     int gpio_num = 0;
+
+    port_index_update();
 
     VALIDATE_PORT(port);
 

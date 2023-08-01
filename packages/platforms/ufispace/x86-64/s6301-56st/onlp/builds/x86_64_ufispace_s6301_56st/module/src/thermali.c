@@ -258,15 +258,16 @@ int sysfs_thermal_info_get(onlp_thermal_info_t* info, int local_id)
             break;
         case ONLP_THERMAL_PSUDB:
             hwm_id = UCD_HWM_ID;
-            tmp_id = 1;
+            // temp1 and temp5 is internal ucd90124 thermal by default
+            tmp_id = 2;
             break;
         case ONLP_THERMAL_MAC:
             hwm_id = UCD_HWM_ID;
-            tmp_id = 2;
+            tmp_id = 3;
             break;
         case ONLP_THERMAL_INLET:
             hwm_id = UCD_HWM_ID;
-            tmp_id = 3;
+            tmp_id = 4;
             break;
         default:
             return ONLP_STATUS_E_INVALID;

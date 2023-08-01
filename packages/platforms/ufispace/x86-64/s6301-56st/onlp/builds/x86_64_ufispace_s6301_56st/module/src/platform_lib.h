@@ -70,7 +70,8 @@
 #define RJ45_NUM                    48
 #define SFP_PLUS_NUM                8
 #define PORT_NUM                    (RJ45_NUM + SFP_PLUS_NUM)
-#define SFP_START_NUM               48
+#define SFP_0BASE_START_NUM         48
+#define SFP_1BASE_START_NUM         49
 #define THERMAL_NUM                 8
 #define LED_NUM                     7
 #define FAN_NUM                     2
@@ -153,6 +154,13 @@ enum onlp_thermal_id {
     ONLP_THERMAL_PSU1,
     ONLP_THERMAL_CPU_PKG,
     ONLP_THERMAL_MAX,
+};
+
+/* thermal_id */
+enum sku_subtype_e {
+    SKU_POE = 0,
+    SKU_NPOE_0BASE,
+    SKU_NPOE_1BASE
 };
 
 enum onlp_psu_type_e {
