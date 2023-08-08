@@ -150,7 +150,7 @@ enum cpld_id {
 #define CPLD_SFP_MASK_REG                   0x26
 #define CPLD_SFP_EVT_REG                    0x36
 #define CPLD_SFP_CONFIG_REG                 0x55
-//#define CPLD_MUX_CTRL_REG                 0x5C
+#define CPLD_SFP_MUX_CTRL_REG               0x5C
 #define CPLD_SFP_LED_REG                    0x80
 
 /* CPLD 3 registers */

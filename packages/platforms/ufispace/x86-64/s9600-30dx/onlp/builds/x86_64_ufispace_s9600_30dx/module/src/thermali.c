@@ -186,6 +186,31 @@ static int ufi_bmc_thermal_info_get(int local_id, onlp_thermal_info_t* info)
         return ONLP_STATUS_E_PARAM;
     }
 
+    if (local_id >= ONLP_THERMAL_PSU_0 && local_id <= ONLP_THERMAL_PSU_1) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (local_id) {
+            case ONLP_THERMAL_PSU_0:
+                psu_id = ONLP_PSU_0;
+                break;
+            case ONLP_THERMAL_PSU_1:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(get_psu_present_status(psu_id, &pw_present));
+
+        //update psu thermal presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_THERMAL_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_THERMAL_STATUS_PRESENT ;
+            return ONLP_STATUS_OK;
+        }
+    }
+
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
     info->mcelsius = (int) (data*1000);
 
@@ -242,11 +267,8 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int result = ONLP_STATUS_OK;
     onlp_thermal_info_t info;
-    int local_id;
 
-    ONLP_TRY(get_thermal_local_id(id, &local_id));
-
-    result = onlp_thermali_info_get(local_id, &info);
+    result = onlp_thermali_info_get(id, &info);
     *rv = info.status;
 
     return result;
@@ -274,4 +296,3 @@ int onlp_thermali_ioctl(int id, va_list vargs)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-

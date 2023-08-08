@@ -63,6 +63,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
     LEVEL_INFO=1
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc"
+    SYSFS_DEPH_ID=SYSFS_LPC + "/mb_cpld/board_deph_id"
+    SYSFS_HW_ID=SYSFS_LPC + "/mb_cpld/board_hw_id"
     FS_PLTM_CFG="/lib/platform-config/current/onl"
 
     def check_i2c_status(self):
@@ -124,6 +126,22 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
                 port_name = data["QSFPDD"][port]["port_name"]
                 subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
 
+    def init_sfp_eeprom(self):
+        port = 0
+        data = None
+
+        with open(self.FS_PLTM_CFG + "/port_config.yml", 'r') as yaml_file:
+            data = yaml.safe_load(yaml_file)
+
+        # init SFP EEPROM
+        for bus in range(23, 25):
+            self.new_i2c_device('optoe2', 0x50, bus)
+            # update port_name
+            if data is not None:
+                port = bus + 7
+                port_name = data["SFP"][port]["port_name"]
+                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
 
@@ -161,6 +179,36 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         self.bsp_pr("GPIO MAX: {}".format(gpio_max));
 
         return gpio_max
+
+    def is_pvt_or_later(self):
+        #read deph_id
+        if os.path.exists(self.SYSFS_DEPH_ID):
+            with open(self.SYSFS_DEPH_ID, "r") as f:
+                deph_id = int(f.read())
+        else:
+            self.bsp_pr("SYSFS_DEPH_ID does not exist: {}".format(self.SYSFS_DEPH_ID));
+            return False
+
+        #read hw_id
+        if os.path.exists(self.SYSFS_HW_ID):
+            with open(self.SYSFS_HW_ID, "r") as f:
+                hw_id = int(f.read())
+        else:
+            self.bsp_pr("SYSFS_HW_ID does not exist: {}".format(self.SYSFS_DEPH_ID));
+            return False
+
+        # is PVT or later
+        if deph_id == 1 or (deph_id == 0 and hw_id >= 3):
+            return True
+        else:
+            self.bsp_pr("device is not PVT or later, deph_id={}, hw_id={}".format(deph_id, hw_id));
+            return False
+
+    def enable_sfp_mux(self):
+        cmd = "echo 0x1 > /sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.bsp_pr("enable_sfp_mux() failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
 
     def baseconfig(self):
 
@@ -247,6 +295,14 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
+
+        # enable sfp mux and init sfp eeprom if pvt build or later
+        if self.is_pvt_or_later():
+            # enable sfp mux
+            self.enable_sfp_mux()
+
+            # init sfp eeprom
+            self.init_sfp_eeprom()
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

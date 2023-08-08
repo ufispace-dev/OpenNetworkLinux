@@ -41,9 +41,9 @@
         ONLP_FAN_MODE_INVALID,                                  \
     }
 
-#define PSU_FAN_INFO(id, pid, poid)                               \
+#define PSU_FAN_INFO(id, pid, poid)                         \
     {                                                       \
-        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" - Fan", ONLP_PSU_ID_CREATE(poid)},\
+        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" - Fan", POID_0},\
         FAN_STATUS,                                         \
         FAN_CAPS,                                           \
         0,                                                  \

@@ -156,7 +156,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
     } else {
         fru = fru_in;
     }
-    
+
     if (strncmp(fru->vendor.val, vendors[0], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) { //Delta
         //read from part_num
         if (fru->part_num.val[7] == 'A') {
@@ -165,17 +165,17 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
             *psu_type = ONLP_PSU_TYPE_DC48;
         } else {
             AIM_LOG_ERROR("unknown PSU type, vendor=%d, model=%s, func=%s\n", fru->vendor.val, fru->part_num.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
         }
     } else if (strncmp(fru->vendor.val, vendors[1], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) { //FSP
-        //read from name        
+        //read from name
         if (strstr(fru->name.val, "AM") > 0) {
             *psu_type = ONLP_PSU_TYPE_AC;
         } else if (strstr(fru->name.val, "EM") > 0) {
             *psu_type = ONLP_PSU_TYPE_DC48;
         } else {
             AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
         }
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;

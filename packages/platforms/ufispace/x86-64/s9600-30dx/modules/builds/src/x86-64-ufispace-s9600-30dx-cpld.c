@@ -170,6 +170,7 @@ enum cpld_sysfs_attributes {
     CPLD_SFP_MASK,
     CPLD_SFP_EVT,
     CPLD_SFP_CONFIG,
+    CPLD_SFP_MUX_CTRL,
     CPLD_SFP_LED_0,
     CPLD_SFP_LED_1,
 
@@ -376,10 +377,11 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_qsfp_reset_8_15,  cpld_callback, CPLD_QSFP_RE
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfp_lpmode_0_7,   cpld_callback, CPLD_QSFP_LPMODE_0_7);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfp_lpmode_8_15,  cpld_callback, CPLD_QSFP_LPMODE_8_15);
 
-static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_status, cpld_callback, CPLD_SFP_STATUS);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mask,   cpld_callback, CPLD_SFP_MASK);
-static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,    cpld_callback, CPLD_SFP_EVT);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config, cpld_callback, CPLD_SFP_CONFIG);
+static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_status,   cpld_callback, CPLD_SFP_STATUS);
+static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mask,     cpld_callback, CPLD_SFP_MASK);
+static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,      cpld_callback, CPLD_SFP_EVT);
+static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config,   cpld_callback, CPLD_SFP_CONFIG);
+static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mux_ctrl, cpld_callback, CPLD_SFP_MUX_CTRL);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_led_0, cpld_callback, CPLD_SFP_LED_0);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_led_1, cpld_callback, CPLD_SFP_LED_1);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_sfp_status, cpld_callback, DBG_CPLD_SFP_STATUS);
@@ -556,6 +558,7 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_qsfp_lpmode_8_15),
 
     _DEVICE_ATTR(cpld_sfp_config),
+    _DEVICE_ATTR(cpld_sfp_mux_ctrl),
     _DEVICE_ATTR(cpld_sfp_led_0),
     _DEVICE_ATTR(cpld_sfp_led_1),
 
@@ -1061,6 +1064,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
             break;
+        case CPLD_SFP_MUX_CTRL:
+            reg = CPLD_SFP_MUX_CTRL_REG;
+            break;
         case CPLD_SFP_LED_0:
             reg = CPLD_SFP_LED_REG;
             mask = CPLD_SFP_LED_MASK_0;
@@ -1310,6 +1316,9 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
+            break;
+        case CPLD_SFP_MUX_CTRL:
+            reg = CPLD_SFP_MUX_CTRL_REG;
             break;
         case CPLD_SFP_LED_0:
             reg = CPLD_SFP_LED_REG;
