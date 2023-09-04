@@ -90,6 +90,7 @@
 #define PSU_PMBUS_IIN               0x89
 #define PSU_PMBUS_POUT              0x96
 #define PSU_PMBUS_PIN               0x97
+#define PSU_PMBUS_REVISION          0x9B
 #define PSU_PMBUS_THERMAL1          0x8D
 #define PSU_PMBUS_ADDR_0            0x58
 #define PSU_PMBUS_ADDR_1            0x59
@@ -109,6 +110,11 @@
 #define LPC_MB_EXT_ID_ATTR          "board_ext_id"
 #define LPC_MB_CPLD_VER_ATTR        "mb_cpld_1_version_h"
 #define SYSFS_BIOS_VER              "/sys/class/dmi/id/bios_version"
+
+/* UCD */
+#define UCD_BUS_ID                  5
+#define UCD_ADDR                    0x34
+#define UCD_REVISION                0x9B
 
 /* VALUES */
 #define MIN_GPIO_MAX                128
@@ -192,6 +198,10 @@ int psu_present_get(int *present, int local_id);
 int psu_pwgood_get(int *pw_good, int local_id);
 
 int psu_fan_info_get(onlp_fan_info_t* info, int local_id);
+
+int psu_fw_ver_get(char* fw_ver, int size, int local_id);
+
+int ucd_fw_ver_get(char* fw_ver, int size);
 
 int exec_cmd(char *cmd, char* out, int size);
 

@@ -62,22 +62,6 @@
                                     "TEMP_ENV1 "\
                                     "TEMP_ENV_EXT0 "\
                                     "TEMP_ENV_EXT1 "\
-                                    "TEMP_MAC0_PVT2 "\
-                                    "TEMP_MAC0_PVT3 "\
-                                    "TEMP_MAC0_PVT4 "\
-                                    "TEMP_MAC0_PVT6 "\
-                                    "TEMP_MAC0_HBM0 "\
-                                    "TEMP_MAC0_HBM1 "\
-                                    "TEMP_MAC1_PVT2 "\
-                                    "TEMP_MAC1_PVT3 "\
-                                    "TEMP_MAC1_PVT4 "\
-                                    "TEMP_MAC1_PVT6 "\
-                                    "TEMP_MAC1_HBM0 "\
-                                    "TEMP_MAC1_HBM1 "\
-                                    "TEMP_OP2_0 "\
-                                    "TEMP_OP2_1 "\
-                                    "TEMP_OP2_2 "\
-                                    "TEMP_OP2_3 "\
                                     "PSU0_TEMP1 "\
                                     "PSU1_TEMP1 "\
                                     "FAN0_RPM_FRONT "\
@@ -154,22 +138,6 @@ enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_ENV1,
     BMC_ATTR_ID_TEMP_ENV_EXT0,
     BMC_ATTR_ID_TEMP_ENV_EXT1,
-    BMC_ATTR_ID_TEMP_MAC0_PVT2,
-    BMC_ATTR_ID_TEMP_MAC0_PVT3,
-    BMC_ATTR_ID_TEMP_MAC0_PVT4,
-    BMC_ATTR_ID_TEMP_MAC0_PVT6,
-    BMC_ATTR_ID_TEMP_MAC0_HBM0,
-    BMC_ATTR_ID_TEMP_MAC0_HBM1,
-    BMC_ATTR_ID_TEMP_MAC1_PVT2,
-    BMC_ATTR_ID_TEMP_MAC1_PVT3,
-    BMC_ATTR_ID_TEMP_MAC1_PVT4,
-    BMC_ATTR_ID_TEMP_MAC1_PVT6,
-    BMC_ATTR_ID_TEMP_MAC1_HBM0,
-    BMC_ATTR_ID_TEMP_MAC1_HBM1,
-    BMC_ATTR_ID_TEMP_OP2_0,
-    BMC_ATTR_ID_TEMP_OP2_1,
-    BMC_ATTR_ID_TEMP_OP2_2,
-    BMC_ATTR_ID_TEMP_OP2_3,
     BMC_ATTR_ID_PSU0_TEMP1,
     BMC_ATTR_ID_PSU1_TEMP1,
     BMC_ATTR_ID_FAN0_RPM_FRONT,
@@ -271,25 +239,9 @@ enum onlp_thermal_id {
     ONLP_THERMAL_ENV1 = 17,
     ONLP_THERMAL_ENV_EXT0 = 18,
     ONLP_THERMAL_ENV_EXT1 = 19,
-    ONLP_THERMAL_MAC0_PVT2 = 20,
-    ONLP_THERMAL_MAC0_PVT3 = 21,
-    ONLP_THERMAL_MAC0_PVT4 = 22,
-    ONLP_THERMAL_MAC0_PVT6 = 23,
-    ONLP_THERMAL_MAC0_HBM0 = 24,
-    ONLP_THERMAL_MAC0_HBM1 = 25,
-    ONLP_THERMAL_MAC1_PVT2 = 26,
-    ONLP_THERMAL_MAC1_PVT3 = 27,
-    ONLP_THERMAL_MAC1_PVT4 = 28,
-    ONLP_THERMAL_MAC1_PVT6 = 29,
-    ONLP_THERMAL_MAC1_HBM0 = 30,
-    ONLP_THERMAL_MAC1_HBM1 = 31,
-    ONLP_THERMAL_OP2_0 = 32,
-    ONLP_THERMAL_OP2_1 = 33,
-    ONLP_THERMAL_OP2_2 = 34,
-    ONLP_THERMAL_OP2_3 = 35,
-    ONLP_THERMAL_PSU0_TEMP1 = 36,
-    ONLP_THERMAL_PSU1_TEMP1 = 37,
-    ONLP_THERMAL_MAX = 38,
+    ONLP_THERMAL_PSU0_TEMP1 = 20,
+    ONLP_THERMAL_PSU1_TEMP1 = 21,
+    ONLP_THERMAL_MAX = 22,
 };
 
 enum onlp_psu_type_e {

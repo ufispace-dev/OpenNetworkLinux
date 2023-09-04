@@ -104,7 +104,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.2"
 }
 
 function _update_gpio_max {
@@ -589,11 +589,22 @@ function _show_i2c_mux_devices {
     local chip_addr=$2
     local channel_num=$3
     local chip_dev_desc=$4
+    local is_ch=${5:-false}
     local i=0;
+    local startc=0;
+    local endc=0;
 
     if [ -z "${chip_addr}" ] || [ -z "${channel_num}" ] || [ -z "${chip_dev_desc}" ]; then
         _echo "ERROR: parameter cannot be empty!!!"
         exit 99
+    fi
+
+    if $is_ch; then
+        startc=${channel_num}
+        endc=$(( ${channel_num} + 1 ))
+    else
+        startc=0
+        endc=${channel_num}
     fi
 
     _check_i2c_device "$bus" "$chip_addr"
@@ -601,7 +612,7 @@ function _show_i2c_mux_devices {
     if [ "$ret" == "0" ]; then
         _echo "TCA9548 Mux ${chip_dev_desc}"
         _echo "---------------------------------------------------"
-        for (( i=0; i<${channel_num}; i++ ))
+        for (( i=startc; i<${endc}; i++ ))
         do
             _echo "TCA9548 Mux ${chip_dev_desc} - Channel ${i}"
             # open mux channel
@@ -640,6 +651,10 @@ function _show_i2c_tree_bus_mux_i2c {
 
             for (( chip_addr1_chann=0; chip_addr1_chann<${#chip_addr2_array[@]}; chip_addr1_chann++ ))
             do
+                if [ -z "${chip_addr2_array[${chip_addr1_chann}]}" ]; then
+                    continue
+                fi
+
                 local chip_addr2=${chip_addr2_array[${chip_addr1_chann}]}
                 local mux_name=${mux_name_array[${chip_addr1_chann}]}
                 # open mux channel - 0x72 (chip_addr1)
@@ -659,11 +674,8 @@ function _show_i2c_tree_bus_mux_i2c {
         ret=$?
         if [ "$ret" == "0" ]; then
             local cpld_chann=0
-            i2cset -y ${bus} ${chip_addr1} $(( 2 ** ${cpld_chann} ))
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "9548_ROOT_CPLD-${cpld_chann}-${chip_addr1}"
-            i2cset -y ${bus} ${chip_addr1} 0x0
+            _show_i2c_mux_devices "${bus}" "${chip_addr1}" ${cpld_chann} "9548_ROOT_CPLD-${chip_addr1}" true
         fi
-
     else
         echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -737,8 +749,18 @@ function _show_sys_eeprom_i2c {
     _banner "Show System EEPROM"
 
     eeprom_addr="0x57"
+    eeprom_mux=""
+    eeprom_ch=""
+    under_mux=false
 
     #read six times return empty content
+    if [ "${eeprom_mux}" != "" ] && [ "${eeprom_ch}" != "" ]; then
+        under_mux=true
+    fi
+
+    if $under_mux; then
+        i2cset -y ${ismt_bus} ${eeprom_mux} $(( 2 ** ${eeprom_ch} ))
+    fi
     sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
     sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
     sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
@@ -748,6 +770,10 @@ function _show_sys_eeprom_i2c {
 
     #seventh read return correct content
     sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
+
+    if $under_mux; then
+        i2cset -y -f ${ismt_bus} ${eeprom_mux} 0x0
+    fi
     _echo "[System EEPROM]:"
     _echo "${sys_eeprom}"
 }
@@ -964,7 +990,7 @@ function _show_port_status_sysfs {
 
     if [ "${MODEL_NAME}" == "${PLAT}" ]; then
 
-        cpld_attr_array=("${SYSFS_CPLD2}/cpld_qsfp_abs_0_7"       #0
+        sys_port_array=("${SYSFS_CPLD2}/cpld_qsfp_abs_0_7"        #0
                          "${SYSFS_CPLD2}/cpld_qsfp_abs_8_15"      #1
                          "${SYSFS_CPLD2}/cpld_qsfp_abs_16_23"     #2
                          "${SYSFS_CPLD2}/cpld_qsfp_abs_24_31"     #3
@@ -987,22 +1013,31 @@ function _show_port_status_sysfs {
                          "${SYSFS_CPLD2}/cpld_sfp_ts_0_1"         #20
                          "${SYSFS_CPLD2}/cpld_sfp_rs_0_1")        #21
 
-        port_name_array=("0"  "1"  "2"  "3"  "4"  "5"  "6"  "7"
-                         "8"  "9"  "10" "11" "12" "13" "14" "15"
-                         "16" "17" "18" "19" "20" "21" "22" "23"
-                         "24" "25" "26" "27" "28" "29" "30" "31"
-                         "32")
+        port_name_array=(
+            "0"   "1"   "2"   "3"   "4"   "5"   "6"   "7"
+            "8"   "9"   "10"  "11"  "12"  "13"  "14"  "15"
+            "16"  "17"  "18"  "19"  "20"  "21"  "22"  "23"
+            "24"  "25"  "26"  "27"  "28"  "29"  "30"  "31"
+            "32"
+        )
 
 
         local QSFPDD=${PORT_T_QSFPDD}
         local QSFP=${PORT_T_QSFP}
         local SFP=${PORT_T_SFP}
         local MGMT=${PORT_T_MGMT}
-        port_type_array=(${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
-                         ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
-                         ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
-                         ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
-                         ${SFP})
+        port_type_array=(
+        #   0        1        2        3        4        5        6        7
+            ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
+        #   8        9        10       11       12       13       14       15
+            ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
+        #   16       17       18       19       20       21       22       23
+            ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
+        #   24       25       26       27       28       29       30       31
+            ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}  ${QSFP}
+        #   32
+            ${SFP}
+        )
 
         #
         #  MGMT bit is bit stream
@@ -1021,82 +1056,159 @@ function _show_port_status_sysfs {
         #       mgmt_txflt: bit 5
         #       mgmt_txdis: bit 4
         #
-        port_bit_array=(0  1  2  3  4  5  6  7
-                        0  1  2  3  4  5  6  7
-                        0  1  2  3  4  5  6  7
-                        0  1  2  3  4  5  6  7
-                        1)
+        port_bit_array=(
+        #   0     1     2     3     4     5     6     7
+            0     1     2     3     4     5     6     7
+        #   8     9     10    11    12    13    14    15
+            0     1     2     3     4     5     6     7
+        #   16    17    18    19    20    21    22    23
+            0     1     2     3     4     5     6     7
+        #   24    25    26    27    28    29    30    31
+            0     1     2     3     4     5     6     7
+        #   32
+            1
+        )
 
-        # ref cpld_attr_array
-        port_absent_array=(0  0  0  0  0  0  0  0
-                           1  1  1  1  1  1  1  1
-                           2  2  2  2  2  2  2  2
-                           3  3  3  3  3  3  3  3
-                           8)
+        # ref sys_port_array
+        port_absent_array=(
+        #   0     1     2     3     4     5     6     7
+            0     0     0     0     0     0     0     0
+        #   8     9     10    11    12    13    14    15
+            1     1     1     1     1     1     1     1
+        #   16    17    18    19    20    21    22    23
+            2     2     2     2     2     2     2     2
+        #   24    25    26    27    28    29    30    31
+            3     3     3     3     3     3     3     3
+        #   32
+            8
+        )
 
-        # ref cpld_attr_array
-        port_lp_mode_array=(15  15  15  15  15  15  15  15
-                            16  16  16  16  16  16  16  16
-                            17  17  17  17  17  17  17  17
-                            18  18  18  18  18  18  18  18
-                            -1)
+        # ref sys_port_array
+        port_lp_mode_array=(
+        #   0     1     2     3     4     5     6     7
+            15    15    15    15    15    15    15    15
+        #   8     9     10    11    12    13    14    15
+            16    16    16    16    16    16    16    16
+        #   16    17    18    19    20    21    22    23
+            17    17    17    17    17    17    17    17
+        #   24    25    26    27    28    29    30    31
+            18    18    18    18    18    18    18    18
+        #   32
+            -1
+        )
 
-        # ref cpld_attr_array
-        port_reset_array=(11  11  11  11  11  11  11  11
-                          12  12  12  12  12  12  12  12
-                          13  13  13  13  13  13  13  13
-                          14  14  14  14  14  14  14  14
-                          -1)
+        # ref sys_port_array
+        port_reset_array=(
+        #   0     1     2     3     4     5     6     7
+            11    11    11    11    11    11    11    11
+        #   8     9     10    11    12    13    14    15
+            12    12    12    12    12    12    12    12
+        #   16    17    18    19    20    21    22    23
+            13    13    13    13    13    13    13    13
+        #   24    25    26    27    28    29    30    31
+            14    14    14    14    14    14    14    14
+        #   32
+            -1
+        )
 
-        # ref cpld_attr_array
-        port_intr_array=( 4  4  4  4  4  4  4  4
-                          5  5  5  5  5  5  5  5
-                          6  6  6  6  6  6  6  6
-                          7  7  7  7  7  7  7  7
-                         -1)
+        # ref sys_port_array
+        port_intr_array=(
+        #   0     1     2     3     4     5     6     7
+            4     4     4     4     4     4     4     4
+        #   8     9     10    11    12    13    14    15
+            5     5     5     5     5     5     5     5
+        #   16    17    18    19    20    21    22    23
+            6     6     6     6     6     6     6     6
+        #   24    25    26    27    28    29    30    31
+            7     7     7     7     7     7     7     7
+        #   32
+            -1
+        )
 
-        # ref cpld_attr_array
-        port_tx_fault_array=(-1  -1  -1  -1  -1  -1  -1  -1
-                             -1  -1  -1  -1  -1  -1  -1  -1
-                             -1  -1  -1  -1  -1  -1  -1  -1
-                             -1  -1  -1  -1  -1  -1  -1  -1
-                             10)
+        # ref sys_port_array
+        port_tx_fault_array=(
+        #   0     1     2     3     4     5     6     7
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   8     9     10    11    12    13    14    15
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   16    17    18    19    20    21    22    23
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   24    25    26    27    28    29    30    31
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   32
+            10
+        )
 
-        # ref cpld_attr_array
-        port_rx_los_array=(-1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           9)
+        # ref sys_port_array
+        port_rx_los_array=(
+        #   0     1     2     3     4     5     6     7
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   8     9     10    11    12    13    14    15
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   16    17    18    19    20    21    22    23
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   24    25    26    27    28    29    30    31
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   32
+            9
+        )
 
-        # ref cpld_attr_array
-        port_tx_dis_array=(-1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           -1  -1  -1  -1  -1  -1  -1  -1
-                           19)
+        # ref sys_port_array
+        port_tx_dis_array=(
+        #   0     1     2     3     4     5     6     7
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   8     9     10    11    12    13    14    15
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   16    17    18    19    20    21    22    23
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   24    25    26    27    28    29    30    31
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   32
+            19
+        )
 
-        # ref cpld_attr_array
-        port_tx_rate_sel_array=(-1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                20)
+        # ref sys_port_array
+        port_tx_rate_sel_array=(
+        #   0     1     2     3     4     5     6     7
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   8     9     10    11    12    13    14    15
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   16    17    18    19    20    21    22    23
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   24    25    26    27    28    29    30    31
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   32
+            20
+        )
 
-        # ref cpld_attr_array
-        port_rx_rate_sel_array=(-1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                -1  -1  -1  -1  -1  -1  -1  -1
-                                21)
+        # ref sys_port_array
+        port_rx_rate_sel_array=(
+        #   0     1     2     3     4     5     6     7
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   8     9     10    11    12    13    14    15
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   16    17    18    19    20    21    22    23
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   24    25    26    27    28    29    30    31
+            -1    -1    -1    -1    -1    -1    -1    -1
+        #   32
+            21
+        )
 
 
-        # ref cpld_attr_array
-        port_eeprom_bus_array=(18  19  20  21  22  23  24  25
-                               26  27  28  29  30  31  32  33
-                               34  35  36  37  38  39  40  41
-                               42  43  44  45  46  47  48  49
-                               51)
+        # ref sys_port_array
+        port_eeprom_bus_array=(
+        #   0     1     2     3     4     5     6     7
+            18    19    20    21    22    23    24    25
+        #   8     9     10    11    12    13    14    15
+            26    27    28    29    30    31    32    33
+        #   16    17    18    19    20    21    22    23
+            34    35    36    37    38    39    40    41
+        #   24    25    26    27    28    29    30    31
+            42    43    44    45    46    47    48    49
+        #   32
+            51
+        )
 
 
         for (( i=0; i<${#port_name_array[@]}; i++ ))
@@ -1105,7 +1217,7 @@ function _show_port_status_sysfs {
             local bit=0
             # Port Absent Status (0: Present, 1:Absence)
             local idx=${port_absent_array[i]}
-            local sysfs_path="${cpld_attr_array[idx]}"
+            local sysfs_path="${sys_port_array[idx]}"
             local bit_stream=${port_bit_array[i]}
             if [ "${port_absent_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
@@ -1120,7 +1232,7 @@ function _show_port_status_sysfs {
 
             # Port Lower Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
             idx=${port_lp_mode_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_lp_mode_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 bit=$(_get_port_attr_bit "lpmode" ${bit_stream})
@@ -1130,7 +1242,7 @@ function _show_port_status_sysfs {
 
             # Port Reset Status (0:Reset, 1:Normal)
             idx=${port_reset_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_reset_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 bit=$(_get_port_attr_bit "reset" ${bit_stream})
@@ -1140,7 +1252,7 @@ function _show_port_status_sysfs {
 
             # Port Interrupt Status (0: Interrupted, 1:No Interrupt)
             idx=${port_intr_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_intr_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 bit=$(_get_port_attr_bit "intr" ${bit_stream})
@@ -1150,7 +1262,7 @@ function _show_port_status_sysfs {
 
             # Port Tx Fault Status (0:normal, 1:tx fault)
             idx=${port_tx_fault_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_tx_fault_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 if [ "${port_type_array[${i}]}" == "${MGMT}" ]; then
@@ -1164,7 +1276,7 @@ function _show_port_status_sysfs {
 
             # Port Rx Loss Status (0:los undetected, 1: los detected)
             idx=${port_rx_los_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_rx_los_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 if [ "${port_type_array[${i}]}" == "${MGMT}" ]; then
@@ -1178,7 +1290,7 @@ function _show_port_status_sysfs {
 
             # Port Tx Disable Status (0:enable tx, 1: disable tx)
             idx=${port_tx_dis_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_tx_dis_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 if [ "${port_type_array[${i}]}" == "${MGMT}" ]; then
@@ -1192,7 +1304,7 @@ function _show_port_status_sysfs {
 
             # Port TX Rate Select (0: low rate, 1:full rate)
             idx=${port_tx_rate_sel_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_tx_rate_sel_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 bit=$(_get_port_attr_bit "ts" ${bit_stream})
@@ -1202,7 +1314,7 @@ function _show_port_status_sysfs {
 
             # Port RX Rate Select (0: low rate, 1:full rate)
             idx=${port_rx_rate_sel_array[i]}
-            sysfs_path="${cpld_attr_array[idx]}"
+            sysfs_path="${sys_port_array[idx]}"
             if [ "${port_rx_rate_sel_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(eval "cat ${sysfs_path}")
                 bit=$(_get_port_attr_bit "rs" ${bit_stream})

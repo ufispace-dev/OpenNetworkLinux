@@ -68,8 +68,8 @@ static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSUDB),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_INLET),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
+    //ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
+    //ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
 
     ONLP_LED_ID_CREATE(ONLP_LED_ID),
@@ -86,28 +86,47 @@ static onlp_oid_t __onlp_oid_info[] = {
 
     ONLP_FAN_ID_CREATE(ONLP_FAN_0),
     ONLP_FAN_ID_CREATE(ONLP_FAN_1),
-    ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
-    ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
+    //ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
+    //ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
 };
 
 static int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     uint8_t mb_cpld_ver_h[16];
     uint8_t bios_ver_h[32];
+    char psu0_fw_ver_h[32];
+    char psu1_fw_ver_h[32];
+    char ucd_fw_ver_h[32];
     int sku_id, hw_id, id_type, build_id, deph_id, ext_id;
     int data_len;
     int size;
 
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
     memset(bios_ver_h, 0, sizeof(bios_ver_h));
+    memset(psu0_fw_ver_h, 0, sizeof(psu0_fw_ver_h));
+    memset(psu1_fw_ver_h, 0, sizeof(psu1_fw_ver_h));
+    memset(ucd_fw_ver_h, 0, sizeof(ucd_fw_ver_h));
 
     //get MB CPLD version from CPLD sysfs
     ONLP_TRY(onlp_file_read(mb_cpld_ver_h, sizeof(mb_cpld_ver_h), &data_len,
             LPC_MB_CPLD_PATH LPC_MB_CPLD_VER_ATTR));
+    //trim new line
+    mb_cpld_ver_h[strcspn((char *)mb_cpld_ver_h, "\n" )] = '\0';
+
+    //get psu firmware version
+    ONLP_TRY(psu_fw_ver_get(psu0_fw_ver_h, sizeof(psu0_fw_ver_h), ONLP_PSU_0));
+    ONLP_TRY(psu_fw_ver_get(psu1_fw_ver_h, sizeof(psu1_fw_ver_h), ONLP_PSU_1));
+
+    //get ucd firmware version
+    ONLP_TRY(ucd_fw_ver_get(ucd_fw_ver_h, sizeof(ucd_fw_ver_h)));
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %s\n", mb_cpld_ver_h);
+        "[MB CPLD] %s\n"
+        "[PSU0 FW VER] %s\n"
+        "[PSU1 FW VER] %s\n"
+        "[UCD FW VER] %s\n",
+        mb_cpld_ver_h, psu0_fw_ver_h, psu1_fw_ver_h, ucd_fw_ver_h);
 
     //get HW Build Version
     ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKU_ID_ATTR));

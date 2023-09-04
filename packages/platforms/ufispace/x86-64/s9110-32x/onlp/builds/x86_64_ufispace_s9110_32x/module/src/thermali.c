@@ -37,23 +37,12 @@ static onlp_thermal_info_t thermal_info[] = {
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD)
+        .caps = (ONLP_THERMAL_CAPS_ALL)
     },
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
             .description = BMC_ATTR_NAME_TEMP_MAC,
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_ALL)
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HWM),
-            .description = BMC_ATTR_NAME_TEMP_MAC_HWM,
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -131,7 +120,6 @@ static const thrm_attr_t thrm_attr[] = {
     /*                           thermal */
     [ONLP_THERMAL_CPU_PKG]      ={TYPE_THRM_ATTR_SYSFS, 1},
     [ONLP_THERMAL_MAC]          ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_MAC},
-    [ONLP_THERMAL_MAC_HWM]      ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_MAC_HWM},
     [ONLP_THERMAL_ENV_MACCASE]  ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_ENV_MACCASE},
     [ONLP_THERMAL_ENV_SSDCASE]  ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_ENV_SSDCASE},
     [ONLP_THERMAL_ENV_PSUCASE]  ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_ENV_PSUCASE},
@@ -161,7 +149,6 @@ static int get_thermal_local_id(int id, int *local_id)
     switch (tmp_id) {
         case ONLP_THERMAL_CPU_PKG:
         case ONLP_THERMAL_MAC:
-        case ONLP_THERMAL_MAC_HWM:
         case ONLP_THERMAL_ENV_MACCASE:
         case ONLP_THERMAL_ENV_SSDCASE:
         case ONLP_THERMAL_ENV_PSUCASE:

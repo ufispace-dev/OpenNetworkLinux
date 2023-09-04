@@ -59,8 +59,12 @@
 #define SYSFS_CPLD2                 SYSFS_DEVICES "2-0031/"
 
 /* Thermal threshold */
-#define THERMAL_CPU_ERROR                75
-#define THERMAL_CPU_SHUTDOWN             95
+#define THERMAL_WARNING_DEFAULT          77
+#define THERMAL_ERROR_DEFAULT            95
+#define THERMAL_SHUTDOWN_DEFAULT         105
+#define THERMAL_CPU_WARNING              THERMAL_WARNING_DEFAULT
+#define THERMAL_CPU_ERROR                THERMAL_ERROR_DEFAULT
+#define THERMAL_CPU_SHUTDOWN             THERMAL_SHUTDOWN_DEFAULT
 #define THERMAL_MAC_WARNING              95
 #define THERMAL_MAC_ERROR                105
 #define THERMAL_MAC_SHUTDOWN             110
@@ -222,7 +226,7 @@ enum bmc_attr_id {
     BMC_ATTR_ID_INVALID,
 };
 
-/* fan_id */
+/* oem_id */
 enum bmc_oem_id {
     BMC_OEM_IDX_FAN_0_F_DIR,
     BMC_OEM_IDX_FAN_0_R_DIR,
@@ -284,7 +288,6 @@ enum onlp_psu_id {
 enum onlp_thermal_id {
     ONLP_THERMAL_CPU_PKG = 1,
     ONLP_THERMAL_MAC,
-    ONLP_THERMAL_MAC_HWM,
     ONLP_THERMAL_ENV_MACCASE,
     ONLP_THERMAL_ENV_SSDCASE,
     ONLP_THERMAL_ENV_PSUCASE,
@@ -307,7 +310,7 @@ typedef enum onlp_psu_type_e {
 typedef enum bmc_data_type_e {
     BMC_DATA_BOOL,
     BMC_DATA_FLOAT,
-} bmc_data_te_t;
+} bmc_data_type_t;
 
 typedef enum brd_rev_id_e {
     BRD_PROTO,

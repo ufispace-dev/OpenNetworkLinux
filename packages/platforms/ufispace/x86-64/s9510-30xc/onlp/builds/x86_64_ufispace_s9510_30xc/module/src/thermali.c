@@ -27,6 +27,11 @@
 
 #define MILLI(cel) (cel * 1000)
 
+#define THERMAL_SHUTDOWN_DEFAULT    105
+#define THERMAL_ERROR_DEFAULT       95
+#define THERMAL_WARNING_DEFAULT     77
+
+
  //FIXME threshold
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
@@ -37,11 +42,9 @@ static onlp_thermal_info_t thermal_info[] = {
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
+        .caps = (ONLP_THERMAL_CAPS_ALL),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(75), MILLI(95)}
+        .thresholds = {MILLI(THERMAL_WARNING_DEFAULT), MILLI(THERMAL_ERROR_DEFAULT), MILLI(THERMAL_SHUTDOWN_DEFAULT)}
     },
     {
         .hdr = {
@@ -80,7 +83,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(90), MILLI(100)}
+        .thresholds = {MILLI(0), MILLI(85), MILLI(95)}
     },
     {
         .hdr = {
@@ -119,7 +122,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+        .thresholds = {MILLI(0), MILLI(91), MILLI(100)}
     },
     {
         .hdr = {
@@ -132,7 +135,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(78), MILLI(80)}
+        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
     },
     {
         .hdr = {
@@ -145,7 +148,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+        .thresholds = {MILLI(0), MILLI(90), MILLI(100)}
     },
     {
         .hdr = {
@@ -158,7 +161,7 @@ static onlp_thermal_info_t thermal_info[] = {
                  ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
                  ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
         .mcelsius = 0,
-        .thresholds = {MILLI(0), MILLI(100), MILLI(110)}
+        .thresholds = {MILLI(0), MILLI(91), MILLI(100)}
     },
     {
         .hdr = {

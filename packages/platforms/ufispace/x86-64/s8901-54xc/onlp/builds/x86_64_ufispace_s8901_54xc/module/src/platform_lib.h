@@ -69,7 +69,6 @@
 //FIXME
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_MAC "\
-                                    "TEMP_MAC_HWM "\
                                     "TEMP_ENV_MACCASE "\
                                     "TEMP_ENV_PSUCASE "\
                                     "TEMP_ENV_FANCONN "\
@@ -152,7 +151,6 @@ enum sensor
 
 enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_MAC,
-    BMC_ATTR_ID_TEMP_MAC_HWM,
     BMC_ATTR_ID_TEMP_ENV_MACCASE,
     BMC_ATTR_ID_TEMP_ENV_PSUCASE,
     BMC_ATTR_ID_TEMP_ENV_FANCONN,
@@ -209,7 +207,6 @@ enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG,
     ONLP_THERMAL_MAC,
-    ONLP_THERMAL_MAC_HWM,
     ONLP_THERMAL_ENV_MACCASE,
     ONLP_THERMAL_ENV_PSUCASE,
     ONLP_THERMAL_ENV_FANCONN,

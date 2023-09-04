@@ -57,6 +57,7 @@
 #define REG_BASE_MB                       0x700
 #define REG_BASE_EC                       0xE300
 
+#define REG_NONE                          0x00
 //MB CPLD
 #define REG_BRD_ID_0                      (REG_BASE_MB + 0x00)
 #define REG_BRD_ID_1                      (REG_BASE_MB + 0x01)
@@ -71,11 +72,12 @@
 #define REG_MISC_CTRL                     (REG_BASE_MB + 0x5D)
 #define REG_MISC_CTRL_2                   (REG_BASE_MB + 0x5E)
 
-#define REG_DUMMY                         (REG_BASE_MB + 0x99)
-
 //EC
 #define REG_BIOS_BOOT                     (REG_BASE_EC + 0x0C)
 #define REG_CPU_REV                       (REG_BASE_EC + 0x17)
+
+// BMC mailbox
+#define REG_TEMP_MAC_HWM                  (REG_BASE_MB + 0xC0)
 
 //MASK
 #define MASK_ALL                          (0xFF)
@@ -92,13 +94,6 @@
 #define LPC_MDELAY                        (5)
 #define MDELAY_RESET_INTERVAL             (100)
 #define MDELAY_RESET_FINISH               (500)
-
-//PERMISSION
-#define PERM_R                            (0b00000001)
-#define PERM_W                            (0b00000010)
-#define PERM_RW                           (PERM_R | PERM_W)
-#define IS_PERM_R(perm)                   (perm & PERM_R ? 1u : 0u)
-#define IS_PERM_W(perm)                   (perm & PERM_W ? 1u : 0u)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -128,6 +123,8 @@ enum lpc_sysfs_attributes {
     ATT_CPU_DEPH_ID,
     ATT_CPU_BUILD_ID,
     ATT_BIOS_BOOT_ROM,
+    //BMC mailbox
+    ATT_TEMP_MAC_HWM,
 
     //BSP
     ATT_BSP_VERSION,
@@ -137,6 +134,13 @@ enum lpc_sysfs_attributes {
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
     ATT_MAX
+};
+
+enum data_type {
+    DATA_HEX,
+    DATA_DEC,
+    DATA_S_DEC,
+    DATA_UNK,
 };
 
 enum bsp_log_types {
@@ -160,42 +164,45 @@ typedef struct sysfs_info_s
 {
     u16 reg;
     u8 mask;
-    u8 permission;
+    u8 data_type;
 } sysfs_info_t;
 
 static sysfs_info_t sysfs_info[] = {
-    [ATT_BRD_ID_0]     = {REG_BRD_ID_0,   MASK_ALL,      PERM_R},
-    [ATT_BRD_ID_1]     = {REG_BRD_ID_1,   MASK_ALL,      PERM_R},
-    [ATT_BRD_SKU_ID]   = {REG_BRD_ID_0,   MASK_ALL,      PERM_R},
-    [ATT_BRD_HW_ID]    = {REG_BRD_ID_1,   MASK_HW_ID,    PERM_R},
-    [ATT_BRD_DEPH_ID]  = {REG_BRD_ID_1,   MASK_DEPH_ID,  PERM_R},
-    [ATT_BRD_BUILD_ID] = {REG_BRD_ID_1,   MASK_BUILD_ID, PERM_R},
-    [ATT_BRD_EXT_ID]   = {REG_BRD_EXT_ID, MASK_EXT_ID,   PERM_R},
+    [ATT_BRD_ID_0]     = {REG_BRD_ID_0,   MASK_ALL,      DATA_HEX},
+    [ATT_BRD_ID_1]     = {REG_BRD_ID_1,   MASK_ALL,      DATA_HEX},
+    [ATT_BRD_SKU_ID]   = {REG_BRD_ID_0,   MASK_ALL,      DATA_DEC},
+    [ATT_BRD_HW_ID]    = {REG_BRD_ID_1,   MASK_HW_ID,    DATA_DEC},
+    [ATT_BRD_DEPH_ID]  = {REG_BRD_ID_1,   MASK_DEPH_ID,  DATA_DEC},
+    [ATT_BRD_BUILD_ID] = {REG_BRD_ID_1,   MASK_BUILD_ID, DATA_DEC},
+    [ATT_BRD_EXT_ID]   = {REG_BRD_EXT_ID, MASK_EXT_ID,   DATA_DEC},
 
-    [ATT_CPLD_ID]      = {REG_CPLD_ID,     MASK_ALL, PERM_R},
-    [ATT_CPLD_BUILD]   = {REG_CPLD_BUILD,  MASK_ALL, PERM_R},
-    [ATT_CPLD_CHIP]    = {REG_CPLD_CHIP,   MASK_ALL, PERM_R},
+    [ATT_CPLD_ID]      = {REG_CPLD_ID,     MASK_ALL, DATA_DEC},
+    [ATT_CPLD_BUILD]   = {REG_CPLD_BUILD,  MASK_ALL, DATA_DEC},
+    [ATT_CPLD_CHIP]    = {REG_CPLD_CHIP,   MASK_ALL, DATA_DEC},
 
-    [ATT_CPLD_VERSION_MAJOR] = {REG_CPLD_VERSION, MASK_CPLD_MAJOR_VER, PERM_R},
-    [ATT_CPLD_VERSION_MINOR] = {REG_CPLD_VERSION, MASK_CPLD_MINOR_VER, PERM_R},
-    [ATT_CPLD_VERSION_BUILD] = {REG_CPLD_BUILD,   MASK_ALL,            PERM_R},
-    [ATT_CPLD_VERSION_H]     = {REG_CPLD_VERSION, MASK_ALL,            PERM_R},
+    [ATT_CPLD_VERSION_MAJOR] = {REG_CPLD_VERSION, MASK_CPLD_MAJOR_VER, DATA_DEC},
+    [ATT_CPLD_VERSION_MINOR] = {REG_CPLD_VERSION, MASK_CPLD_MINOR_VER, DATA_DEC},
+    [ATT_CPLD_VERSION_BUILD] = {REG_CPLD_BUILD,   MASK_ALL,            DATA_DEC},
+    [ATT_CPLD_VERSION_H]     = {REG_CPLD_VERSION, MASK_ALL,            DATA_UNK},
 
-    [ATT_MUX_RESET] = {REG_DUMMY,    MASK_ALL, PERM_W},
-    [ATT_MUX_CTRL]  = {REG_MUX_CTRL, MASK_ALL, PERM_RW},
+    [ATT_MUX_RESET] = {REG_NONE,    MASK_ALL,  DATA_DEC},
+    [ATT_MUX_CTRL]  = {REG_MUX_CTRL, MASK_ALL, DATA_HEX},
 
     //EC
-    [ATT_CPU_HW_ID]    = {REG_CPU_REV, MASK_HW_ID,    PERM_R},
-    [ATT_CPU_DEPH_ID]  = {REG_CPU_REV, MASK_DEPH_ID,  PERM_R},
-    [ATT_CPU_BUILD_ID] = {REG_CPU_REV, MASK_BUILD_ID, PERM_R},
-    [ATT_BIOS_BOOT_ROM] = {REG_BIOS_BOOT, MASK_BIOS_BOOT_ROM, PERM_R},
+    [ATT_CPU_HW_ID]     = {REG_CPU_REV,   MASK_HW_ID,         DATA_DEC},
+    [ATT_CPU_DEPH_ID]   = {REG_CPU_REV,   MASK_DEPH_ID,       DATA_DEC},
+    [ATT_CPU_BUILD_ID]  = {REG_CPU_REV,   MASK_BUILD_ID,      DATA_DEC},
+    [ATT_BIOS_BOOT_ROM] = {REG_BIOS_BOOT, MASK_BIOS_BOOT_ROM, DATA_DEC},
+
+    //BMC mailbox
+    [ATT_TEMP_MAC_HWM] = {REG_TEMP_MAC_HWM , MASK_ALL, DATA_S_DEC},
 
     //BSP
-    [ATT_BSP_VERSION] = {REG_DUMMY, MASK_ALL, PERM_RW},
-    [ATT_BSP_DEBUG]   = {REG_DUMMY, MASK_ALL, PERM_RW},
-    [ATT_BSP_PR_INFO] = {REG_DUMMY, MASK_ALL, PERM_W},
-    [ATT_BSP_PR_ERR]  = {REG_DUMMY, MASK_ALL, PERM_W},
-    [ATT_BSP_REG]     = {REG_DUMMY, MASK_ALL, PERM_RW},
+    [ATT_BSP_VERSION] = {REG_NONE, MASK_ALL, DATA_UNK},
+    [ATT_BSP_DEBUG]   = {REG_NONE, MASK_ALL, DATA_UNK},
+    [ATT_BSP_PR_INFO] = {REG_NONE, MASK_ALL, DATA_UNK},
+    [ATT_BSP_PR_ERR]  = {REG_NONE, MASK_ALL, DATA_UNK},
+    [ATT_BSP_REG]     = {REG_NONE, MASK_ALL, DATA_HEX},
 };
 
 struct lpc_data_s *lpc_data;
@@ -205,6 +212,7 @@ char bsp_reg[8]="0x0";
 u8 enable_log_read  = LOG_DISABLE;
 u8 enable_log_write = LOG_DISABLE;
 u8 enable_log_sys   = LOG_ENABLE;
+u8 mailbox_inited=0;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -229,6 +237,22 @@ static u8 _mask_shift(u8 val, u8 mask)
     shift = _shift(mask);
 
     return (val & mask) >> shift;
+}
+
+static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+{
+    if(buf == NULL) {
+        return -1;
+    }
+
+    if(data_type == DATA_HEX) {
+        return sprintf(buf, "0x%02x", data);
+    } else if(data_type == DATA_DEC) {
+        return sprintf(buf, "%u", data);
+    } else {
+        return -1;
+    }
+    return 0;
 }
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
@@ -280,6 +304,56 @@ static void _outb(u8 data, u16 port)
     mdelay(LPC_MDELAY);
 }
 
+/* init bmc mailbox, get from BMC team */
+static int bmc_mailbox_init(void)
+{
+    if (mailbox_inited) {
+        return mailbox_inited;
+    }
+
+    //Enable super io writing
+    _outb(0xa5, 0x2e);
+    _outb(0xa5, 0x2e);
+
+    //Logic device number
+    _outb(0x07, 0x2e);
+    _outb(0x0e, 0x2f);
+
+    //Disable mailbox
+    _outb(0x30, 0x2e);
+    _outb(0x00, 0x2f);
+
+    //Set base address bit
+    _outb(0x60, 0x2e);
+    _outb(0x07, 0x2f);
+    _outb(0x61, 0x2e);
+    _outb(0xc0, 0x2f);
+
+    //Select bit[3:0] of SIRQ
+    _outb(0x70, 0x2e);
+    _outb(0x07, 0x2f);
+
+    //Low level trigger
+    _outb(0x71, 0x2e);
+    _outb(0x01, 0x2f);
+
+    //Enable mailbox
+    _outb(0x30, 0x2e);
+    _outb(0x01, 0x2f);
+
+    //Disable super io writing
+    _outb(0xaa, 0x2e);
+
+    //Mailbox initial
+    _outb(0x00, 0x786);
+    _outb(0x00, 0x787);
+
+    //set mailbox_inited
+    mailbox_inited = 1;
+
+    return mailbox_inited;
+}
+
 /* get lpc register value */
 static u8 _read_lpc_reg(u16 reg, u8 mask)
 {
@@ -297,7 +371,7 @@ static u8 _read_lpc_reg(u16 reg, u8 mask)
 }
 
 /* get lpc register value */
-static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
+static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf, u8 data_type)
 {
     u8 reg_val;
     int len=0;
@@ -305,18 +379,25 @@ static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
     reg_val = _read_lpc_reg(reg, mask);
 
     // may need to change to hex value ?
-    len=sprintf(buf,"%d\n", reg_val);
+    len=_parse_data(buf, reg_val, data_type);
 
     return len;
 }
 
 /* set lpc register value */
-static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
+static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type)
 {
     u8 reg_val, reg_val_now, shift;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
+    if (kstrtou8(buf, 0, &reg_val) < 0) {
+        if(data_type == DATA_S_DEC) {
+            if (kstrtos8(buf, 0, &reg_val) < 0) {
+                return -EINVAL;
+            }
+        } else {
+            return -EINVAL;
+        }
+    }
 
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
@@ -400,21 +481,21 @@ static ssize_t read_lpc_callback(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u16 reg = 0;
     u8 mask = MASK_ALL;
+    u8 data_type = DATA_UNK;
 
     if (attr->index == ATT_BSP_REG) {
         //copy value from bsp_reg
         if (kstrtou16(bsp_reg, 0, &reg) < 0)
             return -EINVAL;
-    } else if (IS_PERM_R(sysfs_info[attr->index].permission)) {
+
+        data_type = sysfs_info[attr->index].data_type;
+    } else {
         reg = sysfs_info[attr->index].reg;
         mask = sysfs_info[attr->index].mask;
-    } else {
-        dev_err(dev, "%s() error, attr->index=%d\n", __func__, attr->index);
-        return -EINVAL;
+        data_type = sysfs_info[attr->index].data_type;
     }
 
-    return read_lpc_reg(reg, mask, buf);
-
+    return read_lpc_reg(reg, mask, buf, data_type);
 }
 
 /* set lpc register value */
@@ -424,16 +505,17 @@ static ssize_t write_lpc_callback(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u16 reg = 0;
     u8 mask = MASK_ALL;
+    u8 data_type = DATA_UNK;
 
-    if (IS_PERM_W(sysfs_info[attr->index].permission)) {
-        reg = sysfs_info[attr->index].reg;
-        mask = sysfs_info[attr->index].mask;
-    } else {
-        dev_err(dev, "%s() error, attr->index=%d\n", __func__, attr->index);
-        return -EINVAL;
+    reg = sysfs_info[attr->index].reg;
+    mask = sysfs_info[attr->index].mask;
+    data_type = sysfs_info[attr->index].data_type;
+
+    if(attr->index == ATT_TEMP_MAC_HWM) {
+        bmc_mailbox_init();
     }
 
-    return write_lpc_reg(reg, mask, buf, count);
+    return write_lpc_reg(reg, mask, buf, count, data_type);
 }
 
 /* get bsp parameter value */
@@ -472,18 +554,18 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             if (kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
             str = bsp_reg;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;
@@ -543,7 +625,7 @@ static ssize_t write_mux_reset(struct device *dev,
 
             //reset mux on SFP/QSFP ports
             mux_reset_reg_val = inb(reg);
-            _outb((mux_reset_reg_val &  (u8) (~MASK_MUX_RESET)), reg);
+            _outb((mux_reset_reg_val & (u8) (~MASK_MUX_RESET)), reg);
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, mux_reset_reg_val & 0x0);
 
             //unset mux on SFP/QSFP ports
@@ -582,7 +664,8 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_id,             lpc_callback,      ATT_CPLD_I
 static _SENSOR_DEVICE_ATTR_WO(mux_reset, mux_reset, ATT_MUX_RESET);
 static _SENSOR_DEVICE_ATTR_RW(mux_ctrl, lpc_callback, ATT_MUX_CTRL);
 
-//SENSOR_DEVICE_ATTR - BIOS
+//SENSOR_DEVICE_ATTR - BMC mailbox
+static _SENSOR_DEVICE_ATTR_WO(temp_mac_hwm        , lpc_callback     , ATT_TEMP_MAC_HWM);
 
 //SENSOR_DEVICE_ATTR - EC
 static _SENSOR_DEVICE_ATTR_RO(cpu_hw_id,     lpc_callback, ATT_CPU_HW_ID);
@@ -616,10 +699,6 @@ static struct attribute *mb_cpld_attrs[] = {
     NULL,
 };
 
-static struct attribute *bios_attrs[] = {
-    NULL,
-};
-
 static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_version),
     _DEVICE_ATTR(bsp_debug),
@@ -638,14 +717,14 @@ static struct attribute *ec_attrs[] = {
     NULL,
 };
 
+static struct attribute *bmc_mailbox_attrs[] = {
+    _DEVICE_ATTR(temp_mac_hwm),
+    NULL,
+};
+
 static struct attribute_group mb_cpld_attr_grp = {
     .name = "mb_cpld",
     .attrs = mb_cpld_attrs,
-};
-
-static struct attribute_group bios_attr_grp = {
-    .name = "bios",
-    .attrs = bios_attrs,
 };
 
 static struct attribute_group bsp_attr_grp = {
@@ -656,6 +735,11 @@ static struct attribute_group bsp_attr_grp = {
 static struct attribute_group ec_attr_grp = {
     .name = "ec",
     .attrs = ec_attrs,
+};
+
+static struct attribute_group bmc_mailbox_attr_grp = {
+    .name = "bmc_mailbox",
+    .attrs = bmc_mailbox_attrs,
 };
 
 static void lpc_dev_release( struct device * dev)
@@ -674,7 +758,7 @@ static struct platform_device lpc_dev = {
 static int lpc_drv_probe(struct platform_device *pdev)
 {
     int i = 0, grp_num = 4;
-    int err[5] = {0};
+    int err[4] = {0};
     struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
@@ -690,7 +774,7 @@ static int lpc_drv_probe(struct platform_device *pdev)
                 grp = &mb_cpld_attr_grp;
                 break;
             case 1:
-                grp = &bios_attr_grp;
+                grp = &bmc_mailbox_attr_grp;
                 break;
             case 2:
                 grp = &bsp_attr_grp;
@@ -720,7 +804,7 @@ exit:
                 grp = &mb_cpld_attr_grp;
                 break;
             case 1:
-                grp = &bios_attr_grp;
+                grp = &bmc_mailbox_attr_grp;
                 break;
             case 2:
                 grp = &bsp_attr_grp;
@@ -747,10 +831,9 @@ exit:
 static int lpc_drv_remove(struct platform_device *pdev)
 {
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
-    sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &bmc_mailbox_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &ec_attr_grp);
-
     return 0;
 }
 

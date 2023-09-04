@@ -38,7 +38,7 @@
             return _rv;                                                 \
         }                                                               \
     } while(0)
-    
+
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
@@ -62,22 +62,6 @@
                                     "TEMP_ENV_2 "\
                                     "TEMP_EXT_ENV_1 "\
                                     "TEMP_EXT_ENV_2 "\
-                                    "TEMP_MAC0_PVT2 "\
-                                    "TEMP_MAC0_PVT3 "\
-                                    "TEMP_MAC0_PVT4 "\
-                                    "TEMP_MAC0_PVT6 "\
-                                    "TEMP_MAC0_HBM0 "\
-                                    "TEMP_MAC0_HBM1 "\
-                                    "TEMP_MAC1_PVT2 "\
-                                    "TEMP_MAC1_PVT3 "\
-                                    "TEMP_MAC1_PVT4 "\
-                                    "TEMP_MAC1_PVT6 "\
-                                    "TEMP_MAC1_HBM0 "\
-                                    "TEMP_MAC1_HBM1 "\
-                                    "TEMP_OP2_0 "\
-                                    "TEMP_OP2_1 "\
-                                    "TEMP_OP2_2 "\
-                                    "TEMP_OP2_3 "\
                                     "PSU0_TEMP "\
                                     "PSU1_TEMP "\
                                     "FAN0_FRONT_RPM "\
@@ -158,22 +142,6 @@ enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_ENV_2,
     BMC_ATTR_ID_TEMP_EXT_ENV_1,
     BMC_ATTR_ID_TEMP_EXT_ENV_2,
-    BMC_ATTR_ID_TEMP_MAC0_PVT2,
-    BMC_ATTR_ID_TEMP_MAC0_PVT3,
-    BMC_ATTR_ID_TEMP_MAC0_PVT4,
-    BMC_ATTR_ID_TEMP_MAC0_PVT6,    
-    BMC_ATTR_ID_TEMP_MAC0_HBM0,    
-    BMC_ATTR_ID_TEMP_MAC0_HBM1,  
-    BMC_ATTR_ID_TEMP_MAC1_PVT2,
-    BMC_ATTR_ID_TEMP_MAC1_PVT3,
-    BMC_ATTR_ID_TEMP_MAC1_PVT4,
-    BMC_ATTR_ID_TEMP_MAC1_PVT6,    
-    BMC_ATTR_ID_TEMP_MAC1_HBM0,    
-    BMC_ATTR_ID_TEMP_MAC1_HBM1,        
-    BMC_ATTR_ID_TEMP_OP2_0,            
-    BMC_ATTR_ID_TEMP_OP2_1,            
-    BMC_ATTR_ID_TEMP_OP2_2,            
-    BMC_ATTR_ID_TEMP_OP2_3,    
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
     BMC_ATTR_ID_FAN0_FRONT_RPM,
@@ -207,11 +175,11 @@ enum bmc_attr_id {
 
 enum fru_attr_id {
     FRU_ATTR_ID_PSU0_VENDOR,
-    FRU_ATTR_ID_PSU0_NAME,        
+    FRU_ATTR_ID_PSU0_NAME,
     FRU_ATTR_ID_PSU0_MODEL,
-    FRU_ATTR_ID_PSU0_SERIAL,    
+    FRU_ATTR_ID_PSU0_SERIAL,
     FRU_ATTR_ID_PSU1_VENDOR,
-    FRU_ATTR_ID_PSU1_NAME,        
+    FRU_ATTR_ID_PSU1_NAME,
     FRU_ATTR_ID_PSU1_MODEL,
     FRU_ATTR_ID_PSU1_SERIAL,
     FRU_ATTR_ID_MAX
@@ -238,7 +206,7 @@ enum onlp_led_id {
     ONLP_LED_SYS_SYS,
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PSU_0,
-    ONLP_LED_SYS_PSU_1,    
+    ONLP_LED_SYS_PSU_1,
     ONLP_LED_MAX
 };
 
@@ -283,25 +251,9 @@ enum onlp_thermal_id {
     ONLP_THERMAL_ENV_2 = 17,
     ONLP_THERMAL_EXT_ENV_1 = 18,
     ONLP_THERMAL_EXT_ENV_2 = 19,
-    ONLP_THERMAL_MAC0_PVT2 = 20,
-    ONLP_THERMAL_MAC0_PVT3 = 21,
-    ONLP_THERMAL_MAC0_PVT4 = 22,
-    ONLP_THERMAL_MAC0_PVT6 = 23,
-    ONLP_THERMAL_MAC0_HBM0 = 24,    
-    ONLP_THERMAL_MAC0_HBM1 = 25,        
-    ONLP_THERMAL_MAC1_PVT2 = 26,
-    ONLP_THERMAL_MAC1_PVT3 = 27,
-    ONLP_THERMAL_MAC1_PVT4 = 28,
-    ONLP_THERMAL_MAC1_PVT6 = 29,    
-    ONLP_THERMAL_MAC1_HBM0 = 30,    
-    ONLP_THERMAL_MAC1_HBM1 = 31,         
-    ONLP_THERMAL_OP2_0 = 32,             
-    ONLP_THERMAL_OP2_1 = 33,            
-    ONLP_THERMAL_OP2_2 = 34,            
-    ONLP_THERMAL_OP2_3 = 35,         
-    ONLP_THERMAL_PSU_0 = 36, 
-    ONLP_THERMAL_PSU_1 = 37,    
-    ONLP_THERMAL_MAX = 38,
+    ONLP_THERMAL_PSU_0 = 20,
+    ONLP_THERMAL_PSU_1 = 21,
+    ONLP_THERMAL_MAX = 22,
 };
 
 enum onlp_psu_type_e {

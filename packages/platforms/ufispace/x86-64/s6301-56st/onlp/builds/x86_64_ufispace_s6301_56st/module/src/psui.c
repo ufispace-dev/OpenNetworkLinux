@@ -133,6 +133,110 @@ int get_psu_fan_dir(int *fan_dir, psu_fru_t *fru)
     return ONLP_STATUS_OK;
 }
 
+/**
+ * @brief get psu firmware version
+ * @param size: fw_ver string size
+ * @param local_id: PSU local id in onlp_psu_id
+ * @param[out] fw_ver: firmware version string
+ */
+
+int psu_fw_ver_get(char* fw_ver, int size, int local_id)
+{
+    uint8_t buffer[size];
+    int ret, len, i2c_bus, i2c_addr, pw_good;
+
+    memset(buffer, 0, sizeof(buffer));
+
+    if(local_id == ONLP_PSU_0) {
+        i2c_bus = PSU_BUS_ID;
+        i2c_addr = PSU_PMBUS_ADDR_0;
+    } else if (local_id == ONLP_PSU_1) {
+        i2c_bus = PSU_BUS_ID;
+        i2c_addr = PSU_PMBUS_ADDR_1;
+    } else {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    /* Get power good status */
+    ONLP_TRY(psu_pwgood_get(&pw_good, local_id));
+
+    if(!pw_good) {
+        strncpy(fw_ver, "not available", size);
+        return ONLP_STATUS_OK;
+    }
+
+    /* Get length */
+    len = onlp_i2c_readb(i2c_bus, i2c_addr, PSU_PMBUS_REVISION, ONLP_I2C_F_FORCE);
+    if(len < 0) {
+        AIM_LOG_ERROR("Unable to read byte offset 0x%02x from pmbus %d-0x%02x)",
+                      PSU_PMBUS_REVISION, i2c_bus, i2c_addr);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    if(size < len) {
+        AIM_LOG_ERROR("result string lenght %d < version length %d ", size, len);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    /* add first byte for block get length */
+    len++;
+
+    /* read data */
+    ret = onlp_i2c_block_read(i2c_bus, i2c_addr, PSU_PMBUS_REVISION, len, buffer,
+                              ONLP_I2C_F_FORCE);
+    if(ret < 0) {
+        AIM_LOG_ERROR("Unable to read block offset 0x%02x from pmbus %d-0x%02x)",
+                      PSU_PMBUS_REVISION, i2c_bus, i2c_addr);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    strncpy(fw_ver, (char *) (buffer+1), len);
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief get ucd firmware version
+ * @param size: fw_ver string size
+ * @param[out] fw_ver: firmware version string
+ */
+
+int ucd_fw_ver_get(char* fw_ver, int size)
+{
+    uint8_t buffer[size];
+    int ret, len, i2c_bus, i2c_addr;
+
+    memset(buffer, 0, sizeof(buffer));
+
+    i2c_bus = UCD_BUS_ID;
+    i2c_addr = UCD_ADDR;
+
+    /* Get length */
+    len = onlp_i2c_readb(i2c_bus, i2c_addr, UCD_REVISION, ONLP_I2C_F_FORCE);
+    if(len < 0) {
+        AIM_LOG_ERROR("Unable to read byte offset 0x%02x from ucd %d-0x%02x)",
+                      PSU_PMBUS_REVISION, i2c_bus, i2c_addr);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    if(size < len) {
+        AIM_LOG_ERROR("result string lenght %d < version length %d ", size, len);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    /* add first byte for block get length */
+    len++;
+
+    /* read data */
+    ret = onlp_i2c_block_read(i2c_bus, i2c_addr, UCD_REVISION, len, buffer,
+                              ONLP_I2C_F_FORCE);
+    if(ret < 0) {
+        AIM_LOG_ERROR("Unable to read block offset 0x%02x from ucd %d-0x%02x)",
+                      PSU_PMBUS_REVISION, i2c_bus, i2c_addr);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    strncpy(fw_ver, (char *) (buffer+1), len);
+    return ONLP_STATUS_OK;
+}
+
 int psu_present_get(int *present, int local_id)
 {
     int val, val_mask;

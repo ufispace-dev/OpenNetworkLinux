@@ -73,6 +73,8 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
     LEVEL_INFO=1
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc"
+    SYSFS_SYSTEM_LED="/sys/bus/i2c/devices/2-0030/cpld_system_led_sys"
+    SYSTEM_LED_GREEN=0b00001001
     FS_PLTM_CFG="/lib/platform-config/current/onl"
     PORT_CFG=FS_PLTM_CFG + "/port_config.yml"
 
@@ -227,6 +229,18 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
 
+    def set_system_led_green(self):
+        if os.path.exists(self.SYSFS_SYSTEM_LED):
+            with open(self.SYSFS_SYSTEM_LED, "r+") as f:
+                led_reg = f.read().strip()
+
+                #write green to system led
+                f.write("{}".format(self.SYSTEM_LED_GREEN))
+
+                self.bsp_pr("Current System LED: {} -> 0x{:02x}".format(led_reg, self.SYSTEM_LED_GREEN))
+        else:
+            self.bsp_pr("System LED sysfs not exist: {}", self.SYSFS_SYSTEM_LED)
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -327,6 +341,9 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
         # disable bmc watchdog
         self.disable_bmc_watchdog()
+
+        # set system led to green
+        self.set_system_led_green()
 
         self.bsp_pr("Init done")
 

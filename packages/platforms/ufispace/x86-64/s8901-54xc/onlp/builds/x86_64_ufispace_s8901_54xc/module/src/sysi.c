@@ -31,21 +31,20 @@
  * [01] CHASSIS
  *            |----[01] ONLP_THERMAL_CPU_PKG
  *            |----[02] ONLP_THERMAL_MAC
- *            |----[03] ONLP_THERMAL_MAC_HWM
- *            |----[04] ONLP_THERMAL_ENV_MACCASE
- *            |----[05] ONLP_THERMAL_ENV_PSUCASE
- *            |----[06] ONLP_THERMAL_ENV_FANCONN
- *            |----[07] ONLP_THERMAL_ENV_FANCARD
- *            |----[08] ONLP_THERMAL_ENV_BMC
+ *            |----[03] ONLP_THERMAL_ENV_MACCASE
+ *            |----[04] ONLP_THERMAL_ENV_PSUCASE
+ *            |----[05] ONLP_THERMAL_ENV_FANCONN
+ *            |----[06] ONLP_THERMAL_ENV_FANCARD
+ *            |----[07] ONLP_THERMAL_ENV_BMC
  *            |----[01] ONLP_LED_SYS_SYNC
  *            |----[02] ONLP_LED_SYS_SYS
  *            |----[03] ONLP_LED_SYS_FAN
  *            |----[04] ONLP_LED_SYS_PSU_0
  *            |----[05] ONLP_LED_SYS_PSU_1
  *            |----[06] ONLP_LED_SYS_ID
- *            |----[01] ONLP_PSU_0----[13] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[14] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU_1
  *            |                  |----[07] ONLP_PSU_1_FAN
  *            |----[01] ONLP_FAN_0
  *            |----[02] ONLP_FAN_1

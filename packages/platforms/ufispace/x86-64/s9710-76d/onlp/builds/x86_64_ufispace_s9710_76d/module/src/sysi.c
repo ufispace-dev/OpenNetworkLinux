@@ -311,7 +311,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     memset(table, 0, max*sizeof(onlp_oid_t));
 
     /* Thermal */
-    for (i = ONLP_THERMAL_CPU_PKG; i <= ONLP_THERMAL_OP2_3; i++) {
+    for (i = ONLP_THERMAL_CPU_PKG; i < ONLP_THERMAL_PSU_0; i++) {
         *e++ = ONLP_THERMAL_ID_CREATE(i);
     }
 

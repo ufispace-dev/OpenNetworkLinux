@@ -31,11 +31,10 @@
  * [01] CHASSIS - Beta and before
  *            |----[01]ONLP_THERMAL_CPU_PKG
  *            |----[02]ONLP_THERMAL_MAC
- *            |----[03]ONLP_THERMAL_MAC_HWM
- *            |----[04]ONLP_THERMAL_ENV_MACCASE
- *            |----[05]ONLP_THERMAL_ENV_SSDCASE
- *            |----[06]ONLP_THERMAL_ENV_PSUCASE
- *            |----[07]ONLP_THERMAL_ENV_BMC
+ *            |----[03]ONLP_THERMAL_ENV_MACCASE
+ *            |----[04]ONLP_THERMAL_ENV_SSDCASE
+ *            |----[05]ONLP_THERMAL_ENV_PSUCASE
+ *            |----[06]ONLP_THERMAL_ENV_BMC
  *            |
  *            |----[01] ONLP_LED_SYS_SYS
  *            |----[02] ONLP_LED_SYS_FAN
@@ -43,9 +42,9 @@
  *            |----[04] ONLP_LED_SYS_PSU_1
  *            |----[05] ONLP_LED_SYS_ID
  *            |
- *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
+ *            |----[01] ONLP_PSU_0----[07] ONLP_THERMAL_PSU_0
  *                               |----[09] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU_1
+ *            |----[02] ONLP_PSU_1----[08] ONLP_THERMAL_PSU_1
  *                               |----[10] ONLP_PSU_1_FAN
  *            |
  *            |----[01] ONLP_FAN_0_F
@@ -60,11 +59,10 @@
  * [01] CHASSIS - after Beta
  *            |----[01]ONLP_THERMAL_CPU_PKG
  *            |----[02]ONLP_THERMAL_MAC
- *            |----[03]ONLP_THERMAL_MAC_HWM
- *            |----[04]ONLP_THERMAL_ENV_MACCASE
- *            |----[05]ONLP_THERMAL_ENV_SSDCASE
- *            |----[06]ONLP_THERMAL_ENV_PSUCASE
- *            |----[07]ONLP_THERMAL_ENV_BMC
+ *            |----[03]ONLP_THERMAL_ENV_MACCASE
+ *            |----[04]ONLP_THERMAL_ENV_SSDCASE
+ *            |----[05]ONLP_THERMAL_ENV_PSUCASE
+ *            |----[06]ONLP_THERMAL_ENV_BMC
  *            |
  *            |----[01] ONLP_LED_SYS_SYS
  *            |----[02] ONLP_LED_SYS_FAN
@@ -73,8 +71,8 @@
  *            |----[05] ONLP_LED_SYS_ID
  *            |
  *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
- *                               |----[09] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU_1
+ *                               |----[07] ONLP_PSU_0_FAN
+ *            |----[02] ONLP_PSU_1----[08] ONLP_THERMAL_PSU_1
  *                               |----[10] ONLP_PSU_1_FAN
  *            |
  *            |----[01] ONLP_FAN_0_F
@@ -89,7 +87,6 @@
 static onlp_oid_t __onlp_oid_beta_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HWM),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MACCASE),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_SSDCASE),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_PSUCASE),
@@ -117,7 +114,6 @@ static onlp_oid_t __onlp_oid_beta_info[] = {
 static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
-    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HWM),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MACCASE),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_SSDCASE),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_PSUCASE),

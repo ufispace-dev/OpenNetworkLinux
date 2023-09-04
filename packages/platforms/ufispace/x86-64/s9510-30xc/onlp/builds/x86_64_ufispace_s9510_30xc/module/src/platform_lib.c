@@ -215,6 +215,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 {
     int cache_time = 0;
     int bmc_cache_expired = 0;
+    int bmc_cache_change = 0;
+    static long file_pre_time = 0;
     long file_last_time = 0;
     static int init_cache = 1;
     int rv = ONLP_STATUS_OK;
@@ -239,6 +241,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
         } else {
+            if(file_pre_time != file_last_time) {
+                file_pre_time = file_last_time;
+                bmc_cache_change = 1;
+            }
             bmc_cache_expired = 0;
         }
     } else {
@@ -246,7 +252,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     }
 
     //update cache
-    if(bmc_cache_expired == 1 || init_cache == 1) {
+    if(bmc_cache_expired == 1 || init_cache == 1 || bmc_cache_change == 1) {
         if(bmc_cache_expired == 1) {
             // detect bmc status
             if(bmc_check_alive() != ONLP_STATUS_OK) {
@@ -337,6 +343,8 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     struct timeval new_tv;
     int cache_time = PSU_CACHE_TIME;
     int bmc_cache_expired = 0;
+    int bmc_cache_change = 0;
+    static long file_pre_time = 0;
     long file_last_time = 0;
     int rv = ONLP_STATUS_OK;
 
@@ -353,6 +361,10 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
         } else {
+            if(file_pre_time != file_last_time) {
+                file_pre_time = file_last_time;
+                bmc_cache_change = 1;
+            }
             bmc_cache_expired = 0;
         }
     } else {
@@ -360,7 +372,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     }
 
     //update cache
-    if(bmc_cache_expired == 1 || fru->init_done == 0) {
+    if(bmc_cache_expired == 1 || fru->init_done == 0 || bmc_cache_change == 1) {
         //get fru from ipmitool and save to cache file
         if(bmc_cache_expired == 1) {
             // detect bmc status

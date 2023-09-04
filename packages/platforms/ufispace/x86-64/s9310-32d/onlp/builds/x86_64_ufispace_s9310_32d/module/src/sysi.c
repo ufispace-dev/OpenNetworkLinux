@@ -123,8 +123,8 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
         *e++ = THERMAL_OID_MAC_ENV;
         *e++ = THERMAL_OID_POWER_CONN;
         *e++ = THERMAL_OID_400G_MODULE;
-        *e++ = THERMAL_OID_PSU0;
-        *e++ = THERMAL_OID_PSU1;
+        //*e++ = THERMAL_OID_PSU0;
+        //*e++ = THERMAL_OID_PSU1;
         *e++ = THERMAL_OID_CPU_PKG;        
         *e++ = THERMAL_OID_CPU1;
         *e++ = THERMAL_OID_CPU2;
@@ -148,8 +148,8 @@ onlp_sysi_oids_get(onlp_oid_t* table, int max)
         *e++ = FAN_OID_FAN2;
         *e++ = FAN_OID_FAN3;
         *e++ = FAN_OID_FAN4;
-        *e++ = FAN_OID_PSU0_FAN1;
-        *e++ = FAN_OID_PSU1_FAN1;
+        //*e++ = FAN_OID_PSU0_FAN1;
+        //*e++ = FAN_OID_PSU1_FAN1;
     }
     
     return ONLP_STATUS_OK;
