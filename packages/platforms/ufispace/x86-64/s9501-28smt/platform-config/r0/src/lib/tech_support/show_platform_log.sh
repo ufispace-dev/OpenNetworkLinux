@@ -797,13 +797,25 @@ function _show_port_status_sysfs {
 
     if [ "${MODEL_NAME}" == "S9501" ]; then
 
-        port_name_array=("4" "5" "6" "7" "8" "9" "10" "11" \
-                         "12" "13" "14" "15" "16" "17" "18" "19" \
-                         "20" "21" "22" "23" "24" "25" "26" "27" )
+        port_name_array_28smt=("4" "5" "6" "7" "8" "9" "10" "11" \
+                               "12" "13" "14" "15" "16" "17" "18" "19" \
+                               "20" "21" "22" "23" "24" "25" "26" "27" )
 
-        port_absent_gpio_array=("387" "386" "385" "384" "399" "398" "397" "396" \
-                                "395" "394" "393" "392" "375" "374" "373" "372" \
-                                "371" "370" "369" "368" "383" "382" "381" "380" )
+        port_name_array_18smt=("4" "5" "6" "7" "8" "9" "10" "11" \
+                               "12" "13" "14" "15" "16" "17" )
+
+        port_name_array_16smt=("4" "5" "6" "7" "8" "9" "10" "11" \
+                               "12" "13" "14" "15" )
+
+        port_absent_gpio_array_28smt=("387" "386" "385" "384" "399" "398" "397" "396" \
+                                      "395" "394" "393" "392" "375" "374" "373" "372" \
+                                    "371" "370" "369" "368" "383" "382" "381" "380" )
+
+        port_absent_gpio_array_18smt=("395" "394" "393" "392" "375" "374" "373" "372" \
+                                      "371" "370" "369" "368" "383" "382")
+
+        port_absent_gpio_array_16smt=("395" "394" "393" "392" "375" "374" "373" "372" \
+                                      "371" "370" "369" "368")
 
         port_lp_mode_gpio_array=("-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                  "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
@@ -817,25 +829,55 @@ function _show_port_status_sysfs {
                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                               "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
-        port_tx_fault_gpio_array=("451" "450" "449" "448" "463" "462" "461" "460" \
-                                  "459" "458" "457" "456" "439" "438" "437" "436" \
-                                  "435" "434" "433" "432" "447" "446" "445" "444" )
+        port_tx_fault_gpio_array_28smt=("451" "450" "449" "448" "463" "462" "461" "460" \
+                                        "459" "458" "457" "456" "439" "438" "437" "436" \
+                                        "435" "434" "433" "432" "447" "446" "445" "444" )
 
-        port_rx_los_gpio_array=("355" "354" "353" "352" "367" "366" "365" "364" \
-                                "363" "362" "361" "360" "375" "374" "373" "372" \
-                                "371" "370" "369" "368" "383" "382" "381" "380" )
+        port_tx_fault_gpio_array_18smt=("459" "458" "457" "456" "439" "438" "437" "436" \
+                                        "435" "434" "433" "432" "447" "446" )
 
-        port_tx_dis_gpio_array=("483" "482" "481" "480" "495" "494" "493" "492" \
-                                "491" "490" "489" "488" "471" "470" "469" "468" \
-                                "467" "466" "465" "464" "479" "478" "477" "476" )
+        port_tx_fault_gpio_array_16smt=("459" "458" "457" "456" "439" "438" "437" "436" \
+                                        "435" "434" "433" "432")
 
-        port_rate_sel_gpio_array=("419" "418" "417" "416" "431" "430" "429" "428" \
-                                  "427" "426" "425" "424" "407" "406" "405" "404" \
-                                  "403" "402" "401" "400" "415" "414" "413" "412" )
+        port_rx_los_gpio_array_28smt=("355" "354" "353" "352" "367" "366" "365" "364" \
+                                      "363" "362" "361" "360" "375" "374" "373" "372" \
+                                      "371" "370" "369" "368" "383" "382" "381" "380" )
 
-        port_eeprom_bus_array=("10" "11" "12" "13" "14" "15" "16" "17" \
-                               "18" "19" "20" "21" "22" "23" "24" "25" \
-                               "26" "27" "28" "29" "30" "31" "32" "33" )
+        port_rx_los_gpio_array_18smt=("363" "362" "361" "360" "375" "374" "373" "372" \
+                                      "371" "370" "369" "368" "383" "382")
+
+        port_rx_los_gpio_array_16smt=("363" "362" "361" "360" "375" "374" "373" "372" \
+                                      "371" "370" "369" "368")
+
+        port_tx_dis_gpio_array_28smt=("483" "482" "481" "480" "495" "494" "493" "492" \
+                                      "491" "490" "489" "488" "471" "470" "469" "468" \
+                                      "467" "466" "465" "464" "479" "478" "477" "476" )
+
+        port_tx_dis_gpio_array_18smt=("491" "490" "489" "488" "471" "470" "469" "468" \
+                                      "467" "466" "465" "464" "479" "478")
+
+        port_tx_dis_gpio_array_16smt=("491" "490" "489" "488" "471" "470" "469" "468" \
+                                      "467" "466" "465" "464")
+
+        port_rate_sel_gpio_array_28smt=("419" "418" "417" "416" "431" "430" "429" "428" \
+                                        "427" "426" "425" "424" "407" "406" "405" "404" \
+                                        "403" "402" "401" "400" "415" "414" "413" "412" )
+
+        port_rate_sel_gpio_array_18smt=("427" "426" "425" "424" "407" "406" "405" "404" \
+                                        "403" "402" "401" "400" "415" "414" )
+
+        port_rate_sel_gpio_array_16smt=("427" "426" "425" "424" "407" "406" "405" "404" \
+                                        "403" "402" "401" "400" )
+
+        port_eeprom_bus_array_28smt=("10" "11" "12" "13" "14" "15" "16" "17" \
+                                     "18" "19" "20" "21" "22" "23" "24" "25" \
+                                     "26" "27" "28" "29" "30" "31" "32" "33" )
+
+        port_eeprom_bus_array_18smt=("10" "11" "12" "13" "14" "15" "16" "17" \
+                                     "18" "19" "20" "21" "22" "23")
+
+        port_eeprom_bus_array_16smt=("10" "11" "12" "13" "14" "15" "16" "17" \
+                                     "18" "19" "20" "21")
 
         port_led_g_gpio_array=("-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
@@ -845,6 +887,35 @@ function _show_port_status_sysfs {
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" \
                                "-1" "-1" "-1" "-1" "-1" "-1" "-1" "-1" )
 
+        if [ "${SKU_NAME}" == "28SMT" ]; then
+            port_name_array=("${port_name_array_28smt[@]}")
+            port_absent_gpio_array=("${port_absent_gpio_array_28smt[@]}")
+            port_tx_fault_gpio_array=("${port_tx_fault_gpio_array_28smt[@]}")
+            port_rx_los_gpio_array=("${port_rx_los_gpio_array_28smt[@]}")
+            port_tx_dis_gpio_array=("${port_tx_dis_gpio_array_28smt[@]}")
+            port_rate_sel_gpio_array=("${port_rate_sel_gpio_array_28smt[@]}")
+            port_eeprom_bus_array=("${port_eeprom_bus_array_28smt[@]}")
+        elif [ "${SKU_NAME}" == "18SMT" ]; then
+            port_name_array=("${port_name_array_18smt[@]}")
+            port_absent_gpio_array=("${port_absent_gpio_array_18smt[@]}")
+            port_tx_fault_gpio_array=("${port_tx_fault_gpio_array_18smt[@]}")
+            port_rx_los_gpio_array=("${port_rx_los_gpio_array_18smt[@]}")
+            port_tx_dis_gpio_array=("${port_tx_dis_gpio_array_18smt[@]}")
+            port_rate_sel_gpio_array=("${port_rate_sel_gpio_array_18smt[@]}")
+            port_eeprom_bus_array=("${port_eeprom_bus_array_18smt[@]}")
+        elif [ "${SKU_NAME}" == "16SMT" ]; then
+            port_name_array=("${port_name_array_16smt[@]}")
+            port_absent_gpio_array=("${port_absent_gpio_array_16smt[@]}")
+            port_tx_fault_gpio_array=("${port_tx_fault_gpio_array_16smt[@]}")
+            port_rx_los_gpio_array=("${port_rx_los_gpio_array_16smt[@]}")
+            port_tx_dis_gpio_array=("${port_tx_dis_gpio_array_16smt[@]}")
+            port_rate_sel_gpio_array=("${port_rate_sel_gpio_array_16smt[@]}")
+            port_eeprom_bus_array=("${port_eeprom_bus_array_16smt[@]}")
+        else
+            _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+            exit 1
+        fi
+
         for (( i=0; i<${#port_name_array[@]}; i++ ))
         do
 
@@ -853,7 +924,7 @@ function _show_port_status_sysfs {
             gpio_path=$(( ${port_absent_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_absent_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_absent=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Module Absent]: ${port_absent}"
+                _echo "[Port${port_name_array[${i}]} Module Absent]: ${port_absent}"
             fi
 
             # Port Lower Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
@@ -862,49 +933,49 @@ function _show_port_status_sysfs {
 
                 port_lp_mode=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
 
-                _echo "[Port${i} Low Power Mode]: ${port_lp_mode}"
+                _echo "[Port${port_name_array[${i}]} Low Power Mode]: ${port_lp_mode}"
             fi
 
             # Port Reset Status (0:Reset, 1:Normal)
             gpio_path=$(( ${port_reset_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_reset_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_reset=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Reset Status]: ${port_reset}"
+                _echo "[Port${port_name_array[${i}]} Reset Status]: ${port_reset}"
             fi
 
             # Port Interrupt Status (0: Interrupted, 1:No Interrupt)
             gpio_path=$(( ${port_intr_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_intr_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_intr_l=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Interrupt Status (L)]: ${port_intr_l}"
+                _echo "[Port${port_name_array[${i}]} Interrupt Status (L)]: ${port_intr_l}"
             fi
 
             # Port Tx Fault Status (0:normal, 1:tx fault)
             gpio_path=$(( ${port_tx_fault_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_tx_fault_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_tx_fault=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Tx Fault Status]: ${port_tx_fault}"
+                _echo "[Port${port_name_array[${i}]} Tx Fault Status]: ${port_tx_fault}"
             fi
 
             # Port Rx Loss Status (0:los undetected, 1: los detected)
             gpio_path=$(( ${port_rx_los_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_rx_los_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_rx_loss=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Rx Loss Status]: ${port_rx_loss}"
+                _echo "[Port${port_name_array[${i}]} Rx Loss Status]: ${port_rx_loss}"
             fi
 
             # Port Tx Disable Status (0:enable tx, 1: disable tx)
             gpio_path=$(( ${port_tx_dis_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_tx_dis_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_tx_dis=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Tx Disable Status]: ${port_tx_dis}"
+                _echo "[Port${port_name_array[${i}]} Tx Disable Status]: ${port_tx_dis}"
             fi
 
             # Port Rate Select (0: low rate, 1:full rate)
             gpio_path=$(( ${port_rate_sel_gpio_array[${i}]} - ${GPIO_OFFSET} ))
             if [ "${port_rate_sel_gpio_array[${i}]}" != "-1" ] && _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"; then
                 port_rate_sel=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
-                _echo "[Port${i} Port Rate Select]: ${port_rate_sel}"
+                _echo "[Port${port_name_array[${i}]} Port Rate Select]: ${port_rate_sel}"
             fi
 
             # Port LED Status (0: low rate, 1:full rate)
@@ -917,19 +988,19 @@ function _show_port_status_sysfs {
                 g_gpio=$(eval "cat /sys/class/gpio/gpio${gpio_g_path}/value")
                 y_gpio=$(eval "cat /sys/class/gpio/gpio${gpio_y_path}/value")
 
-                _echo "[Port${i} LED Reg Raw]: Green:${g_gpio}, Yellow:${y_gpio}"
+                _echo "[Port${port_name_array[${i}]} LED Reg Raw]: Green:${g_gpio}, Yellow:${y_gpio}"
                 case "${g_gpio}_${y_gpio}" in
                     '1_0')
-                        _echo "[Port${i} LED Status  ]: Green"
+                        _echo "[Port${port_name_array[${i}]} LED Status  ]: Green"
                         ;;
                     '0_1')
-                        _echo "[Port${i} LED Status  ]: Yellow"
+                        _echo "[Port${port_name_array[${i}]} LED Status  ]: Yellow"
                         ;;
                     '0_0')
-                        _echo "[Port${i} LED Status  ]: Off"
+                        _echo "[Port${port_name_array[${i}]} LED Status  ]: Off"
                         ;;
                     *)
-                        _echo "[Port${i} LED Status  ]: Unknown"
+                        _echo "[Port${port_name_array[${i}]} LED Status  ]: Unknown"
                 esac
 
             fi
@@ -939,7 +1010,7 @@ function _show_port_status_sysfs {
             if [ "${port_absent}" == "0" ] && _check_filepath "${eeprom_path}"; then
                 port_eeprom=$(eval "dd if=${eeprom_path} bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
                 if [ "${LOG_FILE_ENABLE}" == "1" ]; then
-                    hexdump -C "${eeprom_path}" > ${LOG_FOLDER_PATH}/port${i}_eeprom.log 2>&1
+                    hexdump -C "${eeprom_path}" > ${LOG_FOLDER_PATH}/port${port_name_array[${i}]}_eeprom.log 2>&1
                 fi
                 if [ -z "$port_eeprom" ]; then
                     port_eeprom="ERROR!!! The result is empty. It should read failed (${eeprom_path})!!"
@@ -948,7 +1019,7 @@ function _show_port_status_sysfs {
                 port_eeprom="N/A"
             fi
 
-            _echo "[Port${i} EEPROM Page0-1]:"
+            _echo "[Port${port_name_array[${i}]} EEPROM Page0-1]:"
             _echo "${port_eeprom}"
             _echo ""
         done

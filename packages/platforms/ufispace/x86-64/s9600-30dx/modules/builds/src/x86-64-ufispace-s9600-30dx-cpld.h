@@ -93,6 +93,8 @@ enum cpld_id {
 #define CPLD_SYSTEM_LED_SYNC_REG          0x82
 #define CPLD_SYSTEM_LED_ID_REG            0x84
 
+#define CPLD_HBM_PWR_CTRL_REG             0x98
+
 #define DBG_CPLD_MAC_INTR_REG             0xE0
 #define DBG_CPLD_GBOX_INTR_REG            0xE1
 #define DBG_CPLD_PHY_INTR_REG             0xE3
@@ -202,6 +204,7 @@ enum cpld_id {
 #define CPLD_SYSTEM_LED_PSU_1_MASK         MASK_HB
 #define CPLD_SYSTEM_LED_SYNC_MASK          MASK_LB
 #define CPLD_SYSTEM_LED_ID_MASK            MASK_LB
+#define CPLD_HBM_PWR_CTRL_MASK             (0b00000001)
 #define CPLD_SFP_LED_MASK_0                (0b00000011)
 #define CPLD_SFP_LED_MASK_1                (0b00001100)
 

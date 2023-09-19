@@ -70,8 +70,8 @@
  *            |----[04] ONLP_LED_SYS_PSU_1
  *            |----[05] ONLP_LED_SYS_ID
  *            |
- *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
- *                               |----[07] ONLP_PSU_0_FAN
+ *            |----[01] ONLP_PSU_0----[07] ONLP_THERMAL_PSU_0
+ *                               |----[09] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[08] ONLP_THERMAL_PSU_1
  *                               |----[10] ONLP_PSU_1_FAN
  *            |

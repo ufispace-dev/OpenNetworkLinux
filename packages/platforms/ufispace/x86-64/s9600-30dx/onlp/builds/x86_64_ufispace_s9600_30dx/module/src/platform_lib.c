@@ -752,3 +752,35 @@ int ufi_get_cpu_rev(int *rev_sku, int *rev_hw, int *rev_build)
 
     return ONLP_STATUS_OK;
 }
+
+/**
+ * @brief read mac hbm power status
+ * @param[out] pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_read_hbm_pwr_ctrl(int *pwr_ctrl)
+{
+    if (pwr_ctrl == NULL) {
+        AIM_LOG_ERROR("pwr_ctrl is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(pwr_ctrl, SYSFS_HBM_PWR_CTRL));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief write mac hbm power status
+ * @param pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_write_hbm_pwr_ctrl(int pwr_ctrl)
+{
+    if (pwr_ctrl < 0 || pwr_ctrl > 1) {
+        AIM_LOG_ERROR("Invalid pwr_ctrl value %d, it should be 0 or 1.", pwr_ctrl);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(onlp_file_write_int(pwr_ctrl, SYSFS_HBM_PWR_CTRL));
+
+    return ONLP_STATUS_OK;
+}

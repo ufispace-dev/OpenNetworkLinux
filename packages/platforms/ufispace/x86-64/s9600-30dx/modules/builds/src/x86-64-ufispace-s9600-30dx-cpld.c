@@ -128,6 +128,7 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_PSU_0,
     CPLD_SYSTEM_LED_PSU_1,
     CPLD_SYSTEM_LED_ID,
+    CPLD_HBM_PWR_CTRL,
     DBG_CPLD_MAC_INTR,
     DBG_CPLD_GBOX_INTR,
     DBG_CPLD_PHY_INTR,
@@ -335,6 +336,8 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_0, cpld_callback, CPLD_SYSTEM_
 static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_1, cpld_callback, CPLD_SYSTEM_LED_PSU_1);
 static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_id,    cpld_callback, CPLD_SYSTEM_LED_ID);
 
+static _SENSOR_DEVICE_ATTR_RW(cpld_hbm_pwr_ctrl,    cpld_callback, CPLD_HBM_PWR_CTRL);
+
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_mac_intr,  cpld_callback, DBG_CPLD_MAC_INTR);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_gbox_intr, cpld_callback, DBG_CPLD_GBOX_INTR);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_phy_intr,  cpld_callback, DBG_CPLD_PHY_INTR);
@@ -498,6 +501,8 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_psu_0),
     _DEVICE_ATTR(cpld_system_led_psu_1),
     _DEVICE_ATTR(cpld_system_led_id),
+
+    _DEVICE_ATTR(cpld_hbm_pwr_ctrl),
 
     _DEVICE_ATTR(bsp_debug),
 
@@ -942,7 +947,10 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_SYSTEM_LED_ID_REG;
             mask = CPLD_SYSTEM_LED_ID_MASK;
             break;
-
+        case CPLD_HBM_PWR_CTRL:
+            reg = CPLD_HBM_PWR_CTRL_REG;
+            mask = CPLD_HBM_PWR_CTRL_MASK;
+            break;
         case DBG_CPLD_MAC_INTR:
             reg = DBG_CPLD_MAC_INTR_REG;
             break;
@@ -1258,6 +1266,10 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_SYSTEM_LED_ID:
             reg = CPLD_SYSTEM_LED_ID_REG;
             mask = CPLD_SYSTEM_LED_ID_MASK;
+            break;
+        case CPLD_HBM_PWR_CTRL:
+            reg = CPLD_HBM_PWR_CTRL_REG;
+            mask = CPLD_HBM_PWR_CTRL_MASK;
             break;
         case DBG_CPLD_MAC_INTR:
             reg = DBG_CPLD_MAC_INTR_REG;

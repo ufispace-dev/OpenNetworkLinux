@@ -53,6 +53,7 @@
 #define SYSFS_MUX_RESET             SYSFS_LPC_MB_CPLD "mux_reset"
 #define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"
 #define SYSFS_CPLD1_ID              SYSFS_CPLD1 "cpld_id"
+#define SYSFS_HBM_PWR_CTRL          SYSFS_CPLD1 "cpld_hbm_pwr_ctrl"
 #define SYS_FMT                     SYSFS_DEVICES "%d-%04x/%s"
 #define SYS_FMT_OFFSET              SYSFS_DEVICES "%d-%04x/%s_%s"
 #define SYS_CPU_CORETEMP_PREFIX     SYSFS_PLTM "coretemp.0/hwmon/hwmon0/"
