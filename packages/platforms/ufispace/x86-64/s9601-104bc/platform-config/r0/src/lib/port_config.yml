@@ -1,0 +1,216 @@
+---
+SFP:
+  0:
+    port_name: 0
+  1:
+    port_name: 1
+  2:
+    port_name: 2
+  3:
+    port_name: 3
+  4:
+    port_name: 4
+  5:
+    port_name: 5
+  6:
+    port_name: 6
+  7:
+    port_name: 7
+  8:
+    port_name: 8
+  9:
+    port_name: 9
+  10:
+    port_name: 10
+  11:
+    port_name: 11
+  12:
+    port_name: 12
+  13:
+    port_name: 13
+  14:
+    port_name: 14
+  15:
+    port_name: 15
+  16:
+    port_name: 16
+  17:
+    port_name: 17
+  18:
+    port_name: 18
+  19:
+    port_name: 19
+  20:
+    port_name: 20
+  21:
+    port_name: 21
+  22:
+    port_name: 22
+  23:
+    port_name: 23
+  24:
+    port_name: 24
+  25:
+    port_name: 25
+  26:
+    port_name: 26
+  27:
+    port_name: 27
+  28:
+    port_name: 28
+  29:
+    port_name: 29
+  30:
+    port_name: 30
+  31:
+    port_name: 31
+  32:
+    port_name: 32
+  33:
+    port_name: 33
+  34:
+    port_name: 34
+  35:
+    port_name: 35
+  36:
+    port_name: 36
+  37:
+    port_name: 37
+  38:
+    port_name: 38
+  39:
+    port_name: 39
+  40:
+    port_name: 40
+  41:
+    port_name: 41
+  42:
+    port_name: 42
+  43:
+    port_name: 43
+  44:
+    port_name: 44
+  45:
+    port_name: 45
+  46:
+    port_name: 46
+  47:
+    port_name: 47
+  48:
+    port_name: 48
+  49:
+    port_name: 49
+  50:
+    port_name: 50
+  51:
+    port_name: 51
+  52:
+    port_name: 52
+  53:
+    port_name: 53
+  54:
+    port_name: 54
+  55:
+    port_name: 55
+  56:
+    port_name: 56
+  57:
+    port_name: 57
+  58:
+    port_name: 58
+  59:
+    port_name: 59
+  60:
+    port_name: 60
+  61:
+    port_name: 61
+  62:
+    port_name: 62
+  63:
+    port_name: 63
+  64:
+    port_name: 64
+  65:
+    port_name: 65
+  66:
+    port_name: 66
+  67:
+    port_name: 67
+  68:
+    port_name: 68
+  69:
+    port_name: 69
+  70:
+    port_name: 70
+  71:
+    port_name: 71
+  72:
+    port_name: 72
+  73:
+    port_name: 73
+  74:
+    port_name: 74
+  75:
+    port_name: 75
+  76:
+    port_name: 76
+  77:
+    port_name: 77
+  78:
+    port_name: 78
+  79:
+    port_name: 79
+  80:
+    port_name: 80
+  81:
+    port_name: 81
+  82:
+    port_name: 82
+  83:
+    port_name: 83
+  84:
+    port_name: 84
+  85:
+    port_name: 85
+  86:
+    port_name: 86
+  87:
+    port_name: 87
+  88:
+    port_name: 88
+  89:
+    port_name: 89
+  90:
+    port_name: 90
+  91:
+    port_name: 91
+  92:
+    port_name: 92
+  93:
+    port_name: 93
+  94:
+    port_name: 94
+  95:
+    port_name: 95
+QSFP:
+  96:
+    port_name: 96
+  97:
+    port_name: 97
+  98:
+    port_name: 98
+  99:
+    port_name: 99
+  100:
+    port_name: 100
+  101:
+    port_name: 101
+  102:
+    port_name: 102
+  103:
+    port_name: 103
+MGMT:
+  104:
+    port_name: 104
+  105:
+    port_name: 105
