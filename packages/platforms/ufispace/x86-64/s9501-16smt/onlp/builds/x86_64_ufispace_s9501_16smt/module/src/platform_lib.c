@@ -1252,6 +1252,8 @@ sys_led_info_get(onlp_led_info_t* info, int id)
     //onoff
     if (led_val_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
+        // update status
+        info->status &= ~ONLP_LED_STATUS_ON;
     } else {
         //color
         if (led_val_color == 0) {
@@ -1263,6 +1265,8 @@ sys_led_info_get(onlp_led_info_t* info, int id)
         if (led_val_blink == 1) {
             info->mode = info->mode + 1;
         }
+        // update status
+        info->status |= ONLP_LED_STATUS_ON;
     }
 
     return ONLP_STATUS_OK;

@@ -126,8 +126,10 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
 
     //onoff
     if (led_val_onoff == 0) {
+        info->status &= ~ONLP_LED_STATUS_ON;
         info->mode = ONLP_LED_MODE_OFF;
     } else {
+        info->status |= ONLP_LED_STATUS_ON;
         //color
         if (led_val_color == 0 && led_val_blink == 1) {
             info->mode = ONLP_LED_MODE_YELLOW_BLINKING;

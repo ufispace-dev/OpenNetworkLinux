@@ -75,6 +75,8 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
     //onoff
     if (led_val_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
+        // update status
+        info->status &= ~ONLP_LED_STATUS_ON;
     } else {
         //color
 
@@ -100,6 +102,8 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
                 }
             }
         }
+        // update status
+        info->status |= ONLP_LED_STATUS_ON;
     }
 
     return ONLP_STATUS_OK;

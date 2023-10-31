@@ -183,8 +183,10 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
 
     //onoff
     if (led_onoff == 0) {
+        info->status &= ~ONLP_LED_STATUS_ON;
         info->mode = ONLP_LED_MODE_OFF;
     } else {
+        info->status |= ONLP_LED_STATUS_ON;
         //color
         if (led_color == 0) {
             info->mode = (led_blink == 1) ? ONLP_LED_MODE_YELLOW_BLINKING : ONLP_LED_MODE_YELLOW;

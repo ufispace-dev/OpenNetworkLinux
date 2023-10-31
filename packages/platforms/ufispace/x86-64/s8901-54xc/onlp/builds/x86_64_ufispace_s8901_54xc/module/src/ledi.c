@@ -126,10 +126,15 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
 
     //onoff
     if (led_val_onoff == 0) {
+        //update status
+        info->status &= ~ONLP_LED_STATUS_ON;
+        //update mode
         info->mode = ONLP_LED_MODE_OFF;
     } else {
-        //color
+        //update status
+        info->status |= ONLP_LED_STATUS_ON;
 
+        //update mode
         //LED ID color is blue only
         if (local_id == ONLP_LED_SYS_ID) {
             info->mode = ONLP_LED_MODE_BLUE;

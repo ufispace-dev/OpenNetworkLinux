@@ -131,8 +131,10 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
 
         //onoff
         if (led_onoff == 0) {
+            info->status &= ~ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_OFF;
         } else {
+            info->status |= ONLP_LED_STATUS_ON;
             //color
             if (led_color == 0) {
                 info->mode = (led_blink == 1) ? ONLP_LED_MODE_YELLOW_BLINKING : ONLP_LED_MODE_YELLOW;
@@ -148,10 +150,13 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
         ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, led_attr[local_id].y_gpin));
 
         if ((g_val == 1) && (y_val == 0)) {
+            info->status |= ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_GREEN;
         } else if ((g_val == 0) && (y_val == 1)) {
+            info->status |= ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_YELLOW;
         } else if ((g_val == 0) && (y_val == 0)) {
+            info->status &= ~ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_OFF;
         } else {
             return ONLP_STATUS_E_INTERNAL;

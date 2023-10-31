@@ -203,6 +203,7 @@ enum cpld_sysfs_attributes {
     CPLD_SFP28_EVT_PRESENT,
     CPLD_QSFPDD_RESET,
     CPLD_QSFPDD_LPMODE,
+    CPLD_UFM_WRITE,
     CPLD_QSFPDD_LED_0,
     CPLD_QSFPDD_LED_1,
     CPLD_SFP28_LED_0,
@@ -220,6 +221,10 @@ enum cpld_sysfs_attributes {
     CPLD_SFPDD_28_TX_DIS,
     CPLD_SFPDD_RATE_CAP,
     CPLD_SFP28_RATE_CAP,
+    CPLD_GBOX_SERBOOT_UFM_STORE_0,
+    CPLD_GBOX_SERBOOT_UFM_STORE_1,
+    CPLD_GBOX_SERBOOT_UFM_WRITE_0,
+    CPLD_GBOX_SERBOOT_UFM_WRITE_1,
     DBG_CPLD_QSFPDD_INTR_PORT,
     DBG_CPLD_QSFPDD_INTR_PRESENT,
     DBG_CPLD_QSFPDD_INTR_FUSE,
@@ -462,6 +467,7 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_sfp28_mask_present, cpld_callback, CPLD_SFP28
 static _SENSOR_DEVICE_ATTR_RO(cpld_sfp28_evt_present, cpld_callback, CPLD_SFP28_EVT_PRESENT);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset, cpld_callback, CPLD_QSFPDD_RESET);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode, cpld_callback, CPLD_QSFPDD_LPMODE);
+static _SENSOR_DEVICE_ATTR_RW(cpld_ufm_write, cpld_callback, CPLD_UFM_WRITE);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_led_0, cpld_callback, CPLD_QSFPDD_LED_0);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_led_1, cpld_callback, CPLD_QSFPDD_LED_1);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp28_led_0, cpld_callback, CPLD_SFP28_LED_0);
@@ -479,6 +485,10 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_sfpdd_28_evt_tx_fault,    cpld_callback, CPLD
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfpdd_28_tx_dis, cpld_callback, CPLD_SFPDD_28_TX_DIS);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfpdd_rate_cap, cpld_callback, CPLD_SFPDD_RATE_CAP);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp28_rate_cap, cpld_callback, CPLD_SFP28_RATE_CAP);
+static _SENSOR_DEVICE_ATTR_RO(cpld_gbox_serboot_ufm_store_0, cpld_callback, CPLD_GBOX_SERBOOT_UFM_STORE_0);
+static _SENSOR_DEVICE_ATTR_RO(cpld_gbox_serboot_ufm_store_1, cpld_callback, CPLD_GBOX_SERBOOT_UFM_STORE_1);
+static _SENSOR_DEVICE_ATTR_RW(cpld_gbox_serboot_ufm_write_0, cpld_callback, CPLD_GBOX_SERBOOT_UFM_WRITE_0);
+static _SENSOR_DEVICE_ATTR_RW(cpld_gbox_serboot_ufm_write_1, cpld_callback, CPLD_GBOX_SERBOOT_UFM_WRITE_1);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT);
 static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE);
@@ -777,6 +787,7 @@ static struct attribute *cpld4_attributes[] = {
 
     _DEVICE_ATTR(cpld_qsfpdd_reset),
     _DEVICE_ATTR(cpld_qsfpdd_lpmode),
+    _DEVICE_ATTR(cpld_ufm_write),
     _DEVICE_ATTR(cpld_qsfpdd_led_0),
     _DEVICE_ATTR(cpld_qsfpdd_led_1),
     _DEVICE_ATTR(cpld_sfp28_led_0),
@@ -794,6 +805,10 @@ static struct attribute *cpld4_attributes[] = {
     _DEVICE_ATTR(cpld_sfpdd_28_tx_dis),
     _DEVICE_ATTR(cpld_sfpdd_rate_cap),
     _DEVICE_ATTR(cpld_sfp28_rate_cap),
+    _DEVICE_ATTR(cpld_gbox_serboot_ufm_store_0),
+    _DEVICE_ATTR(cpld_gbox_serboot_ufm_store_1),
+    _DEVICE_ATTR(cpld_gbox_serboot_ufm_write_0),
+    _DEVICE_ATTR(cpld_gbox_serboot_ufm_write_1),
 
     _DEVICE_ATTR(dbg_cpld_phy_intr),
     _DEVICE_ATTR(cpld_phy_reset),
@@ -1256,6 +1271,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_QSFPDD_LPMODE:
             reg = CPLD_QSFPDD_LPMODE_REG;
             break;
+        case CPLD_UFM_WRITE:
+            reg = CPLD_UFM_WRITE_REG;
+            break;
         case CPLD_QSFPDD_LED_0 ... CPLD_QSFPDD_LED_1:
             reg = CPLD_QSFPDD_LED_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LED_0);
@@ -1303,6 +1321,14 @@ static ssize_t read_cpld_callback(struct device *dev,
             break;
         case CPLD_SFP28_RATE_CAP:
             reg = CPLD_SFP28_RATE_CAP_REG;
+            break;
+        case CPLD_GBOX_SERBOOT_UFM_STORE_0 ... CPLD_GBOX_SERBOOT_UFM_STORE_1:
+            reg = CPLD_GBOX_SERBOOT_UFM_STORE_BASE_REG +
+                 (attr->index - CPLD_GBOX_SERBOOT_UFM_STORE_0);
+            break;
+        case CPLD_GBOX_SERBOOT_UFM_WRITE_0 ... CPLD_GBOX_SERBOOT_UFM_WRITE_1:
+            reg = CPLD_GBOX_SERBOOT_UFM_WRITE_BASE_REG +
+                 (attr->index - CPLD_GBOX_SERBOOT_UFM_WRITE_0);
             break;
         case DBG_CPLD_PHY_INTR:
             reg = DBG_CPLD_PHY_INTR_REG;
@@ -1505,6 +1531,9 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_QSFPDD_LPMODE:
             reg = CPLD_QSFPDD_LPMODE_REG;
             break;
+        case CPLD_UFM_WRITE:
+            reg = CPLD_UFM_WRITE_REG;
+            break;
         case CPLD_QSFPDD_LED_0 ... CPLD_QSFPDD_LED_1:
             reg = CPLD_QSFPDD_LED_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LED_0);
@@ -1543,6 +1572,10 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case CPLD_SFP28_RATE_CAP:
             reg = CPLD_SFP28_RATE_CAP_REG;
+            break;
+        case CPLD_GBOX_SERBOOT_UFM_WRITE_0 ... CPLD_GBOX_SERBOOT_UFM_WRITE_1:
+            reg = CPLD_GBOX_SERBOOT_UFM_WRITE_BASE_REG +
+                 (attr->index - CPLD_GBOX_SERBOOT_UFM_WRITE_0);
             break;
         case DBG_CPLD_QSFPDD_INTR_PORT:
             reg = DBG_CPLD_QSFPDD_INTR_PORT_REG;

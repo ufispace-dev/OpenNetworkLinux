@@ -113,6 +113,8 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
         //onoff
         if (led_onoff == 0) {
             info->mode = ONLP_LED_MODE_OFF;
+            // update status
+            info->status &= ~ONLP_LED_STATUS_ON;
         } else {
             //color
             if (led_color == 0) {
@@ -120,6 +122,8 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
             } else {
                 info->mode = (led_blink == 1) ? ONLP_LED_MODE_GREEN_BLINKING : ONLP_LED_MODE_GREEN;
             }
+            // update status
+            info->status |= ONLP_LED_STATUS_ON;
         }
     } else if (led_attr[local_id].type == TYPE_LED_ATTR_GPIO) {
         int g_val = 0, y_val = 0;
@@ -130,10 +134,13 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
 
         if ((g_val == 1) && (y_val == 0)) {
             info->mode = ONLP_LED_MODE_GREEN;
+            info->status |= ONLP_LED_STATUS_ON;
         } else if ((g_val == 0) && (y_val == 1)) {
             info->mode = ONLP_LED_MODE_YELLOW;
+            info->status |= ONLP_LED_STATUS_ON;
         } else if ((g_val == 0) && (y_val == 0)) {
             info->mode = ONLP_LED_MODE_OFF;
+            info->status &= ~ONLP_LED_STATUS_ON;
         } else {
             return ONLP_STATUS_E_INTERNAL;
         }

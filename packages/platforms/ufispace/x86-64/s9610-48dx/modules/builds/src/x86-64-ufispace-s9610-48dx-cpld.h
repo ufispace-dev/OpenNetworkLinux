@@ -147,14 +147,17 @@ enum cpld_id {
 #define CPLD_PHY_RESET_REG                  0x40
 #define CPLD_GBOX_RESET_BASE_REG            0x41
 #define CPLD_QSFPDD_RESET_REG               0x43
+#define CPLD_UFM_WRITE_REG                  0x44
 #define CPLD_QSFPDD_LPMODE_REG              0x56
 
 //system status
-#define CPLD_BRD_PRESENT_REG                0x50
-#define CPLD_GBOX_SERBOOT_BASE_REG          0x51
-#define CPLD_SFPDD_28_TX_DIS_REG            0x53
-#define CPLD_SFPDD_RATE_CAP_REG             0x54
-#define CPLD_SFP28_RATE_CAP_REG             0x55
+#define CPLD_BRD_PRESENT_REG                 0x50
+#define CPLD_GBOX_SERBOOT_BASE_REG           0x51
+#define CPLD_SFPDD_28_TX_DIS_REG             0x53
+#define CPLD_SFPDD_RATE_CAP_REG              0x54
+#define CPLD_SFP28_RATE_CAP_REG              0x55
+#define CPLD_GBOX_SERBOOT_UFM_STORE_BASE_REG 0x61
+#define CPLD_GBOX_SERBOOT_UFM_WRITE_BASE_REG 0x63
 
 //debug
 #define DBG_CPLD_PHY_INTR_REG               0xE0

@@ -20,7 +20,7 @@
  ************************************************************
  *
  * LED Platform Implementation.
- * 
+ *
  ***********************************************************/
 #include <onlp/platformi/ledi.h>
 #include "platform_lib.h"
@@ -46,7 +46,7 @@ static onlp_led_info_t led_info[] =
     CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 2 (SYS LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 3 (FAN LED)"),
     CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 4 (PSU0 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 5 (PSU1 LED)"),    
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 5 (PSU1 LED)"),
 };
 
 typedef struct
@@ -102,7 +102,7 @@ static int get_led_local_id(int id, int *local_id)
 static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
 {
     int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
-    
+
     if (id <= 0 || id >= ONLP_LED_MAX) {
         return ONLP_STATUS_E_PARAM;
     }
@@ -115,9 +115,15 @@ static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
 
     //onoff
     if (led_val_onoff == 0) {
+        //update status
+        info->status &= ~ONLP_LED_STATUS_ON;
+        //update mode
         info->mode = ONLP_LED_MODE_OFF;
     } else {
-        //color
+        //update status
+        info->status |= ONLP_LED_STATUS_ON;
+
+        //update mode
         if (led_val_color == 0) {
             info->mode = ONLP_LED_MODE_YELLOW;
         } else {
@@ -126,9 +132,9 @@ static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
         //blinking
         if (led_val_blink == 1) {
             info->mode = info->mode + 1;
-        } 
+        }
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -149,16 +155,16 @@ int onlp_ledi_init(void)
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int led_id = 0, rc = ONLP_STATUS_OK;
-    
+
     ONLP_TRY(get_led_local_id(id, &led_id));
 
     *rv = led_info[led_id];
 
-    switch (led_id) {        
+    switch (led_id) {
         case ONLP_LED_SYS_SYNC ... ONLP_LED_SYS_PSU_1:
             rc = ufi_sys_led_info_get(led_id, rv);
-            break;        
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
@@ -176,7 +182,7 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
     int result = ONLP_STATUS_OK;
     onlp_led_info_t info;
     int led_id = 0;
-    
+
     ONLP_TRY(get_led_local_id(id, &led_id));
 
     result = onlp_ledi_info_get(id, &info);
@@ -197,7 +203,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
     int led_id = 0;
 
     ONLP_TRY(get_led_local_id(id, &led_id));
-	
+
     if(led_id >= ONLP_LED_MAX) {
         result = ONLP_STATUS_E_INVALID;
     } else {

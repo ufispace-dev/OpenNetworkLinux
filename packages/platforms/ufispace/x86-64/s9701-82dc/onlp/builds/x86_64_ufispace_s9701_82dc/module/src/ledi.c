@@ -101,8 +101,10 @@ int ufi_sys_led_info_get(onlp_led_info_t* info, int local_id)
 
     //onoff
     if(led_val_onoff == 0) {
+        info->status &= ~ONLP_LED_STATUS_ON;
         info->mode = ONLP_LED_MODE_OFF;
     } else {
+        info->status |= ONLP_LED_STATUS_ON;
         //color
         if(led_val_color == 0) {
             info->mode = (led_val_blink == 1) ? ONLP_LED_MODE_YELLOW_BLINKING : ONLP_LED_MODE_YELLOW;

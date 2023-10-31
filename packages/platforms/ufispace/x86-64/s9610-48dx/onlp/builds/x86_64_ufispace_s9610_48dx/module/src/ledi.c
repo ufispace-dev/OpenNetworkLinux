@@ -20,7 +20,7 @@
  ************************************************************
  *
  * LED Platform Implementation.
- * 
+ *
  ***********************************************************/
 #include <onlp/platformi/ledi.h>
 #include "platform_lib.h"
@@ -28,7 +28,7 @@
 #define LED_STATUS ONLP_LED_STATUS_PRESENT
 #define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
                    ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
-#define ID_LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING                   
+#define ID_LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING
 #define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_"
 #define CHASSIS_LED_INFO(id, desc)               \
     {                                            \
@@ -113,13 +113,13 @@ static int get_led_local_id(int id, int *local_id)
 static int update_ledi_info(int local_id, onlp_led_info_t* info)
 {
     int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
-    
+
     if (local_id <= ONLP_LED_RESERVED || local_id >= ONLP_LED_MAX) {
         return ONLP_STATUS_E_PARAM;
     }
-    
+
     ONLP_TRY(file_read_hex(&led_val, led_attr[local_id].sysfs));
-    
+
     led_val_color = (led_val >> 0) & 1;
     led_val_blink = (led_val >> 2) & 1;
     led_val_onoff = (led_val >> 3) & 1;
@@ -127,6 +127,8 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
     //onoff
     if (led_val_onoff == 0) {
         info->mode = ONLP_LED_MODE_OFF;
+        // update status
+        info->status &= ~ONLP_LED_STATUS_ON;
     } else {
         //color
 
@@ -142,8 +144,10 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
         if (led_val_blink == 1) {
             info->mode = info->mode + 1;
         }
+        // update status
+        info->status |= ONLP_LED_STATUS_ON;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -164,16 +168,16 @@ int onlp_ledi_init(void)
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int led_id = 0, rc = ONLP_STATUS_OK;
-    
+
     ONLP_TRY(get_led_local_id(id, &led_id));
 
     *rv = led_info[led_id];
 
-    switch (led_id) {        
+    switch (led_id) {
         case ONLP_LED_SYS_SYNC ... (ONLP_LED_MAX-1):
             rc = update_ledi_info(led_id, rv);
-            break;        
-        default:            
+            break;
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }
@@ -191,7 +195,7 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
     int result = ONLP_STATUS_OK;
     onlp_led_info_t info;
     int led_id = 0;
-    
+
     ONLP_TRY(get_led_local_id(id, &led_id));
 
     result = onlp_ledi_info_get(id, &info);
@@ -212,7 +216,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
     int led_id = 0;
 
     ONLP_TRY(get_led_local_id(id, &led_id));
-	
+
     if(led_id >= ONLP_LED_MAX) {
         result = ONLP_STATUS_E_INVALID;
     } else {

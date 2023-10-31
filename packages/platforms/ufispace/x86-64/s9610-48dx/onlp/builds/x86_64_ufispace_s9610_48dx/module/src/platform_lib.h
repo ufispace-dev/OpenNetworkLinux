@@ -82,10 +82,12 @@
                                     "PSU0_VOUT "\
                                     "PSU0_IIN "\
                                     "PSU0_IOUT "\
+                                    "PSU0_PIN "\
                                     "PSU1_VIN "\
                                     "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
+                                    "PSU1_PIN "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -158,10 +160,12 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_VOUT,
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
+    BMC_ATTR_ID_PSU0_PIN,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
+    BMC_ATTR_ID_PSU1_PIN,
     BMC_ATTR_ID_MAX
 };
 

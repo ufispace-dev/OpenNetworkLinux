@@ -115,9 +115,15 @@ static int ufi_sys_led_info_get(int id, onlp_led_info_t* info)
 
     //onoff
     if (led_val_onoff == 0) {
+        //update status
+        info->status &= ~ONLP_LED_STATUS_ON;
+        //update mode
         info->mode = ONLP_LED_MODE_OFF;
     } else {
-        //color
+        //update status
+        info->status |= ONLP_LED_STATUS_ON;
+
+        //update mode
         if (led_val_color == 0) {
             info->mode = ONLP_LED_MODE_YELLOW;
         } else {
