@@ -31,24 +31,24 @@
 #define PSU_FAN_RPM_MAX_AC 27000
 #define PSU_FAN_RPM_MAX_DC 28500
 
-#define CHASSIS_FAN_INFO(id, idx)                               \
-    {                                                           \
-        { ONLP_FAN_ID_CREATE(id), "Chassis Fan - "#idx, POID_0},\
-        FAN_STATUS,                                             \
-        FAN_CAPS,                                               \
-        0,                                                      \
-        0,                                                      \
-        ONLP_FAN_MODE_INVALID,                                  \
+#define CHASSIS_FAN_INFO(id, idx)          \
+    {                                      \
+        { ONLP_FAN_ID_CREATE(id), "CHASSIS FAN "#idx, POID_0},\
+        FAN_STATUS,                        \
+        FAN_CAPS,                          \
+        0,                                 \
+        0,                                 \
+        ONLP_FAN_MODE_INVALID,             \
     }
 
-#define PSU_FAN_INFO(id, pid, poid)                         \
-    {                                                       \
-        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" - Fan", POID_0},\
-        FAN_STATUS,                                         \
-        FAN_CAPS,                                           \
-        0,                                                  \
-        0,                                                  \
-        ONLP_FAN_MODE_INVALID,                              \
+#define PSU_FAN_INFO(id, pid)              \
+    {                                      \
+        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" FAN", POID_0},\
+        FAN_STATUS,                        \
+        FAN_CAPS,                          \
+        0,                                 \
+        0,                                 \
+        ONLP_FAN_MODE_INVALID,             \
     }
 
 /*
@@ -60,8 +60,8 @@ static onlp_fan_info_t fan_info[] = {
     CHASSIS_FAN_INFO(ONLP_FAN_1, 1),
     CHASSIS_FAN_INFO(ONLP_FAN_2, 2),
     CHASSIS_FAN_INFO(ONLP_FAN_3, 3),
-    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0, ONLP_PSU_0),
-    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1, ONLP_PSU_1),
+    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
+    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
 
 /**

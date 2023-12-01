@@ -66,6 +66,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
     SYSFS_DEPH_ID=SYSFS_LPC + "/mb_cpld/board_deph_id"
     SYSFS_HW_ID=SYSFS_LPC + "/mb_cpld/board_hw_id"
     FS_PLTM_CFG="/lib/platform-config/current/onl"
+    SFP_MUX_I2C_LAN=0x0
+    SFP_MUX_I2C_HOST=0x1
 
     def check_i2c_status(self):
         sysfs_mux_reset = self.SYSFS_LPC + "/mb_cpld/mux_reset"
@@ -204,8 +206,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             self.bsp_pr("device is not PVT or later, deph_id={}, hw_id={}".format(deph_id, hw_id));
             return False
 
-    def enable_sfp_mux(self):
-        cmd = "echo 0x1 > /sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl"
+    def config_sfp_mux(self, val):
+        cmd = "echo {} > /sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl".format(val)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             self.bsp_pr("enable_sfp_mux() failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
@@ -296,13 +298,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
 
-        # enable sfp mux and init sfp eeprom if pvt build or later
-        if self.is_pvt_or_later():
-            # enable sfp mux
-            self.enable_sfp_mux()
-
-            # init sfp eeprom
-            self.init_sfp_eeprom()
+        # set sfp mux to I2C_LAN
+        self.config_sfp_mux(self.SFP_MUX_I2C_LAN)
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

@@ -130,8 +130,6 @@ static int ufi_port_to_eeprom_bus(int port)
                 }
             }
         }
-    } else if (IS_SFP(port)) {
-        bus =  port - 7;
     } else { //unknown ports
         AIM_LOG_ERROR("unknown ports, port=%d\n", port);
         check_and_do_i2c_mux_reset(port);
@@ -312,7 +310,12 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
     int bus = -1;
-
+    char eeprom_path[128];
+    char command[256] = "";
+    int ret = ONLP_STATUS_OK;
+    int ret_size = 0;
+    char *sysfs_pci_device = NULL;
+    char if_name[32] = {0};
     VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
@@ -320,12 +323,43 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
             check_and_do_i2c_mux_reset(port);
             return ONLP_STATUS_E_INTERNAL;
         }
+    } else if (IS_SFP(port)) {
+        /* SFP */
+
+        //set sysfs_pci_device
+        if (IS_SFP_P0(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP0;
+        } else if (IS_SFP_P1(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP1;
+        } else {
+            AIM_LOG_ERROR("unknown SFP ports, port=%d\n", port);
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        //get interface name
+        snprintf(command, sizeof(command), "cat %s/net/*/uevent | grep INTERFACE | awk -F \"=\" '{printf $2}'", sysfs_pci_device);
+        if (exec_cmd(command, if_name, sizeof(if_name)) < 0) {
+            AIM_LOG_ERROR("get interface name failed, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //set command and eeprom_path by interface name
+        snprintf(command, sizeof(command), "ethtool -m %s raw on length %d > /tmp/.sfp.%s.eeprom", if_name, size, if_name);
+        snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", if_name);
+
+        ret = system(command);
+        if (ret != 0) {
+            AIM_LOG_ERROR("Unable to read sfp eeprom (port_id=%d), func=%s\n", port, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        ONLP_TRY(onlp_file_read(rdata, size, &ret_size, eeprom_path));
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -347,11 +381,13 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE)) < 0) {
             check_and_do_i2c_mux_reset(port);
         }
+    } else if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -369,6 +405,13 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
     int rc = 0;
     int bus = -1;
+    char command[256] = "";
+    char *sysfs_pci_device = NULL;
+    char if_name[32] = {0};
+    int size = 1;
+    int offset = addr;
+    char rdata[256] = {0};
+
     VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
@@ -376,11 +419,41 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
             check_and_do_i2c_mux_reset(port);
         }
+    } else if (IS_SFP(port)) {
+        /* SFP */
+
+        //set sysfs_pci_device
+        if (IS_SFP_P0(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP0;
+        } else if (IS_SFP_P1(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP1;
+        } else {
+            AIM_LOG_ERROR("unknown SFP ports, port=%d\n", port);
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        //get interface name
+        snprintf(command, sizeof(command), "cat %s/net/*/uevent | grep INTERFACE | awk -F \"=\" '{printf $2}'", sysfs_pci_device);
+        if (exec_cmd(command, if_name, sizeof(if_name)) < 0) {
+            AIM_LOG_ERROR("get interface name failed, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //set command by interface name
+        snprintf(command, sizeof(command), "ethtool -m %s raw on length %d offset %d", if_name, size, offset);
+        //execute command to get data
+        if (exec_cmd(command, rdata, sizeof(rdata)) < 0) {
+            AIM_LOG_ERROR("Unable to read sfp eeprom, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //return first byte
+        rc=(unsigned char) rdata[0];
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -402,11 +475,13 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
             check_and_do_i2c_mux_reset(port);
         }
+    } else if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -425,6 +500,12 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
     int rc = 0;
     int bus = -1;
+    char command[256] = "";
+    char *sysfs_pci_device = NULL;
+    char if_name[32] = {0};
+    int size = 2;
+    int offset = addr;
+    char rdata[256] = {0};
     VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
@@ -432,11 +513,41 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
             check_and_do_i2c_mux_reset(port);
         }
+    } else if (IS_SFP(port)) {
+        /* SFP */
+
+        //set sysfs_pci_device
+        if (IS_SFP_P0(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP0;
+        } else if (IS_SFP_P1(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP1;
+        } else {
+            AIM_LOG_ERROR("unknown SFP ports, port=%d\n", port);
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        //get interface name
+        snprintf(command, sizeof(command), "cat %s/net/*/uevent | grep INTERFACE | awk -F \"=\" '{printf $2}'", sysfs_pci_device);
+        if (exec_cmd(command, if_name, sizeof(if_name)) < 0) {
+            AIM_LOG_ERROR("get interface name failed, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //set command by interface name
+        snprintf(command, sizeof(command), "ethtool -m %s raw on length %d offset %d", if_name, size, offset);
+        //execute command to get data
+        if (exec_cmd(command, rdata, sizeof(rdata)) < 0) {
+            AIM_LOG_ERROR("Unable to read sfp eeprom, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //return two bytes
+        rc=((unsigned char) rdata[0]) + (((unsigned char) rdata[1])<<8);
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -458,11 +569,13 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
             check_and_do_i2c_mux_reset(port);
         }
+    } else if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -847,6 +960,12 @@ int onlp_sfpi_ioctl(int port, va_list vargs)
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0, expect_size = 256, bus = 0, rc = 0;
+    char eeprom_path[128];
+    char command[256] = "";
+    int ret = ONLP_STATUS_OK;
+    int ret_size = 0;
+    char *sysfs_pci_device = NULL;
+    char if_name[32] = {0};
     VALIDATE_PORT(port);
 
     memset(data, 0, expect_size);
@@ -856,7 +975,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         return ONLP_STATUS_OK;
     }
 
-    if (IS_VALID_PORT(port)) {
+    if (IS_QSFPX(port)) {
         bus = ufi_port_to_eeprom_bus(port);
         if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
             AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
@@ -870,6 +989,37 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
             AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
             return ONLP_STATUS_E_INTERNAL;
         }
+    } else if (IS_SFP(port)) {
+        /* SFP */
+
+        //set sysfs_pci_device
+        if (IS_SFP_P0(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP0;
+        } else if (IS_SFP_P1(port)) {
+            sysfs_pci_device = SYSFS_PCI_DEVICE_SFP1;
+        } else {
+            AIM_LOG_ERROR("unknown SFP ports, port=%d\n", port);
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        //get interface name
+        snprintf(command, sizeof(command), "cat %s/net/*/uevent | grep INTERFACE | awk -F \"=\" '{printf $2}'", sysfs_pci_device);
+        if (exec_cmd(command, if_name, sizeof(if_name)) < 0) {
+            AIM_LOG_ERROR("get interface name failed, command=%s\n", command);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        //set command and eeprom_path by interface name
+        snprintf(command, sizeof(command), "ethtool -m %s raw on length %d > /tmp/.sfp.%s.eeprom", if_name, expect_size, if_name);
+        snprintf(eeprom_path, sizeof(eeprom_path), "/tmp/.sfp.%s.eeprom", if_name);
+
+        ret = system(command);
+        if (ret != 0) {
+            AIM_LOG_ERROR("Unable to read sfp eeprom (port_id=%d), func=%s\n", port, __FUNCTION__);
+            return ONLP_STATUS_E_INTERNAL;
+        }
+
+        ONLP_TRY(onlp_file_read(data, expect_size, &ret_size, eeprom_path));
     } else {
         return ONLP_STATUS_E_PARAM;
     }
@@ -897,6 +1047,8 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
+    } else if (IS_SFP(port)) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     }
 
     memset(data, 0, 256);
