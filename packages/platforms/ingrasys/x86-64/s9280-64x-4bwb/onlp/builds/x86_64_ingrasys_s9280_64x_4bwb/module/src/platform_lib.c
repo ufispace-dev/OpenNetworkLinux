@@ -559,12 +559,15 @@ int sys_led_info_get(onlp_led_info_t* info, int id)
 
     switch(led_val) {
         case BMC_LED_OFF:
+            info->status &= ~ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_OFF;
             break;
         case BMC_LED_GREEN:
+            info->status |= ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_GREEN;
             break;
         case BMC_LED_YELLOW:
+            info->status |= ONLP_LED_STATUS_ON;
             info->mode = ONLP_LED_MODE_YELLOW;
             break;
     }

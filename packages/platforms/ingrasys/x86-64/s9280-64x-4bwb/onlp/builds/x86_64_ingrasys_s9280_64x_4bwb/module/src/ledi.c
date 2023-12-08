@@ -38,24 +38,24 @@ static onlp_led_info_t led_info[] =
     { }, /* Not used */
 #ifdef ENABLE_SYSLED
     {
-        { LED_OID_SYSTEM, "Chassis LED 1 (SYS LED)", 0 },
+        { LED_OID_SYSTEM, "CHASSIS LED 1 (SYS LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_GREEN,
     },
     {
-        { LED_OID_FAN, "Chassis LED 2 (FAN LED)", 0 },
+        { LED_OID_FAN, "CHASSIS LED 2 (FAN LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_PSU1, "Chassis LED 3 (PSU1 LED)", 0 },
+        { LED_OID_PSU1, "CHASSIS LED 3 (PSU1 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_PSU2, "Chassis LED 4 (PSU2 LED)", 0 },
+        { LED_OID_PSU2, "CHASSIS LED 4 (PSU2 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,

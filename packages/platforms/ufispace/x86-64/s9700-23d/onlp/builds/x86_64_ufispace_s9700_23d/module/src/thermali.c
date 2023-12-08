@@ -64,7 +64,7 @@
  *            |----[02] ONLP_PSU_1----[08] ONLP_THERMAL_PSU1
  */
 /* Static values */
-static onlp_thermal_info_t __onlp_thermal_info[] = { 
+static onlp_thermal_info_t __onlp_thermal_info[] = {
     { }, /* Not used */
     {
         .hdr = {
@@ -135,7 +135,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
-            .description = "PSU 0 - Thermal Sensor 1",
+            .description = "PSU 0 THERMAL 1",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -146,7 +146,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
-            .description = "PSU 1 - Thermal Sensor 1",
+            .description = "PSU 1 THERMAL 1",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -305,11 +305,11 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
  * @param[out] info Receives the thermal information.
  */
 static int update_thermali_cpu_info(int local_id, onlp_thermal_info_t* info)
-{   
+{
     int ret = ONLP_STATUS_OK;
     int temperature = 0;
     int sysfs_index = -1;
-    
+
     /* set sysfs index */
     if (local_id == ONLP_THERMAL_CPU_PKG) {
         sysfs_index = 1;
@@ -350,15 +350,15 @@ static int update_thermali_cpu_info(int local_id, onlp_thermal_info_t* info)
  * @param[out] info Receives the thermal information.
  */
 static int update_thermali_cpu_board_info(onlp_thermal_info_t* info)
-{   
+{
     int ret = ONLP_STATUS_OK;
     int temperature = 0;
-    
+
     ret = onlp_file_read_int(&temperature, "/sys/bus/i2c/devices/0-004f/hwmon/hwmon1/temp1_input");
     if (ret != ONLP_STATUS_OK) {
         ONLP_TRY(onlp_file_read_int(&temperature, "/sys/bus/i2c/devices/0-004f/temp1_input"));
-    }   
-    
+    }
+
     info->mcelsius = temperature;
 
     return ONLP_STATUS_OK;
@@ -507,7 +507,7 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* status)
             *status |= ONLP_THERMAL_STATUS_PRESENT;
         } else {
             return ONLP_STATUS_E_INTERNAL;
-        }   
+        }
     } else if (local_id == ONLP_THERMAL_PSU1) {
         ONLP_TRY(get_psui_present_status(ONLP_PSU_1, &psu_presence));
         if (psu_presence == 0) {
@@ -516,11 +516,11 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* status)
             *status |= ONLP_THERMAL_STATUS_PRESENT;
         } else {
             return ONLP_STATUS_E_INTERNAL;
-        }   
+        }
     } else {
         //do nothing, all thermals are present as default setting.
         *status |= ONLP_THERMAL_STATUS_PRESENT;
-    }   
+    }
 
     return ONLP_STATUS_OK;
 }

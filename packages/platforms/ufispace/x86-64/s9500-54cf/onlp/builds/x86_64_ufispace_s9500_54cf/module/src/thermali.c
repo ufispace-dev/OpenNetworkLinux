@@ -183,7 +183,7 @@ static onlp_thermal_info_t thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_0),
-            .description = "PSU-0-Thermal",
+            .description = "PSU 0 THERMAL 1",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -194,7 +194,7 @@ static onlp_thermal_info_t thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_1),
-            .description = "PSU-1-Thermal",
+            .description = "PSU 1 THERMAL 1",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,

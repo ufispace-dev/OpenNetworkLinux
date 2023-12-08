@@ -33,7 +33,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU0,
-            "PSU-0",
+            "PSU 0",
             0,
             {
                 FAN_OID_PSU0_FAN,
@@ -44,7 +44,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU1,
-            "PSU-1",
+            "PSU 1",
             0,
             {
                 FAN_OID_PSU1_FAN,
@@ -55,7 +55,7 @@ static onlp_psu_info_t pinfo[] =
 };
 
 int onlp_psui_init(void)
-{   
+{
     lock_init();
     return ONLP_STATUS_OK;
 }
@@ -129,7 +129,7 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 }
 
 int psu_status_info_get(int id, onlp_psu_info_t *info)
-{   
+{
     int pw_present, pw_good;
     int stbmvout, stbmiout;
     int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
@@ -150,7 +150,7 @@ int psu_status_info_get(int id, onlp_psu_info_t *info)
         attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
         attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
-    
+
     /* Get power present status */
     ONLP_TRY(psu_present_get(&pw_present, id));
 
@@ -201,19 +201,19 @@ int psu_status_info_get(int id, onlp_psu_info_t *info)
 
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;        
+    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
-    
+
     /* Get FRU (model/serial) */
     ONLP_TRY(update_psui_fru_info(id, info));
-    
+
     return ONLP_STATUS_OK;
 }
 
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
-{        
+{
     int pid;
-    
+
     pid = ONLP_OID_ID_GET(id);
     memset(info, 0, sizeof(onlp_psu_info_t));
 

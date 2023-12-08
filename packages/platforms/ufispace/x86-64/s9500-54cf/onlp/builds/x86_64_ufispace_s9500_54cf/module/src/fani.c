@@ -55,11 +55,11 @@
 
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
-    CHASSIS_INFO(ONLP_FAN_0    , "Chassis Fan - 0"),
-    CHASSIS_INFO(ONLP_FAN_1    , "Chassis Fan - 1"),
-    CHASSIS_INFO(ONLP_FAN_2    , "Chassis Fan - 2"),
-    CHASSIS_INFO(ONLP_PSU_0_FAN, "PSU-0-Fan"),
-    CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU-1-Fan"),
+    CHASSIS_INFO(ONLP_FAN_0    , "CHASSIS FAN 0"),
+    CHASSIS_INFO(ONLP_FAN_1    , "CHASSIS FAN 1"),
+    CHASSIS_INFO(ONLP_FAN_2    , "CHASSIS FAN 2"),
+    CHASSIS_INFO(ONLP_PSU_0_FAN, "PSU 0 FAN"),
+    CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU 1 FAN"),
 };
 
 

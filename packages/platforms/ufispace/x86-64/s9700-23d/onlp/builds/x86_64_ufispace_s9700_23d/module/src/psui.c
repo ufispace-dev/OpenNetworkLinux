@@ -42,29 +42,29 @@
  *            |                  |----[08] ONLP_PSU1_FAN_2
  *            |                  |----[08] ONLP_THERMAL_PSU1
  */
-static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = { 
+static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = {
     { }, /* Not used */
-    {   
-        .hdr = { 
+    {
+        .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
-            .description = "PSU-0",
+            .description = "PSU 0",
             .poid = 0,
-            .coids = { 
+            .coids = {
                 ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_1),
                 ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_2),
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
-            },  
-        },  
-        .model = "", 
-        .serial = "", 
+            },
+        },
+        .model = "",
+        .serial = "",
         .status = ONLP_PSU_STATUS_PRESENT,
-        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN | 
+        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN |
                 ONLP_PSU_CAPS_IOUT | ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT,
     },
-    {   
-        .hdr = { 
+    {
+        .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
-            .description = "PSU-1",
+            .description = "PSU 1",
             .poid = 0,
             .coids = {
                 ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_1),
@@ -75,7 +75,7 @@ static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = {
         .model = "",
         .serial = "",
         .status = ONLP_PSU_STATUS_PRESENT,
-        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN | 
+        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN |
                 ONLP_PSU_CAPS_IOUT | ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT,
     }
 };
@@ -116,13 +116,13 @@ static int get_psui_pwgood_status(int local_id, int *status)
 static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
     bmc_fru_t fru = {0};
-    
+
     //read fru data
     ONLP_TRY(bmc_fru_read(local_id, &fru));
 
     //update FRU model
-    memset(info->model, 0, sizeof(info->model));   
-    snprintf(info->model, sizeof(info->model), "%s", fru.name.val); 
+    memset(info->model, 0, sizeof(info->model));
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
 
     //update FRU serial
     memset(info->serial, 0, sizeof(info->serial));
@@ -288,7 +288,7 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* status)
         *status |= ONLP_PSU_STATUS_PRESENT;
     } else {
         return ONLP_STATUS_E_INTERNAL;
-    }   
+    }
 
     /* get psu power good status */
     ONLP_TRY(get_psui_pwgood_status(local_id, &psu_pwgood));
@@ -298,7 +298,7 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* status)
         *status &= ~ONLP_PSU_STATUS_FAILED;
     } else {
         return ONLP_STATUS_E_INTERNAL;
-    }   
+    }
 
     return ONLP_STATUS_OK;
 }

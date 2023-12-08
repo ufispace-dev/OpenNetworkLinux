@@ -60,8 +60,8 @@
 static onlp_psu_info_t psu_info[] =
 {
     { }, /* Not used */
-    PSU_INFO(ONLP_PSU0, "PSU-0", ONLP_PSU0_FAN1, ONLP_THERMAL_PSU0),
-    PSU_INFO(ONLP_PSU1, "PSU-1", ONLP_PSU1_FAN1, ONLP_THERMAL_PSU1),
+    PSU_INFO(ONLP_PSU0, "PSU 0", ONLP_PSU0_FAN1, ONLP_THERMAL_PSU0),
+    PSU_INFO(ONLP_PSU1, "PSU 1", ONLP_PSU1_FAN1, ONLP_THERMAL_PSU1),
 };
 
 static psu_support_info_t psu_support_list[] =

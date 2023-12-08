@@ -33,7 +33,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU1,
-            "PSU-1",
+            "PSU 1",
             0,
             {
                 FAN_OID_PSU_FAN1,
@@ -43,7 +43,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU2,
-            "PSU-2",
+            "PSU 2",
             0,
             {
                 FAN_OID_PSU_FAN2,
@@ -83,16 +83,16 @@ int psu_status_info_get(int id, onlp_psu_info_t *info)
         info->status &= ~ONLP_PSU_STATUS_PRESENT;
         info->status |=  ONLP_PSU_STATUS_FAILED;
         return ONLP_STATUS_OK;
-    }    
+    }
     info->status |= ONLP_PSU_STATUS_PRESENT;
 
     /* Get power good status */
-    if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix)) 
+    if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix))
             != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_INTERNAL;
-    }   
+    }
 
-    if (pw_good != PSU_STATUS_POWER_GOOD) {        
+    if (pw_good != PSU_STATUS_POWER_GOOD) {
         info->status |= ONLP_PSU_STATUS_UNPLUGGED;
         return ONLP_STATUS_OK;
     } else {
@@ -128,14 +128,14 @@ int psu_status_info_get(int id, onlp_psu_info_t *info)
 }
 
 int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
-{        
+{
     int pid;
 
     pid = ONLP_OID_ID_GET(id);
     memset(info, 0, sizeof(onlp_psu_info_t));
 
     /* Set the onlp_oid_hdr_t */
-    *info = pinfo[pid]; 
+    *info = pinfo[pid];
 
     switch (pid) {
         case PSU_ID_PSU1:

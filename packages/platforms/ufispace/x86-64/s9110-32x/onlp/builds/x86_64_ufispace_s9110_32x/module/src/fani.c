@@ -41,7 +41,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0_F),
-            .description = "Chassis Fan - 0 Front",
+            .description = "CHASSIS FAN 0 FRONT",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -56,7 +56,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0_R),
-            .description = "Chassis Fan - 0 Rear",
+            .description = "CHASSIS FAN 0 REAR",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -70,7 +70,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1_F),
-            .description = "Chassis Fan - 1 Front",
+            .description = "CHASSIS FAN 1 FRONT",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -84,7 +84,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1_R),
-            .description = "Chassis Fan - 1 Rear",
+            .description = "CHASSIS FAN 1 REAR",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -98,7 +98,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2_F),
-            .description = "Chassis Fan - 2 Front",
+            .description = "CHASSIS FAN 2 FRONT",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -112,7 +112,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2_R),
-            .description = "Chassis Fan - 2 Rear",
+            .description = "CHASSIS FAN 2 REAR",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -126,7 +126,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3_F),
-            .description = "Chassis Fan - 3 Front",
+            .description = "CHASSIS FAN 3 FRONT",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -140,7 +140,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3_R),
-            .description = "Chassis Fan - 3 Rear",
+            .description = "CHASSIS FAN 3 REAR",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -154,7 +154,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
-            .description = "PSU-0-Fan",
+            .description = "PSU 0 FAN",
             .poid = POID_0,
         },
         .status = FAN_STATUS,
@@ -168,7 +168,7 @@ onlp_fan_info_t fan_info[] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
-            .description = "PSU-1-Fan",
+            .description = "PSU 1 FAN",
             .poid = POID_0,
         },
         .status = FAN_STATUS,

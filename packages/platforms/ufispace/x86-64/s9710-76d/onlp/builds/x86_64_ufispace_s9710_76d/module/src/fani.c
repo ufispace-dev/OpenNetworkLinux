@@ -32,37 +32,37 @@
 #define PSU_FAN_RPM_MAX_AC 25000
 #define PSU_FAN_RPM_MAX_DC 32500
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_FAN(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
+#define VALIDATE(_id)                      \
+    do {                                   \
+        if(!ONLP_OID_IS_FAN(_id)) {        \
+            return ONLP_STATUS_E_INVALID;  \
+        }                                  \
     } while(0)
 
-#define CHASSIS_FAN_INFO(id, idx, fan_loc)                               \
-    {                                                           \
-        { ONLP_FAN_ID_CREATE(id), "Chassis Fan - "#idx" ("#fan_loc")", POID_0},\
-        FAN_STATUS,                                             \
-        FAN_CAPS,                                               \
-        0,                                                      \
-        0,                                                      \
-        ONLP_FAN_MODE_INVALID,                                  \
+#define CHASSIS_FAN_INFO(id, idx, fan_loc) \
+    {                                      \
+        { ONLP_FAN_ID_CREATE(id), "CHASSIS FAN "#idx" "#fan_loc, POID_0},\
+        FAN_STATUS,                        \
+        FAN_CAPS,                          \
+        0,                                 \
+        0,                                 \
+        ONLP_FAN_MODE_INVALID,             \
     }
 
-#define PSU_FAN_INFO(id, pid, poid)                               \
-    {                                                       \
-        { ONLP_FAN_ID_CREATE(id), "PSU-"#pid"-Fan", ONLP_PSU_ID_CREATE(poid)},\
-        FAN_STATUS,                                         \
-        FAN_CAPS,                                           \
-        0,                                                  \
-        0,                                                  \
-        ONLP_FAN_MODE_INVALID,                              \
+#define PSU_FAN_INFO(id, pid)              \
+    {                                      \
+        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" FAN", POID_0},\
+        FAN_STATUS,                        \
+        FAN_CAPS,                          \
+        0,                                 \
+        0,                                 \
+        ONLP_FAN_MODE_INVALID,             \
     }
 
 /*
  * Get the fan information.
  */
- 
+
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
     CHASSIS_FAN_INFO(ONLP_FAN_F_0, 0, FRONT),
@@ -73,8 +73,8 @@ onlp_fan_info_t fan_info[] = {
     CHASSIS_FAN_INFO(ONLP_FAN_R_2, 2, REAR),
     CHASSIS_FAN_INFO(ONLP_FAN_F_3, 3, FRONT),
     CHASSIS_FAN_INFO(ONLP_FAN_R_3, 3, REAR),
-    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0, ONLP_PSU_0),
-    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1, ONLP_PSU_1),
+    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
+    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
 
 /**
@@ -128,7 +128,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
         case ONLP_FAN_R_3:
             bmc_attr_id = BMC_ATTR_ID_FAN3_REAR_RPM;
             fan_present_id = BMC_ATTR_ID_FAN3_PRSNT_H;
-            break;            
+            break;
         case ONLP_PSU_0_FAN:
             bmc_attr_id = BMC_ATTR_ID_PSU0_FAN;
             break;
@@ -142,7 +142,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     if(bmc_attr_id == BMC_ATTR_ID_MAX) {
         return ONLP_STATUS_E_PARAM;
     }
-    
+
     //check presence for fantray 1-4
     if (id >= ONLP_FAN_F_0 && id <= ONLP_FAN_R_3) {
         if(fan_present_id == BMC_ATTR_ID_MAX) {
@@ -151,20 +151,20 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
         ONLP_TRY(bmc_sensor_read(fan_present_id, FAN_SENSOR, &data));
         presence = (int) data;
-        
-        if(presence == 1) {                
+
+        if(presence == 1) {
             info->status |= ONLP_FAN_STATUS_PRESENT;
         } else {
             info->status &= ~ONLP_FAN_STATUS_PRESENT;
-            return ONLP_STATUS_OK;                
-        }                                
-    } 
+            return ONLP_STATUS_OK;
+        }
+    }
 
     //get fan rpm
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
-    
+
     rpm = (int) data;
-        
+
     //set rpm field
     info->rpm = rpm;
 
@@ -180,7 +180,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
-        //get psu type        
+        //get psu type
         if(id == ONLP_PSU_0_FAN) {
             ONLP_TRY(get_psu_type(ONLP_PSU_0, &psu_type, NULL));
         } else if(id == ONLP_PSU_1_FAN) {
@@ -199,14 +199,14 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
             AIM_LOG_ERROR("unknown psu_type from file %s, id=%d, psu_type=%d", TMP_PSU_TYPE, id-ONLP_PSU_0_FAN+1, psu_type);
             return ONLP_STATUS_E_INTERNAL;
         }
-        
+
         percentage = (info->rpm*100)/psu_fan_max;
         if (percentage > 100)
             percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -228,16 +228,16 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
 {
     int fan_id = 0, rc = 0;
     VALIDATE(id);
-    
+
     fan_id = ONLP_OID_ID_GET(id);
     *rv = fan_info[fan_id];
-       
+
     switch (fan_id) {
         case ONLP_FAN_F_0 ... ONLP_FAN_R_3:
         case ONLP_PSU_0_FAN ... ONLP_PSU_1_FAN:
             rc = ufi_bmc_fan_info_get(rv, fan_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

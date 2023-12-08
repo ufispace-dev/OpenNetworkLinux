@@ -55,8 +55,8 @@
 static onlp_psu_info_t psu_info[] =
 {
     { }, /* Not used */
-    PSU_INFO(ONLP_PSU_0, "PSU-0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU0_TEMP1),
-    PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1_TEMP1),
+    PSU_INFO(ONLP_PSU_0, "PSU 0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU0_TEMP1),
+    PSU_INFO(ONLP_PSU_1, "PSU 1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1_TEMP1),
 };
 
 static char *vendors[] = {"DELTA", "FSPGROUP"};

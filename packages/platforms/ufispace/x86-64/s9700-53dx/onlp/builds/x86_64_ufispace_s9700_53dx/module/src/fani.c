@@ -41,34 +41,34 @@
  *            |----[02] ONLP_PSU_1----[07] ONLP_PSU1_FAN_1
  *            |                  |----[08] ONLP_PSU1_FAN_2
  */
-static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = { 
+static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     { }, /* Not used */
-    {   
-        .hdr = { 
+    {
+        .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0),
-            .description = "Chassis Fan - 0",
+            .description = "CHASSIS FAN 0",
             .poid = 0,
-        },  
+        },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "", 
-        .serial = "", 
-    }, 
-    {   
-        .hdr = { 
+        .model = "",
+        .serial = "",
+    },
+    {
+        .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1),
-            .description = "Chassis Fan - 1",
+            .description = "CHASSIS FAN 1",
             .poid = 0,
-        },  
+        },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "", 
+        .model = "",
         .serial = "",
     },
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2),
-            .description = "Chassis Fan - 2",
+            .description = "CHASSIS FAN 2",
             .poid = 0,
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -79,7 +79,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3),
-            .description = "Chassis Fan - 3",
+            .description = "CHASSIS FAN 3",
             .poid = 0,
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -90,7 +90,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_1),
-            .description = "PSU 0 - Fan 1",
+            .description = "PSU 0 FAN FRONT",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -101,7 +101,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_2),
-            .description = "PSU 0 - Fan 2",
+            .description = "PSU 0 FAN REAR",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -112,7 +112,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_1),
-            .description = "PSU 1 - Fan 1",
+            .description = "PSU 1 FAN FRONT",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -123,7 +123,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_2),
-            .description = "PSU 1 - Fan 2",
+            .description = "PSU 1 FAN REAR",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
@@ -199,7 +199,7 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
-   
+
     return ONLP_STATUS_OK;
 }
 
@@ -253,13 +253,13 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
     int psu_presence = 0;
     float data = 0;
     int attr_id = -1;
-    
+
     /* clear FAN status */
     *status = 0;
-    
+
     if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_3) {
         *status = 0;
-        
+
         /* set bmc attr id */
         if (local_id == ONLP_FAN_0) {
             attr_id = BMC_ATTR_ID_FAN0_PRSNT_H;
@@ -270,12 +270,12 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         } else {
             attr_id = BMC_ATTR_ID_FAN3_PRSNT_H;
         }
-        
+
         /* get fan present status from BMC */
         ONLP_TRY(bmc_sensor_read(attr_id, FAN_SENSOR, &data));
-        
+
         fan_presence = (int) data;
-        
+
         if( fan_presence == 1 ) {
             *status |= ONLP_FAN_STATUS_PRESENT;
             *status |= ONLP_FAN_STATUS_F2B;
@@ -306,7 +306,7 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         AIM_LOG_ERROR("unknown fan id (%d), func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 

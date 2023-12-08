@@ -63,17 +63,17 @@ static onlp_led_info_t led_info[] =
 {
     { }, //Not used *
     {                                           \
-        { ONLP_LED_ID_CREATE(ONLP_LED_ID), "Chassis LED 1 (ID LED)", POID_0 },\
+        { ONLP_LED_ID_CREATE(ONLP_LED_ID), "CHASSIS LED 1 (ID LED)", POID_0 },\
         LED_STATUS,                             \
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING,                               \
     },
-    CHASSIS_LED_INFO(ONLP_LED_SYS,  "Chassis LED 2 (SYS LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_POE,  "Chassis LED 3 (POE LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SPD,  "Chassis LED 4 (SPD LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_FAN,  "Chassis LED 5 (FAN LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_LNK,  "Chassis LED 6 (LNK LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_PWR1, "Chassis LED 7 (PS1 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_PWR0, "Chassis LED 8 (PS0 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS,  "CHASSIS LED 2 (SYS LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_POE,  "CHASSIS LED 3 (POE LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SPD,  "CHASSIS LED 4 (SPD LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_FAN,  "CHASSIS LED 5 (FAN LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_LNK,  "CHASSIS LED 6 (LNK LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_PWR1, "CHASSIS LED 7 (PS1 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_PWR0, "CHASSIS LED 8 (PS0 LED)"),
 
 };
 

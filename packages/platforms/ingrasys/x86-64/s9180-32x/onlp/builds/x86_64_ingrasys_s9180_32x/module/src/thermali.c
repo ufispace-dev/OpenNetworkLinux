@@ -29,11 +29,11 @@
 
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
-    { { THERMAL_OID_FRONT_MAC, "Front MAC", 0},
+    { { THERMAL_OID_FRONT_MAC, "FRONT MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {80000,  85000, 90000}
     },
-    { { THERMAL_OID_ASIC, "ASIC Core Temp", 0},
+    { { THERMAL_OID_ASIC, "ASIC CORE TEMP", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {84787,  89250, 93712}
     },
@@ -53,39 +53,39 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_PSU1_1, "PSU-1 Thermal 1", PSU_OID_PSU1},
+    { { THERMAL_OID_PSU1_1, "PSU 1 THERMAL 1", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {70000,  75000, 75000}
     },
-    { { THERMAL_OID_PSU1_2, "PSU-1 Thermal 2", PSU_OID_PSU1},
+    { { THERMAL_OID_PSU1_2, "PSU 1 THERMAL 2", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {60000,  65000, 65000}
     },
-    { { THERMAL_OID_PSU2_1, "PSU-2 Thermal 1", PSU_OID_PSU2},
+    { { THERMAL_OID_PSU2_1, "PSU 2 THERMAL 1", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {70000,  75000, 75000}
     },
-    { { THERMAL_OID_PSU2_2, "PSU-2 Thermal 2", PSU_OID_PSU2},
+    { { THERMAL_OID_PSU2_2, "PSU 2 THERMAL 2", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {60000,  65000, 65000}
     },
-    { { THERMAL_OID_CPU_BOARD, "CPU Board", 0},
+    { { THERMAL_OID_CPU_BOARD, "CPU BOARD", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {78000,  80000, 82000}
     },
-    { { THERMAL_OID_PSU1_NEAR, "Near PSU 1", 0},
+    { { THERMAL_OID_PSU1_NEAR, "NEAR PSU 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {61132,  64350, 67567}
     },
-    { { THERMAL_OID_PSU2_NEAR, "Near PSU 2", 0},
+    { { THERMAL_OID_PSU2_NEAR, "NEAR PSU 2", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {61132,  64350, 67567}
     },
-    { { THERMAL_OID_MAC_REAR, "Rear MAC", 0},
+    { { THERMAL_OID_MAC_REAR, "REAR MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {80000,  85000, 90000}
     },
-    { { THERMAL_OID_QSFP_NEAR, "Near QSFP Port", 0},
+    { { THERMAL_OID_QSFP_NEAR, "NEAR QSFP PORT", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {58900,  62000, 65100}
     }

@@ -72,20 +72,20 @@
 
 static onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
-    CHASSIS_INFO(ONLP_FAN1_F    , "Chassis Fan - 0 Front"),
-    CHASSIS_INFO(ONLP_FAN1_R    , "Chassis Fan - 0 Rear"),
-    CHASSIS_INFO(ONLP_FAN2_F    , "Chassis Fan - 1 Front"),
-    CHASSIS_INFO(ONLP_FAN2_R    , "Chassis Fan - 1 Rear"),
-    CHASSIS_INFO(ONLP_FAN3_F    , "Chassis Fan - 2 Front"),
-    CHASSIS_INFO(ONLP_FAN3_R    , "Chassis Fan - 2 Rear"),
-    CHASSIS_INFO(ONLP_FAN4_F    , "Chassis Fan - 3 Front"),
-    CHASSIS_INFO(ONLP_FAN4_R    , "Chassis Fan - 3 Rear"),
-    CHASSIS_INFO(ONLP_FAN5_F    , "Chassis Fan - 4 Front"),
-    CHASSIS_INFO(ONLP_FAN5_R    , "Chassis Fan - 4 Rear"),
-    CHASSIS_INFO(ONLP_FAN6_F    , "Chassis Fan - 5 Front"),
-    CHASSIS_INFO(ONLP_FAN6_R    , "Chassis Fan - 5 Rear"),
-    CHASSIS_INFO(ONLP_PSU0_FAN1 , "PSU 0 - Fan 1"),
-    CHASSIS_INFO(ONLP_PSU1_FAN1 , "PSU 1 - Fan 1"),
+    CHASSIS_INFO(ONLP_FAN1_F    , "CHASSIS FAN 0 FRONT"),
+    CHASSIS_INFO(ONLP_FAN1_R    , "CHASSIS FAN 0 REAR"),
+    CHASSIS_INFO(ONLP_FAN2_F    , "CHASSIS FAN 1 FRONT"),
+    CHASSIS_INFO(ONLP_FAN2_R    , "CHASSIS FAN 1 REAR"),
+    CHASSIS_INFO(ONLP_FAN3_F    , "CHASSIS FAN 2 FRONT"),
+    CHASSIS_INFO(ONLP_FAN3_R    , "CHASSIS FAN 2 REAR"),
+    CHASSIS_INFO(ONLP_FAN4_F    , "CHASSIS FAN 3 FRONT"),
+    CHASSIS_INFO(ONLP_FAN4_R    , "CHASSIS FAN 3 REAR"),
+    CHASSIS_INFO(ONLP_FAN5_F    , "CHASSIS FAN 4 FRONT"),
+    CHASSIS_INFO(ONLP_FAN5_R    , "CHASSIS FAN 4 REAR"),
+    CHASSIS_INFO(ONLP_FAN6_F    , "CHASSIS FAN 5 FRONT"),
+    CHASSIS_INFO(ONLP_FAN6_R    , "CHASSIS FAN 5 REAR"),
+    CHASSIS_INFO(ONLP_PSU0_FAN1 , "PSU 0 FAN"),
+    CHASSIS_INFO(ONLP_PSU1_FAN1 , "PSU 1 FAN"),
 };
 
 /**

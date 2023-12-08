@@ -37,50 +37,50 @@ static onlp_led_info_t led_info[] =
 {
     { }, /* Not used */
     {
-        { LED_OID_SYSTEM, "Chassis LED 1 (SYS LED)", 0 },
+        { LED_OID_SYSTEM, "CHASSIS LED 1 (SYS LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
         ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_GREEN,
     },
     {
-        { LED_OID_FAN, "Chassis LED 2 (FAN LED)", 0 },
+        { LED_OID_FAN, "CHASSIS LED 2 (FAN LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_PSU1, "Chassis LED 3 (PSU1 LED)", 0 },
+        { LED_OID_PSU1, "CHASSIS LED 3 (PSU1 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_PSU2, "Chassis LED 4 (PSU2 LED)", 0 },
+        { LED_OID_PSU2, "CHASSIS LED 4 (PSU2 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_FAN_TRAY1, "Rear LED 1 (FAN TRAY1 LED)", 0 },
+        { LED_OID_FAN_TRAY1, "REAR LED 1 (FAN TRAY1 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_FAN_TRAY2, "Rear LED 2 (FAN TRAY2 LED)", 0 },
+        { LED_OID_FAN_TRAY2, "REAR LED 2 (FAN TRAY2 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_FAN_TRAY3, "Rear LED 3 (FAN TRAY3 LED)", 0 },
+        { LED_OID_FAN_TRAY3, "REAR LED 3 (FAN TRAY3 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     },
     {
-        { LED_OID_FAN_TRAY4, "Rear LED 4 (FAN TRAY4 LED)", 0 },
+        { LED_OID_FAN_TRAY4, "REAR LED 4 (FAN TRAY4 LED)", 0 },
         ONLP_LED_STATUS_PRESENT,
-        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE | 
+        ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_ORANGE |
         ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_AUTO,
     }
 };
@@ -91,7 +91,7 @@ extern int sys_fan_info_get(onlp_fan_info_t* info, int id);
  * This function will be called prior to any other onlp_ledi_* functions.
  */
 int onlp_ledi_init(void)
-{  
+{
     return ONLP_STATUS_OK;
 }
 
@@ -110,16 +110,16 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* info)
 
         if (id == LED_OID_PSU1) {
             sys_psu_prefix = SYS_PSU1_PREFIX;
-            
+
         } else {
             sys_psu_prefix = SYS_PSU2_PREFIX;
         }
         /* check psu status */
-        if ((rc = psu_present_get(&pw_exist, sys_psu_prefix)) 
+        if ((rc = psu_present_get(&pw_exist, sys_psu_prefix))
                 != ONLP_STATUS_OK) {
             return ONLP_STATUS_E_INTERNAL;
         }
-        if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix)) 
+        if ((rc = psu_pwgood_get(&pw_good, sys_psu_prefix))
                 != ONLP_STATUS_OK) {
             return ONLP_STATUS_E_INTERNAL;
         }

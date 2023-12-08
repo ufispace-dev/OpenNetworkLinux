@@ -26,7 +26,7 @@
 #include <onlplib/file.h>
 #include "x86_64_ingrasys_s9280_64x_log.h"
 #include "platform_lib.h"
-      
+
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
     { { THERMAL_OID_CPU1, "CPU Thermal 1", 0},
@@ -45,23 +45,23 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_REAR_PANEL, "Rear Panel", 0},
+    { { THERMAL_OID_REAR_PANEL, "REAR PANEL", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_REAR_MAC, "Rear MAC", 0},
+    { { THERMAL_OID_REAR_MAC, "REAR MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_MB, "Mother Board", 0},
+    { { THERMAL_OID_MB, "MORHTER BOARD", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_ASIC, "MAC Temp", 0},
+    { { THERMAL_OID_ASIC, "MAC TEMP", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_FRONT_PANEL, "Front Panel", 0},
+    { { THERMAL_OID_FRONT_PANEL, "FRONT PANEL", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
@@ -69,37 +69,37 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    { { THERMAL_OID_BMC_BOARD, "BMC Board", 0},
+    { { THERMAL_OID_BMC_BOARD, "BMC BOARD", 0},
                ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
     },
-    { { THERMAL_OID_CPU_BOARD, "CPU Board", 0},
+    { { THERMAL_OID_CPU_BOARD, "CPU BOARD", 0},
                ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
     },
-    { { THERMAL_OID_PSU1_1, "PSU-1 Thermal 1", PSU_OID_PSU1},
+    { { THERMAL_OID_PSU1_1, "PSU 1 THERMAL 1", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
     },
-    { { THERMAL_OID_PSU1_2, "PSU-1 Thermal 2", PSU_OID_PSU1},
+    { { THERMAL_OID_PSU1_2, "PSU 1 THERMAL 2", PSU_OID_PSU1},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
     },
-    { { THERMAL_OID_PSU2_1, "PSU-2 Thermal 1", PSU_OID_PSU2},
+    { { THERMAL_OID_PSU2_1, "PSU 2 THERMAL 1", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
     },
-    { { THERMAL_OID_PSU2_2, "PSU-2 Thermal 2", PSU_OID_PSU2},
+    { { THERMAL_OID_PSU2_2, "PSU 2 THERMAL 2", PSU_OID_PSU2},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_GET_TEMPERATURE, 0
-    }    
+    }
 };
 
 /*
  * This will be called to intiialize the thermali subsystem.
  */
 int onlp_thermali_init(void)
-{    
+{
     return ONLP_STATUS_OK;
 }
 
@@ -194,7 +194,7 @@ int psu_thermal_info_get(onlp_thermal_info_t* info, int id)
  * structure even if the sensor described by the OID is not present.
  */
 int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
-{   
+{
     int sensor_id, rc;
     sensor_id = ONLP_OID_ID_GET(id);
 
@@ -224,7 +224,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* info)
         case THERMAL_ID_PSU2_2:
             rc = psu_thermal_info_get(info, sensor_id);
             break;
-        default:            
+        default:
             return ONLP_STATUS_E_INTERNAL;
             break;
     }

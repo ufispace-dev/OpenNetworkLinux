@@ -275,7 +275,7 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
         # disable bmc watchdog
         self.disable_bmc_watchdog()
 
-        # init ice (need to have i40e before bcm81381 init to avoid failure)
+        # init ice (need to have ice before bcm81381 init to avoid failure)
         self.bsp_pr("Init ice")
         self.insmod("intel_auxiliary", False)
         self.insmod("ice")

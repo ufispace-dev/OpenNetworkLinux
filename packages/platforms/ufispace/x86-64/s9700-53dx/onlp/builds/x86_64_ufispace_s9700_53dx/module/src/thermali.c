@@ -64,21 +64,21 @@
  *            |----[02] ONLP_PSU_1----[08] ONLP_THERMAL_PSU1
  */
 /* Static values */
-static onlp_thermal_info_t __onlp_thermal_info[] = { 
+static onlp_thermal_info_t __onlp_thermal_info[] = {
     { }, /* Not used */
-    {   
-        .hdr = { 
+    {
+        .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
             .description = "TEMP_CPU_PECI",
             .poid = 0,
-        },  
+        },
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = ONLP_THERMAL_CAPS_ALL,
         .mcelsius = 0,
         .thresholds = UFI_ONLP_THERMAL_THRESHOLD(85000, 95000, 100000),
-    },  
-    {   
-        .hdr = { 
+    },
+    {
+        .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2_ENV),
             .description = "TEMP_OP2_ENV",
             .poid = 0,
@@ -135,7 +135,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
-            .description = "PSU 0 - Thermal Sensor 1",
+            .description = "PSU 0 THERMAL 1",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -146,7 +146,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
     {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
-            .description = "PSU 1 - Thermal Sensor 1",
+            .description = "PSU 1 THERMAL 1",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -508,7 +508,7 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* status)
             *status |= ONLP_THERMAL_STATUS_PRESENT;
         } else {
             return ONLP_STATUS_E_INTERNAL;
-        }   
+        }
     } else if (local_id == ONLP_THERMAL_PSU1) {
         ONLP_TRY(get_psui_present_status(ONLP_PSU_1, &psu_presence));
         if (psu_presence == 0) {
@@ -517,11 +517,11 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* status)
             *status |= ONLP_THERMAL_STATUS_PRESENT;
         } else {
             return ONLP_STATUS_E_INTERNAL;
-        }   
+        }
     } else {
         //do nothing, all thermals are present as default setting.
         *status |= ONLP_THERMAL_STATUS_PRESENT;
-    }  
+    }
 
     return ONLP_STATUS_OK;
 }

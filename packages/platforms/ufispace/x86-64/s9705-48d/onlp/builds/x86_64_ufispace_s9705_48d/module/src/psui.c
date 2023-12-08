@@ -42,29 +42,29 @@
  *            |                  |----[08] ONLP_PSU1_FAN_2
  *            |                  |----[08] ONLP_THERMAL_PSU1
  */
-static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = { 
+static onlp_psu_info_t __onlp_psu_info[ONLP_PSU_COUNT] = {
     { }, /* Not used */
-    {   
-        .hdr = { 
+    {
+        .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
-            .description = "PSU-0",
+            .description = "PSU 0",
             .poid = 0,
-            .coids = { 
+            .coids = {
                 ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_1),
                 ONLP_FAN_ID_CREATE(ONLP_PSU0_FAN_2),
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
-            },  
-        },  
-        .model = "", 
-        .serial = "", 
+            },
+        },
+        .model = "",
+        .serial = "",
         .status = ONLP_PSU_STATUS_PRESENT,
-        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN | 
+        .caps = ONLP_PSU_CAPS_VIN | ONLP_PSU_CAPS_VOUT | ONLP_PSU_CAPS_IIN |
                 ONLP_PSU_CAPS_IOUT | ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT,
-    },  
-    {   
-        .hdr = { 
+    },
+    {
+        .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
-            .description = "PSU-1",
+            .description = "PSU 1",
             .poid = 0,
             .coids = {
                 ONLP_FAN_ID_CREATE(ONLP_PSU1_FAN_1),

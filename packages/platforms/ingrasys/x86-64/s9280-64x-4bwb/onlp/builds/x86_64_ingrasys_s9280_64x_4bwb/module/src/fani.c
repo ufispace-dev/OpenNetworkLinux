@@ -31,7 +31,7 @@
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
     {
-        { FAN_OID_FAN1, "FANTRAY 1", 0 },
+        { FAN_OID_FAN1, "FAN 1", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -39,7 +39,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN2, "FANTRAY 2", 0 },
+        { FAN_OID_FAN2, "FAN 2", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -47,7 +47,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN3, "FANTRAY 3", 0 },
+        { FAN_OID_FAN3, "FAN 3", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -55,7 +55,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN4, "FANTRAY 4", 0 },
+        { FAN_OID_FAN4, "FAN 4", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -63,7 +63,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_PSU1_FAN1, "PSU-1 FAN1", 0 },
+        { FAN_OID_PSU1_FAN1, "PSU 1 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -71,7 +71,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_PSU2_FAN1, "PSU-2 FAN1", 0 },
+        { FAN_OID_PSU2_FAN1, "PSU 2 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,

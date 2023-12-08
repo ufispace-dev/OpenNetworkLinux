@@ -39,9 +39,9 @@
         }                                       \
     } while(0)
 
-#define CHASSIS_FAN_INFO(id, idx, fan_loc)                               \
+#define CHASSIS_FAN_INFO(id, idx, fan_loc)                      \
     {                                                           \
-        { ONLP_FAN_ID_CREATE(id), "Chassis Fan - "#idx" ("#fan_loc")", POID_0},\
+        { ONLP_FAN_ID_CREATE(id), "CHASSIS FAN "#idx" "#fan_loc, POID_0},\
         FAN_STATUS,                                             \
         FAN_CAPS,                                               \
         0,                                                      \
@@ -49,9 +49,9 @@
         ONLP_FAN_MODE_INVALID,                                  \
     }
 
-#define PSU_FAN_INFO(id, pid, poid)                               \
+#define PSU_FAN_INFO(id, pid)                               \
     {                                                       \
-        { ONLP_FAN_ID_CREATE(id), "PSU-"#pid"-Fan", ONLP_PSU_ID_CREATE(poid)},\
+        { ONLP_FAN_ID_CREATE(id), "PSU "#pid" FAN", POID_0},\
         FAN_STATUS,                                         \
         FAN_CAPS,                                           \
         0,                                                  \
@@ -73,8 +73,8 @@ onlp_fan_info_t fan_info[] = {
     CHASSIS_FAN_INFO(ONLP_FAN_R_2, 2, REAR),
     CHASSIS_FAN_INFO(ONLP_FAN_F_3, 3, FRONT),
     CHASSIS_FAN_INFO(ONLP_FAN_R_3, 3, REAR),
-    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0, ONLP_PSU_0),
-    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1, ONLP_PSU_1),
+    PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
+    PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
 
 /**
@@ -337,4 +337,3 @@ int onlp_fani_ioctl(onlp_oid_t id, va_list vargs)
 {
     return ONLP_STATUS_E_UNSUPPORTED;
 }
-

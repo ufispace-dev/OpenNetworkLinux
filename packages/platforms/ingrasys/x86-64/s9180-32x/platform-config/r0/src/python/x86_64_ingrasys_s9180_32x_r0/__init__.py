@@ -66,8 +66,8 @@ class OnlPlatform_x86_64_ingrasys_s9180_32x_r0(OnlPlatformIngrasys):
 
         self.new_i2c_devices(ioexps)
         # get gpio base
-        max_gpiochip_num = int(subprocess.check_output("""cat /sys/class/gpio/gpiochip*/base | tail -1""", shell=True))
-        gpios_num = int(subprocess.check_output("""cat /sys/class/gpio/gpiochip*/ngpio | tail -1""", shell=True))
+        max_gpiochip_num = int(subprocess.check_output("""ls /sys/class/gpio/gpiochip*/base | tail -1 | xargs cat""", shell=True))
+        gpios_num = int(subprocess.check_output("""ls /sys/class/gpio/gpiochip*/ngpio | tail -1 | xargs cat""", shell=True))
         gpio_base = max_gpiochip_num + gpios_num
         msg("GPIO_BASE = %d\n" % gpio_base)
 
