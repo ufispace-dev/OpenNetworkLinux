@@ -1118,17 +1118,23 @@ get_ipmitool_len(char *ipmitool_out){
 
 int
 parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len){
-    int i;
-    char data[3];
+    int i, real_len = 0;
+    char data[3]; 
 
-    memset(data, 0, sizeof(data));
+    memset(data, 0, sizeof(data));   
 
-    for (i = 2; i < len; ++i) {
+    //Get real version string length
+    data[0] = ucd_out[1];
+    data[1] = ucd_out[2];
+    real_len = (int) strtol(data, NULL, 16); 
+
+    for (i = 2; i < (2+real_len-1); ++i) {
         data[0] = ucd_out[(start+i)*3 + 1];
         data[1] = ucd_out[(start+i)*3 + 2];
         //hex string to int
         ucd_data[i-2] = (int) strtol(data, NULL, 16);
     }
+
     return ONLP_STATUS_OK;
 }
 
