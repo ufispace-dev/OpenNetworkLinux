@@ -33,7 +33,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU0,
-            "PSU-1",
+            "PSU 1",
             0,
             {
                 FAN_OID_PSU0_FAN,
@@ -44,7 +44,7 @@ static onlp_psu_info_t pinfo[] =
     {
         {
             PSU_OID_PSU1,
-            "PSU-2",
+            "PSU 2",
             0,
             {
                 FAN_OID_PSU1_FAN,

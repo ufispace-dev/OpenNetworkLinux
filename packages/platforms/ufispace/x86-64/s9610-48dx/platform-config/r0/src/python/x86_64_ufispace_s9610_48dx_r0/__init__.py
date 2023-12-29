@@ -115,22 +115,22 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
                 port_name = data["QSFP"][port]["port_name"]
                 subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
 
-        # init SFPDD NIF EEPROM
-        for bus in range(65, 69):
-            self.new_i2c_device('optoe2', 0x50, bus)
-            # update port_name
-            if data is not None:
-                port = bus - 25
-                port_name = data["SFPDD"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
-
         # init QSFPDD NIF EEPROM
-        for bus in range(69, 77):
+        for bus in range(65, 73):
             self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
             if data is not None:
                 port = bus - 25
                 port_name = data["QSFPDD"][port]["port_name"]
+                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+
+        # init SFPDD NIF EEPROM
+        for bus in range(73, 77):
+            self.new_i2c_device('optoe2', 0x50, bus)
+            # update port_name
+            if data is not None:
+                port = bus - 25
+                port_name = data["SFPDD"][port]["port_name"]
                 subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
 
         # init SFP+ EEPROM
@@ -204,8 +204,8 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x76, 12), # 9548_QSFP_3
             ('pca9548', 0x76, 13), # 9548_QSFP_4
             ('pca9548', 0x76, 14), # 9548_QSFP_5
-            ('pca9546', 0x76, 15), # 9546_SFPDD_1
             ('pca9548', 0x76, 9),  # 9548_QSFPDD_1
+            ('pca9546', 0x76, 15), # 9546_SFPDD_1
             ('pca9546', 0x76, 16), # 9546_SFP_1
         ]
 
@@ -280,7 +280,7 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
         self.insmod("intel_auxiliary", False)
         self.insmod("ice")
 
-        # init bcm81381 #TBD
+        # init bcm81381
         self.bsp_pr("Init bcm81381")
         os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init 1")
 

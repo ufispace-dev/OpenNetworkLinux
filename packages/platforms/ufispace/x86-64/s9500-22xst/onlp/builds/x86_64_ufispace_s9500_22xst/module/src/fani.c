@@ -31,7 +31,7 @@
 onlp_fan_info_t fan_info[] = {
     { }, /* Not used */
     {
-        { FAN_OID_FAN1, "Chassis Fan - 1", 0 },
+        { FAN_OID_FAN1, "CHASSIS FAN 1", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -39,7 +39,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN2, "Chassis Fan - 2", 0 },
+        { FAN_OID_FAN2, "CHASSIS FAN 2", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -47,7 +47,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_FAN3, "Chassis Fan - 3", 0 },
+        { FAN_OID_FAN3, "CHASSIS FAN 3", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -55,7 +55,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_PSU0_FAN, "PSU 1 - Fan", 0 },
+        { FAN_OID_PSU0_FAN, "PSU 1 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,
@@ -63,7 +63,7 @@ onlp_fan_info_t fan_info[] = {
         ONLP_FAN_MODE_INVALID,
     },
     {
-        { FAN_OID_PSU1_FAN, "PSU 2 - Fan", 0 },
+        { FAN_OID_PSU1_FAN, "PSU 2 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
         0,

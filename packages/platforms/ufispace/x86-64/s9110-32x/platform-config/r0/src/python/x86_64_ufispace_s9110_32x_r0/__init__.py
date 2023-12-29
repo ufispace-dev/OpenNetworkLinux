@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="32x100 + 1x10"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.8'
+    BSP_VERSION='1.0.9'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/2-0030/cpld_system_led_sys"

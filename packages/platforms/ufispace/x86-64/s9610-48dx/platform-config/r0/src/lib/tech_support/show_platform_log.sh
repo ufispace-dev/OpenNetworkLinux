@@ -819,9 +819,9 @@ function _show_nif_port_status_sysfs {
                                      "0031" "0031" "0031" "0031" "0031" \
                                      "0032" "0032" "0032" "0032" "0032" \
                                      "0032" "0032" "0032" "0032" "0032" \
-                                     "0033" "0033" "0033" "0033"\
                                      "0033" "0033" "0033" "0033" "0033" \
                                      "0033" "0033" "0033"\
+                                     "0033" "0033" "0033" "0033"\
                                      "0033" "0033" "0033" "0033")
 
         port_type_array=("qsfp" "qsfp" "qsfp" "qsfp" "qsfp" \
@@ -832,9 +832,9 @@ function _show_nif_port_status_sysfs {
                          "qsfp" "qsfp" "qsfp" "qsfp" "qsfp" \
                          "qsfp" "qsfp" "qsfp" "qsfp" "qsfp" \
                          "qsfp" "qsfp" "qsfp" "qsfp" "qsfp" \
-                         "sfpdd" "sfpdd" "sfpdd" "sfpdd" \
                          "qsfpdd" "qsfpdd" "qsfpdd" "qsfpdd" "qsfpdd" \
                          "qsfpdd" "qsfpdd" "qsfpdd" \
+                         "sfpdd" "sfpdd" "sfpdd" "sfpdd" \
                          "sfp28" "sfp28" "sfp28" "sfp28" )
 
         port_status_sysfs_idx_array=("_0" "_0" "_0" "_0" "_1" \
@@ -845,9 +845,9 @@ function _show_nif_port_status_sysfs {
                                      "_1" "_1" "_1" "_2" "_2" \
                                      "_0" "_0" "_0" "_0" "_1" \
                                      "_1" "_1" "_1" "_2" "_2" \
-                                     "" "" "" "" \
                                      "" "" "" "" ""\
                                      "" "" "" \
+                                     "" "" "" "" \
                                      "" "" "" "")
 
         port_status_bit_idx_array=("0" "1" "2" "3" "0" \
@@ -858,9 +858,9 @@ function _show_nif_port_status_sysfs {
                                    "5" "6" "7" "4" "5" \
                                    "4" "5" "6" "7" "4" \
                                    "5" "6" "7" "4" "5" \
-                                   "0" "1" "2" "3" \
                                    "0" "1" "2" "3" "4" \
                                    "5" "6" "7" \
+                                   "0" "1" "2" "3" \
                                    "0" "1" "2" "3" )
 
         for (( i=0; i<${#port_status_cpld_addr_array[@]}; i++ ))
@@ -873,6 +873,7 @@ function _show_nif_port_status_sysfs {
                 _echo "Port${i} type:${port_status_bit_idx_array[i]}"
                 _show_sfp_status_sysfs ${i} ${port_status_bit_idx_array[i]}
                 continue
+
             fi
 
             # Module NIF Port Interrupt Status (0: Interrupted, 1:No Interrupt)
@@ -965,7 +966,7 @@ function _show_sfp_status_sysfs {
     bit_index=$2
     port_eeprom_bus_id_base=25
 
-    if [ ${port} -ge 40 ] && [ ${port} -le 43 ]; then
+    if [ ${port} -ge 48 ] && [ ${port} -le 51 ]; then
         port_type="sfpdd"
         status_bit_index=${bit_index}+4
     elif [ ${port} -ge 52 ] && [ ${port} -le 55 ]; then

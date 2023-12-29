@@ -62,6 +62,7 @@ static onlp_psu_info_t psu_info[] =
 static psu_support_info_t psu_support_list[] =
 {
     {"FSPGROUP", "YESM1300AM-2A02P10", ONLP_PSU_TYPE_AC},
+    {"FSPGROUP", "YESM1300CM-2A01N01", ONLP_PSU_TYPE_DC48},
     {"ACBEL", "FSH082-HAAG", ONLP_PSU_TYPE_AC},
     {"ACBEL", "FSJ033-HAAG", ONLP_PSU_TYPE_DC48},
 };

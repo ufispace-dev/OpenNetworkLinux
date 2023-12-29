@@ -29,17 +29,17 @@
 #define SFPDD_NUM             4
 #define QSFPDD_NUM            8
 #define SFP_NUM               4
-#define QSFP_SFPDD_NUM        (QSFP_NUM+SFPDD_NUM)
-#define QSFPX_NUM             (QSFP_NUM+SFPDD_NUM+QSFPDD_NUM)
-#define PORT_NUM              (QSFPX_NUM+SFP_NUM)
+#define QSFPX_NUM             (QSFP_NUM+QSFPDD_NUM)
+#define QSFPX_SFPDD_NUM       (QSFP_NUM+QSFPDD_NUM+SFPDD_NUM)
+#define PORT_NUM              (QSFPX_SFPDD_NUM+SFP_NUM)
 
-#define SFP_PORT(_port)   (port-QSFPX_NUM)
+#define SFP_PORT(_port)   (port-QSFPX_SFPDD_NUM)
 
-#define IS_SFP(_port)     (_port >= QSFPX_NUM && _port < PORT_NUM)
-#define IS_SFPDD(_port)   (_port >= QSFP_NUM && _port < QSFP_SFPDD_NUM)
+#define IS_SFP(_port)     (_port >= QSFPX_SFPDD_NUM && _port < PORT_NUM)
+#define IS_SFPDD(_port)   (_port >= QSFPX_NUM && _port < QSFPX_SFPDD_NUM)
 #define IS_QSFPX(_port)   (IS_QSFP(_port) || IS_QSFPDD(_port))
 #define IS_QSFP(_port)    (_port >= 0 && _port < QSFP_NUM)
-#define IS_QSFPDD(_port)  (_port >= QSFP_SFPDD_NUM && _port < QSFPX_NUM)
+#define IS_QSFPDD(_port)  (_port >= QSFP_NUM && _port < QSFPX_NUM)
 
 #define MASK_SFP_PRESENT      0x01
 #define MASK_SFP_TX_FAULT     0x02
@@ -115,7 +115,8 @@ static int ufi_qsfp_port_to_sysfs_attr_offset(int port)
     return sysfs_attr_offset;
 }
 
-static int ufi_qsfp_port_to_bit_offset(int port) {
+static int ufi_qsfp_port_to_bit_offset(int port)
+{
     int bit_offset = -1; // Default value for an invalid port
 
     if (port >= 0 && port < 4) {
@@ -142,10 +143,10 @@ static int ufi_qsfp_port_to_bit_offset(int port) {
         bit_offset = port % 30;
     } else if (port >= 38 && port < 40) {
         bit_offset = port % 34;
-    } else if (port >= 40 && port < 44) { //SFPDD
-        bit_offset = port % 4;
-    } else if (port >= 44 && port < 52) { //QSFPDD
-        bit_offset = port % 44;
+    } else if (port >= 40 && port < 48) { //QSFPDD
+        bit_offset = port % 40;
+    } else if (port >= 48 && port < 52) { //SFPDD
+        bit_offset = port % 48;
     } else if (port >= 52 && port < 56) { //SFP
         bit_offset = port % 48;
     }
@@ -157,11 +158,11 @@ static int ufi_port_to_eeprom_bus(int port)
 {
     int bus = -1;
 
-    if (IS_QSFP(port)) { //QSFPDD
+    if (IS_QSFP(port)) { //QSFP
         bus =  port + 25;
-    } else if (IS_SFPDD(port)) { //SFP
+    } else if (IS_QSFPDD(port)) { //QSFPDD
         bus =  port + 25;
-    } else if (IS_QSFPDD(port)) { //SFP
+    } else if (IS_SFPDD(port)) { //SFPDD
         bus =  port + 25;
     } else if (IS_SFP(port)) { //SFP
         bus =  port + 25;
@@ -178,11 +179,11 @@ static int ufi_port_to_cpld_bus(int port)
 {
     int bus = -1;
 
-    if (IS_QSFP(port)) { //QSFPDD
-        bus =  CPLD_I2C_BUS[1];
-    } else if (IS_SFPDD(port)) { //SFPDD
+    if (IS_QSFP(port)) { //QSFP
         bus =  CPLD_I2C_BUS[1];
     } else if (IS_QSFPDD(port)) { //QSFPDD
+        bus =  CPLD_I2C_BUS[1];
+    } else if (IS_SFPDD(port)) { //SFPDD
         bus =  CPLD_I2C_BUS[1];
     } else if (IS_SFP(port)) { //SFP
         bus =  CPLD_I2C_BUS[1];
@@ -365,19 +366,19 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
         AIM_BITMAP_MOD(dst, i, 0);
     }
 
+    /* Populate bitmap - QSFPDD ports */
+    for(i = QSFP_NUM; i < (QSFPX_NUM); i++) {
+        AIM_BITMAP_MOD(dst, i, 0);
+    }
+
     /* Populate bitmap - SFPDD ports */
-    for(i = QSFP_NUM; i < (QSFP_SFPDD_NUM); i++) {
+    for(i = QSFPX_NUM; i < (QSFPX_SFPDD_NUM); i++) {
         ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
         AIM_BITMAP_MOD(dst, i, value);
     }
 
-    /* Populate bitmap - QSFPDD ports */
-    for(i = QSFP_SFPDD_NUM; i < (QSFPX_NUM); i++) {
-        AIM_BITMAP_MOD(dst, i, 0);
-    }
-
     /* Populate bitmap - SFP+ ports */
-    for(i = QSFPX_NUM; i < PORT_NUM; i++) {
+    for(i = QSFPX_SFPDD_NUM; i < PORT_NUM; i++) {
         ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
         AIM_BITMAP_MOD(dst, i, value);
     }
