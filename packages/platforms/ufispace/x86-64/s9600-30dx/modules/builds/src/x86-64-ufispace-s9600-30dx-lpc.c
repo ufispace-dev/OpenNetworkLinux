@@ -26,6 +26,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
+#include <linux/gpio.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -70,6 +71,7 @@
 #define REG_CPU_STATUS_1                  (REG_BASE_CPU + 0x02)
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
+#define REG_CPU_BRD_ID                    (REG_BASE_CPU + 0x06)
 #define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
@@ -93,6 +95,9 @@
 #define MASK_ALL                          (0xFF)
 #define MASK_CPLD_MAJOR_VER               (0b11000000)
 #define MASK_CPLD_MINOR_VER               (0b00111111)
+#define MASK_CPU_REV_SKU                  (0b11110000)
+#define MASK_CPU_REV_HW                   (0b00001100)
+#define MASK_CPU_REV_BUILD                (0b00000011)
 #define MASK_MB_MUX_RESET                 (0b00011110)
 #define LPC_MDELAY                        (5)
 
@@ -103,6 +108,9 @@ enum lpc_sysfs_attributes {
     ATT_CPU_CPLD_VERSION_H,
     ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_BIOS_BOOT_CFG,
+    ATT_CPU_REV_SKU,
+    ATT_CPU_REV_HW,
+    ATT_CPU_REV_BUILD,
     ATT_CPU_CPLD_BUILD,
 
     ATT_CPU_CPLD_MAJOR_VER,
@@ -137,6 +145,7 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_INFO,
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
+    ATT_BSP_GPIO_MAX,
     ATT_MAX
 };
 
@@ -374,6 +383,19 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
     return count;
 }
 
+/* get gpio max value */
+static ssize_t read_gpio_max(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_MAX) {
+        return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+    }
+    return -1;
+}
+
 /* get cpu cpld version in human readable format */
 static ssize_t read_cpu_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
@@ -418,6 +440,18 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_CPU_BIOS_BOOT_CFG:
             reg = REG_CPU_CTRL_1;
             mask = 0x80;
+            break;
+        case ATT_CPU_REV_SKU:
+            reg = REG_CPU_BRD_ID;
+            mask = MASK_CPU_REV_SKU;
+            break;
+        case ATT_CPU_REV_HW:
+            reg = REG_CPU_BRD_ID;
+            mask = MASK_CPU_REV_HW;
+            break;
+        case ATT_CPU_REV_BUILD:
+            reg = REG_CPU_BRD_ID;
+            mask = MASK_CPU_REV_BUILD;
             break;
         case ATT_CPU_CPLD_BUILD:
             reg = REG_CPU_CPLD_BUILD;
@@ -566,21 +600,17 @@ static ssize_t read_bsp_callback(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-    int str_len=0;
     char *str=NULL;
 
     switch (attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             str = bsp_reg;
-            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;
@@ -657,6 +687,9 @@ static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version,   lpc_callback, ATT_CPU_CPLD_VER
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h, cpu_cpld_version_h, ATT_CPU_CPLD_VERSION_H);
 static _SENSOR_DEVICE_ATTR_RO(boot_rom,           lpc_callback, ATT_CPU_BIOS_BOOT_ROM);
 static _SENSOR_DEVICE_ATTR_RO(boot_cfg,           lpc_callback, ATT_CPU_BIOS_BOOT_CFG);
+static _SENSOR_DEVICE_ATTR_RO(cpu_rev_sku,        lpc_callback, ATT_CPU_REV_SKU);
+static _SENSOR_DEVICE_ATTR_RO(cpu_rev_hw,         lpc_callback, ATT_CPU_REV_HW);
+static _SENSOR_DEVICE_ATTR_RO(cpu_rev_build,      lpc_callback, ATT_CPU_REV_BUILD);
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build,     lpc_callback, ATT_CPU_CPLD_BUILD);
 
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_major_ver, lpc_callback, ATT_CPU_CPLD_MAJOR_VER);
@@ -674,7 +707,7 @@ static _SENSOR_DEVICE_ATTR_RO(board_sku_id,        lpc_callback, ATT_MB_BRD_SKU_
 static _SENSOR_DEVICE_ATTR_RO(board_hw_id,         lpc_callback, ATT_MB_BRD_HW_ID);
 static _SENSOR_DEVICE_ATTR_RO(board_id_type,       lpc_callback, ATT_MB_BRD_ID_TYPE);
 static _SENSOR_DEVICE_ATTR_RO(board_build_id,      lpc_callback, ATT_MB_BRD_BUILD_ID);
-static _SENSOR_DEVICE_ATTR_RO(board_deph_id,     lpc_callback, ATT_MB_BRD_DEPH_ID);
+static _SENSOR_DEVICE_ATTR_RO(board_deph_id,       lpc_callback, ATT_MB_BRD_DEPH_ID);
 static _SENSOR_DEVICE_ATTR_WO(mux_reset,           mux_reset, ATT_MB_MUX_RESET);
 
 static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_major_ver, lpc_callback, ATT_MB_CPLD_1_MAJOR_VER);
@@ -692,10 +725,14 @@ static _SENSOR_DEVICE_ATTR_RW(bsp_debug,   bsp_callback, ATT_BSP_DEBUG);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
 
 static struct attribute *cpu_cpld_attrs[] = {
     _DEVICE_ATTR(cpu_cpld_version),
     _DEVICE_ATTR(cpu_cpld_version_h),
+    _DEVICE_ATTR(cpu_rev_sku),
+    _DEVICE_ATTR(cpu_rev_hw),
+    _DEVICE_ATTR(cpu_rev_build),
     _DEVICE_ATTR(cpu_cpld_build),
     _DEVICE_ATTR(cpu_cpld_major_ver),
     _DEVICE_ATTR(cpu_cpld_minor_ver),
@@ -742,6 +779,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_info),
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_reg),
+    _DEVICE_ATTR(bsp_gpio_max),
     NULL,
 };
 

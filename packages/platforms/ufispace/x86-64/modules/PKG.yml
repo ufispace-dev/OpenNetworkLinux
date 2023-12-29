@@ -1,1 +1,22 @@
-!include $ONL_TEMPLATES/arch-vendor-modules.yml ARCH=amd64 VENDOR=ufispace KERNELS="onl-kernel-4.14-lts-x86-64-all:amd64"
+############################################################
+#
+# PKG template for a vendor's common modules
+#
+############################################################
+prerequisites:
+  packages: [ "onl-kernel-4.14-lts-x86-64-all:amd64" ]
+
+packages:
+  - name: onl-vendor-ufispace-modules
+    version: 1.0.0
+    arch: amd64
+    copyright: Copyright 2019-2023 UfiSpace
+    maintainer: wade.ce.he@ufispace.com
+    support: opennetworklinux@googlegroups.com
+    summary: ONL Vendor Modules Package for ufispace
+
+    files:
+      builds/lib: /lib
+      builds/src/ddp: /lib/firmware/updates/intel/ice/ddp
+
+    changelog: Changes

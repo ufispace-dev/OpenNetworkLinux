@@ -48,7 +48,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_0),
-            .description = "Chassis Fan - 0",
+            .description = "CHASSIS FAN 0",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -60,7 +60,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_1),
-            .description = "Chassis Fan - 1",
+            .description = "CHASSIS FAN 1",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -72,7 +72,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_2),
-            .description = "Chassis Fan - 2",
+            .description = "CHASSIS FAN 2",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -84,7 +84,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_FAN_3),
-            .description = "Chassis Fan - 3",
+            .description = "CHASSIS FAN 3",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -96,7 +96,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
-            .description = "PSU 0 - Fan",
+            .description = "PSU 0 FAN",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -108,7 +108,7 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     {
         .hdr = {
             .id = ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
-            .description = "PSU 1 - Fan",
+            .description = "PSU 1 FAN",
             .poid = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },

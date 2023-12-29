@@ -1,0 +1,319 @@
+#!/bin/bash
+
+if [ -z "${UFI_DIAG_PATH}" ]; then
+    export UFI_DIAG_PATH=$(pwd)
+fi
+
+VER="0.0.1-bsp"
+silence=0
+MAC_RP="15:05.0"
+
+help()
+{
+    echo ""
+    echo "== Utility for reset operation (Version ${VER}) =="
+    echo "Format: ${0} <target|help|version> [<silent>]"
+    echo "  target:"
+    echo "    mac  : Reset MAC"
+    echo "    phy  : Reset BCM81384"
+    echo "    mux  : Reset BCM81381"
+    echo "  help: Show command help"
+    echo "  version: Show script version"
+    echo "  silent(optional): Don't display reset result"
+    echo ""
+}
+
+show_ver()
+{
+    echo "== Utility for reset operation (Version ${VER}) =="
+}
+
+print_log()
+{
+    if [ ${silence} -ne 1 ]; then
+        printf "${1}"
+    fi
+}
+
+get_pcie_status()
+{
+    case "${1}" in
+    "mac")
+        echo "RP Status ${MAC_RP}:"
+        lspci -vvv -s ${MAC_RP} | grep -e DevSta: -e LnkCtl: -e LnkCap: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "MAC Status %s:00.0:\n" $(setpci -s ${MAC_RP} 0x19.b)
+        lspci -vvv -s $(setpci -s ${MAC_RP} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl: -e LnkCap: -e LnkSta: -e UESta: -e CESta: -e SERR
+        ;;
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+remove_kmod()
+{
+    case "${1}" in
+    "mac")
+        kmod_cnt=`lsmod | grep bde | wc -l`
+        if [ ${kmod_cnt} -eq 2 ]; then
+            rmmod linux_user_bde
+            rmmod linux_kernel_bde
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+remove_dev()
+{
+    case "${1}" in
+    "mac")
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s ${MAC_RP} 0x19.b)\:00.0/remove
+        sleep 1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+set_2nd_bus_reset()
+{
+    case "${1}" in
+    "mac")
+        if [ ${2} -eq 1 ]; then
+            #setpci -s ${MAC_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${MAC_RP} BRIDGE_CONTROL)
+            setpci -s ${MAC_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            sleep 0.1
+        else
+            #setpci -s ${MAC_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${MAC_RP} BRIDGE_CONTROL)
+            setpci -s ${MAC_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            sleep 0.1
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+enable_common_clk()
+{
+    case "${1}" in
+    "mac")
+        setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b=0x40
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+bus_num_check()
+{
+    set_value=${1}
+    if [ -f "/sys/bus/i2c/devices/1-0030/cpld_id" ]; then
+        print_log "SYSFS exists, skip to set i2c mux..."
+        i2c_bus_f="-f 1"
+    else
+        i2cset -y 0 0x71 ${set_value}
+        i2c_bus_f="0"
+    fi
+}
+
+reset_mux()
+{
+    print_log "Reset BCM81381...\n"
+    print_log "==============================\n"
+
+    # reset BCM81381
+    print_log "Reset Assertion......"
+    #i2cset -y 0 0x71 0x1
+    bus_num_check "0x1"
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x40 $(printf "0x%02x" $(("$val" & 0xFE)))
+    sleep 2
+    print_log "done\n"
+
+    # unreset BCM81381
+    print_log "Reset Deassertion......"
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x40 $(printf "0x%02x" $(("$val" | 0x1)))
+    sleep 0.1
+    #i2cset -y 0 0x71 0x0
+    bus_num_check "0x0"
+    sleep 2
+    print_log "done\n"
+
+    print_log "==============================\n"
+    print_log "Reset BCM81381 Done\n\n"
+}
+
+reset_phy()
+{
+    print_log "Reset BCM81384...\n"
+    print_log "==============================\n"
+
+    # reset BCM81384
+    print_log "Reset Assertion......"
+    #i2cset -y 0 0x71 0x1
+    bus_num_check "0x1"
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x41 0x0
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x42 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x42 $(printf "0x%02x" $(("$val" & 0xFC)))
+    sleep 2
+    print_log "done\n"
+
+    # unreset BCM81384
+    print_log "Reset Deassertion......"
+    i2cset -y ${i2c_bus_f} 0x33 0x41 0xFF
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x42 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x42 $(printf "0x%02x" $(("$val" | 0x3)))
+    sleep 0.1
+    #i2cset -y 0 0x71 0x0
+    bus_num_check "0x0"
+    sleep 2
+    print_log "done\n"
+
+    print_log "==============================\n"
+    print_log "Reset BCM81384 Done\n\n"
+}
+
+reset_mac()
+{
+    print_log "Reset MAC...\n"
+    print_log "==============================\n"
+    remove_kmod mac
+
+    print_log "Before MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    print_log "Remove MAC from PCIe bus......"
+    remove_dev mac
+    sleep 1
+    print_log "done\n"
+
+    # set secondary bus reset to 1 before MAC reset
+    set_2nd_bus_reset mac 1
+
+    # reset MAC
+    print_log "Reset Assertion......"
+    #i2cset -y 0 0x71 0x1
+    bus_num_check "0x1"
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" & 0xFE)))
+    sleep 2
+    print_log "done\n"
+
+    # unreset MAC
+    print_log "Reset Deassertion......"
+    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" | 0x01)))
+    sleep 2
+    #i2cset -y 0 0x71 0x0
+    bus_num_check "0x0"
+    sleep 0.1
+    print_log "done\n"
+
+    # set secondary bus reset to 0 after MAC reset
+    set_2nd_bus_reset mac 0
+
+    print_log "Rescan PCIe bus......"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 1
+    print_log "done\n"
+
+    print_log "Check MAC status......"
+    mac_cnt=`lspci | grep 8840 | wc -l`
+    if [ ${mac_cnt} -ne 1 ]; then
+        print_log "fail: After reset, 1 MAC should be exist!\n"
+        lspci | grep 8840
+        exit 2
+    else
+        print_log "done\n"
+    fi
+
+    print_log "Enable Common Clock......"
+    enable_common_clk mac
+    print_log "done\n"
+
+    print_log "After MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    print_log "==============================\n"
+    print_log "Reset MAC Done\n\n"
+}
+
+main()
+{
+    case ${2} in
+    1)
+        silence=1
+        ;;
+    *)
+        silence=0
+        ;;
+    esac
+
+    case ${1} in
+    "mac")
+        show_ver
+        reset_mac
+        ;;
+    "phy")
+        show_ver
+        reset_phy
+        ;;
+    "mux")
+        show_ver
+        reset_mux
+        ;;
+    "all")
+        show_ver
+        reset_mux
+        sleep 1
+        reset_phy
+        sleep 1
+        reset_mac
+        sleep 1
+        ;;
+    "help")
+        help
+        ;;
+    "version")
+        show_ver
+        ;;
+    *)
+        print_log "\n"
+        print_log "Invalid parameters"
+        help
+        exit 1
+        ;;
+    esac
+}
+
+main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
+
+exit 0

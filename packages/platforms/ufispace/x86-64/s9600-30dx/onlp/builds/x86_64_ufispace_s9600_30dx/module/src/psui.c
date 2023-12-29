@@ -49,7 +49,7 @@ static onlp_psu_info_t __onlp_psu_info[] = {
     {
         .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_0),
-            .description = "PSU-0",
+            .description = "PSU 0",
             .poid = ONLP_OID_CHASSIS,
             .coids = {
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_0),
@@ -65,7 +65,7 @@ static onlp_psu_info_t __onlp_psu_info[] = {
     {
         .hdr = {
             .id = ONLP_PSU_ID_CREATE(ONLP_PSU_1),
-            .description = "PSU-1",
+            .description = "PSU 1",
             .poid = ONLP_OID_CHASSIS,
             .coids = {
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_1),

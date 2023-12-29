@@ -4,6 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
+import commands
 import subprocess
 import time
 import fcntl
@@ -63,10 +64,10 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc"
     FS_PLTM_CFG="/lib/platform-config/current/onl"
-    
-    def check_i2c_status(self): 
+
+    def check_i2c_status(self):
         sysfs_mux_reset = self.SYSFS_LPC + "/mb_cpld/mux_reset"
-                           
+
         # Check I2C status
         retcode = os.system("i2cget -f -y 0 0x75 > /dev/null 2>&1")
         if retcode != 0:
@@ -104,7 +105,7 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
 
         with open(self.FS_PLTM_CFG + "/port_config.yml", 'r') as yaml_file:
             data = yaml.safe_load(yaml_file)
-        
+
         # init QSFP EEPROM
         for bus in range(25, 41):
             self.new_i2c_device('optoe1', 0x50, bus)
@@ -125,18 +126,24 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("Current IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
-            
+
         ipmi_ioctl.set_ipmi_maintenance_mode(IPMI_Ioctl.IPMI_MAINTENANCE_MODE_ON)
-            
+
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
-    def init_i2c_mux_idle_state(self, muxs):        
+    def disable_watchdog(self):
+        sysfs_watchdog = "/dev/watchdog"
+
+        if os.path.exists(sysfs_watchdog):
+            os.remove(sysfs_watchdog)
+
+    def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
-        
+
         for mux in muxs:
             i2c_addr = mux[1]
             i2c_bus = mux[2]
@@ -145,12 +152,19 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
 
-    def disable_watchdog(self):        
-        sysfs_watchdog = "/dev/watchdog"
-            
-        if os.path.exists(sysfs_watchdog):
-            os.remove(sysfs_watchdog)
-                    
+    def get_gpio_max(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+            self.bsp_pr("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+            output="511"
+
+        gpio_max = int(output, 10)
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max));
+
+        return gpio_max
+
     def baseconfig(self):
 
         # lpc driver
@@ -158,14 +172,14 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
 
         # check i2c bus status
         self.check_i2c_status()
-        
+
         # Golden Finger to show CPLD
         os.system("i2cset -y 0 0x75 0x1")
         os.system("i2cget -y 0 0x30 0x2 > /dev/null 2>&1")
         os.system("i2cget -y 0 0x31 0x2 > /dev/null 2>&1")
         os.system("i2cget -y 0 0x32 0x2 > /dev/null 2>&1")
         os.system("i2cset -y 0 0x75 0x0 > /dev/null 2>&1")
-        
+
         ########### initialize I2C bus 0 ###########
         # init PCA9548
         self.bsp_pr("Init PCA9548")
@@ -178,19 +192,19 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             ('pca9548', 0x76, 19), # 9548_QSFPDD_16_23
             ('pca9548', 0x76, 20), # 9548_QSFPDD_24_29
         ]
-            
+
         self.new_i2c_devices(i2c_muxs)
-        
+
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
-        
+
         self.insmod("x86-64-ufispace-sys-eeprom")
         self.insmod("x86-64-ufispace-optoe")
 
         # init SYS EEPROM devices
         self.bsp_pr("Init system eeprom")
         self.new_i2c_devices(
-            [                
+            [
                 ('sys_eeprom', 0x57, 0),
             ]
         )
@@ -200,25 +214,28 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         self.init_eeprom()
 
         # init GPIO sysfs
-        
+
         #9539_CPU_I2C
         self.new_i2c_device('pca9539', 0x77, 0)
 
+        #get gpio_max
+        gpio_max = self.get_gpio_max()
+
         # export GPIO
-        for i in range(496, 512):
+        for i in range(gpio_max-15, gpio_max+1):
             os.system("echo {} > /sys/class/gpio/export".format(i))
-        
+
         # init GPIO direction
         # 9539_CPU_I2C 0x77
-        for i in range(496, 496):
+        for i in range(gpio_max-15, gpio_max+1):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
-        
+
         # init CPLD
         self.bsp_pr("Init CPLD")
         self.insmod("x86-64-ufispace-s9600-30dx-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32)):
             self.new_i2c_device("s9600_30dx_cpld" + str(i+1), addr, 1)
-        
+
         # enable event ctrl
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
@@ -226,15 +243,14 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
-        
+
         #disable watchdog
         self.disable_watchdog()
 
         # init i40e (need to have i40e before phy init to avoid failure)
-        self.bsp_pr("Init i40e")        
+        self.bsp_pr("Init i40e")
         self.insmod("i40e")
-                
-        self.bsp_pr("Init done")
-        
-        return True
 
+        self.bsp_pr("Init done")
+
+        return True

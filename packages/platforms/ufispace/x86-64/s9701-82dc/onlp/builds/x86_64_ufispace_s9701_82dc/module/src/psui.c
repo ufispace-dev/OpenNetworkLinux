@@ -72,8 +72,8 @@
  */
 static onlp_psu_info_t __onlp_psu_info[] = {
     { }, /* Not used */
-    CHASSIS_PSU_INFO(ONLP_PSU_0, "PSU-0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU0),
-    CHASSIS_PSU_INFO(ONLP_PSU_1, "PSU-1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1),
+    CHASSIS_PSU_INFO(ONLP_PSU_0, "PSU 0", ONLP_PSU_0_FAN, ONLP_THERMAL_PSU0),
+    CHASSIS_PSU_INFO(ONLP_PSU_1, "PSU 1", ONLP_PSU_1_FAN, ONLP_THERMAL_PSU1),
 };
 
 static psu_support_info_t psu_support_list[] =
