@@ -1376,9 +1376,11 @@ bmc_fan_info_get(onlp_fan_info_t* info, int id)
     if (id >= FAN_ID_FAN1 && id <= FAN_ID_FAN3) {
         percentage = (info->rpm*100)/sys_max_fan_speed;
         info->percentage = percentage;
+        info->status |= (info->rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     } else if (id >= FAN_ID_PSU0_FAN && id <= FAN_ID_PSU1_FAN) {
         percentage = (info->rpm*100)/psu_max_fan_speed;
         info->percentage = percentage;
+        info->status |= (info->rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
     }
 
     return ONLP_STATUS_OK;
