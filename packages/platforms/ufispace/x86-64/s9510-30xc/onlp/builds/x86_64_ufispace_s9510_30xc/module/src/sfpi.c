@@ -57,36 +57,36 @@ typedef struct
 
 static const port_attr_t port_attr[] = {
 /*  port  abs   lpmode reset rxlos txfault txdis eeprom type */
-    [0] ={485  ,489   ,493  ,-1   ,-1     ,-1   ,11    ,TYPE_QSFP},
-    [1] ={484  ,488   ,492  ,-1   ,-1     ,-1   ,10    ,TYPE_QSFP},
-    [2] ={375  ,-1    ,-1   ,343  ,439    ,471  ,14    ,TYPE_SFP },
-    [3] ={374  ,-1    ,-1   ,342  ,438    ,470  ,15    ,TYPE_SFP },
-    [4] ={373  ,-1    ,-1   ,341  ,437    ,469  ,16    ,TYPE_SFP },
-    [5] ={372  ,-1    ,-1   ,340  ,436    ,468  ,17    ,TYPE_SFP },
-    [6] ={371  ,-1    ,-1   ,339  ,435    ,467  ,18    ,TYPE_SFP },
-    [7] ={370  ,-1    ,-1   ,338  ,434    ,466  ,19    ,TYPE_SFP },
-    [8] ={369  ,-1    ,-1   ,337  ,433    ,465  ,20    ,TYPE_SFP },
-    [9] ={368  ,-1    ,-1   ,336  ,432    ,464  ,21    ,TYPE_SFP },
-    [10]={383  ,-1    ,-1   ,351  ,447    ,479  ,22    ,TYPE_SFP },
-    [11]={382  ,-1    ,-1   ,350  ,446    ,478  ,23    ,TYPE_SFP },
-    [12]={381  ,-1    ,-1   ,349  ,445    ,477  ,24    ,TYPE_SFP },
-    [13]={380  ,-1    ,-1   ,348  ,444    ,476  ,25    ,TYPE_SFP },
-    [14]={379  ,-1    ,-1   ,347  ,443    ,475  ,26    ,TYPE_SFP },
-    [15]={378  ,-1    ,-1   ,346  ,442    ,474  ,27    ,TYPE_SFP },
-    [16]={377  ,-1    ,-1   ,345  ,441    ,473  ,28    ,TYPE_SFP },
-    [17]={376  ,-1    ,-1   ,344  ,440    ,472  ,29    ,TYPE_SFP },
-    [18]={359  ,-1    ,-1   ,327  ,423    ,455  ,30    ,TYPE_SFP },
-    [19]={358  ,-1    ,-1   ,326  ,422    ,454  ,31    ,TYPE_SFP },
-    [20]={357  ,-1    ,-1   ,325  ,421    ,453  ,32    ,TYPE_SFP },
-    [21]={356  ,-1    ,-1   ,324  ,420    ,452  ,33    ,TYPE_SFP },
-    [22]={355  ,-1    ,-1   ,323  ,419    ,451  ,34    ,TYPE_SFP },
-    [23]={354  ,-1    ,-1   ,322  ,418    ,450  ,35    ,TYPE_SFP },
-    [24]={353  ,-1    ,-1   ,321  ,417    ,449  ,36    ,TYPE_SFP },
-    [25]={352  ,-1    ,-1   ,320  ,416    ,448  ,37    ,TYPE_SFP },
-    [26]={367  ,-1    ,-1   ,335  ,431    ,463  ,38    ,TYPE_SFP },
-    [27]={366  ,-1    ,-1   ,334  ,430    ,462  ,39    ,TYPE_SFP },
-    [28]={365  ,-1    ,-1   ,333  ,429    ,461  ,40    ,TYPE_SFP },
-    [29]={364  ,-1    ,-1   ,332  ,428    ,460  ,41    ,TYPE_SFP },
+    [0] ={26   ,22    ,18   ,-1   ,-1     ,-1   ,11    ,TYPE_QSFP},
+    [1] ={27   ,23    ,19   ,-1   ,-1     ,-1   ,10    ,TYPE_QSFP},
+    [2] ={136  ,-1    ,-1   ,168  ,72     ,40   ,14    ,TYPE_SFP },
+    [3] ={137  ,-1    ,-1   ,169  ,73     ,41   ,15    ,TYPE_SFP },
+    [4] ={138  ,-1    ,-1   ,170  ,74     ,42   ,16    ,TYPE_SFP },
+    [5] ={139  ,-1    ,-1   ,171  ,75     ,43   ,17    ,TYPE_SFP },
+    [6] ={140  ,-1    ,-1   ,172  ,76     ,44   ,18    ,TYPE_SFP },
+    [7] ={141  ,-1    ,-1   ,173  ,77     ,45   ,19    ,TYPE_SFP },
+    [8] ={142  ,-1    ,-1   ,174  ,78     ,46   ,20    ,TYPE_SFP },
+    [9] ={143  ,-1    ,-1   ,175  ,79     ,47   ,21    ,TYPE_SFP },
+    [10]={128  ,-1    ,-1   ,160  ,64     ,32   ,22    ,TYPE_SFP },
+    [11]={129  ,-1    ,-1   ,161  ,65     ,33   ,23    ,TYPE_SFP },
+    [12]={130  ,-1    ,-1   ,162  ,66     ,34   ,24    ,TYPE_SFP },
+    [13]={131  ,-1    ,-1   ,163  ,67     ,35   ,25    ,TYPE_SFP },
+    [14]={132  ,-1    ,-1   ,164  ,68     ,36   ,26    ,TYPE_SFP },
+    [15]={133  ,-1    ,-1   ,165  ,69     ,37   ,27    ,TYPE_SFP },
+    [16]={134  ,-1    ,-1   ,166  ,70     ,38   ,28    ,TYPE_SFP },
+    [17]={135  ,-1    ,-1   ,167  ,71     ,39   ,29    ,TYPE_SFP },
+    [18]={152  ,-1    ,-1   ,184  ,88     ,56   ,30    ,TYPE_SFP },
+    [19]={153  ,-1    ,-1   ,185  ,89     ,57   ,31    ,TYPE_SFP },
+    [20]={154  ,-1    ,-1   ,186  ,90     ,58   ,32    ,TYPE_SFP },
+    [21]={155  ,-1    ,-1   ,187  ,91     ,59   ,33    ,TYPE_SFP },
+    [22]={156  ,-1    ,-1   ,188  ,92     ,60   ,34    ,TYPE_SFP },
+    [23]={157  ,-1    ,-1   ,189  ,93     ,61   ,35    ,TYPE_SFP },
+    [24]={158  ,-1    ,-1   ,190  ,94     ,62   ,36    ,TYPE_SFP },
+    [25]={159  ,-1    ,-1   ,191  ,95     ,63   ,37    ,TYPE_SFP },
+    [26]={144  ,-1    ,-1   ,176  ,80     ,48   ,38    ,TYPE_SFP },
+    [27]={145  ,-1    ,-1   ,177  ,81     ,49   ,39    ,TYPE_SFP },
+    [28]={146  ,-1    ,-1   ,178  ,82     ,50   ,40    ,TYPE_SFP },
+    [29]={147  ,-1    ,-1   ,179  ,83     ,51   ,41    ,TYPE_SFP },
 };
 
 #define IS_SFP(_port)         (port_attr[_port].port_type == TYPE_SFP)
@@ -99,34 +99,37 @@ static const port_attr_t port_attr[] = {
 
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
+    int gpio_max = 0;
     int gpio_num = -1;
+
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
 
     switch(control)
     {
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                gpio_num = port_attr[port].reset_gpin;
+                gpio_num = gpio_max - port_attr[port].reset_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                gpio_num = port_attr[port].rxlos_gpin;
+                gpio_num = gpio_max - port_attr[port].rxlos_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                gpio_num = port_attr[port].txfault_gpin;
+                gpio_num = gpio_max - port_attr[port].txfault_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                gpio_num = port_attr[port].txdis_gpin;
+                gpio_num = gpio_max - port_attr[port].txdis_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                gpio_num = port_attr[port].lpmode_gpin;
+                gpio_num = gpio_max - port_attr[port].lpmode_gpin;
                 break;
             }
         default:
@@ -181,11 +184,14 @@ int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
     int abs = 0, present = 0;
+    int gpio_max = 0;
 
     VALIDATE_PORT(port);
 
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+
     //set gpio_num by port
-    gpio_num=port_attr[port].abs_gpin;
+    gpio_num = gpio_max - port_attr[port].abs_gpin;
 
     if ((status = file_read_hex(&abs, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",

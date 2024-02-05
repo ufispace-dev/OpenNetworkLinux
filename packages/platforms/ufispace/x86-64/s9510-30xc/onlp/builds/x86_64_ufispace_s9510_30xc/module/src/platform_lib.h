@@ -46,20 +46,19 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/mb_cpld/"
+#define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/bsp/"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon1/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/mb_cpld/mux_reset_all"
 
-// Todo
 #define CPLD_START_ADDR                 0x700
 #define CPLD_END_ADDR                   0x790
 #define IS_INVALID_CPLD_ADDR(_addr)     (_addr > CPLD_END_ADDR || _addr < CPLD_START_ADDR)
 
 /* BMC CMD */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
@@ -274,4 +273,5 @@ int get_hw_rev_id(void);
 int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int ufi_get_board_version(board_t *board);
+int ufi_get_gpio_max(int *gpio_max);
 #endif  /* __PLATFORM_LIB_H__ */

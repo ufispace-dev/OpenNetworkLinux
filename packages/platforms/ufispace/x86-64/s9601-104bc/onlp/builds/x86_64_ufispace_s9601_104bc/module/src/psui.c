@@ -41,8 +41,8 @@ static onlp_psu_info_t psu_info[] =
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0)
             }
         },
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -54,8 +54,8 @@ static onlp_psu_info_t psu_info[] =
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1)
             }
         },
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
 };
 
@@ -63,6 +63,8 @@ static psu_support_info_t psu_support_list[] =
 {
     {"ARTESYN", "CSU1300AP-3-604", ONLP_PSU_TYPE_AC},
     {"ARTESYN", "CSU1300ADC-3-604", ONLP_PSU_TYPE_DC48},
+    {"DELTA", "DPS-1300AB-51 A", ONLP_PSU_TYPE_AC},
+    {"DELTA", "DPS-1300AB-52 A", ONLP_PSU_TYPE_DC48},
 };
 typedef struct
 {

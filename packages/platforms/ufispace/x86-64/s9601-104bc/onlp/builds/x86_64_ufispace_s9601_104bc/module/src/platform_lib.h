@@ -132,8 +132,7 @@
 /* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define BMC_OEM_CACHE               "/tmp/bmc_oem_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10
@@ -390,4 +389,5 @@ int get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int get_board_version(board_t *board);
 int get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
 int get_gpio_max(int *gpio_max);
+int trim_whitespace(char *str);
 #endif  /* __PLATFORM_LIB_H__ */

@@ -139,8 +139,7 @@
 /* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define BMC_OEM_CACHE               "/tmp/bmc_oem_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10

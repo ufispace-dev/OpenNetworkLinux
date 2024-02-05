@@ -44,10 +44,10 @@ HEADER_PROMPT=1
 LS_OPTION="-alu"
 
 # Log Redirection
-# LOG_REDIRECT="2> /dev/null": remove the error message from console
-# LOG_REDIRECT=""            : show the error message in console
-# LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+# LOG_REDIRECT="2> /dev/null"        : remove the error message from console
+# LOG_REDIRECT=""                    : show the error message in console
+# LOG_REDIRECT="2>> $LOG_FILE_PATH"  : show the error message in stdout, then stdout may send to console or file in _echo()
+LOG_REDIRECT="2>> $LOG_FILE_PATH"
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
@@ -108,7 +108,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = 1.0.1"
 }
 
 function _update_gpio_max {
@@ -907,8 +907,8 @@ function _show_gpio_sysfs {
 
     _banner "Show GPIO Status"
 
-    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | tail -n 1`
-    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | head -n 1`
+    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | tail -n 1`
+    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | head -n 1`
 
     if [ -z $max_gpio ] || [ -z $min_gpio ]  ;then
         _echo "No Contents!!!"

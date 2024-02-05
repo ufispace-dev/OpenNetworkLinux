@@ -48,9 +48,8 @@ onlp_fan_info_t fan_info[] = {
         .rpm = 0,
         .percentage = 0,
         .mode = ONLP_FAN_MODE_INVALID,
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = 
-        COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -63,8 +62,8 @@ onlp_fan_info_t fan_info[] = {
         .rpm = 0,
         .percentage = 0,
         .mode = ONLP_FAN_MODE_INVALID,
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -77,8 +76,8 @@ onlp_fan_info_t fan_info[] = {
         .rpm = 0,
         .percentage = 0,
         .mode = ONLP_FAN_MODE_INVALID,
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -91,8 +90,8 @@ onlp_fan_info_t fan_info[] = {
         .rpm = 0,
         .percentage = 0,
         .mode = ONLP_FAN_MODE_INVALID,
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {

@@ -143,11 +143,13 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
             }
         }
     } else if (led_attr[local_id].type == TYPE_LED_ATTR_GPIO) {
+        int gpio_max = 0;
         int g_val = 0, y_val = 0;
 
-        ONLP_TRY(file_read_hex(&g_val, SYS_GPIO_FMT, led_attr[local_id].g_gpin));
+        ONLP_TRY(ufi_get_gpio_max(&gpio_max));
 
-        ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, led_attr[local_id].y_gpin));
+        ONLP_TRY(file_read_hex(&g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
+        ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
 
         if ((g_val == 1) && (y_val == 0)) {
             info->status |= ONLP_LED_STATUS_ON;
@@ -318,6 +320,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
        ONLP_TRY(onlp_file_write_int(led_val, led_attr[local_id].lpc_sysfs));
 
     } else if (led_attr[local_id].type == TYPE_LED_ATTR_GPIO) {
+        int gpio_max = 0;
         int g_val = 0, y_val = 0;
         switch(mode) {
             case ONLP_LED_MODE_GREEN:
@@ -336,8 +339,11 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
                 return ONLP_STATUS_E_UNSUPPORTED;
         }
 
-        ONLP_TRY(onlp_file_write_int(g_val, SYS_GPIO_FMT, led_attr[local_id].g_gpin));
-        ONLP_TRY(onlp_file_write_int(y_val, SYS_GPIO_FMT, led_attr[local_id].y_gpin));
+
+        ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+
+        ONLP_TRY(onlp_file_write_int(g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
+        ONLP_TRY(onlp_file_write_int(y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
 
     } else {
             return ONLP_STATUS_E_INTERNAL;

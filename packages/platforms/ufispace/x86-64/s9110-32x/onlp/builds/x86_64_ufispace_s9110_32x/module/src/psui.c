@@ -41,8 +41,8 @@ static onlp_psu_info_t psu_info[] =
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_0)
             }
         },
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -54,8 +54,8 @@ static onlp_psu_info_t psu_info[] =
                 ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_1)
             }
         },
-        .model = COMM_STR_NOT_AVAILABLE,
-        .serial = COMM_STR_NOT_AVAILABLE,
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
 };
 

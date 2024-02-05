@@ -34,6 +34,10 @@
 #define PSU_FAN_RPM_MAX         13000
 #define PSU_EEPROM_ADDR_0       0x50
 #define PSU_EEPROM_ADDR_1       0x51
+#define PSU0_PMBUS_ADDR         0x58
+#define PSU1_PMBUS_ADDR         0x59
+#define PMBUS_I2C_BUS_ID        2
+#define PMBUS_I2C_DECTECT       1
 
 /* SYSFS */
 #define SYSFS_PSU_STATUS        LPC_MB_CPLD_PATH"psu_status"
@@ -237,8 +241,40 @@ int ucd_fw_ver_get(char* fw_ver, int size)
     return ONLP_STATUS_OK;
 }
 
+int psu_present_detect(int *present, int local_id)
+{
+    char cmd_buf[256] = {0};
+    int ret = 0;
+    int i2c_addr;
+
+
+    if(local_id == ONLP_PSU_0) {
+        i2c_addr = PSU0_PMBUS_ADDR;
+    } else if(local_id == ONLP_PSU_1) {
+        i2c_addr = PSU1_PMBUS_ADDR;
+    } else {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    snprintf(cmd_buf, sizeof(cmd_buf), "i2cget -y -f %d 0x%x 0x0 > /dev/null 2>&1", 
+            PMBUS_I2C_BUS_ID, i2c_addr);
+    ret = system(cmd_buf);
+
+    if(ret != 0) {
+        // fail to access i2c device => not present
+        *present = 0;
+    } else {
+        *present = 1;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int psu_present_get(int *present, int local_id)
 {
+#if PMBUS_I2C_DECTECT
+    return psu_present_detect(present, local_id);
+#else
     int val, val_mask;
 
     if(present == NULL) {
@@ -258,6 +294,7 @@ int psu_present_get(int *present, int local_id)
     *present = ((mask_shift(val, val_mask)) == PSU_STATUS_PRESENT)? 1 : 0;
 
     return ONLP_STATUS_OK;
+#endif
 }
 
 int psu_pwgood_get(int *pw_good, int local_id)

@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9601_104bc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="96x25 + 4x200 + 4x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.2'
+    BSP_VERSION='1.0.3'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/5-0030/cpld_system_led_sys"
@@ -444,8 +444,7 @@ class OnlPlatform_x86_64_ufispace_s9601_104bc_r0(OnlPlatformUfiSpace):
         self.disable_bmc_watchdog()
 
         self.bsp_pr("Init bcm82752")
-        self.insmod("intel_auxiliary", False)
-        self.insmod("i40e")
+
         # init bcm82752
         os.system("timeout 120s {} init -s auto_10G -d mdio".format(self.PATH_EPDM_CLI))
 

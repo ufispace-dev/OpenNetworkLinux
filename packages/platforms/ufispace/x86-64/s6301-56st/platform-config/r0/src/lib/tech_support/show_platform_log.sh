@@ -749,20 +749,20 @@ function _show_psu_status_cpld_lpc {
     # Read PSU0 Power Good Status (1: power good, 0: not providing power)
     psu0_power_ok=$(((cpld_psu_status_reg & 2#00010000) >> 4))
 
-    # Read PSU0 Absent Status (0: psu present, 1: psu absent)
-    psu0_absent_l=$(((cpld_psu_status_reg & 2#00000001) >> 0))
+    # Detect PSU0 Absent Status (0: psu present, 1: psu absent)
+    i2cget -y -f 2 0x58 0x0 > /dev/null 2>&1; [ $? -ne 0 ] && psu0_abs='1' || psu0_abs='0'
 
     # Read PSU1 Power Good Status (1: power good, 0: not providing power)
     psu1_power_ok=$(((cpld_psu_status_reg & 2#00100000) >> 5))
 
-    # Read PSU1 Absent Status (0: psu present, 1: psu absent)
-    psu1_absent_l=$(((cpld_psu_status_reg & 2#00000010) >> 1))
+    # Detect PSU1 Absent Status (0: psu present, 1: psu absent)
+    i2cget -y -f 2 0x59 0x0 > /dev/null 2>&1; [ $? -ne 0 ] && psu1_abs='1' || psu1_abs='0'
 
     _echo "[PSU  Status Reg Raw   ]: ${cpld_psu_status_reg}"
+    _echo "[PSU0 Absent Status]: ${psu0_abs}"
+    _echo "[PSU1 Absent Status]: ${psu1_abs}"    
     _echo "[PSU0 Power Good Status]: ${psu0_power_ok}"
-    _echo "[PSU0 Absent Status (L)]: ${psu0_absent_l}"
     _echo "[PSU1 Power Good Status]: ${psu1_power_ok}"
-    _echo "[PSU1 Absent Status (L)]: ${psu1_absent_l}"
 }
 
 function _show_psu_status_cpld {

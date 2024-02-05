@@ -336,7 +336,7 @@ done:
 /**
  * @brief bmc fru read
  * @param local_id The psu local id
- * @param[out] data The psu fru information.
+ * @param data [out] The psu fru information.
  */
 int bmc_fru_read(int local_id, bmc_fru_t *data)
 {
@@ -644,4 +644,24 @@ int get_hw_rev_id(void)
     pclose(fp);
 
     return hw_rev;
+}
+
+/**
+ * @brief Get gpio max
+ * @param gpio_max [out] GPIO max
+ */
+int ufi_get_gpio_max(int *gpio_max)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_max == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if(file_read_hex(gpio_max, LPC_BSP_FMT "bsp_gpio_max") != ONLP_STATUS_OK)
+    {
+        *gpio_max = 511;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
 }

@@ -29,6 +29,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <ctype.h>
 #include "platform_lib.h"
 
 bmc_info_t bmc_cache[] =
@@ -467,9 +468,12 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
         while(1) {
             char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
             char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+            if(fscanf(fp ,"%[^:]:%[^\n]\n", key, val) != 2) {
                 break;
             }
+
+            trim_whitespace(key);
+            trim_whitespace(val);
 
             if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
                 memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
@@ -862,4 +866,22 @@ int get_gpio_max(int *gpio_max)
         rv = ONLP_STATUS_E_INVALID;
     }
     return rv;
+}
+
+/**
+ * @brief Trim trailing whitespace
+ * @param str [out] string without trailing whitespace
+ */
+int trim_whitespace(char *str)
+{
+    char *end;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+
+    // Write new null terminator character
+    end[1] = '\0';
+
+    return ONLP_STATUS_OK;
 }
