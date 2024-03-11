@@ -1151,6 +1151,13 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     char ucd_out[48];
     char ucd_ver[8];
     char ucd_date[8];
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
     int ucd_len=0;
     int rc=0;
 
@@ -1224,18 +1231,35 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     ucd_len = get_ipmitool_len(ucd_out);
     parse_ucd_out(ucd_out, ucd_ver, 0, ucd_len);
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
         "[HW   ] %d\n"
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
         "[BMC  ] %d.%d.%d\n"
-        "[UCD  ] %s\n",
+        "[UCD  ] %s\n"
+        "[MU] %s (%s)\n",
         mb_hw_rev,
         mb_build_rev,
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-        ucd_ver);
+        ucd_ver,
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", 
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result : "NA");
 
     return ONLP_STATUS_OK;
 }
