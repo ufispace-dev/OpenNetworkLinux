@@ -62,6 +62,26 @@ onlp_fan_info_t fan_info[] = {
     CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU 1 FAN"),
 };
 
+static bool fan_fru_supported = false;
+
+static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
+{
+    int result = ONLP_STATUS_OK;
+
+    if(fan_fru_supported) {
+        /* Get fan fru info */
+        if(result != ONLP_STATUS_OK) {
+            snprintf(info->model, sizeof(info->model), "%s", "not available");
+            snprintf(info->serial, sizeof(info->serial), "%s", "not available");
+        }
+    } else {
+        snprintf(info->model, sizeof(info->model), "%s", "not supported");
+        snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int sys_fan_info_get(onlp_fan_info_t* info, int local_id)
 {
     int rpm = 0;
@@ -98,10 +118,6 @@ int sys_fan_info_get(onlp_fan_info_t* info, int local_id)
         info->status |= ONLP_FAN_STATUS_B2F;
         info->status &= ~ONLP_FAN_STATUS_F2B;
     }
-
-    // get fan fru
-    strcpy(info->model, "not supported");
-    strcpy(info->serial, "not supported");
 
 SKIP_FAN_DIR_DETECT:
     info->rpm = rpm;
@@ -141,13 +157,19 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
     switch(local_id) {
         case ONLP_FAN_0:
         case ONLP_FAN_1:
-            return sys_fan_info_get(rv, local_id);
+            ONLP_TRY(sys_fan_info_get(rv, local_id));
+            break;
         case ONLP_PSU_0_FAN:
         case ONLP_PSU_1_FAN:
-            return psu_fan_info_get(rv, local_id);
+            ONLP_TRY(psu_fan_info_get(rv, local_id));
+            break;
         default:
             return ONLP_STATUS_E_INVALID;
     }
+
+    //update fan fru info
+    ONLP_TRY(ufi_fan_fru_update(local_id, rv));
+    return ONLP_STATUS_OK;
 }
 
 /**

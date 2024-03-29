@@ -26,8 +26,8 @@
 #include "platform_lib.h"
 
 #define THERMAL_SHUTDOWN_DEFAULT  105000
-#define THERMAL_ERROR_DEFAULT         95000
-#define THERMAL_WARNING_DEFAULT     77000
+#define THERMAL_ERROR_DEFAULT     95000
+#define THERMAL_WARNING_DEFAULT   77000
 
 /* Shortcut for CPU thermal threshold value. */
 #define THERMAL_THRESHOLD_INIT_DEFAULTS  \
@@ -35,20 +35,20 @@
       THERMAL_ERROR_DEFAULT,   \
       THERMAL_SHUTDOWN_DEFAULT }
 #define THERMAL_THRESHOLD_CPU_PECI {85000, 95000, 100000}
-#define THERMAL_THRESHOLD_PSU          {65000, 70000, 75000}
-#define THERMAL_THRESHOLD_ENV          {60000, 65000, 70000}
+#define THERMAL_THRESHOLD_PSU      {65000, 70000, 75000}
+#define THERMAL_THRESHOLD_ENV      {60000, 65000, 70000}
 #define THERMAL_THRESHOLD_MAC_PVT  {90000, 95000, 105000}
-#define THERMAL_THRESHOLD_MAC_HBM {85000, 90000, 95000}
+#define THERMAL_THRESHOLD_MAC_HBM  {85000, 90000, 95000}
 #define THERMAL_THRESHOLD_MAC_ENV  {65000, 70000, 80000}
 #define THERMAL_THRESHOLD_MAC_DIE  {100000, 105000, 110000}
 
 
 
-#define VALIDATE(_id)                           \
-    do {                                        \
-        if(!ONLP_OID_IS_THERMAL(_id)) {             \
-            return ONLP_STATUS_E_INVALID;       \
-        }                                       \
+#define VALIDATE(_id)                     \
+    do {                                  \
+        if(!ONLP_OID_IS_THERMAL(_id)) {   \
+            return ONLP_STATUS_E_INVALID; \
+        }                                 \
     } while(0)
 
 #define THERMAL_INFO(id, desc, threshold) \
@@ -64,14 +64,6 @@
 static onlp_thermal_info_t thermal_info[] = {
     { }, /* Not used */
     THERMAL_INFO(ONLP_THERMAL_CPU_PKG, "CPU Package", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_0, "CPU Thermal 0", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_1, "CPU Thermal 1", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_2, "CPU Thermal 2", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_3, "CPU Thermal 3", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_4, "CPU Thermal 4", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_5, "CPU Thermal 5", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_6, "CPU Thermal 6", THERMAL_THRESHOLD_INIT_DEFAULTS),
-    THERMAL_INFO(ONLP_THERMAL_CPU_7, "CPU Thermal 7", THERMAL_THRESHOLD_INIT_DEFAULTS),
     THERMAL_INFO(ONLP_THERMAL_ENV_CPU, "TEMP_ENV_CPU", THERMAL_THRESHOLD_CPU_PECI),
     THERMAL_INFO(ONLP_THERMAL_CPU_PECI, "TEMP_CPU_PECI", THERMAL_THRESHOLD_CPU_PECI),
     THERMAL_INFO(ONLP_THERMAL_ENV_MAC0, "TEMP_ENV_MAC0", THERMAL_THRESHOLD_MAC_ENV),
@@ -103,14 +95,6 @@ static int get_thermal_local_id(int id, int *local_id)
 
     switch (tmp_id) {
         case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_CPU_0:
-        case ONLP_THERMAL_CPU_1:
-        case ONLP_THERMAL_CPU_2:
-        case ONLP_THERMAL_CPU_3:
-        case ONLP_THERMAL_CPU_4:
-        case ONLP_THERMAL_CPU_5:
-        case ONLP_THERMAL_CPU_6:
-        case ONLP_THERMAL_CPU_7:
         case ONLP_THERMAL_ENV_CPU:
         case ONLP_THERMAL_CPU_PECI:
         case ONLP_THERMAL_ENV_MAC0:
@@ -244,7 +228,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     *rv = thermal_info[local_id];
 
     switch (local_id) {
-        case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
+        case ONLP_THERMAL_CPU_PKG:
             rc = ufi_cpu_thermal_info_get(local_id, rv);
             break;
         case ONLP_THERMAL_ENV_CPU ... ONLP_THERMAL_PSU_1:

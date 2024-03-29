@@ -30,32 +30,24 @@
 /*
  * [01] CHASSIS
  *            |----[01] ONLP_THERMAL_CPU_PKG
- *            |----[02] ONLP_THERMAL_CPU_0
- *            |----[03] ONLP_THERMAL_CPU_1
- *            |----[04] ONLP_THERMAL_CPU_2
- *            |----[05] ONLP_THERMAL_CPU_3
- *            |----[06] ONLP_THERMAL_CPU_4
- *            |----[07] ONLP_THERMAL_CPU_5
- *            |----[08] ONLP_THERMAL_CPU_6
- *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_ENV_CPU
- *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_ENV_MAC0
- *            |----[13] ONLP_THERMAL_ENV_MAC1
- *            |----[14] ONLP_THERMAL_ENV_FRONT0
- *            |----[15] ONLP_THERMAL_ENV_FRONT1
- *            |----[16] ONLP_THERMAL_ENV0
- *            |----[17] ONLP_THERMAL_ENV1
- *            |----[18] ONLP_THERMAL_ENV_EXT0
- *            |----[19] ONLP_THERMAL_ENV_EXT1
+ *            |----[02] ONLP_THERMAL_ENV_CPU
+ *            |----[03] ONLP_THERMAL_CPU_PECI
+ *            |----[04] ONLP_THERMAL_ENV_MAC0
+ *            |----[05] ONLP_THERMAL_ENV_MAC1
+ *            |----[06] ONLP_THERMAL_ENV_FRONT0
+ *            |----[07] ONLP_THERMAL_ENV_FRONT1
+ *            |----[08] ONLP_THERMAL_ENV0
+ *            |----[09] ONLP_THERMAL_ENV1
+ *            |----[10] ONLP_THERMAL_ENV_EXT0
+ *            |----[11] ONLP_THERMAL_ENV_EXT1
  *            |----[01] ONLP_LED_SYS_SYNC
  *            |----[02] ONLP_LED_SYS_SYS
  *            |----[03] ONLP_LED_SYS_FAN
  *            |----[04] ONLP_LED_SYS_PSU_0
  *            |----[05] ONLP_LED_SYS_PSU_1
- *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU0_TEMP1
+ *            |----[01] ONLP_PSU_0----[12] ONLP_THERMAL_PSU0_TEMP1
  *            |                  |----[09] ONLP_PSU_0_FAN
- *            |----[02] ONLP_PSU_1----[21] ONLP_THERMAL_PSU1_TEMP1
+ *            |----[02] ONLP_PSU_1----[13] ONLP_THERMAL_PSU1_TEMP1
  *            |                  |----[10] ONLP_PSU_1_FAN
  *            |----[01] ONLP_FAN_F_0
  *            |----[02] ONLP_FAN_R_0

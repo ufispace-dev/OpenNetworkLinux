@@ -112,6 +112,7 @@
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
+//[BMC] 2.19
 #define PVT_CMD_BMC_SENSOR_CACHE    "timeout %ds ipmitool sdr -c get "\
                                     PVT_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
@@ -184,6 +185,9 @@ extern const int CPLD_I2C_BUS;
 #define CMD_I2C_GET "i2cget -f -y %d %d %d"
 #define CMD_I2C_SET "i2cset -f -y %d %d %d %d"
 
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
+
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -241,14 +245,6 @@ enum fru_attr_id {
 enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG,
-    ONLP_THERMAL_CPU_0,
-    ONLP_THERMAL_CPU_1,
-    ONLP_THERMAL_CPU_2,
-    ONLP_THERMAL_CPU_3,
-    ONLP_THERMAL_CPU_4,
-    ONLP_THERMAL_CPU_5,
-    ONLP_THERMAL_CPU_6,
-    ONLP_THERMAL_CPU_7,
     ONLP_THERMAL_ENV_CPU,
     ONLP_THERMAL_CPU_PECI,
     ONLP_THERMAL_ENV_MAC0,

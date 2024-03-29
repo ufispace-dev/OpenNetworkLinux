@@ -60,6 +60,26 @@ onlp_fan_info_t fan_info[] = {
     CHASSIS_INFO(ONLP_PSU_1_FAN, "PSU 1 FAN"),
 };
 
+static bool fan_fru_supported = false;
+
+static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
+{
+    int result = ONLP_STATUS_OK;
+
+    if(fan_fru_supported) {
+        /* Get fan fru info */
+        if(result != ONLP_STATUS_OK) {
+            snprintf(info->model, sizeof(info->model), "%s", "not available");
+            snprintf(info->serial, sizeof(info->serial), "%s", "not available");
+        }
+    } else {
+        snprintf(info->model, sizeof(info->model), "%s", "not supported");
+        snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 /**
  * @brief Get the fan information from BMC
  * @param info [out] The fan information
@@ -127,10 +147,15 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* rv)
         case ONLP_FAN_3:
         case ONLP_PSU_0_FAN:
         case ONLP_PSU_1_FAN:
-            return ufi_bmc_fan_info_get(rv, local_id);
+            ONLP_TRY(ufi_bmc_fan_info_get(rv, local_id));
+            break;
         default:
             return ONLP_STATUS_E_INTERNAL;
     }
+
+    //update fan fru info
+    ONLP_TRY(ufi_fan_fru_update(local_id, rv));
+    return ONLP_STATUS_OK;
 }
 
 /**

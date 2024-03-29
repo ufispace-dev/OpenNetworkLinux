@@ -98,10 +98,6 @@ enum onlp_led_id {
     ONLP_LED_PSU0      = 2,
     ONLP_LED_PSU1      = 3,
     ONLP_LED_FAN       = 4,
-    //ONLP_LED_FAN_TRAY1 = 5,
-    //ONLP_LED_FAN_TRAY2 = 6,
-    //ONLP_LED_FAN_TRAY3 = 7,
-    //ONLP_LED_FAN_TRAY4 = 8,
     ONLP_LED_MAX       = ONLP_LED_FAN+1,
 };
 
@@ -149,6 +145,9 @@ enum onlp_fan_id {
 
 #define CPLD_MAX 4  //Number of MB CPLD
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
+
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
 
 /* For BMC Cached Mechanism */
 enum bmc_attr_id {

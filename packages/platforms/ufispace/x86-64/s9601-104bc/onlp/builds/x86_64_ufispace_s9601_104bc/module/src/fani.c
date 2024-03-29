@@ -176,6 +176,24 @@ static int get_fan_local_id(int id, int *local_id)
 }
 
 /**
+ * @brief Check if fan FRU is supported
+ */
+static int is_fru_sup(void) {
+
+    if(1) {
+        board_t board = {0};
+        ONLP_TRY(get_board_version(&board));
+        if(board.hw_rev >= BRD_PVT) {
+            return ONLP_STATUS_OK;
+        } else {
+            return ONLP_STATUS_E_UNSUPPORTED;
+        }
+    } else {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+}
+
+/**
  * @brief Update the information of Model and Serial from FAN EEPROM
  * @param local_id The FAN Local ID
  * @param[out] info Receives the FAN information (model and serial).
@@ -185,6 +203,10 @@ static int update_fani_fru_info(int local_id, onlp_fan_info_t* info)
     bmc_fru_t fru = {0};
 
     if(fan_attr[local_id].fru_id == BMC_FRU_IDX_INVALID) {
+        return ONLP_STATUS_OK;
+    }
+
+    if(is_fru_sup() != ONLP_STATUS_OK) {
         return ONLP_STATUS_OK;
     }
 

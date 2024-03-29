@@ -51,6 +51,7 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
+//[BMC] 2.11
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_ENV_CPU "\
                                     "TEMP_CPU_PECI "\
@@ -120,6 +121,8 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
 
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -219,29 +222,21 @@ enum onlp_psu_id {
 
 /* thermal_id */
 enum onlp_thermal_id {
-    ONLP_THERMAL_RESERVED = 0,
-    ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_ENV_CPU   = 10,
-    ONLP_THERMAL_CPU_PECI  = 11,
-    ONLP_THERMAL_ENV_MAC0 = 12,
-    ONLP_THERMAL_ENV_MAC1 = 13,
-    ONLP_THERMAL_ENV_FRONT0  = 14,
-    ONLP_THERMAL_ENV_FRONT1 = 15,
-    ONLP_THERMAL_ENV0 = 16,
-    ONLP_THERMAL_ENV1 = 17,
-    ONLP_THERMAL_ENV_EXT0 = 18,
-    ONLP_THERMAL_ENV_EXT1 = 19,
-    ONLP_THERMAL_PSU0_TEMP1 = 20,
-    ONLP_THERMAL_PSU1_TEMP1 = 21,
-    ONLP_THERMAL_MAX = 22,
+    ONLP_THERMAL_RESERVED   = 0,
+    ONLP_THERMAL_CPU_PKG    = 1,
+    ONLP_THERMAL_ENV_CPU    = 2,
+    ONLP_THERMAL_CPU_PECI   = 3,
+    ONLP_THERMAL_ENV_MAC0   = 4,
+    ONLP_THERMAL_ENV_MAC1   = 5,
+    ONLP_THERMAL_ENV_FRONT0 = 6,
+    ONLP_THERMAL_ENV_FRONT1 = 7,
+    ONLP_THERMAL_ENV0       = 8,
+    ONLP_THERMAL_ENV1       = 9,
+    ONLP_THERMAL_ENV_EXT0   = 10,
+    ONLP_THERMAL_ENV_EXT1   = 11,
+    ONLP_THERMAL_PSU0_TEMP1 = 12,
+    ONLP_THERMAL_PSU1_TEMP1 = 13,
+    ONLP_THERMAL_MAX        = 14,
 };
 
 enum onlp_psu_type_e {

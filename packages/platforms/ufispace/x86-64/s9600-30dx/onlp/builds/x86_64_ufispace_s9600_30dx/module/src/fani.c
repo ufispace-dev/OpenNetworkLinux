@@ -39,6 +39,8 @@
         0,                                 \
         0,                                 \
         ONLP_FAN_MODE_INVALID,             \
+        COMM_STR_NOT_SUPPORTED,            \
+        COMM_STR_NOT_SUPPORTED,            \
     }
 
 #define PSU_FAN_INFO(id, pid)              \
@@ -49,6 +51,8 @@
         0,                                 \
         0,                                 \
         ONLP_FAN_MODE_INVALID,             \
+        COMM_STR_NOT_SUPPORTED,            \
+        COMM_STR_NOT_SUPPORTED,            \
     }
 
 /*

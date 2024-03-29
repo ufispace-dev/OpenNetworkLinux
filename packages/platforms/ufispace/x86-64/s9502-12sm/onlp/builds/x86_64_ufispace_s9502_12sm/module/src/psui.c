@@ -35,14 +35,18 @@ static onlp_psu_info_t pinfo[] =
             PSU_OID_PSU0,
             "PSU 0",
             0,
-        }
+        },
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         {
             PSU_OID_PSU1,
             "PSU 1",
             0,
-        }
+        },
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     }
 };
 

@@ -55,6 +55,7 @@ const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
 #define CMD_BMC_FAN_TRAY_DIR    "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool raw 0x3c 0x31 0x0 | xargs"IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_PSU_FAN_DIR     "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool raw 0x3c 0x30 0x0 | xargs"IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_FAN_DIR_CACHE   CMD_BMC_FAN_TRAY_DIR" > "BMC_FANDIR_CACHE";"CMD_BMC_PSU_FAN_DIR" >> "BMC_FANDIR_CACHE
+//[BMC] 2.5.0
 #define CMD_BMC_SENSOR_CACHE    "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool sdr -c get "\
                                 " TEMP_CPU_PECI"\
                                 " TEMP_CPU_ENV"\

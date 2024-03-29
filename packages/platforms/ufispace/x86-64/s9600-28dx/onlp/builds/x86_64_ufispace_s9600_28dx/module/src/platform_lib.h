@@ -42,6 +42,9 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%s"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"

@@ -696,7 +696,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
@@ -1229,7 +1229,7 @@ static int cpld_probe(struct i2c_client *client,
     case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &cpld2_group);
-        break;    
+        break;
     case cpld3:
         status = sysfs_create_group(&client->dev.kobj,
                     &cpld3_group);

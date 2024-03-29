@@ -101,7 +101,7 @@ static ssize_t sys_eeprom_read(struct file *filp, struct kobject *kobj,
     struct eeprom_data *data = i2c_get_clientdata(client);
     u8 slice;
 
-    if (off > EEPROM_SIZE) {
+    if (off >= EEPROM_SIZE) {
         return 0;
     }
     if (off + count > EEPROM_SIZE) {
@@ -134,7 +134,7 @@ static ssize_t sys_eeprom_write(struct file *filp, struct kobject *kobj,
 
     dev_dbg(&client->dev, "sys_eeprom_write off=%d, count=%d\n", (int)off, (int)count);
 
-    if (off > EEPROM_SIZE) {
+    if (off >= EEPROM_SIZE) {
         return 0;
     }
     if (off + count > EEPROM_SIZE) {

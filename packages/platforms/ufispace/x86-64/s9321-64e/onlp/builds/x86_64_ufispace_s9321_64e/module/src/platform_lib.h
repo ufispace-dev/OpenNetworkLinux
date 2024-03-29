@@ -43,55 +43,97 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
+#define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
+#define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/mb_cpld/"
+#define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/bsp/"
+#define LPC_CPU_CPLD_FMT            "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/cpu_cpld/"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x72 > /dev/null 2>&1"
+#define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/mb_cpld/mux_reset"
+#define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"
+#define SYSFS_CPLD2                 SYSFS_DEVICES "1-0031/"
+#define SYSFS_CPLD3                 SYSFS_DEVICES "1-0032/"
+#define SYSFS_FPGA                  SYSFS_DEVICES "1-0037/"
 
+#define PSU_STATUS_ABS              0
+#define PSU_STATUS_PRES             1
+
+/* CPU core-temp sysfs ID */
+#define CPU_PKG_CORE_TEMP_SYS_ID  "1"
+
+/* BMC attr */
+// based on BMC fw 2.21
+#define BMC_ATTR_NAME_TEMP_ENV_CPU          "TEMP_ENV_CPU"
+#define BMC_ATTR_NAME_TEMP_CPU_PECI         "TEMP_CPU_PECI"
+#define BMC_ATTR_NAME_TEMP_ENV0             "TEMP_ENV0"
+#define BMC_ATTR_NAME_TEMP_ENV1             "TEMP_ENV1"
+#define BMC_ATTR_NAME_TEMP_ENV2             "TEMP_ENV2"
+#define BMC_ATTR_NAME_TEMP_ENV3             "TEMP_ENV3"
+#define BMC_ATTR_NAME_TEMP_ENV4             "TEMP_ENV4"
+#define BMC_ATTR_NAME_TEMP_ENV5             "TEMP_ENV5"
+#define BMC_ATTR_NAME_TEMP_ENV_RISER        "TEMP_ENV_RISER"
+#define BMC_ATTR_NAME_TEMP_ENV_FAN0         "TEMP_ENV_FAN0"
+#define BMC_ATTR_NAME_TEMP_ENV_FAN1         "TEMP_ENV_FAN1"
+#define BMC_ATTR_NAME_PSU0_TEMP1            "PSU0_TEMP1"
+#define BMC_ATTR_NAME_PSU1_TEMP1            "PSU1_TEMP1"
+#define BMC_ATTR_NAME_FAN0_RPM_FRONT        "FAN0_RPM_FRONT"
+#define BMC_ATTR_NAME_FAN0_RPM_REAR         "FAN0_RPM_REAR"
+#define BMC_ATTR_NAME_FAN1_RPM_FRONT        "FAN1_RPM_FRONT"
+#define BMC_ATTR_NAME_FAN1_RPM_REAR         "FAN1_RPM_REAR"
+#define BMC_ATTR_NAME_FAN2_RPM_FRONT        "FAN2_RPM_FRONT"
+#define BMC_ATTR_NAME_FAN2_RPM_REAR         "FAN2_RPM_REAR"
+#define BMC_ATTR_NAME_FAN3_RPM_FRONT        "FAN3_RPM_FRONT"
+#define BMC_ATTR_NAME_FAN3_RPM_REAR         "FAN3_RPM_REAR"
+#define BMC_ATTR_NAME_PSU0_FAN              "PSU0_FAN"
+#define BMC_ATTR_NAME_PSU1_FAN              "PSU1_FAN"
+#define BMC_ATTR_NAME_FAN0_PRSNT_H          "FAN0_PRSNT_H"
+#define BMC_ATTR_NAME_FAN1_PRSNT_H          "FAN1_PRSNT_H"
+#define BMC_ATTR_NAME_FAN2_PRSNT_H          "FAN2_PRSNT_H"
+#define BMC_ATTR_NAME_FAN3_PRSNT_H          "FAN3_PRSNT_H"
+#define BMC_ATTR_NAME_PSU0_VIN              "PSU0_VIN"
+#define BMC_ATTR_NAME_PSU0_VOUT             "PSU0_VOUT"
+#define BMC_ATTR_NAME_PSU0_IIN              "PSU0_IIN"
+#define BMC_ATTR_NAME_PSU0_IOUT             "PSU0_IOUT"
+#define BMC_ATTR_NAME_PSU0_PIN              "PSU0_PIN"
+#define BMC_ATTR_NAME_PSU0_POUT             "PSU0_POUT"
+#define BMC_ATTR_NAME_PSU1_VIN              "PSU1_VIN"
+#define BMC_ATTR_NAME_PSU1_VOUT             "PSU1_VOUT"
+#define BMC_ATTR_NAME_PSU1_IIN              "PSU1_IIN"
+#define BMC_ATTR_NAME_PSU1_IOUT             "PSU1_IOUT"
+#define BMC_ATTR_NAME_PSU1_PIN              "PSU1_PIN"
+#define BMC_ATTR_NAME_PSU1_POUT             "PSU1_POUT"
+
+/* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define BMC_OEM_CACHE               "/tmp/bmc_oem_cache"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define FAN_CACHE_TIME          10
+#define PSU_CACHE_TIME          30
+#define THERMAL_CACHE_TIME      10
+#define BMC_FIELDS_MAX          20
+#define FANDIR_CACHE_TIME       60
 
-#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
-                                    "TEMP_ENV_CPU "\
-                                    "TEMP_CPU_PECI "\
-                                    "TEMP_ENV0 "\
-                                    "TEMP_ENV1 "\
-                                    "TEMP_ENV2 "\
-                                    "TEMP_ENV3 "\
-                                    "TEMP_ENV4 "\
-                                    "TEMP_ENV5 "\
-                                    "TEMP_ENV_RISER "\
-                                    "TEMP_ENV_FAN0 "\
-                                    "TEMP_ENV_FAN1 "\
-                                    "PSU0_TEMP1 "\
-                                    "PSU1_TEMP1 "\
-                                    "FAN0_RPM_FRONT "\
-                                    "FAN0_RPM_REAR "\
-                                    "FAN1_RPM_FRONT "\
-                                    "FAN1_RPM_REAR "\
-                                    "FAN2_RPM_FRONT "\
-                                    "FAN2_RPM_REAR "\
-                                    "FAN3_RPM_FRONT "\
-                                    "FAN3_RPM_REAR "\
-                                    "PSU0_FAN "\
-                                    "PSU1_FAN "\
-                                    "FAN0_PRSNT_H "\
-                                    "FAN1_PRSNT_H "\
-                                    "FAN2_PRSNT_H "\
-                                    "FAN3_PRSNT_H "\
-                                    "PSU0_VIN "\
-                                    "PSU0_VOUT "\
-                                    "PSU0_IIN "\
-                                    "PSU0_IOUT "\
-                                    "PSU0_PIN "\
-                                    "PSU1_VIN "\
-                                    "PSU1_VOUT "\
-                                    "PSU1_IIN "\
-                                    "PSU1_IOUT "\
-                                    "PSU1_PIN "\
-                                    "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+/*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
+ *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value
+ *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
+ *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
+ */
 
+#define IPMITOOL_CMD_TIMEOUT        10
+#define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get %s"\
+                                    "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+
+#define CMD_BMC_FAN_TRAY_DIR        "timeout %ds ipmitool raw 0x3c 0x31 0x0 | xargs"IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_PSU_FAN_DIR         "timeout %ds ipmitool raw 0x3c 0x30 0x0 | xargs"IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_OEM_CACHE           CMD_BMC_FAN_TRAY_DIR" > "BMC_OEM_CACHE";"CMD_BMC_PSU_FAN_DIR" >> "BMC_OEM_CACHE
 #define BMC_FRU_LINE_SIZE           256
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
@@ -106,23 +148,12 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
-#define CMD_I2C_STUCK_CHECK     "i2cget -f -y 0 0x71 > /dev/null 2>&1"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/mb_cpld/mux_reset"
-
-/* SYS */
-#define CPLD_MAX      4
-extern const int CPLD_BASE_ADDR[CPLD_MAX];
-extern const int CPLD_I2C_BUS[CPLD_MAX];
-
-/* BMC CMD */
-#define FAN_CACHE_TIME          10
-#define PSU_CACHE_TIME          30
-#define THERMAL_CACHE_TIME      10
-#define IPMITOOL_CMD_TIMEOUT    10
-
-/* PSU */
-#define TMP_PSU_TYPE "/tmp/psu_type_%d"
-#define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
+#define BMC_FAN_DIR_UNK   0
+#define BMC_FAN_DIR_B2F   1
+#define BMC_FAN_DIR_F2B   2
+#define BMC_ATTR_STATUS_ABS         0
+#define BMC_ATTR_STATUS_PRES        1
+#define BMC_ATTR_INVALID_VAL        999999
 
 enum sensor
 {
@@ -132,7 +163,8 @@ enum sensor
 };
 
 enum bmc_attr_id {
-    BMC_ATTR_ID_TEMP_ENV_CPU,
+    BMC_ATTR_ID_START = 0,
+    BMC_ATTR_ID_TEMP_ENV_CPU = BMC_ATTR_ID_START,
     BMC_ATTR_ID_TEMP_CPU_PECI,
     BMC_ATTR_ID_TEMP_ENV0,
     BMC_ATTR_ID_TEMP_ENV1,
@@ -164,36 +196,43 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
     BMC_ATTR_ID_PSU0_PIN,
+    BMC_ATTR_ID_PSU0_POUT,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
     BMC_ATTR_ID_PSU1_PIN,
-    BMC_ATTR_ID_MAX
+    BMC_ATTR_ID_PSU1_POUT,
+    BMC_ATTR_ID_LAST = BMC_ATTR_ID_PSU1_POUT,
+    BMC_ATTR_ID_INVALID
 };
 
-enum fru_attr_id {
-    FRU_ATTR_ID_PSU0_VENDOR,
-    FRU_ATTR_ID_PSU0_NAME,
-    FRU_ATTR_ID_PSU0_MODEL,
-    FRU_ATTR_ID_PSU0_SERIAL,
-    FRU_ATTR_ID_PSU1_VENDOR,
-    FRU_ATTR_ID_PSU1_NAME,
-    FRU_ATTR_ID_PSU1_MODEL,
-    FRU_ATTR_ID_PSU1_SERIAL,
-    FRU_ATTR_ID_MAX
+/* oem_id */
+enum bmc_oem_id {
+    BMC_OEM_IDX_INVALID,
+};
+
+/* fru_id */
+enum bmc_fru_id {
+    BMC_FRU_IDX_ONLP_PSU_0,
+    BMC_FRU_IDX_ONLP_PSU_1,
+    BMC_FRU_IDX_FAN_TRAY_0,
+    BMC_FRU_IDX_FAN_TRAY_1,
+    BMC_FRU_IDX_FAN_TRAY_2,
+    BMC_FRU_IDX_FAN_TRAY_3,
+    BMC_FRU_IDX_INVALID = -1,
 };
 
 /* fan_id */
 enum onlp_fan_id {
-    ONLP_FAN_F_0 = 1,
-    ONLP_FAN_R_0,
-    ONLP_FAN_F_1,
-    ONLP_FAN_R_1,
-    ONLP_FAN_F_2,
-    ONLP_FAN_R_2,
-    ONLP_FAN_F_3,
-    ONLP_FAN_R_3,
+    ONLP_FAN_0_F = 1,
+    ONLP_FAN_0_R,
+    ONLP_FAN_1_F,
+    ONLP_FAN_1_R,
+    ONLP_FAN_2_F,
+    ONLP_FAN_2_R,
+    ONLP_FAN_3_F,
+    ONLP_FAN_3_R,
     ONLP_PSU_0_FAN,
     ONLP_PSU_1_FAN,
     ONLP_FAN_MAX,
@@ -201,8 +240,7 @@ enum onlp_fan_id {
 
 /* led_id */
 enum onlp_led_id {
-    ONLP_LED_RESERVED  = 0,
-    ONLP_LED_SYS_SYNC,
+    ONLP_LED_SYS_SYNC = 1,
     ONLP_LED_SYS_SYS,
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PSU_0,
@@ -213,62 +251,68 @@ enum onlp_led_id {
 
 /* psu_id */
 enum onlp_psu_id {
-    ONLP_PSU_0      = 1,
-    ONLP_PSU_1      = 2,
-    ONLP_PSU_0_VIN  = 3,
-    ONLP_PSU_0_VOUT = 4,
-    ONLP_PSU_0_IIN  = 5,
-    ONLP_PSU_0_IOUT = 6,
-    ONLP_PSU_1_VIN  = 7,
-    ONLP_PSU_1_VOUT = 8,
-    ONLP_PSU_1_IIN  = 9,
-    ONLP_PSU_1_IOUT = 10,
-    ONLP_PSU_MAX = 11,
+    ONLP_PSU_0 = 1,
+    ONLP_PSU_1,
+    ONLP_PSU_MAX,
 };
 
 /* thermal_id */
 enum onlp_thermal_id {
-    ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_ENV_CPU   = 10,
-    ONLP_THERMAL_CPU_PECI  = 11,
-    ONLP_THERMAL_ENV0 = 12,
-    ONLP_THERMAL_ENV1 = 13,
-    ONLP_THERMAL_ENV2 = 14,
-    ONLP_THERMAL_ENV3 = 15,
-    ONLP_THERMAL_ENV4 = 16,
-    ONLP_THERMAL_ENV5 = 17,
-    ONLP_THERMAL_ENV_RISER = 18,
-    ONLP_THERMAL_ENV_FAN0 = 19,
-    ONLP_THERMAL_ENV_FAN1 = 20,
-    ONLP_THERMAL_PSU0_TEMP1 = 21,
-    ONLP_THERMAL_PSU1_TEMP1 = 22,
-    ONLP_THERMAL_MAX = 23,
+    ONLP_THERMAL_ENV_CPU,
+    ONLP_THERMAL_CPU_PECI,
+    ONLP_THERMAL_ENV0,
+    ONLP_THERMAL_ENV1,
+    ONLP_THERMAL_ENV2,
+    ONLP_THERMAL_ENV3,
+    ONLP_THERMAL_ENV4,
+    ONLP_THERMAL_ENV5,
+    ONLP_THERMAL_ENV_RISER,
+    ONLP_THERMAL_ENV_FAN0,
+    ONLP_THERMAL_ENV_FAN1,
+    ONLP_THERMAL_PSU0_TEMP1,
+    ONLP_THERMAL_PSU1_TEMP1,
+    ONLP_THERMAL_MAX,
 };
 
-enum onlp_psu_type_e {
-  ONLP_PSU_TYPE_AC,
-  ONLP_PSU_TYPE_DC12,
-  ONLP_PSU_TYPE_DC48,
-  ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
-  ONLP_PSU_TYPE_COUNT,
-  ONLP_PSU_TYPE_INVALID = -1
+typedef enum onlp_psu_type_e {
+    ONLP_PSU_TYPE_AC,
+    ONLP_PSU_TYPE_DC12,
+    ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_LAST = ONLP_PSU_TYPE_DC48,
+    ONLP_PSU_TYPE_COUNT,
+    ONLP_PSU_TYPE_INVALID = -1,
+} onlp_psu_type_t;
+
+typedef enum bmc_data_type_e {
+    BMC_DATA_BOOL,
+    BMC_DATA_FLOAT,
+} bmc_data_type_t;
+
+typedef enum brd_rev_id_e {
+    BRD_PROTO,
+    BRD_ALPHA,
+    BRD_BETA,
+    BRD_PVT,
+} brd_rev_id_t;
+
+enum hw_plat
+{
+    HW_PLAT_NONE      = 0x0,
+    HW_PLAT_PROTO     = 0x1,
+    HW_PLAT_ALPHA     = 0x2,
+    HW_PLAT_BETA      = 0x4,
+    HW_PLAT_PVT       = 0x8,
+    HW_PLAT_ALL       = 0xf,
 };
 
 typedef struct bmc_info_s
 {
+    int plat;
     char name[20];
+    int data_type;
     float data;
-}bmc_info_t;
-
+} bmc_info_t;
 
 typedef struct bmc_fru_attr_s
 {
@@ -286,6 +330,29 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t part_num;
     bmc_fru_attr_t serial;
 }bmc_fru_t;
+
+typedef struct bmc_oem_data_s {
+    char init_done;
+    int raw_idx;
+    int col_idx;
+    int data;
+} bmc_oem_data_t;
+
+typedef struct psu_sup_info_s {
+    char vendor[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    char part_number[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+    int type;
+} psu_support_info_t;
+
+typedef struct board_s
+{
+    int sku_id;
+    int hw_build;
+    int deph_id;
+    int hw_rev;
+    int ext_id;
+    int id_type;
+}board_t;
 
 //FPGA
 
@@ -377,22 +444,29 @@ int read_ioport(int addr, int *reg_val);
 
 int exec_cmd(char *cmd, char* out, int size);
 
-int file_read_hex(int* value, const char* fmt, ...);
+int read_file_hex(int* value, const char* fmt, ...);
 
-int file_vread_hex(int* value, const char* fmt, va_list vargs);
+int vread_file_hex(int* value, const char* fmt, va_list vargs);
 
-int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
-void lock_init();
+void init_lock();
 
-int bmc_check_alive(void);
-int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-int bmc_fru_read(int local_id, bmc_fru_t *data);
+int check_bmc_alive(void);
+int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data);
+int read_bmc_fru(int fru_id, bmc_fru_t *data);
+int read_bmc_oem(int bmc_oem_id, int *data);
+
 void check_and_do_i2c_mux_reset(int port);
 
-uint8_t ufi_shift(uint8_t mask);
-
-uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
-
-uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
-
+uint8_t shift_bit(uint8_t mask);
+uint8_t shift_bit_mask(uint8_t val, uint8_t mask);
+uint8_t unset_bit_mask(uint8_t val, uint8_t mask);
+uint8_t operate_bit(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
+uint8_t get_bit_value(uint8_t reg_val, uint8_t bit);
+int get_hw_rev_id(void);
+int get_psu_present_status(int local_id, int *pw_present);
+int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
+int get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
+int get_board_version(board_t *board);
+int get_gpio_max(int *gpio_max);
+int trim_whitespace(char *str);
 #endif  /* __PLATFORM_LIB_H__ */

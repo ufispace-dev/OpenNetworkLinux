@@ -45,25 +45,17 @@ const int CPLD_I2C_BUS[] = {1, 1, 1};
 
 const char * thermal_id_str[] = {
     "",
+    "ADC_CPU_TEMP",
     "TEMP_CPU_PECI",
+    "TEMP_FRONT_ENV",
+    "TEMP_OCXO",
     "TEMP_Q2CL_ENV",
     "TEMP_Q2CL_DIE",
-    "PSU0_TEMP",
-    "PSU1_TEMP",
-    "CPU_PACKAGE",
-    "CPU1",
-    "CPU2",
-    "CPU3",
-    "CPU4",
-    "CPU5",
-    "CPU6",
-    "CPU7",
-    "CPU8",
-    "CPU_BOARD",
-    "TEMP_BMC_ENV",
     "TEMP_REAR_ENV_1",
     "TEMP_REAR_ENV_2",
-    "TEMP_FRONT_ENV",
+    "CPU_PACKAGE",
+    "PSU0_TEMP",
+    "PSU1_TEMP",
 };
 
 const char * fan_id_str[] = {
@@ -104,7 +96,10 @@ const char * psu_id_str[] = {
 
 bmc_info_t bmc_cache[] =
 {
+    [BMC_ATTR_ID_ADC_CPU_TEMP]    = {"ADC_CPU_TEMP", 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI]   = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_FRONT_ENV]  = {"TEMP_FRONT_ENV", 0},
+    [BMC_ATTR_ID_TEMP_OCXO]       = {"TEMP_OCXO", 0},
     [BMC_ATTR_ID_TEMP_Q2CL_ENV]   = {"TEMP_Q2CL_ENV", 0},
     [BMC_ATTR_ID_TEMP_Q2CL_DIE]   = {"TEMP_Q2CL_DIE", 0},
     [BMC_ATTR_ID_TEMP_REAR_ENV_1] = {"TEMP_REAR_ENV_1", 0},
@@ -909,7 +904,7 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
     //check presence for fantray 1-4
     if (id >= FAN_ID_FAN0 && id <= FAN_ID_FAN3) {
-        rv = bmc_sensor_read(id - FAN_ID_FAN0 + 13, FAN_SENSOR, &data);
+        rv = bmc_sensor_read(id - FAN_ID_FAN0 + 16, FAN_SENSOR, &data);
         if ( rv != ONLP_STATUS_OK) {
             AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
             return rv;
@@ -926,7 +921,7 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
     //get fan rpm
 
-    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 7, FAN_SENSOR, &data);
+    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 10, FAN_SENSOR, &data);
     if ( rv != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rv;

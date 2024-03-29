@@ -99,6 +99,7 @@ enum cpld_sysfs_attributes {
     CPLD_MAC_THERMAL_MASK,
     CPLD_MISC_MASK,
     CPLD_CPU_MASK,
+    CPLD_PHY_MASK,
     CPLD_MAC_EVT,
     CPLD_PHY_EVT,
     CPLD_CPLDX_EVT,
@@ -189,13 +190,10 @@ enum cpld_sysfs_attributes {
     DBG_CPLD_QSFPDD_INTR_FUSE_2,
     DBG_CPLD_QSFPDD_INTR_FUSE_3,
 
-    //CPLD 4
-    CPLD_PHY_MASK,
+    //FPGA
     FPGA_SFP28_INTR_PRESENT,
     FPGA_SFP28_MASK_PRESENT,
     FPGA_SFP28_EVT_PRESENT,
-    CPLD_SFP28_LED_0,
-    CPLD_SFP28_LED_1,
     CPLD_BRD_PRESENT,
     FPGA_SFP28_TX_FAULT,
     FPGA_SFP28_RX_LOS,
@@ -207,15 +205,8 @@ enum cpld_sysfs_attributes {
     FPGA_SFP28_RATE_CAP,
     DBG_CPLD_PHY_INTR,
 
-    //CPLD 2
+    //CPLD 1
     CPLD_MISC_PWR,
-
-    //CPLD 2/3
-    CPLD_SFP_STATUS,
-    CPLD_SFP_MASK,
-    CPLD_SFP_EVT,
-    CPLD_SFP_CONFIG,
-    DBG_CPLD_SFP_STATUS,
 
     //FPGA
     FPGA_VERSION,
@@ -439,8 +430,6 @@ static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_phy_intr,   cpld_callback, DBG_CPLD_PHY_I
 static _SENSOR_DEVICE_ATTR_RO(fpga_sfp28_intr_present, cpld_callback, FPGA_SFP28_INTR_PRESENT);
 static _SENSOR_DEVICE_ATTR_RW(fpga_sfp28_mask_present, cpld_callback, FPGA_SFP28_MASK_PRESENT);
 static _SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_present, cpld_callback, FPGA_SFP28_EVT_PRESENT);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp28_led_0, cpld_callback, CPLD_SFP28_LED_0);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp28_led_1, cpld_callback, CPLD_SFP28_LED_1);
 static _SENSOR_DEVICE_ATTR_RO(cpld_brd_present, cpld_callback, CPLD_BRD_PRESENT);
 static _SENSOR_DEVICE_ATTR_RO(fpga_sfp28_tx_fault, cpld_callback, FPGA_SFP28_TX_FAULT);
 static _SENSOR_DEVICE_ATTR_RO(fpga_sfp28_rx_los, cpld_callback, FPGA_SFP28_RX_LOS);
@@ -453,13 +442,6 @@ static _SENSOR_DEVICE_ATTR_RW(fpga_sfp28_rate_cap, cpld_callback, FPGA_SFP28_RAT
 
 //CPLD 2
 static _SENSOR_DEVICE_ATTR_RO(cpld_misc_pwr,     cpld_callback, CPLD_MISC_PWR);
-
-//CPLD 2/3
-static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_status, cpld_callback, CPLD_SFP_STATUS);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mask,   cpld_callback, CPLD_SFP_MASK);
-static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,    cpld_callback, CPLD_SFP_EVT);
-static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config, cpld_callback, CPLD_SFP_CONFIG);
-static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_sfp_status, cpld_callback, DBG_CPLD_SFP_STATUS);
 
 //fpga
 static _SENSOR_DEVICE_ATTR_RO(fpga_version,     cpld_callback, FPGA_VERSION);
@@ -531,8 +513,6 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_psu_0),
     _DEVICE_ATTR(cpld_system_led_psu_1),
     _DEVICE_ATTR(cpld_system_led_id),
-    _DEVICE_ATTR(cpld_sfp28_led_0),
-    _DEVICE_ATTR(cpld_sfp28_led_1),
     _DEVICE_ATTR(bsp_debug),
 
     _DEVICE_ATTR(dbg_cpld_mac_intr),
@@ -540,6 +520,7 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_cpldx_intr),
     _DEVICE_ATTR(dbg_cpld_mac_thermal_intr),
     _DEVICE_ATTR(dbg_cpld_misc_intr),
+    _DEVICE_ATTR(cpld_misc_pwr),
     NULL
 };
 
@@ -634,17 +615,6 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
     _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_3),
 
-    //CPLD2 only
-
-    _DEVICE_ATTR(cpld_misc_pwr),
-
-    //CPLD 2/3
-
-    _DEVICE_ATTR(cpld_sfp_status),
-    _DEVICE_ATTR(cpld_sfp_mask),
-    _DEVICE_ATTR(cpld_sfp_evt),
-    _DEVICE_ATTR(cpld_sfp_config),
-    _DEVICE_ATTR(dbg_cpld_sfp_status),
     NULL
 };
 
@@ -912,7 +882,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
@@ -1153,14 +1123,6 @@ static ssize_t read_cpld_callback(struct device *dev,
         case FPGA_SFP28_EVT_PRESENT:
             reg = FPGA_SFP28_EVT_PRESENT_REG;
             break;
-        case CPLD_SFP28_LED_0:
-            reg = CPLD_SFP28_LED_REG;
-            mask = CPLD_SFP28_LED_0_MASK;
-            break;
-        case CPLD_SFP28_LED_1:
-            reg = CPLD_SFP28_LED_REG;
-            mask = CPLD_SFP28_LED_1_MASK;
-            break;
         case FPGA_SFP28_TX_FAULT:
             reg = FPGA_SFP28_TX_FAULT_REG;
             break;
@@ -1192,22 +1154,6 @@ static ssize_t read_cpld_callback(struct device *dev,
         //CPLD 2
         case CPLD_MISC_PWR:
             reg = CPLD_MISC_PWR_REG;
-            break;
-        //CPLD 2/3
-        case CPLD_SFP_STATUS:
-            reg = CPLD_SFP_STATUS_REG;
-            break;
-        case CPLD_SFP_MASK:
-            reg = CPLD_SFP_MASK_REG;
-            break;
-        case CPLD_SFP_EVT:
-            reg = CPLD_SFP_EVT_REG;
-            break;
-        case CPLD_SFP_CONFIG:
-            reg = CPLD_SFP_CONFIG_REG;
-            break;
-        case DBG_CPLD_SFP_STATUS:
-            reg = DBG_CPLD_SFP_STATUS_REG;
             break;
         //FPGA
         case FPGA_VERSION:
@@ -1362,14 +1308,6 @@ static ssize_t write_cpld_callback(struct device *dev,
         case FPGA_SFP28_MASK_PRESENT:
             reg = FPGA_SFP28_MASK_PRESENT_REG;
             break;
-        case CPLD_SFP28_LED_0:
-            reg = CPLD_SFP28_LED_REG;
-            mask = CPLD_SFP28_LED_0_MASK;
-            break;
-        case CPLD_SFP28_LED_1:
-            reg = CPLD_SFP28_LED_REG;
-            mask = CPLD_SFP28_LED_1_MASK;
-            break;
         case FPGA_SFP28_MASK_TX_FAULT:
             reg = FPGA_SFP28_MASK_TX_FAULT_REG;
             break;
@@ -1383,16 +1321,6 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = FPGA_SFP28_RATE_CAP_REG;
             break;
 
-        //CPLD 2/3
-        case CPLD_SFP_MASK:
-            reg = CPLD_SFP_MASK_REG;
-            break;
-        case CPLD_SFP_CONFIG:
-            reg = CPLD_SFP_CONFIG_REG;
-            break;
-        case DBG_CPLD_SFP_STATUS:
-            reg = DBG_CPLD_SFP_STATUS_REG;
-            break;
         default:
             return -EINVAL;
     }

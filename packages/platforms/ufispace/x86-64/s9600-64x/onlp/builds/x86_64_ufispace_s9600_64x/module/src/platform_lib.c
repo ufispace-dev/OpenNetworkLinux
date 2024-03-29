@@ -45,27 +45,19 @@ const int CPLD_I2C_BUS[] = {1, 1, 1, 1, 1};
 
 const char * thermal_id_str[] = {
     "",
+    "ADC_CPU_TEMP",
     "TEMP_CPU_PECI",
+    "TEMP_FRONT_ENV",
+    "TEMP_OCXO",
     "TEMP_Q2CL_ENV",
     "TEMP_Q2CL_DIE",
     "TEMP_Q2CR_ENV",
     "TEMP_Q2CR_DIE",
-    "PSU0_TEMP",
-    "PSU1_TEMP",
-    "CPU_PACKAGE",
-    "CPU1",
-    "CPU2",
-    "CPU3",
-    "CPU4",
-    "CPU5",
-    "CPU6",
-    "CPU7",
-    "CPU8",
-    "CPU_BOARD",
-    "TEMP_BMC_ENV",
     "TEMP_REAR_ENV_1",
     "TEMP_REAR_ENV_2",
-    "TEMP_FRONT_ENV",
+    "CPU_PACKAGE",
+    "PSU0_TEMP",
+    "PSU1_TEMP",
 };
 
 const char * fan_id_str[] = {
@@ -106,7 +98,10 @@ const char * psu_id_str[] = {
 
 bmc_info_t bmc_cache[] =
 {
+    [BMC_ATTR_ID_ADC_CPU_TEMP]    = {"ADC_CPU_TEMP", 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI]   = {"TEMP_CPU_PECI", 0},
+    [BMC_ATTR_ID_TEMP_FRONT_ENV]  = {"TEMP_FRONT_ENV", 0},
+    [BMC_ATTR_ID_TEMP_OCXO]       = {"TEMP_OCXO", 0},
     [BMC_ATTR_ID_TEMP_Q2CL_ENV]   = {"TEMP_Q2CL_ENV", 0},
     [BMC_ATTR_ID_TEMP_Q2CL_DIE]   = {"TEMP_Q2CL_DIE", 0},
     [BMC_ATTR_ID_TEMP_Q2CR_ENV]   = {"TEMP_Q2CR_ENV", 0},
@@ -788,6 +783,14 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG;
     int mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
 
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
+
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -795,6 +798,9 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     memset(bmc_out3, 0, sizeof(bmc_out3));
     memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version readable string
     ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &data_len,
@@ -849,16 +855,32 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
         "[HW   ] %d\n"
         "[BUILD] %d\n"
         "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n",
+        "[BMC  ] %d.%d.%d\n"
+        "[MU   ] %s (%s)\n",
         mb_cpld1_hw_rev,
         mb_cpld1_build_rev,
         bios_out,
-        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }
@@ -948,7 +970,7 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
     //check presence for fantray 1-4
     if (id >= FAN_ID_FAN0 && id <= FAN_ID_FAN3) {
-        rv = bmc_sensor_read(id - FAN_ID_FAN0 + 15, FAN_SENSOR, &data);
+        rv = bmc_sensor_read(id - FAN_ID_FAN0 + 18, FAN_SENSOR, &data);
         if ( rv != ONLP_STATUS_OK) {
             AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
             return rv;
@@ -965,7 +987,7 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
 
     //get fan rpm
 
-    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 9, FAN_SENSOR, &data);
+    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 12, FAN_SENSOR, &data);
     if ( rv != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rv;

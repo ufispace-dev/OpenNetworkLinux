@@ -39,7 +39,9 @@ static onlp_psu_info_t pinfo[] =
                 FAN_OID_PSU0_FAN,
                 THERMAL_OID_PSU0,
             },
-        }
+        },
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         {
@@ -50,7 +52,9 @@ static onlp_psu_info_t pinfo[] =
                 FAN_OID_PSU1_FAN,
                 THERMAL_OID_PSU1,
             },
-        }
+        },
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED, 
     }
 };
 

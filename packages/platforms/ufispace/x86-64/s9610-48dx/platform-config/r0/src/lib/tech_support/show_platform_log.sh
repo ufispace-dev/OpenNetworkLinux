@@ -1467,7 +1467,7 @@ function _show_disk_info {
 
     cmd_array=("lsblk" \
                "lsblk -O" \
-               "parted -l /dev/sda" \
+               #"parted -l /dev/sda" \ #Avoid prompt Fix/Ingore and freeze the tech support in VROC.
                "fdisk -l /dev/sda" \
                "find /sys/fs/ -name errors_count -print -exec cat {} \;" \
                "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;" \

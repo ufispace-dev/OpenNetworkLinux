@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
  * Wade He <wade.ce.he@ufispace.com>
+ * Nonodark Huang <nonodark.huang@ufispace.com>
  *
  * Based on ad7414.c
  * Copyright 2006 Stefan Roese <sr at denx.de>, DENX Software Engineering
@@ -28,42 +29,54 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
 
+#if !defined(SENSOR_DEVICE_ATTR_RO)
+#define SENSOR_DEVICE_ATTR_RO(_name, _func, _index)		\
+	SENSOR_DEVICE_ATTR(_name, 0444, _func##_show, NULL, _index)
+#endif
+
+#if !defined(SENSOR_DEVICE_ATTR_RW)
+#define SENSOR_DEVICE_ATTR_RW(_name, _func, _index)		\
+	SENSOR_DEVICE_ATTR(_name, 0644, _func##_show, _func##_store, _index)
+
+#endif
+
+#if !defined(SENSOR_DEVICE_ATTR_WO)
+#define SENSOR_DEVICE_ATTR_WO(_name, _func, _index)		\
+	SENSOR_DEVICE_ATTR(_name, 0200, NULL, _func##_store, _index)
+#endif
+
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
             __FILE__, __func__, __LINE__, ##args)
 #define BSP_LOG_W(fmt, args...) \
     _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
             __FILE__, __func__, __LINE__, ##args)
-#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
-
-#define _SENSOR_DEVICE_ATTR_RO(_name, _func, _index)     \
-    SENSOR_DEVICE_ATTR(_name, S_IRUGO, read_##_func, NULL, _index)
-
-#define _SENSOR_DEVICE_ATTR_WO(_name, _func, _index)     \
-    SENSOR_DEVICE_ATTR(_name, S_IWUSR, NULL, write_##_func, _index)
-
-#define _SENSOR_DEVICE_ATTR_RW(_name, _func, _index)     \
-    SENSOR_DEVICE_ATTR(_name, S_IRUGO | S_IWUSR, read_##_func, write_##_func, _index)
 
 #define _DEVICE_ATTR(_name)     \
     &sensor_dev_attr_##_name.dev_attr.attr
 
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+
 #define DRIVER_NAME "x86_64_ufispace_s9321_64e_lpc"
-#define CPU_BDE 0
-#define CPU_SKY 1
-#define CPU_TYPE CPU_SKY
 
 /* LPC registers */
-
-#define REG_BASE_CPU                      0x600
-
-#if CPU_TYPE == CPU_SKY
 #define REG_BASE_MB                       0xE00
+#define REG_BASE_CPU                      0x600
 #define REG_BASE_I2C_ALERT                0x700
-#else
-#define REG_BASE_MB                       0x700
-#define REG_BASE_I2C_ALERT                0xF000
-#endif
+
+/* 
+ *  Normally, the LPC register range is 0x00-0xff.
+ *  Therefore, we define the invalid address 0x100 as REG_NONE
+ */
+#define REG_NONE                          0x100
+
+//MB CPLD
+#define REG_MB_BRD_ID_0                   (REG_BASE_MB + 0x00)
+#define REG_MB_BRD_ID_1                   (REG_BASE_MB + 0x01)
+#define REG_MB_CPLD_VERSION               (REG_BASE_MB + 0x02)
+#define REG_MB_CPLD_BUILD                 (REG_BASE_MB + 0x04)
+#define REG_MB_MUX_RESET                  (REG_BASE_MB + 0x46)
+#define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x5C)
 
 //CPU CPLD
 #define REG_CPU_CPLD_VERSION              (REG_BASE_CPU + 0x00)
@@ -73,93 +86,79 @@
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
 #define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
-//MB CPLD
-#define REG_MB_BRD_ID_0                   (REG_BASE_MB + 0x00)
-#define REG_MB_BRD_ID_1                   (REG_BASE_MB + 0x01)
-#define REG_MB_CPLD_VERSION               (REG_BASE_MB + 0x02)
-#define REG_MB_CPLD_BUILD                 (REG_BASE_MB + 0x04)
-#define REG_MB_MUX_RESET                  (REG_BASE_MB + 0x46)
-#define REG_MB_MISC_RESET                 (REG_BASE_MB + 0x48)
-#define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x5C)
-
 //I2C Alert
-#if CPU_TYPE == CPU_SKY
 #define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x80)
-#else
-#define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x00)
-#define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
-#endif
 
-//Thermal
-#define REG_TEMP_BASE                     (REG_BASE_MB + 0xC0)
+#define MASK_ALL             (0xFF)
+#define MASK_NONE            (0x00)
+#define MASK_0000_0011       (0x03)
+#define MASK_0000_0100       (0x04)
+#define MASK_0000_0111       (0x07)
+#define MASK_0001_1000       (0x18)
+#define MASK_0010_0000       (0x20)
+#define MASK_0011_0111       (0x37)
+#define MASK_0011_1000       (0x38)
+#define MASK_0011_1111       (0x3F)
+#define MASK_0100_0000       (0x40)
+#define MASK_1000_0000       (0x80)
+#define MASK_1100_0000       (0xC0)
 
-#define MASK_ALL                          (0xFF)
-#define MASK_CPLD_MAJOR_VER               (0b11000000)
-#define MASK_CPLD_MINOR_VER               (0b00111111)
 #define LPC_MDELAY                        (5)
+#define MDELAY_RESET_INTERVAL             (100)
+#define MDELAY_RESET_FINISH               (500)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
+    //MB CPLD
+    ATT_MB_BRD_ID_0,
+    ATT_MB_BRD_SKU_ID,
+    ATT_MB_BRD_ID_1,
+    ATT_MB_BRD_HW_ID,
+    ATT_MB_BRD_DEPH_ID,
+    ATT_MB_BRD_BUILD_ID,
+    ATT_MB_BRD_ID_TYPE,
+    ATT_MB_CPLD_1_MINOR_VER,
+    ATT_MB_CPLD_1_MAJOR_VER,
+    ATT_MB_CPLD_1_BUILD_VER,
+    ATT_MB_CPLD_1_VERSION_H,
+    ATT_MB_MUX_RESET_ALL,
+    ATT_MB_MUX_CTRL,
+
     //CPU CPLD
     ATT_CPU_CPLD_VERSION,
+    ATT_CPU_CPLD_MINOR_VER,
+    ATT_CPU_CPLD_MAJOR_VER,
+    ATT_CPU_CPLD_BUILD_VER,
     ATT_CPU_CPLD_VERSION_H,
     ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_BIOS_BOOT_CFG,
-    ATT_CPU_CPLD_BUILD,
-
-    ATT_CPU_CPLD_MAJOR_VER,
-    ATT_CPU_CPLD_MINOR_VER,
-    ATT_CPU_CPLD_BUILD_VER,
-
-    //MB CPLD
-    ATT_MB_BRD_ID_0,
-    ATT_MB_BRD_ID_1,
-    ATT_MB_CPLD_1_VERSION,
-    ATT_MB_CPLD_1_VERSION_H,
-    ATT_MB_CPLD_1_BUILD,
-    ATT_MB_MUX_CTRL,
-    ATT_MB_BRD_SKU_ID,
-    ATT_MB_BRD_HW_ID,
-    ATT_MB_BRD_ID_TYPE,
-    ATT_MB_BRD_BUILD_ID,
-    ATT_MB_BRD_DEPH_ID,
-    ATT_MB_MUX_RESET,
-
-    ATT_MB_CPLD_1_MAJOR_VER,
-    ATT_MB_CPLD_1_MINOR_VER,
-    ATT_MB_CPLD_1_BUILD_VER,
 
     //I2C Alert
     ATT_ALERT_STATUS,
-#if CPU_TYPE == CPU_BDE
-    ATT_ALERT_DISABLE,
-#endif
+
     //BSP
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
     ATT_BSP_PR_INFO,
     ATT_BSP_PR_ERR,
-    ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
-    //Thermal
-    ATT_TEMP_MAC0_PVT2,
-    ATT_TEMP_MAC0_PVT3,
-    ATT_TEMP_MAC0_PVT4,
-    ATT_TEMP_MAC0_PVT6,
-    ATT_TEMP_MAC0_HBM0,
-    ATT_TEMP_MAC0_HBM1,
-    ATT_TEMP_OP2_0,
-    ATT_TEMP_OP2_1,
-    ATT_TEMP_MAC1_PVT2,
-    ATT_TEMP_MAC1_PVT3,
-    ATT_TEMP_MAC1_PVT4,
-    ATT_TEMP_MAC1_PVT6,
-    ATT_TEMP_MAC1_HBM0,
-    ATT_TEMP_MAC1_HBM1,
-    ATT_TEMP_OP2_2,
-    ATT_TEMP_OP2_3,
+    ATT_BSP_FPGA_PCI_ENABLE,
+
     ATT_MAX
 };
+
+enum data_type {
+    DATA_HEX,
+    DATA_DEC,
+    DATA_S_DEC,
+    DATA_UNK,
+};
+
+typedef struct  {
+    u16 reg;
+    u8 mask;
+    u8 data_type;
+} attr_reg_map_t;
 
 enum bsp_log_types {
     LOG_NONE,
@@ -178,14 +177,51 @@ struct lpc_data_s {
     struct mutex    access_lock;
 };
 
+attr_reg_map_t attr_reg[]= {
+
+    //MB CPLD
+    [ATT_MB_BRD_ID_0]          = {REG_MB_BRD_ID_0     , MASK_ALL      , DATA_HEX},
+    [ATT_MB_BRD_SKU_ID]        = {REG_MB_BRD_ID_0     , MASK_ALL      , DATA_DEC},
+    [ATT_MB_BRD_ID_1]          = {REG_MB_BRD_ID_1     , MASK_ALL      , DATA_HEX},
+    [ATT_MB_BRD_HW_ID]         = {REG_MB_BRD_ID_1     , MASK_0000_0011, DATA_DEC},
+    [ATT_MB_BRD_DEPH_ID]       = {REG_MB_BRD_ID_1     , MASK_0000_0100, DATA_DEC},
+    [ATT_MB_BRD_BUILD_ID]      = {REG_MB_BRD_ID_1     , MASK_0011_1000, DATA_DEC},
+    [ATT_MB_BRD_ID_TYPE]       = {REG_MB_BRD_ID_1     , MASK_1000_0000, DATA_DEC},
+    [ATT_MB_CPLD_1_MINOR_VER]  = {REG_MB_CPLD_VERSION , MASK_0011_1111, DATA_DEC},
+    [ATT_MB_CPLD_1_MAJOR_VER]  = {REG_MB_CPLD_VERSION , MASK_1100_0000, DATA_DEC},
+    [ATT_MB_CPLD_1_BUILD_VER]  = {REG_MB_CPLD_BUILD   , MASK_ALL      , DATA_DEC},
+    [ATT_MB_CPLD_1_VERSION_H]  = {REG_NONE            , MASK_NONE     , DATA_UNK},
+    [ATT_MB_MUX_RESET_ALL]     = {REG_MB_MUX_RESET    , MASK_ALL      , DATA_DEC},
+    [ATT_MB_MUX_CTRL]          = {REG_MB_MUX_CTRL     , MASK_ALL      , DATA_HEX},
+
+    //CPU CPLD
+    [ATT_CPU_CPLD_VERSION]    = {REG_CPU_CPLD_VERSION , MASK_ALL      , DATA_HEX},
+    [ATT_CPU_CPLD_MINOR_VER]  = {REG_CPU_CPLD_VERSION , MASK_0011_1111, DATA_DEC},
+    [ATT_CPU_CPLD_MAJOR_VER]  = {REG_CPU_CPLD_VERSION , MASK_1100_0000, DATA_DEC},
+    [ATT_CPU_CPLD_BUILD_VER]  = {REG_CPU_CPLD_BUILD   , MASK_ALL      , DATA_DEC},
+    [ATT_CPU_CPLD_VERSION_H]  = {REG_NONE             , MASK_NONE     , DATA_UNK},
+    [ATT_CPU_BIOS_BOOT_ROM]   = {REG_CPU_STATUS_1     , MASK_1000_0000, DATA_DEC},
+    [ATT_CPU_BIOS_BOOT_CFG]   = {REG_CPU_CTRL_1       , MASK_1000_0000, DATA_DEC},
+
+    //I2C Alert
+    [ATT_ALERT_STATUS]        = {REG_ALERT_STATUS     , MASK_0010_0000, DATA_DEC},
+
+    //BSP
+    [ATT_BSP_VERSION]         = {REG_NONE             , MASK_NONE     , DATA_UNK},
+    [ATT_BSP_DEBUG]           = {REG_NONE             , MASK_NONE     , DATA_UNK},
+    [ATT_BSP_PR_INFO]         = {REG_NONE             , MASK_NONE     , DATA_UNK},
+    [ATT_BSP_PR_ERR]          = {REG_NONE             , MASK_NONE     , DATA_UNK},
+    [ATT_BSP_GPIO_MAX]        = {REG_NONE             , MASK_NONE     , DATA_DEC},
+    [ATT_BSP_FPGA_PCI_ENABLE] = {REG_NONE             , MASK_NONE     , DATA_DEC},
+};
+
 struct lpc_data_s *lpc_data;
 char bsp_version[16]="";
 char bsp_debug[2]="0";
-char bsp_reg[8]="0x0";
-u8 enable_log_read=LOG_DISABLE;
-u8 enable_log_write=LOG_DISABLE;
-u8 enable_log_sys=LOG_ENABLE;
-u8 mailbox_inited=0;
+char bsp_fpga_pci_enable[3] = "-1";
+u8 enable_log_read  = LOG_DISABLE;
+u8 enable_log_write = LOG_DISABLE;
+u8 enable_log_sys   = LOG_ENABLE;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -212,6 +248,31 @@ static u8 _mask_shift(u8 val, u8 mask)
     return (val & mask) >> shift;
 }
 
+static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
+{
+    if (bit_val == 0)
+        reg_val = reg_val & ~(1 << bit);
+    else
+        reg_val = reg_val | (1 << bit);
+    return reg_val;
+}
+
+static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+{
+    if(buf == NULL) {
+        return -1;
+    }
+
+    if(data_type == DATA_HEX) {
+        return sprintf(buf, "0x%02x", data);
+    } else if(data_type == DATA_DEC) {
+        return sprintf(buf, "%u", data);
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 static int _bsp_log(u8 log_type, char *fmt, ...)
 {
     if ((log_type==LOG_READ  && enable_log_read) ||
@@ -230,7 +291,7 @@ static int _bsp_log(u8 log_type, char *fmt, ...)
     }
 }
 
-static int _config_bsp_log(u8 log_type)
+static int _bsp_log_config(u8 log_type)
 {
     switch(log_type) {
         case LOG_NONE:
@@ -261,99 +322,60 @@ static void _outb(u8 data, u16 port)
     mdelay(LPC_MDELAY);
 }
 
-/* init bmc mailbox */
-static int init_bmc_mailbox(void)
-{
-    if (mailbox_inited) {
-        return mailbox_inited;
-    }
-
-    //Enable super io writing
-    _outb(0xa5, 0x2e);
-    _outb(0xa5, 0x2e);
-
-    //Logic device number
-    _outb(0x07, 0x2e);
-    _outb(0x0e, 0x2f);
-
-    //Disable mailbox
-    _outb(0x30, 0x2e);
-    _outb(0x00, 0x2f);
-
-    //Set base address bit
-    _outb(0x60, 0x2e);
-    _outb(0x0e, 0x2f);
-    _outb(0x61, 0x2e);
-    _outb(0xc0, 0x2f);
-
-    //Select bit[3:0] of SIRQ
-    _outb(0x70, 0x2e);
-    _outb(0x07, 0x2f);
-
-    //Low level trigger
-    _outb(0x71, 0x2e);
-    _outb(0x01, 0x2f);
-
-    //Enable mailbox
-    _outb(0x30, 0x2e);
-    _outb(0x01, 0x2f);
-
-    //Disable super io writing
-    _outb(0xaa, 0x2e);
-
-    //Mailbox initial
-    _outb(0x00, 0xed6);
-    _outb(0x00, 0xed7);
-
-    //set mailbox_inited
-    mailbox_inited = 1;
-
-    return mailbox_inited;
-}
-
 /* get lpc register value */
-static u8 _read_lpc_reg(u16 reg, u8 mask)
+static u8 _lpc_reg_read(u16 reg, u8 mask)
 {
-    u8 reg_val;
+    u8 reg_val=0x0, reg_mk_shf_val = 0x0;
 
     mutex_lock(&lpc_data->access_lock);
-    reg_val=_mask_shift(inb(reg), mask);
+    reg_val = inb(reg);
     mutex_unlock(&lpc_data->access_lock);
 
-    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+    reg_mk_shf_val = _mask_shift(reg_val, mask);
 
-    return reg_val;
+    BSP_LOG_R("reg=0x%03x, reg_val=0x%02x, mask=0x%02x, reg_mk_shf_val=0x%02x", reg, reg_val, mask, reg_mk_shf_val);
+
+    return reg_mk_shf_val;
 }
 
 /* get lpc register value */
-static ssize_t read_lpc_reg(u16 reg, u8 mask, char *buf)
+static ssize_t lpc_reg_read(u16 reg, u8 mask, char *buf, u8 data_type)
 {
     u8 reg_val;
     int len=0;
 
-    reg_val = _read_lpc_reg(reg, mask);
-    len=sprintf(buf,"%d\n", reg_val);
+    reg_val = _lpc_reg_read(reg, mask);
+
+    // may need to change to hex value ?
+    len=_parse_data(buf, reg_val, data_type);
 
     return len;
 }
 
 /* set lpc register value */
-static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
+static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type)
 {
     u8 reg_val, reg_val_now, shift;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
+    if (kstrtou8(buf, 0, &reg_val) < 0) {
+        if(data_type == DATA_S_DEC) {
+            if (kstrtos8(buf, 0, &reg_val) < 0) {
+                return -EINVAL;
+            }
+        } else {
+            return -EINVAL;
+        }
+    }
 
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
-        reg_val_now = _read_lpc_reg(reg, MASK_ALL);
+        reg_val_now = _lpc_reg_read(reg, MASK_ALL);
         //clear bits in reg_val_now by the mask
         reg_val_now &= ~mask;
         //get bit shift by the mask
         shift = _shift(mask);
         //calculate new reg_val
-        reg_val = reg_val_now | (reg_val << shift);
+        reg_val = _bit_operation(reg_val_now, shift, reg_val);
     }
 
     mutex_lock(&lpc_data->access_lock);
@@ -362,17 +384,17 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 
     mutex_unlock(&lpc_data->access_lock);
 
-    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val);
+    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x, mask=0x%02x", reg, reg_val, mask);
 
     return count;
 }
 
 /* get bsp value */
-static ssize_t read_bsp(char *buf, char *str)
+static ssize_t bsp_read(char *buf, char *str)
 {
-	ssize_t len=0;
+    ssize_t len=0;
 
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -382,9 +404,9 @@ static ssize_t read_bsp(char *buf, char *str)
 }
 
 /* set bsp value */
-static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
+static ssize_t bsp_write(const char *buf, char *str, size_t str_len, size_t count)
 {
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -394,216 +416,122 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
 }
 
 /* get gpio max value */
-static ssize_t read_gpio_max(struct device *dev,
+static ssize_t gpio_max_show(struct device *dev,
                     struct device_attribute *da,
                     char *buf)
 {
+    u8 data_type=DATA_UNK;
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
-        return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+        data_type = attr_reg[attr->index].data_type;
+        return _parse_data(buf, ARCH_NR_GPIOS-1, data_type);
     }
     return -1;
 }
 
-/* get cpu cpld version in human readable format */
-static ssize_t read_cpu_cpld_version_h(struct device *dev,
-        struct device_attribute *da, char *buf)
-{
-    ssize_t len=0;
-    len=sprintf(buf, "%d.%02d.%03d", _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MAJOR_VER),
-                                     _read_lpc_reg(REG_CPU_CPLD_VERSION, MASK_CPLD_MINOR_VER),
-                                     _read_lpc_reg(REG_CPU_CPLD_BUILD, MASK_ALL));
-
-    return len;
-}
-
 /* get mb cpld version in human readable format */
-static ssize_t read_mb_cpld_1_version_h(struct device *dev,
+static ssize_t cpld_version_h_show(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    ssize_t len=0;
-    len=sprintf(buf, "%d.%02d.%03d", _read_lpc_reg(REG_MB_CPLD_VERSION, MASK_CPLD_MAJOR_VER),
-                                     _read_lpc_reg(REG_MB_CPLD_VERSION, MASK_CPLD_MINOR_VER),
-                                     _read_lpc_reg(REG_MB_CPLD_BUILD, MASK_ALL));
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
-    return len;
+    unsigned int attr_major = 0;
+    unsigned int attr_minor = 0;
+    unsigned int attr_build = 0;
+
+    switch (attr->index) {
+        case ATT_MB_CPLD_1_VERSION_H:
+            attr_major = ATT_MB_CPLD_1_MAJOR_VER;
+            attr_minor = ATT_MB_CPLD_1_MINOR_VER;
+            attr_build = ATT_MB_CPLD_1_BUILD_VER;
+            break;
+        case ATT_CPU_CPLD_VERSION_H:
+            attr_major = ATT_CPU_CPLD_MAJOR_VER;
+            attr_minor = ATT_CPU_CPLD_MINOR_VER;
+            attr_build = ATT_CPU_CPLD_BUILD_VER;
+            break;
+        default:
+            return -1;
+    }
+
+    return sprintf(buf, "%d.%02d.%03d", _lpc_reg_read(attr_reg[attr_major].reg, attr_reg[attr_major].mask),
+                                        _lpc_reg_read(attr_reg[attr_minor].reg, attr_reg[attr_minor].mask),
+                                        _lpc_reg_read(attr_reg[attr_build].reg, attr_reg[attr_build].mask));
+
 }
 
 /* get lpc register value */
-static ssize_t read_lpc_callback(struct device *dev,
+static ssize_t lpc_callback_show(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u16 reg = 0;
-    u8 mask = MASK_ALL;
+    u8 mask = MASK_NONE;
+    u8 data_type=DATA_UNK;
 
     switch (attr->index) {
-        //CPU CPLD
-        case ATT_CPU_CPLD_VERSION:
-            reg = REG_CPU_CPLD_VERSION;
-            break;
-        case ATT_CPU_BIOS_BOOT_ROM:
-            reg = REG_CPU_STATUS_1;
-            mask = 0x80;
-            break;
-        case ATT_CPU_BIOS_BOOT_CFG:
-            reg = REG_CPU_CTRL_1;
-            mask = 0x80;
-            break;
-        case ATT_CPU_CPLD_BUILD:
-            reg = REG_CPU_CPLD_BUILD;
-            break;
-        case ATT_CPU_CPLD_MAJOR_VER:
-            reg = REG_CPU_CPLD_VERSION;
-            mask = MASK_CPLD_MAJOR_VER;
-            break;
-        case ATT_CPU_CPLD_MINOR_VER:
-            reg = REG_CPU_CPLD_VERSION;
-            mask = MASK_CPLD_MINOR_VER;
-            break;
-        case ATT_CPU_CPLD_BUILD_VER:
-            reg = REG_CPU_CPLD_BUILD;
-            break;
         //MB CPLD
         case ATT_MB_BRD_ID_0:
-            reg = REG_MB_BRD_ID_0;
-            break;
-        case ATT_MB_BRD_ID_1:
-            reg = REG_MB_BRD_ID_1;
-            break;
-        case ATT_MB_CPLD_1_VERSION:
-            reg = REG_MB_CPLD_VERSION;
-            break;
-        case ATT_MB_CPLD_1_BUILD:
-            reg = REG_MB_CPLD_BUILD;
-            break;
         case ATT_MB_BRD_SKU_ID:
-            reg = REG_MB_BRD_ID_0;
-            mask = 0xFF;
-            break;
+        case ATT_MB_BRD_ID_1:
         case ATT_MB_BRD_HW_ID:
-            reg = REG_MB_BRD_ID_1;
-            mask = 0x03;
-            break;
-        case ATT_MB_BRD_ID_TYPE:
-            reg = REG_MB_BRD_ID_1;
-            mask = 0x80;
-            break;
-        case ATT_MB_BRD_BUILD_ID:
-            reg = REG_MB_BRD_ID_1;
-            mask = 0x38;
-            break;
         case ATT_MB_BRD_DEPH_ID:
-            reg = REG_MB_BRD_ID_1;
-            mask = 0x04;
-            break;
-        case ATT_MB_MUX_CTRL:
-            reg = REG_MB_MUX_CTRL;
-            break;
-        case ATT_MB_CPLD_1_MAJOR_VER:
-            reg = REG_MB_CPLD_VERSION;
-            mask = MASK_CPLD_MAJOR_VER;
-            break;
+        case ATT_MB_BRD_BUILD_ID:
+        case ATT_MB_BRD_ID_TYPE:
         case ATT_MB_CPLD_1_MINOR_VER:
-            reg = REG_MB_CPLD_VERSION;
-            mask = MASK_CPLD_MINOR_VER;
-            break;
+        case ATT_MB_CPLD_1_MAJOR_VER:
         case ATT_MB_CPLD_1_BUILD_VER:
-            reg = REG_MB_CPLD_BUILD;
-            break;
+        case ATT_MB_MUX_CTRL:
+
+        //CPU CPLD
+        case ATT_CPU_CPLD_VERSION:
+        case ATT_CPU_CPLD_MINOR_VER:
+        case ATT_CPU_CPLD_MAJOR_VER:
+        case ATT_CPU_CPLD_BUILD_VER:
+        case ATT_CPU_BIOS_BOOT_ROM:
+        case ATT_CPU_BIOS_BOOT_CFG:
+
         //I2C Alert
         case ATT_ALERT_STATUS:
-            reg = REG_ALERT_STATUS;
-            mask = 0x20;
-            break;
-#if CPU_TYPE == CPU_BDE
-        case ATT_ALERT_DISABLE:
-            reg = REG_ALERT_DISABLE;
-            mask = 0x04;
-            break;
-#endif
+
         //BSP
-        case ATT_BSP_REG:
-            if (kstrtou16(bsp_reg, 0, &reg) < 0)
-                return -EINVAL;
-            break;
-        //Thermal
-        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
-            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
-            init_bmc_mailbox();
+        case ATT_BSP_GPIO_MAX:
+            reg = attr_reg[attr->index].reg;
+            mask= attr_reg[attr->index].mask;
+            data_type = attr_reg[attr->index].data_type;
             break;
         default:
             return -EINVAL;
     }
-    return read_lpc_reg(reg, mask, buf);
+    return lpc_reg_read(reg, mask, buf, data_type);
 }
 
 /* set lpc register value */
-static ssize_t write_lpc_callback(struct device *dev,
+static ssize_t lpc_callback_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     u16 reg = 0;
-    u8 mask = MASK_ALL;
+    u8 mask = MASK_NONE;
+    u8 data_type=DATA_UNK;
 
     switch (attr->index) {
+        // MB CPLD
         case ATT_MB_MUX_CTRL:
-            reg = REG_MB_MUX_CTRL;
-            break;
-        //Thermal
-        case ATT_TEMP_MAC0_PVT2...ATT_TEMP_OP2_3:
-            reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
-            init_bmc_mailbox();
+            reg = attr_reg[attr->index].reg;
+            mask= attr_reg[attr->index].mask;
+            data_type = attr_reg[attr->index].data_type;
             break;
         default:
             return -EINVAL;
     }
-    return write_lpc_reg(reg, mask, buf, count);
-}
+    return lpc_reg_write(reg, mask, buf, count, data_type);
 
-/* set mux_reset register value */
-static ssize_t write_mux_reset(struct device *dev,
-        struct device_attribute *da, const char *buf, size_t count)
-{
-    u8 val = 0;
-    u8 mux_reset_reg_val = 0;
-    static int mux_reset_flag = 0;
-
-    if (kstrtou8(buf, 0, &val) < 0)
-        return -EINVAL;
-
-    if (mux_reset_flag == 0) {
-        if (val == 0) {
-            mutex_lock(&lpc_data->access_lock);
-            mux_reset_flag = 1;
-            BSP_LOG_W("i2c mux reset is triggered...");
-
-            //reset mux on QSFPDD ports
-            mux_reset_reg_val = inb(REG_MB_MUX_RESET);
-            _outb((mux_reset_reg_val & 0b00000000), REG_MB_MUX_RESET);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val & 0b00000000);
-
-            //unset mux on QSFPDD ports
-            _outb((mux_reset_reg_val | 0b11111111), REG_MB_MUX_RESET);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val | 0b11111111);
-
-            mux_reset_flag = 0;
-            mutex_unlock(&lpc_data->access_lock);
-        } else {
-            return -EINVAL;
-        }
-    } else {
-        BSP_LOG_W("i2c mux is resetting... (ignore)");
-        mutex_lock(&lpc_data->access_lock);
-        mutex_unlock(&lpc_data->access_lock);
-    }
-
-    return count;
 }
 
 /* get bsp parameter value */
-static ssize_t read_bsp_callback(struct device *dev,
+static ssize_t bsp_callback_show(struct device *dev,
         struct device_attribute *da, char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
@@ -616,17 +544,17 @@ static ssize_t read_bsp_callback(struct device *dev,
         case ATT_BSP_DEBUG:
             str = bsp_debug;
             break;
-        case ATT_BSP_REG:
-            str = bsp_reg;
+        case ATT_BSP_FPGA_PCI_ENABLE:
+            str = bsp_fpga_pci_enable;
             break;
         default:
             return -EINVAL;
     }
-    return read_bsp(buf, str);
+    return bsp_read(buf, str);
 }
 
 /* set bsp parameter value */
-static ssize_t write_bsp_callback(struct device *dev,
+static ssize_t bsp_callback_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
@@ -638,35 +566,41 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
-            str = bsp_debug;
-            str_len = sizeof(str);
-            break;
-        case ATT_BSP_REG:
-            if (kstrtou16(buf, 0, &reg) < 0)
+            if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
                 return -EINVAL;
+            } else if (_bsp_log_config(bsp_debug_u8) < 0) {
+                return -EINVAL;
+            }
+            str = bsp_debug;
+            str_len = sizeof(bsp_debug);
+            break;
+        case ATT_BSP_FPGA_PCI_ENABLE:
+            if (kstrtou16(buf, 0, &reg) < 0) {
+                return -EINVAL;
+            } else {
+                if (reg != 1 && reg != 0)
+                    return -EINVAL;
+            }
 
-            str = bsp_reg;
-            str_len = sizeof(str);
+            // Only one chance for configuration.
+            if(strncmp(bsp_fpga_pci_enable, "-1", sizeof(bsp_fpga_pci_enable)) == 0) {
+                str = bsp_fpga_pci_enable;
+                str_len = sizeof(bsp_fpga_pci_enable);
+            } else {
+                return -EINVAL;
+            }
             break;
         default:
             return -EINVAL;
     }
 
-    if (attr->index == ATT_BSP_DEBUG) {
-        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
-            return -EINVAL;
-        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
-            return -EINVAL;
-        }
-    }
-
-    return write_bsp(buf, str, str_len, count);
+    return bsp_write(buf, str, str_len, count);
 }
 
-static ssize_t write_bsp_pr_callback(struct device *dev,
+static ssize_t bsp_pr_callback_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
@@ -689,92 +623,118 @@ static ssize_t write_bsp_pr_callback(struct device *dev,
     return str_len;
 }
 
-//SENSOR_DEVICE_ATTR - CPU
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version,   lpc_callback, ATT_CPU_CPLD_VERSION);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h, cpu_cpld_version_h, ATT_CPU_CPLD_VERSION_H);
-static _SENSOR_DEVICE_ATTR_RO(boot_rom,           lpc_callback, ATT_CPU_BIOS_BOOT_ROM);
-static _SENSOR_DEVICE_ATTR_RO(boot_cfg,           lpc_callback, ATT_CPU_BIOS_BOOT_CFG);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build,     lpc_callback, ATT_CPU_CPLD_BUILD);
+/* set mux_reset register value */
+static ssize_t mux_reset_all_store(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    u16 reg = 0;
+    u8 mask = MASK_NONE;
+    u8 val = 0;
+    u8 reg_val = 0;
+    static int mux_reset_flag = 0;
 
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_major_ver, lpc_callback, ATT_CPU_CPLD_MAJOR_VER);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_minor_ver, lpc_callback, ATT_CPU_CPLD_MINOR_VER);
-static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build_ver, lpc_callback, ATT_CPU_CPLD_BUILD_VER);
+    switch (attr->index) {
+        case ATT_MB_MUX_RESET_ALL:
+            reg = attr_reg[attr->index].reg;;
+            mask = attr_reg[attr->index].mask;;
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    if (kstrtou8(buf, 0, &val) < 0)
+        return -EINVAL;
+
+    if (mux_reset_flag == 0) {
+        if (val == 0) {
+            mutex_lock(&lpc_data->access_lock);
+            mux_reset_flag = 1;
+            BSP_LOG_W("i2c mux reset is triggered...");
+
+            //reset mux
+            reg_val = inb(reg);
+            outb((reg_val & (u8)(~mask)), reg);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val & (u8)(~mask));
+
+            mdelay(MDELAY_RESET_INTERVAL);
+
+            //unset mux
+            outb((reg_val | mask), reg);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val | mask);
+
+            mdelay(MDELAY_RESET_FINISH);
+            mux_reset_flag = 0;
+            mutex_unlock(&lpc_data->access_lock);
+        } else {
+            return -EINVAL;
+        }
+    } else {
+        BSP_LOG_W("i2c mux is resetting... (ignore)");
+        mutex_lock(&lpc_data->access_lock);
+        mutex_unlock(&lpc_data->access_lock);
+    }
+    return count;
+}
 
 //SENSOR_DEVICE_ATTR - MB
-static _SENSOR_DEVICE_ATTR_RO(board_id_0,        lpc_callback, ATT_MB_BRD_ID_0);
-static _SENSOR_DEVICE_ATTR_RO(board_id_1,        lpc_callback, ATT_MB_BRD_ID_1);
-//static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_version, lpc_callback, ATT_MB_CPLD_1_VERSION);
-static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_version_h, mb_cpld_1_version_h, ATT_MB_CPLD_1_VERSION_H);
-//static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build,   lpc_callback, ATT_MB_CPLD_1_BUILD);
-static _SENSOR_DEVICE_ATTR_RW(mux_ctrl,          lpc_callback, ATT_MB_MUX_CTRL);
-static _SENSOR_DEVICE_ATTR_RO(board_sku_id,      lpc_callback, ATT_MB_BRD_SKU_ID);
-static _SENSOR_DEVICE_ATTR_RO(board_hw_id,       lpc_callback, ATT_MB_BRD_HW_ID);
-static _SENSOR_DEVICE_ATTR_RO(board_id_type,     lpc_callback, ATT_MB_BRD_ID_TYPE);
-static _SENSOR_DEVICE_ATTR_RO(board_build_id,    lpc_callback, ATT_MB_BRD_BUILD_ID);
-static _SENSOR_DEVICE_ATTR_RO(board_deph_id,     lpc_callback, ATT_MB_BRD_DEPH_ID);
-static _SENSOR_DEVICE_ATTR_WO(mux_reset,         mux_reset, ATT_MB_MUX_RESET);
+static SENSOR_DEVICE_ATTR_RO(board_id_0          , lpc_callback       , ATT_MB_BRD_ID_0);
+static SENSOR_DEVICE_ATTR_RO(board_sku_id        , lpc_callback       , ATT_MB_BRD_SKU_ID);
+static SENSOR_DEVICE_ATTR_RO(board_id_1          , lpc_callback       , ATT_MB_BRD_ID_1);
+static SENSOR_DEVICE_ATTR_RO(board_hw_id         , lpc_callback       , ATT_MB_BRD_HW_ID);
+static SENSOR_DEVICE_ATTR_RO(board_deph_id       , lpc_callback       , ATT_MB_BRD_DEPH_ID);
+static SENSOR_DEVICE_ATTR_RO(board_build_id      , lpc_callback       , ATT_MB_BRD_BUILD_ID);
+static SENSOR_DEVICE_ATTR_RO(board_id_type       , lpc_callback       , ATT_MB_BRD_ID_TYPE);
+static SENSOR_DEVICE_ATTR_RO(mb_cpld_1_minor_ver , lpc_callback       , ATT_MB_CPLD_1_MINOR_VER);
+static SENSOR_DEVICE_ATTR_RO(mb_cpld_1_major_ver , lpc_callback       , ATT_MB_CPLD_1_MAJOR_VER);
+static SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build_ver , lpc_callback       , ATT_MB_CPLD_1_BUILD_VER);
+static SENSOR_DEVICE_ATTR_RO(mb_cpld_1_version_h , cpld_version_h     , ATT_MB_CPLD_1_VERSION_H);
+static SENSOR_DEVICE_ATTR_WO(mux_reset_all       , mux_reset_all      , ATT_MB_MUX_RESET_ALL);
+static SENSOR_DEVICE_ATTR_RW(mux_ctrl            , lpc_callback       , ATT_MB_MUX_CTRL);
 
-static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_major_ver, lpc_callback, ATT_MB_CPLD_1_MAJOR_VER);
-static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_minor_ver, lpc_callback, ATT_MB_CPLD_1_MINOR_VER);
-static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build_ver, lpc_callback, ATT_MB_CPLD_1_BUILD_VER);
+//SENSOR_DEVICE_ATTR - CPU
+static SENSOR_DEVICE_ATTR_RO(cpu_cpld_version    , lpc_callback       , ATT_CPU_CPLD_VERSION);
+static SENSOR_DEVICE_ATTR_RO(cpu_cpld_minor_ver  , lpc_callback       , ATT_CPU_CPLD_MINOR_VER);
+static SENSOR_DEVICE_ATTR_RO(cpu_cpld_major_ver  , lpc_callback       , ATT_CPU_CPLD_MAJOR_VER);
+static SENSOR_DEVICE_ATTR_RO(cpu_cpld_build_ver  , lpc_callback       , ATT_CPU_CPLD_BUILD_VER);
+static SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h  , cpld_version_h     , ATT_CPU_CPLD_VERSION_H);
+static SENSOR_DEVICE_ATTR_RO(boot_rom            , lpc_callback       , ATT_CPU_BIOS_BOOT_ROM);
+static SENSOR_DEVICE_ATTR_RO(boot_cfg            , lpc_callback       , ATT_CPU_BIOS_BOOT_CFG);
 
 //SENSOR_DEVICE_ATTR - I2C Alert
-static _SENSOR_DEVICE_ATTR_RO(alert_status,    lpc_callback, ATT_ALERT_STATUS);
-#if CPU_TYPE == CPU_BDE
-static _SENSOR_DEVICE_ATTR_RO(alert_disable,   lpc_callback, ATT_ALERT_DISABLE);
-#endif
+static SENSOR_DEVICE_ATTR_RO(alert_status        , lpc_callback       , ATT_ALERT_STATUS);
+
 //SENSOR_DEVICE_ATTR - BSP
-static _SENSOR_DEVICE_ATTR_RW(bsp_version, bsp_callback, ATT_BSP_VERSION);
-static _SENSOR_DEVICE_ATTR_RW(bsp_debug,   bsp_callback, ATT_BSP_DEBUG);
-static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
-static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
-static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
-static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR_RW(bsp_version         , bsp_callback       , ATT_BSP_VERSION);
+static SENSOR_DEVICE_ATTR_RW(bsp_debug           , bsp_callback       , ATT_BSP_DEBUG);
+static SENSOR_DEVICE_ATTR_WO(bsp_pr_info         , bsp_pr_callback    , ATT_BSP_PR_INFO);
+static SENSOR_DEVICE_ATTR_WO(bsp_pr_err          , bsp_pr_callback    , ATT_BSP_PR_ERR);
+static SENSOR_DEVICE_ATTR_RO(bsp_gpio_max        , gpio_max           , ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR_RW(bsp_fpga_pci_enable , bsp_callback       , ATT_BSP_FPGA_PCI_ENABLE);
 
-//SENSOR_DEVICE_ATTR - Thermal
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt2,  lpc_callback, ATT_TEMP_MAC0_PVT2);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt3,  lpc_callback, ATT_TEMP_MAC0_PVT3);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt4,  lpc_callback, ATT_TEMP_MAC0_PVT4);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt6,  lpc_callback, ATT_TEMP_MAC0_PVT6);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_hbm0,  lpc_callback, ATT_TEMP_MAC0_HBM0);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac0_hbm1,  lpc_callback, ATT_TEMP_MAC0_HBM1);
-static _SENSOR_DEVICE_ATTR_RW(temp_op2_0,      lpc_callback, ATT_TEMP_OP2_0);
-static _SENSOR_DEVICE_ATTR_RW(temp_op2_1,      lpc_callback, ATT_TEMP_OP2_1);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_pvt2,  lpc_callback, ATT_TEMP_MAC1_PVT2);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_pvt3,  lpc_callback, ATT_TEMP_MAC1_PVT3);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_pvt4,  lpc_callback, ATT_TEMP_MAC1_PVT4);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_pvt6,  lpc_callback, ATT_TEMP_MAC1_PVT6);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_hbm0,  lpc_callback, ATT_TEMP_MAC1_HBM0);
-static _SENSOR_DEVICE_ATTR_RW(temp_mac1_hbm1,  lpc_callback, ATT_TEMP_MAC1_HBM1);
-static _SENSOR_DEVICE_ATTR_RW(temp_op2_2,      lpc_callback, ATT_TEMP_OP2_2);
-static _SENSOR_DEVICE_ATTR_RW(temp_op2_3,      lpc_callback, ATT_TEMP_OP2_3);
-
-static struct attribute *cpu_cpld_attrs[] = {
-    _DEVICE_ATTR(cpu_cpld_version),
-    _DEVICE_ATTR(cpu_cpld_version_h),
-    _DEVICE_ATTR(cpu_cpld_build),
-    _DEVICE_ATTR(cpu_cpld_major_ver),
-    _DEVICE_ATTR(cpu_cpld_minor_ver),
-    _DEVICE_ATTR(cpu_cpld_build_ver),
+static struct attribute *mb_cpld_attrs[] = {
+    _DEVICE_ATTR(board_id_0),
+    _DEVICE_ATTR(board_sku_id),
+    _DEVICE_ATTR(board_id_1),
+    _DEVICE_ATTR(board_hw_id),
+    _DEVICE_ATTR(board_deph_id),
+    _DEVICE_ATTR(board_build_id),
+    _DEVICE_ATTR(board_id_type),
+    _DEVICE_ATTR(mb_cpld_1_minor_ver),
+    _DEVICE_ATTR(mb_cpld_1_major_ver),
+    _DEVICE_ATTR(mb_cpld_1_build_ver),
+    _DEVICE_ATTR(mb_cpld_1_version_h),
+    _DEVICE_ATTR(mux_reset_all),
+    _DEVICE_ATTR(mux_ctrl),
     NULL,
 };
 
-static struct attribute *mb_cpld_attrs[] = {
-    //_DEVICE_ATTR(mb_cpld_1_version),
-    _DEVICE_ATTR(mb_cpld_1_version_h),
-    //_DEVICE_ATTR(mb_cpld_1_build),
-    _DEVICE_ATTR(mb_cpld_1_major_ver),
-    _DEVICE_ATTR(mb_cpld_1_minor_ver),
-    _DEVICE_ATTR(mb_cpld_1_build_ver),
-    _DEVICE_ATTR(board_id_0),
-    _DEVICE_ATTR(board_id_1),
-    _DEVICE_ATTR(board_sku_id),
-    _DEVICE_ATTR(board_hw_id),
-    _DEVICE_ATTR(board_id_type),
-    _DEVICE_ATTR(board_build_id),
-    _DEVICE_ATTR(board_deph_id),
-    _DEVICE_ATTR(mux_ctrl),
-    _DEVICE_ATTR(mux_reset),
+static struct attribute *cpu_cpld_attrs[] = {
+    _DEVICE_ATTR(cpu_cpld_version),
+    _DEVICE_ATTR(cpu_cpld_minor_ver),
+    _DEVICE_ATTR(cpu_cpld_major_ver),
+    _DEVICE_ATTR(cpu_cpld_build_ver),
+    _DEVICE_ATTR(cpu_cpld_version_h),
     NULL,
 };
 
@@ -786,9 +746,6 @@ static struct attribute *bios_attrs[] = {
 
 static struct attribute *i2c_alert_attrs[] = {
     _DEVICE_ATTR(alert_status),
-#if CPU_TYPE == CPU_BDE
-    _DEVICE_ATTR(alert_disable),
-#endif
     NULL,
 };
 
@@ -797,39 +754,19 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_debug),
     _DEVICE_ATTR(bsp_pr_info),
     _DEVICE_ATTR(bsp_pr_err),
-    _DEVICE_ATTR(bsp_reg),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_fpga_pci_enable),
     NULL,
-};
-
-static struct attribute *temp_attrs[] = {
-    _DEVICE_ATTR(temp_mac0_pvt2),
-    _DEVICE_ATTR(temp_mac0_pvt3),
-    _DEVICE_ATTR(temp_mac0_pvt4),
-    _DEVICE_ATTR(temp_mac0_pvt6),
-    _DEVICE_ATTR(temp_mac0_hbm0),
-    _DEVICE_ATTR(temp_mac0_hbm1),
-    _DEVICE_ATTR(temp_op2_0),
-    _DEVICE_ATTR(temp_op2_1),
-    _DEVICE_ATTR(temp_mac1_pvt2),
-    _DEVICE_ATTR(temp_mac1_pvt3),
-    _DEVICE_ATTR(temp_mac1_pvt4),
-    _DEVICE_ATTR(temp_mac1_pvt6),
-    _DEVICE_ATTR(temp_mac1_hbm0),
-    _DEVICE_ATTR(temp_mac1_hbm1),
-    _DEVICE_ATTR(temp_op2_2),
-    _DEVICE_ATTR(temp_op2_3),
-    NULL,
-};
-
-static struct attribute_group cpu_cpld_attr_grp = {
-    .name = "cpu_cpld",
-    .attrs = cpu_cpld_attrs,
 };
 
 static struct attribute_group mb_cpld_attr_grp = {
     .name = "mb_cpld",
     .attrs = mb_cpld_attrs,
+};
+
+static struct attribute_group cpu_cpld_attr_grp = {
+    .name = "cpu_cpld",
+    .attrs = cpu_cpld_attrs,
 };
 
 static struct attribute_group bios_attr_grp = {
@@ -847,11 +784,6 @@ static struct attribute_group bsp_attr_grp = {
     .attrs = bsp_attrs,
 };
 
-static struct attribute_group temp_attr_grp = {
-    .name = "temp",
-    .attrs = temp_attrs,
-};
-
 static void lpc_dev_release( struct device * dev)
 {
     return;
@@ -867,8 +799,8 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 6;
-    int err[6] = {0};
+    int i = 0, grp_num = 5;
+    int err[5] = {0};
     struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
@@ -881,22 +813,19 @@ static int lpc_drv_probe(struct platform_device *pdev)
     for (i=0; i<grp_num; ++i) {
         switch (i) {
             case 0:
-                grp = &cpu_cpld_attr_grp;
+                grp = &mb_cpld_attr_grp;
                 break;
             case 1:
-                grp = &mb_cpld_attr_grp;
+                grp = &cpu_cpld_attr_grp;
                 break;
             case 2:
                 grp = &bios_attr_grp;
-            	break;
-            case 3:
-            	grp = &i2c_alert_attr_grp;
-            	break;
-            case 4:
-            	grp = &bsp_attr_grp;
                 break;
-            case 5:
-                grp = &temp_attr_grp;
+            case 3:
+                grp = &i2c_alert_attr_grp;
+                break;
+            case 4:
+                grp = &bsp_attr_grp;
                 break;
             default:
                 break;
@@ -917,22 +846,19 @@ exit:
     for (i=0; i<grp_num; ++i) {
         switch (i) {
             case 0:
-                grp = &cpu_cpld_attr_grp;
+                grp = &mb_cpld_attr_grp;
                 break;
             case 1:
-            	grp = &mb_cpld_attr_grp;
+                grp = &cpu_cpld_attr_grp;
                 break;
             case 2:
-            	grp = &bios_attr_grp;
-            	break;
-            case 3:
-            	grp = &i2c_alert_attr_grp;
-            	break;
-            case 4:
-            	grp = &bsp_attr_grp;
+                grp = &bios_attr_grp;
                 break;
-            case 5:
-                grp = &temp_attr_grp;
+            case 3:
+                grp = &i2c_alert_attr_grp;
+                break;
+            case 4:
+                grp = &bsp_attr_grp;
                 break;
             default:
                 break;
@@ -952,12 +878,11 @@ exit:
 
 static int lpc_drv_remove(struct platform_device *pdev)
 {
-    sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
-    sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
 
     return 0;
 }
@@ -1000,7 +925,9 @@ void lpc_exit(void)
 }
 
 MODULE_AUTHOR("Wade He <wade.ce.he@ufispace.com>");
+MODULE_AUTHOR("Nonodark Huang <nonodark.huang@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9321_64e_lpc driver");
+MODULE_VERSION("0.0.2");
 MODULE_LICENSE("GPL");
 
 module_init(lpc_init);

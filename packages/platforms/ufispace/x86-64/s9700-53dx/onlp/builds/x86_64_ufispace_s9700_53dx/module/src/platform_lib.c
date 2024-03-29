@@ -50,12 +50,13 @@
 
 /*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
  *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
- *              We take 10s as The IPMITOOL_CMD_TIMEOUT value 
+ *              We take 10s as The IPMITOOL_CMD_TIMEOUT value
  *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
  *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
  */
 #define IPMITOOL_CMD_TIMEOUT    10
-//#define CMD_BMC_SENSOR_CACHE  "timeout 10s ipmitool sdr -c get TEMP_CPU_PECI TEMP_OP2_ENV TEMP_J2_ENV_1 TEMP_J2_DIE_1 TEMP_J2_ENV_2 TEMP_J2_DIE_2 PSU0_TEMP PSU1_TEMP TEMP_BMC_ENV TEMP_ENV TEMP_ENV_FRONT FAN0_RPM FAN1_RPM FAN2_RPM FAN3_RPM PSU0_FAN1 PSU0_FAN2 PSU1_FAN1 PSU1_FAN2 FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > /tmp/bmc_sensor_cache"
+
+//[BMC] 3.81
 #define CMD_BMC_SENSOR_CACHE    "timeout %ds ipmitool sdr -c get "\
                                 " TEMP_CPU_PECI"\
                                 " TEMP_OP2_ENV"\
@@ -97,16 +98,16 @@
 /* BMC Cached String (mapping with ipmitool sensors) */
 bmc_info_t bmc_cache[] =
 {
-    [BMC_ATTR_ID_TEMP_CPU_PECI]  = {"TEMP_CPU_PECI" , 0}, 
-    [BMC_ATTR_ID_TEMP_OP2_ENV]   = {"TEMP_OP2_ENV"  , 0}, 
-    [BMC_ATTR_ID_TEMP_J2_ENV_1]  = {"TEMP_J2_ENV_1" , 0}, 
-    [BMC_ATTR_ID_TEMP_J2_DIE_1]  = {"TEMP_J2_DIE_1" , 0}, 
-    [BMC_ATTR_ID_TEMP_J2_ENV_2]  = {"TEMP_J2_ENV_2" , 0}, 
-    [BMC_ATTR_ID_TEMP_J2_DIE_2]  = {"TEMP_J2_DIE_2" , 0}, 
-    [BMC_ATTR_ID_PSU0_TEMP]      = {"PSU0_TEMP"     , 0}, 
-    [BMC_ATTR_ID_PSU1_TEMP]      = {"PSU1_TEMP"     , 0}, 
-    [BMC_ATTR_ID_TEMP_BMC_ENV]   = {"TEMP_BMC_ENV"  , 0}, 
-    [BMC_ATTR_ID_TEMP_ENV]       = {"TEMP_ENV"      , 0}, 
+    [BMC_ATTR_ID_TEMP_CPU_PECI]  = {"TEMP_CPU_PECI" , 0},
+    [BMC_ATTR_ID_TEMP_OP2_ENV]   = {"TEMP_OP2_ENV"  , 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_1]  = {"TEMP_J2_ENV_1" , 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_1]  = {"TEMP_J2_DIE_1" , 0},
+    [BMC_ATTR_ID_TEMP_J2_ENV_2]  = {"TEMP_J2_ENV_2" , 0},
+    [BMC_ATTR_ID_TEMP_J2_DIE_2]  = {"TEMP_J2_DIE_2" , 0},
+    [BMC_ATTR_ID_PSU0_TEMP]      = {"PSU0_TEMP"     , 0},
+    [BMC_ATTR_ID_PSU1_TEMP]      = {"PSU1_TEMP"     , 0},
+    [BMC_ATTR_ID_TEMP_BMC_ENV]   = {"TEMP_BMC_ENV"  , 0},
+    [BMC_ATTR_ID_TEMP_ENV]       = {"TEMP_ENV"      , 0},
     [BMC_ATTR_ID_TEMP_ENV_FRONT] = {"TEMP_ENV_FRONT", 0},
     [BMC_ATTR_ID_FAN0_RPM]       = {"FAN0_RPM"      , 0},
     [BMC_ATTR_ID_FAN1_RPM]       = {"FAN1_RPM"      , 0},
@@ -150,7 +151,7 @@ bmc_info_t bmc_cache[] =
 
 static bmc_fru_t bmc_fru_cache[] =
 {
-    [ONLP_PSU_0] = { 
+    [ONLP_PSU_0] = {
         .bmc_fru_id = 1,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_1",
@@ -159,8 +160,8 @@ static bmc_fru_t bmc_fru_cache[] =
         .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
 
-    },  
-    [ONLP_PSU_1] = { 
+    },
+    [ONLP_PSU_1] = {
         .bmc_fru_id = 2,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_2",
@@ -168,7 +169,7 @@ static bmc_fru_t bmc_fru_cache[] =
         .name     = {BMC_FRU_KEY_NAME         ,""},
         .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
-    },  
+    },
 };
 
 const int CPLD_BASE_ADDR[] = {0x30, 0x39, 0x3a, 0x3b, 0x3c};
@@ -371,7 +372,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                         /* fan present, got from bmc */
                         if( strstr(line_fields[4], "Present") != NULL ) {
                             bmc_cache[i].data = 1;
-                        } else { 
+                        } else {
                             bmc_cache[i].data = 0;
                         }
                     } else {

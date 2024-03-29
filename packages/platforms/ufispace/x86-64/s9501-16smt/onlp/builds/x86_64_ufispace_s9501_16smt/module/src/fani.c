@@ -37,6 +37,8 @@ onlp_fan_info_t fan_info[] = {
         0,
         0,
         ONLP_FAN_MODE_INVALID,
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         { FAN_OID_FAN1, "CHASSIS FAN 1", 0 },
@@ -45,6 +47,8 @@ onlp_fan_info_t fan_info[] = {
         0,
         0,
         ONLP_FAN_MODE_INVALID,
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         { FAN_OID_FAN2, "CHASSIS FAN 2", 0 },
@@ -53,16 +57,28 @@ onlp_fan_info_t fan_info[] = {
         0,
         0,
         ONLP_FAN_MODE_INVALID,
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         { FAN_OID_PSU0_FAN, "PSU 0 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
     {
         { FAN_OID_PSU1_FAN, "PSU 1 FAN", 0 },
         ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B,
         ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE,
+        0,
+        0,
+        ONLP_FAN_MODE_INVALID,
+        COMM_STR_NOT_SUPPORTED,
+        COMM_STR_NOT_SUPPORTED,
     },
 };
 

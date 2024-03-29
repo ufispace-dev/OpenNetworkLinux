@@ -67,7 +67,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_ACCESS_REG,
     CPLD_REGISTER_VAL,
     CPLD_PORT_START,
-    CPLD_PORTS,    
+    CPLD_PORTS,
     CPLD_VERSION,
     CPLD_ID,
     CPLD_BOARD_TYPE,
@@ -85,7 +85,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_QSFP_PORT_STATUS_9,
     CPLD_QSFP_PORT_STATUS_10,
     CPLD_QSFP_PORT_STATUS_11,
-    CPLD_QSFP_PORT_STATUS_12,    
+    CPLD_QSFP_PORT_STATUS_12,
     CPLD_QSFP_PORT_CONFIG_0,
     CPLD_QSFP_PORT_CONFIG_1,
     CPLD_QSFP_PORT_CONFIG_2,
@@ -113,8 +113,8 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_QSFPDD_PORT_STATUS_7,
     CPLD_QSFPDD_PORT_STATUS_8,
     CPLD_QSFPDD_PORT_STATUS_9,
-    CPLD_QSFPDD_PORT_STATUS_10, 
-    CPLD_QSFPDD_PORT_CONFIG_0,   
+    CPLD_QSFPDD_PORT_STATUS_10,
+    CPLD_QSFPDD_PORT_CONFIG_0,
     CPLD_QSFPDD_PORT_CONFIG_1,
     CPLD_QSFPDD_PORT_CONFIG_2,
     CPLD_QSFPDD_PORT_CONFIG_3,
@@ -157,7 +157,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_GBOX_INTR_0,
     CPLD_GBOX_INTR_1,
     CPLD_RETIMER_INTR,
-    
+
     //BSP DEBUG
     BSP_DEBUG
 };
@@ -202,7 +202,7 @@ static ssize_t read_board_type(struct device *dev,
 static ssize_t read_ext_board_type(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t read_cpld_interrupt(struct device *dev,
-                struct device_attribute *da, char *buf);                
+                struct device_attribute *da, char *buf);
 static ssize_t read_qsfp_port_status(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t read_qsfp_port_config(struct device *dev,
@@ -315,9 +315,9 @@ static SENSOR_DEVICE_ATTR(cpld_board_type, S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_ext_board_type, S_IRUGO,
         read_ext_board_type, NULL, CPLD_EXT_BOARD_TYPE);
 static SENSOR_DEVICE_ATTR(cpld_interrupt, S_IRUGO,
-        read_cpld_interrupt, NULL, CPLD_INTERRUPT);        
+        read_cpld_interrupt, NULL, CPLD_INTERRUPT);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_0, S_IRUGO,
-        read_qsfp_port_status, NULL, CPLD_QSFP_PORT_STATUS_0);        
+        read_qsfp_port_status, NULL, CPLD_QSFP_PORT_STATUS_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_1, S_IRUGO,
         read_qsfp_port_status, NULL, CPLD_QSFP_PORT_STATUS_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_2, S_IRUGO,
@@ -344,9 +344,9 @@ static SENSOR_DEVICE_ATTR(cpld_qsfp_port_status_12, S_IRUGO,
         read_qsfp_port_status, NULL, CPLD_QSFP_PORT_STATUS_12);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_config_0, S_IWUSR | S_IRUGO,
                 read_qsfp_port_config, write_qsfp_port_config,
-                CPLD_QSFP_PORT_CONFIG_0);        
+                CPLD_QSFP_PORT_CONFIG_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfp_port_config, write_qsfp_port_config, 
+                read_qsfp_port_config, write_qsfp_port_config,
                 CPLD_QSFP_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfp_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfp_port_config, write_qsfp_port_config,
@@ -412,7 +412,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_start, S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_ports, S_IRUGO,
                 get_qsfpdd_ports, NULL, CPLD_QSFPDD_PORTS);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_0, S_IRUGO,
-        read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_0);                
+        read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_1, S_IRUGO,
         read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_2, S_IRUGO,
@@ -433,9 +433,9 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_status_9, S_IRUGO,
         read_qsfpdd_port_status, NULL, CPLD_QSFPDD_PORT_STATUS_9);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_0, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
-                CPLD_QSFPDD_PORT_CONFIG_0);        
+                CPLD_QSFPDD_PORT_CONFIG_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfpdd_port_config, write_qsfpdd_port_config, 
+                read_qsfpdd_port_config, write_qsfpdd_port_config,
                 CPLD_QSFPDD_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfpdd_port_config, write_qsfpdd_port_config,
@@ -529,7 +529,7 @@ static struct attribute *apollo_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_qsfp_port_status_9.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_status_10.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_status_11.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_port_config_0.dev_attr.attr,    
+    &sensor_dev_attr_cpld_qsfp_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_2.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_3.dev_attr.attr,
@@ -583,8 +583,8 @@ static struct attribute *apollo_cpld23_attributes[] = {
     &sensor_dev_attr_cpld_qsfp_port_status_9.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_status_10.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_status_11.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfp_port_status_12.dev_attr.attr, 
-    &sensor_dev_attr_cpld_qsfp_port_config_0.dev_attr.attr,   
+    &sensor_dev_attr_cpld_qsfp_port_status_12.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_2.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_3.dev_attr.attr,
@@ -631,8 +631,8 @@ static struct attribute *apollo_cpld5_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_start.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_ports.dev_attr.attr,
     &sensor_dev_attr_cpld_version.dev_attr.attr,
-    &sensor_dev_attr_cpld_id.dev_attr.attr,  
-    &sensor_dev_attr_cpld_interrupt.dev_attr.attr,   
+    &sensor_dev_attr_cpld_id.dev_attr.attr,
+    &sensor_dev_attr_cpld_interrupt.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_2.dev_attr.attr,
@@ -643,7 +643,7 @@ static struct attribute *apollo_cpld5_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_status_7.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_8.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_status_9.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_config_0.dev_attr.attr,    
+    &sensor_dev_attr_cpld_qsfpdd_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_2.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_3.dev_attr.attr,
@@ -652,7 +652,7 @@ static struct attribute *apollo_cpld5_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_config_6.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_7.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_8.dev_attr.attr,
-    &sensor_dev_attr_cpld_qsfpdd_port_config_9.dev_attr.attr,         
+    &sensor_dev_attr_cpld_qsfpdd_port_config_9.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_2.dev_attr.attr,
@@ -781,7 +781,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
@@ -1864,7 +1864,7 @@ static int apollo_cpld_probe(struct i2c_client *client,
         status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
     case cpld3:
     	  status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld23_group);
@@ -1896,7 +1896,7 @@ exit:
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &apollo_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
     case cpld3:
     	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
         break;

@@ -47,6 +47,8 @@
         0,                                                      \
         0,                                                      \
         ONLP_FAN_MODE_INVALID,                                  \
+        COMM_STR_NOT_SUPPORTED,                                  \
+        COMM_STR_NOT_SUPPORTED,                                  \
     }
 
 #define PSU_FAN_INFO(id, pid)                               \
@@ -57,6 +59,8 @@
         0,                                                  \
         0,                                                  \
         ONLP_FAN_MODE_INVALID,                              \
+        COMM_STR_NOT_SUPPORTED,                              \
+        COMM_STR_NOT_SUPPORTED,                              \
     }
 
 /*
@@ -76,6 +80,32 @@ onlp_fan_info_t fan_info[] = {
     PSU_FAN_INFO(ONLP_PSU_0_FAN, 0),
     PSU_FAN_INFO(ONLP_PSU_1_FAN, 1),
 };
+
+/**
+ * @brief Update the information of Model and Serial from FAN FRU EEPROM
+ * @param id The FAN Local ID
+ * @param[out] info Receives the FAN information (model and serial).
+ */
+static int update_fani_fru_info(int id, onlp_fan_info_t* info)
+{
+    bmc_fru_t fru = {0};
+
+    //read fru data
+    ONLP_TRY(bmc_fru_read(id, &fru, ONLP_FRU_FAN));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    //read product name
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+    //read part num for others
+    //snprintf(info->model, sizeof(info->model), "%s", fru.part_num.val);
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    return ONLP_STATUS_OK;
+}
 
 /**
  * @brief Get the fan information from BMC
@@ -179,6 +209,8 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
             percentage = 100;
         info->percentage = percentage;
         info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
+        /* Get FRU */
+        ONLP_TRY(update_fani_fru_info(id, info));
     } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
         //get psu type
         if(id == ONLP_PSU_0_FAN) {

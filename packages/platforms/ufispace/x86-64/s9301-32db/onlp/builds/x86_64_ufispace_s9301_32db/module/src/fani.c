@@ -88,6 +88,26 @@ static onlp_fan_info_t fan_info[] = {
     CHASSIS_INFO(ONLP_PSU1_FAN1 , "PSU 1 FAN"),
 };
 
+static bool fan_fru_supported = false;
+
+static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
+{
+    int result = ONLP_STATUS_OK;
+
+    if(fan_fru_supported) {
+        /* Get fan fru info */
+        if(result != ONLP_STATUS_OK) {
+            snprintf(info->model, sizeof(info->model), "%s", "not available");
+            snprintf(info->serial, sizeof(info->serial), "%s", "not available");
+        }
+    } else {
+        snprintf(info->model, sizeof(info->model), "%s", "not supported");
+        snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 /**
  * @brief Update the information structure for the given FAN
  * @param id The FAN Local ID
@@ -231,6 +251,8 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* info)
         return ONLP_STATUS_E_PARAM;
     }
 
+    //update fan fru info
+    ONLP_TRY(ufi_fan_fru_update(local_id, info));
     return ONLP_STATUS_OK;
 }
 

@@ -28,21 +28,62 @@
 #define LED_STATUS ONLP_LED_STATUS_PRESENT
 #define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
                    ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
-#define ID_LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING
-#define LED_SYSFS  "/sys/bus/i2c/devices/1-0030/cpld_system_led_"
-#define CHASSIS_LED_INFO(id, desc)               \
-    {                                            \
-        { ONLP_LED_ID_CREATE(id), desc, POID_0},\
-        LED_STATUS,                              \
-        LED_CAPS,                                \
-    }
+#define ID_LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE
+#define REG_INVALID   -1
 
-#define CHASSIS_ID_LED_INFO(id, desc)               \
-    {                                            \
-        { ONLP_LED_ID_CREATE(id), desc, POID_0},\
-        LED_STATUS,                              \
-        ID_LED_CAPS,                                \
-    }
+#define IS_GPIO(_node)    (_node.type == TYPE_LED_ATTR_GPIO)
+#define IS_CPLD(_node)    (_node.type == TYPE_LED_ATTR_CPLD)
+
+/*
+ *  Generally, the color bit for CPLD is 4 bits, and there are 16 color sets available. 
+ *  The color bit for GPIO is 2 bits (representing two GPIO pins), and there are 2 color sets. 
+ *  Therefore, we use the 16 color sets available for our application.
+ */
+#define COLOR_VAL_MAX           16
+#define GPIO_INVALID_OFFSET     -999999
+
+#define VALUE_0000_0000 0x00
+#define VALUE_0000_0001 0x01
+#define VALUE_0000_0100 0x04
+#define VALUE_0000_0101 0x05
+#define VALUE_0000_1000 0x08
+#define VALUE_0000_1001 0x09
+#define VALUE_0000_1100 0x0C
+#define VALUE_0000_1101 0x0D
+
+
+typedef struct
+{
+    short int val;
+    int mode;
+} color_obj_t;
+
+typedef struct
+{
+    int type;
+    char *sysfs;
+    int gpin_off1;
+    int gpin_off2;
+    int action;
+    color_obj_t color_obj[COLOR_VAL_MAX];
+    short int color_mask;
+    char* desc;
+    uint32_t caps;
+} led_node_t;
+
+typedef enum led_act_e {
+    ACTION_LED_RO = 0,
+    ACTION_LED_RW,
+    ACTION_LED_ATTR_MAX,
+} led_act_t;
+
+typedef enum led_attr_type_e {
+    TYPE_LED_ATTR_UNNKOW = 0,
+    TYPE_LED_ATTR_GPIO,
+    TYPE_LED_ATTR_CPLD,
+    TYPE_LED_ATTR_MAX,
+} led_type_t;
+
 
 /*
  * Get the information for the given LED OID.
@@ -50,31 +91,212 @@
 static onlp_led_info_t led_info[] =
 {
     { }, // Not used *
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 1 (SYNC LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 2 (SYS LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 3 (FAN LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 4 (PSU0 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 5 (PSU1 LED)"),
-    CHASSIS_ID_LED_INFO(ONLP_LED_SYS_ID, "Chassis LED 6 (ID LED)"),
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYNC),
+            .description =  "Chassis LED 1 (SYNC LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = LED_CAPS
+    },
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_SYS),
+            .description = "Chassis LED 2 (SYS LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = LED_CAPS
+    },
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_FAN),
+            .description = "Chassis LED 3 (FAN LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = LED_CAPS
+    },
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_0),
+            .description = "Chassis LED 4 (PSU0 LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = LED_CAPS
+    },
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_PSU_1),
+            .description = "Chassis LED 5 (PSU1 LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = LED_CAPS
+    },
+    {
+        .hdr = {
+            .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_ID),
+            .description = "Chassis LED 1 (ID LED)",
+            .poid = POID_0
+        },
+        .status = LED_STATUS,
+        .caps = ID_LED_CAPS
+    },
 };
 
-typedef struct
+static int get_node(int local_id, led_node_t *node)
 {
-    char *sysfs;
-    int color_bit;
-    int blink_bit;
-    int onoff_bit;
-} led_attr_t;
+    if(node == NULL)
+        return ONLP_STATUS_E_PARAM;
 
-static const led_attr_t led_attr[] = {
-    /*led attribute          sysfs             color blink onoff */
-    [ONLP_LED_SYS_SYNC]   = {LED_SYSFS "sync"  ,0    ,2    ,3},
-    [ONLP_LED_SYS_SYS]    = {LED_SYSFS "sys"   ,0    ,2    ,3},
-    [ONLP_LED_SYS_FAN]    = {LED_SYSFS "fan"   ,0    ,2    ,3},
-    [ONLP_LED_SYS_PSU_0]  = {LED_SYSFS "psu_0" ,0    ,2    ,3},
-    [ONLP_LED_SYS_PSU_1]  = {LED_SYSFS "psu_1" ,0    ,2    ,3},
-    [ONLP_LED_SYS_ID]     = {LED_SYSFS "id"    ,0    ,2    ,3},
-};
+    switch(local_id) {
+        case ONLP_LED_SYS_SYNC:
+            node->sysfs = SYSFS_CPLD1 "cpld_system_led_sync";
+            node->action = ACTION_LED_RW;
+            node->type = TYPE_LED_ATTR_CPLD;
+            node->color_mask = VALUE_0000_1101;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[2].val = VALUE_0000_0100;
+            node->color_obj[2].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[3].val = VALUE_0000_0101;
+            node->color_obj[3].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[4].val = VALUE_0000_1001;
+            node->color_obj[4].mode = ONLP_LED_MODE_GREEN;
+            node->color_obj[5].val = VALUE_0000_1101;
+            node->color_obj[5].mode = ONLP_LED_MODE_GREEN_BLINKING;
+            node->color_obj[6].val = VALUE_0000_1000;
+            node->color_obj[6].mode = ONLP_LED_MODE_YELLOW;
+            node->color_obj[7].val = VALUE_0000_1100;
+            node->color_obj[7].mode = ONLP_LED_MODE_YELLOW_BLINKING;
+            node->color_obj[8].val = node->color_obj[4].val;
+            node->color_obj[8].mode = ONLP_LED_MODE_ON;
+            node->color_obj[9].val = REG_INVALID;
+           break;
+        case ONLP_LED_SYS_SYS:
+            node->sysfs = SYSFS_CPLD1 "cpld_system_led_sys";
+            node->action = ACTION_LED_RO;
+            node->type = TYPE_LED_ATTR_CPLD;
+            node->color_mask = VALUE_0000_1101;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[2].val = VALUE_0000_0100;
+            node->color_obj[2].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[3].val = VALUE_0000_0101;
+            node->color_obj[3].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[4].val = VALUE_0000_1001;
+            node->color_obj[4].mode = ONLP_LED_MODE_GREEN;
+            node->color_obj[5].val = VALUE_0000_1101;
+            node->color_obj[5].mode = ONLP_LED_MODE_GREEN_BLINKING;
+            node->color_obj[6].val = VALUE_0000_1000;
+            node->color_obj[6].mode = ONLP_LED_MODE_YELLOW;
+            node->color_obj[7].val = VALUE_0000_1100;
+            node->color_obj[7].mode = ONLP_LED_MODE_YELLOW_BLINKING;
+            node->color_obj[8].val = node->color_obj[4].val;
+            node->color_obj[8].mode = ONLP_LED_MODE_ON;
+            node->color_obj[9].val = REG_INVALID;
+            break;
+        case ONLP_LED_SYS_FAN:
+            node->sysfs =  SYSFS_CPLD1 "cpld_system_led_fan";
+            node->action = ACTION_LED_RO;
+            node->type = TYPE_LED_ATTR_CPLD;
+            node->color_mask = VALUE_0000_1101;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[2].val = VALUE_0000_0100;
+            node->color_obj[2].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[3].val = VALUE_0000_0101;
+            node->color_obj[3].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[4].val = VALUE_0000_1001;
+            node->color_obj[4].mode = ONLP_LED_MODE_GREEN;
+            node->color_obj[5].val = VALUE_0000_1101;
+            node->color_obj[5].mode = ONLP_LED_MODE_GREEN_BLINKING;
+            node->color_obj[6].val = VALUE_0000_1000;
+            node->color_obj[6].mode = ONLP_LED_MODE_YELLOW;
+            node->color_obj[7].val = VALUE_0000_1100;
+            node->color_obj[7].mode = ONLP_LED_MODE_YELLOW_BLINKING;
+            node->color_obj[8].val = node->color_obj[4].val;
+            node->color_obj[8].mode = ONLP_LED_MODE_ON;
+            node->color_obj[9].val = REG_INVALID;
+            break;
+        case ONLP_LED_SYS_PSU_0:
+            node->sysfs = SYSFS_CPLD1 "cpld_system_led_psu_0";
+            node->action = ACTION_LED_RO;
+            node->type = TYPE_LED_ATTR_CPLD;
+            node->color_mask = VALUE_0000_1101;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[2].val = VALUE_0000_0100;
+            node->color_obj[2].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[3].val = VALUE_0000_0101;
+            node->color_obj[3].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[4].val = VALUE_0000_1001;
+            node->color_obj[4].mode = ONLP_LED_MODE_GREEN;
+            node->color_obj[5].val = VALUE_0000_1101;
+            node->color_obj[5].mode = ONLP_LED_MODE_GREEN_BLINKING;
+            node->color_obj[6].val = VALUE_0000_1000;
+            node->color_obj[6].mode = ONLP_LED_MODE_YELLOW;
+            node->color_obj[7].val = VALUE_0000_1100;
+            node->color_obj[7].mode = ONLP_LED_MODE_YELLOW_BLINKING;
+            node->color_obj[8].val = node->color_obj[4].val;
+            node->color_obj[8].mode = ONLP_LED_MODE_ON;
+            node->color_obj[9].val = REG_INVALID;
+            break;
+        case ONLP_LED_SYS_PSU_1:
+            node->sysfs = SYSFS_CPLD1 "cpld_system_led_psu_1";
+            node->action = ACTION_LED_RO;
+            node->type = TYPE_LED_ATTR_CPLD;
+            node->color_mask = VALUE_0000_1101;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[2].val = VALUE_0000_0100;
+            node->color_obj[2].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[3].val = VALUE_0000_0101;
+            node->color_obj[3].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[4].val = VALUE_0000_1001;
+            node->color_obj[4].mode = ONLP_LED_MODE_GREEN;
+            node->color_obj[5].val = VALUE_0000_1101;
+            node->color_obj[5].mode = ONLP_LED_MODE_GREEN_BLINKING;
+            node->color_obj[6].val = VALUE_0000_1000;
+            node->color_obj[6].mode = ONLP_LED_MODE_YELLOW;
+            node->color_obj[7].val = VALUE_0000_1100;
+            node->color_obj[7].mode = ONLP_LED_MODE_YELLOW_BLINKING;
+            node->color_obj[8].val = node->color_obj[4].val;
+            node->color_obj[8].mode = ONLP_LED_MODE_ON;
+            node->color_obj[9].val = REG_INVALID;
+            break;
+        case ONLP_LED_SYS_ID:
+            node->gpin_off1 = 0;
+            node->gpin_off2 = GPIO_INVALID_OFFSET;
+            node->action = ACTION_LED_RW;
+            node->type = TYPE_LED_ATTR_GPIO;
+            node->color_mask = VALUE_0000_0001;
+            node->color_obj[0].val = VALUE_0000_0000;
+            node->color_obj[0].mode = ONLP_LED_MODE_OFF;
+            node->color_obj[1].val = VALUE_0000_0001;
+            node->color_obj[1].mode = ONLP_LED_MODE_BLUE;
+            node->color_obj[2].val = node->color_obj[1].val;
+            node->color_obj[2].mode = ONLP_LED_MODE_ON;
+            node->color_obj[3].val = REG_INVALID;
+           break;
+        default:
+            return ONLP_STATUS_E_PARAM;
+    }
+    return ONLP_STATUS_OK;
+}
 
 /**
  * @brief Get and check led local ID
@@ -84,6 +306,7 @@ static const led_attr_t led_attr[] = {
 static int get_led_local_id(int id, int *local_id)
 {
     int tmp_id;
+    board_t board = {0};
 
     if(local_id == NULL) {
         return ONLP_STATUS_E_PARAM;
@@ -94,58 +317,113 @@ static int get_led_local_id(int id, int *local_id)
     }
 
     tmp_id = ONLP_OID_ID_GET(id);
-    switch (tmp_id) {
-        case ONLP_LED_SYS_SYNC:
-        case ONLP_LED_SYS_SYS:
-        case ONLP_LED_SYS_FAN:
-        case ONLP_LED_SYS_PSU_0:
-        case ONLP_LED_SYS_PSU_1:
-        case ONLP_LED_SYS_ID:
-            *local_id = tmp_id;
-            return ONLP_STATUS_OK;
-        default:
-            return ONLP_STATUS_E_INVALID;
-    }
+    ONLP_TRY(get_board_version(&board));
 
+    if(board.hw_rev <= BRD_ALPHA) {
+        switch (tmp_id) {
+            case ONLP_LED_SYS_SYNC:
+            case ONLP_LED_SYS_SYS:
+            case ONLP_LED_SYS_FAN:
+            case ONLP_LED_SYS_PSU_0:
+            case ONLP_LED_SYS_PSU_1:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    } else {
+        switch (tmp_id) {
+            case ONLP_LED_SYS_SYNC:
+            case ONLP_LED_SYS_SYS:
+            case ONLP_LED_SYS_FAN:
+            case ONLP_LED_SYS_PSU_0:
+            case ONLP_LED_SYS_PSU_1:
+            case ONLP_LED_SYS_ID:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    }
     return ONLP_STATUS_E_INVALID;
 }
 
-static int update_ledi_info(int local_id, onlp_led_info_t* info)
+static int update_hdr(onlp_oid_hdr_t* rv, led_node_t *node)
 {
-    int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
+    // Not supoort
+    if(0) {
+        int len = 0;
 
-    if (local_id <= ONLP_LED_RESERVED || local_id >= ONLP_LED_MAX) {
-        return ONLP_STATUS_E_PARAM;
+        if(rv == NULL || node == NULL) {
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        if(node->desc != NULL) {
+            memset(rv->description, 0, sizeof(rv->description));
+            len = (sizeof(rv->description) > strlen(node->desc))? strlen(node->desc):(sizeof(rv->description) -1);
+            memcpy(rv->description, node->desc, len);
+        }
+    }
+    return ONLP_STATUS_OK;
+}
+
+static int update_info(onlp_led_info_t* info, led_node_t *node)
+{
+    // Not supoort
+    if(0) {
+        if(info == NULL || node == NULL) {
+            return ONLP_STATUS_E_PARAM;
+        }
+
+        if(node->caps != 0) {
+            info->caps = node->caps;
+        }
+        ONLP_TRY(update_hdr(&info->hdr, node));
+    }
+    return ONLP_STATUS_OK;
+}
+
+static int get_sys_led_info(int local_id, onlp_led_info_t* info)
+{
+    int led_val = 0;
+    int i=0;
+    led_node_t node = {0};
+
+    *info = led_info[local_id];
+
+    ONLP_TRY(get_node(local_id, &node));
+    ONLP_TRY(update_info(info, &node));
+    
+
+    if(IS_GPIO(node)) {
+        int led_val2 = 0;
+        int gpio_max = 0;
+        ONLP_TRY(get_gpio_max(&gpio_max));
+        ONLP_TRY(read_file_hex(&led_val, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
+        if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
+            ONLP_TRY(read_file_hex(&led_val2, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
+            led_val = operate_bit(led_val, 1, led_val2); 
+        }
+    } else {
+        ONLP_TRY(read_file_hex(&led_val, node.sysfs));
     }
 
-    ONLP_TRY(file_read_hex(&led_val, led_attr[local_id].sysfs));
 
-    led_val_color = (led_val >> 0) & 1;
-    led_val_blink = (led_val >> 2) & 1;
-    led_val_onoff = (led_val >> 3) & 1;
+    for(i= 0; i<COLOR_VAL_MAX; i++) {
+        if(node.color_obj[i].val == REG_INVALID)
+            break;
 
-    //onoff
-    if (led_val_onoff == 0) {
-        info->mode = ONLP_LED_MODE_OFF;
-        // update status
-        info->status &= ~ONLP_LED_STATUS_ON;
-    } else {
-        //color
+        if((led_val & node.color_mask) == node.color_obj[i].val) {
 
-        //LED ID color is blue only
-        if (local_id == ONLP_LED_SYS_ID) {
-            info->mode = ONLP_LED_MODE_BLUE;
-        } else if (led_val_color == 0) {
-            info->mode = ONLP_LED_MODE_YELLOW;
-        } else {
-            info->mode = ONLP_LED_MODE_GREEN;
+            if(node.color_obj[i].mode == ONLP_LED_MODE_OFF) {
+                info->status &= ~ONLP_LED_STATUS_ON;
+            } else {
+                info->status |= ONLP_LED_STATUS_ON;
+            }
+
+            info->mode = node.color_obj[i].mode;
+            break;
         }
-        //blinking
-        if (led_val_blink == 1) {
-            info->mode = info->mode + 1;
-        }
-        // update status
-        info->status |= ONLP_LED_STATUS_ON;
     }
 
     return ONLP_STATUS_OK;
@@ -156,7 +434,7 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
  */
 int onlp_ledi_init(void)
 {
-    lock_init();
+    init_lock();
     return ONLP_STATUS_OK;
 }
 
@@ -167,22 +445,12 @@ int onlp_ledi_init(void)
  */
 int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
-    int led_id = 0, rc = ONLP_STATUS_OK;
+    int local_id;
 
-    ONLP_TRY(get_led_local_id(id, &led_id));
+    ONLP_TRY(get_led_local_id(id, &local_id));
+    ONLP_TRY(get_sys_led_info(local_id, rv));
 
-    *rv = led_info[led_id];
-
-    switch (led_id) {
-        case ONLP_LED_SYS_SYNC ... (ONLP_LED_MAX-1):
-            rc = update_ledi_info(led_id, rv);
-            break;
-        default:
-            return ONLP_STATUS_E_INTERNAL;
-            break;
-    }
-
-    return rc;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -192,16 +460,14 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
  */
 int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_led_info_t info;
-    int led_id = 0;
+    int local_id;
+    onlp_led_info_t info ={0};
 
-    ONLP_TRY(get_led_local_id(id, &led_id));
-
-    result = onlp_ledi_info_get(id, &info);
+    ONLP_TRY(get_led_local_id(id, &local_id));
+    ONLP_TRY(get_sys_led_info(local_id, &info));
     *rv = info.status;
 
-    return result;
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -211,19 +477,16 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
  */
 int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
-    int result = ONLP_STATUS_OK;
-    onlp_led_info_t* info = NULL;
-    int led_id = 0;
+    int local_id;
+    led_node_t node = {0};
 
-    ONLP_TRY(get_led_local_id(id, &led_id));
+    ONLP_TRY(get_led_local_id(id, &local_id));
+    *rv = led_info[local_id].hdr;
 
-    if(led_id >= ONLP_LED_MAX) {
-        result = ONLP_STATUS_E_INVALID;
-    } else {
-        info = &led_info[led_id];
-        *rv = info->hdr;
-    }
-    return result;
+    ONLP_TRY(get_node(local_id, &node));
+    ONLP_TRY(update_hdr(rv, &node));
+
+    return ONLP_STATUS_OK;
 }
 
 /**
@@ -236,16 +499,16 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
  int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
     int local_id;
+    led_node_t node = {0};
 
     ONLP_TRY(get_led_local_id(id, &local_id));
+    ONLP_TRY(get_node(local_id, &node));
+    if (node.action != ACTION_LED_RW) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
 
     if (on_or_off) {
-    	//LED ID color is blue only
-        if (id == ONLP_LED_SYS_ID) {
-            return onlp_ledi_mode_set(id, ONLP_LED_MODE_BLUE);
-        } else {
-            return onlp_ledi_mode_set(id, ONLP_LED_MODE_GREEN);
-        }
+        return onlp_ledi_mode_set(id, ONLP_LED_MODE_ON);
     } else {
         return onlp_ledi_mode_set(id, ONLP_LED_MODE_OFF);
     }
@@ -270,50 +533,46 @@ int onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
 int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int local_id;
+    led_node_t node = {0};
+    int i=0; 
+    int found = 0;
+    int led_val = 0;
+    int led_val2 = 0;
 
     ONLP_TRY(get_led_local_id(id, &local_id));
-
-    int led_val = 0,led_color = 0, led_blink = 0, led_onoff =0;
-    switch(mode) {
-        case ONLP_LED_MODE_GREEN:
-        case ONLP_LED_MODE_BLUE:
-            led_color=1;
-            led_blink=0;
-            led_onoff=1;
-            break;
-        case ONLP_LED_MODE_GREEN_BLINKING:
-        case ONLP_LED_MODE_BLUE_BLINKING:
-            led_color=1;
-            led_blink=1;
-            led_onoff=1;
-            break;
-        case ONLP_LED_MODE_YELLOW:
-            led_color=0;
-            led_blink=0;
-            led_onoff=1;
-            break;
-        case ONLP_LED_MODE_YELLOW_BLINKING:
-            led_color=0;
-            led_blink=1;
-            led_onoff=1;
-            break;
-        case ONLP_LED_MODE_OFF:
-            led_color=0;
-            led_blink=0;
-            led_onoff=0;
-            break;
-        default:
-            return ONLP_STATUS_E_UNSUPPORTED;
+    ONLP_TRY(get_node(local_id, &node));
+    if (node.action != ACTION_LED_RW) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     }
 
-   ONLP_TRY(file_read_hex(&led_val, led_attr[local_id].sysfs));
+    for(i= 0; i<COLOR_VAL_MAX; i++) {
+        if(node.color_obj[i].val == REG_INVALID)
+            break;
 
-   led_val = ufi_bit_operation(led_val, led_attr[local_id].color_bit, led_color);
-   led_val = ufi_bit_operation(led_val, led_attr[local_id].blink_bit, led_blink);
-   led_val = ufi_bit_operation(led_val, led_attr[local_id].onoff_bit, led_onoff);
+        if(mode == node.color_obj[i].mode) {
+            found = 1;
+            if(IS_GPIO(node)) {
+                int gpio_max = 0;
+                ONLP_TRY(get_gpio_max(&gpio_max));
+                led_val = get_bit_value(node.color_obj[i].val, 0);
+                ONLP_TRY(onlp_file_write_int(led_val, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
+                if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
+                    led_val2 = get_bit_value(node.color_obj[i].val, 1);
+                    ONLP_TRY(onlp_file_write_int(led_val2, SYS_GPIO_FMT, gpio_max + node.gpin_off2));
+                }
+            } else {
+                ONLP_TRY(read_file_hex(&led_val, node.sysfs));
+                led_val= unset_bit_mask(led_val, node.color_mask);
+                led_val = led_val | node.color_obj[i].val;
+                ONLP_TRY(onlp_file_write_int(led_val, node.sysfs));
+            }
+            break;
+        }
+    }
 
-   ONLP_TRY(onlp_file_write_int(led_val, led_attr[local_id].sysfs));
-
+    if(found == 0) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
 
     return ONLP_STATUS_OK;
 }

@@ -42,6 +42,9 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
@@ -83,11 +86,13 @@
                                     "PSU0_IIN "\
                                     "PSU0_IOUT "\
                                     "PSU0_PIN "\
+                                    "PSU0_POUT "\
                                     "PSU1_VIN "\
                                     "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
                                     "PSU1_PIN "\
+                                    "PSU1_POUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -161,11 +166,13 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
     BMC_ATTR_ID_PSU0_PIN,
+    BMC_ATTR_ID_PSU0_POUT,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
     BMC_ATTR_ID_PSU1_PIN,
+    BMC_ATTR_ID_PSU1_POUT,
     BMC_ATTR_ID_MAX
 };
 
@@ -259,6 +266,12 @@ enum onlp_psu_type_e {
   ONLP_PSU_TYPE_INVALID = -1
 };
 
+enum onlp_fru_type_e {
+  ONLP_FRU_PSU = 1,
+  ONLP_FRU_FAN,
+  ONLP_FRU_TYPE_INVALID = -1
+};
+
 typedef struct bmc_info_s
 {
     char name[20];
@@ -297,7 +310,7 @@ void lock_init();
 
 int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-int bmc_fru_read(int local_id, bmc_fru_t *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data, int type);
 void check_and_do_i2c_mux_reset(int port);
 
 uint8_t ufi_shift(uint8_t mask);

@@ -67,7 +67,7 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_ACCESS_REG,
     CPLD_REGISTER_VAL,
     //CPLD_PORT_START,
-    //CPLD_PORTS,    
+    //CPLD_PORTS,
     CPLD_VERSION,
     CPLD_ID,
     CPLD_BOARD_TYPE,
@@ -226,18 +226,18 @@ static ssize_t read_qsfpdd_nif_port_config(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t write_qsfpdd_nif_port_config(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-//FAB                
+//FAB
 static ssize_t get_qsfpdd_fab_port_start(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t get_qsfpdd_fab_ports(struct device *dev,
-                struct device_attribute *da, char *buf);                      
+                struct device_attribute *da, char *buf);
 static ssize_t read_qsfpdd_fab_port_status(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t read_qsfpdd_fab_port_config(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t write_qsfpdd_fab_port_config(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-//LED                
+//LED
 static ssize_t read_qsfpdd_fab_led(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t write_qsfpdd_fab_led(struct device *dev,
@@ -315,7 +315,7 @@ static SENSOR_DEVICE_ATTR(cpld_reset_mac, S_IWUSR | S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_reset_mac_2, S_IWUSR | S_IRUGO,
                 read_reset_mac_2, write_reset_mac_2,
                 CPLD_RESET_MAC_2);
-//NIF                
+//NIF
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_start, S_IRUGO,
             get_qsfpdd_nif_port_start, NULL, CPLD_QSFPDD_NIF_PORT_START);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_ports, S_IRUGO,
@@ -344,7 +344,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_config_0, S_IWUSR | S_IRUGO,
                 read_qsfpdd_nif_port_config, write_qsfpdd_nif_port_config,
                 CPLD_QSFPDD_NIF_PORT_CONFIG_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfpdd_nif_port_config, write_qsfpdd_nif_port_config, 
+                read_qsfpdd_nif_port_config, write_qsfpdd_nif_port_config,
                 CPLD_QSFPDD_NIF_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfpdd_nif_port_config, write_qsfpdd_nif_port_config,
@@ -370,7 +370,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_config_8, S_IWUSR | S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_nif_port_config_9, S_IWUSR | S_IRUGO,
                 read_qsfpdd_nif_port_config, write_qsfpdd_nif_port_config,
                 CPLD_QSFPDD_NIF_PORT_CONFIG_9);
-//FAB                       
+//FAB
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_port_start, S_IRUGO,
             get_qsfpdd_fab_port_start, NULL, CPLD_QSFPDD_FAB_PORT_START);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_ports, S_IRUGO,
@@ -399,7 +399,7 @@ static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_port_config_0, S_IWUSR | S_IRUGO,
                 read_qsfpdd_fab_port_config, write_qsfpdd_fab_port_config,
                 CPLD_QSFPDD_FAB_PORT_CONFIG_0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_port_config_1, S_IWUSR | S_IRUGO,
-                read_qsfpdd_fab_port_config, write_qsfpdd_fab_port_config, 
+                read_qsfpdd_fab_port_config, write_qsfpdd_fab_port_config,
                 CPLD_QSFPDD_FAB_PORT_CONFIG_1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_fab_port_config_2, S_IWUSR | S_IRUGO,
                 read_qsfpdd_fab_port_config, write_qsfpdd_fab_port_config,
@@ -458,7 +458,7 @@ static SENSOR_DEVICE_ATTR(cpld_system_led_1, S_IWUSR | S_IRUGO,
 static SENSOR_DEVICE_ATTR(cpld_psu_status_0, S_IRUGO,
         read_psu_status, NULL, CPLD_PSU_STATUS_0);
 static SENSOR_DEVICE_ATTR(cpld_psu_status_1, S_IRUGO,
-        read_psu_status, NULL, CPLD_PSU_STATUS_1);        
+        read_psu_status, NULL, CPLD_PSU_STATUS_1);
 /* define support attributes of cpldx , total 3 */
 static SENSOR_DEVICE_ATTR(bsp_debug, S_IWUSR | S_IRUGO, read_bsp_callback, write_bsp_callback, BSP_DEBUG);
 /* cpld 1 */
@@ -679,7 +679,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
@@ -1657,7 +1657,7 @@ static int apollo_cpld_probe(struct i2c_client *client,
         status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld2_group);
         break;
@@ -1683,7 +1683,7 @@ exit:
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &apollo_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
     	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld2_group);
         break;
     case cpld3:

@@ -190,118 +190,6 @@ static onlp_thermal_info_t thermal_info[] = {
         .mcelsius = 0,
         .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
     },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU1),
-            .description = "CPU Thermal 1",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU2),
-            .description = "CPU Thermal 2",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU3),
-            .description = "CPU Thermal 3",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU4),
-            .description = "CPU Thermal 4",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU5),
-            .description = "CPU Thermal 5",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU6),
-            .description = "CPU Thermal 6",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU7),
-            .description = "CPU Thermal 7",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU8),
-            .description = "CPU Thermal 8",
-            .poid = POID_0,
-        },
-        .status = ONLP_THERMAL_STATUS_PRESENT,
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD),
-        .mcelsius = 0,
-        .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
 };
 
 static int ufi_cpu_thermal_info_get(onlp_thermal_info_t* info, int local_id)
@@ -370,14 +258,6 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
 
     switch(local_id) {
         case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_CPU1:
-        case ONLP_THERMAL_CPU2:
-        case ONLP_THERMAL_CPU3:
-        case ONLP_THERMAL_CPU4:
-        case ONLP_THERMAL_CPU5:
-        case ONLP_THERMAL_CPU6:
-        case ONLP_THERMAL_CPU7:
-        case ONLP_THERMAL_CPU8:
             ONLP_TRY(ufi_cpu_thermal_info_get(rv, local_id));
             break;
         case ONLP_THERMAL_CPU_PECI:

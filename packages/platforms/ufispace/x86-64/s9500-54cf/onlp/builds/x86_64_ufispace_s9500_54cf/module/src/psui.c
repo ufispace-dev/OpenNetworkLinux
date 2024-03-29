@@ -48,7 +48,9 @@
                 ONLP_FAN_ID_CREATE(fid),        \
                 ONLP_THERMAL_ID_CREATE(tid),    \
             }                                   \
-        }                                       \
+        },                                      \
+        COMM_STR_NOT_SUPPORTED,                 \
+        COMM_STR_NOT_SUPPORTED,                 \
     }
 
 static onlp_psu_info_t psu_info[] =

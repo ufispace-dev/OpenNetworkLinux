@@ -34,6 +34,9 @@
 #include "x86_64_ufispace_s9501_16smt_log.h"
 #include <x86_64_ufispace_s9501_16smt/x86_64_ufispace_s9501_16smt_config.h>
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"

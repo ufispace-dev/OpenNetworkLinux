@@ -37,18 +37,10 @@
  *            |----[05] ONLP_THERMAL_J2_ENV_2
  *            |----[06] ONLP_THERMAL_J2_DIE_2
  *            |----[09] ONLP_THERMAL_CPU_PKG
- *            |----[10] ONLP_THERMAL_CPU1
- *            |----[11] ONLP_THERMAL_CPU2
- *            |----[12] ONLP_THERMAL_CPU3
- *            |----[13] ONLP_THERMAL_CPU4
- *            |----[14] ONLP_THERMAL_CPU5
- *            |----[15] ONLP_THERMAL_CPU6
- *            |----[16] ONLP_THERMAL_CPU7
- *            |----[17] ONLP_THERMAL_CPU8
- *            |----[18] ONLP_THERMAL_CPU_BOARD
- *            |----[19] ONLP_THERMAL_BMC_ENV
- *            |----[20] ONLP_THERMAL_ENV
- *            |----[21] ONLP_THERMAL_ENV_FRONT
+ *            |----[10] ONLP_THERMAL_CPU_BOARD
+ *            |----[11] ONLP_THERMAL_BMC_ENV
+ *            |----[12] ONLP_THERMAL_ENV
+ *            |----[13] ONLP_THERMAL_ENV_FRONT
  *            |----[01] ONLP_LED_SYSTEM
  *            |----[02] ONLP_LED_PSU0
  *            |----[03] ONLP_LED_PSU1
@@ -91,18 +83,10 @@ enum onlp_thermal_id {
     ONLP_THERMAL_PSU0      = 7,
     ONLP_THERMAL_PSU1      = 8,
     ONLP_THERMAL_CPU_PKG   = 9,
-    ONLP_THERMAL_CPU1      = 10,
-    ONLP_THERMAL_CPU2      = 11,
-    ONLP_THERMAL_CPU3      = 12,
-    ONLP_THERMAL_CPU4      = 13,
-    ONLP_THERMAL_CPU5      = 14,
-    ONLP_THERMAL_CPU6      = 15,
-    ONLP_THERMAL_CPU7      = 16,
-    ONLP_THERMAL_CPU8      = 17,
-    ONLP_THERMAL_CPU_BOARD = 18,
-    ONLP_THERMAL_BMC_ENV   = 19,
-    ONLP_THERMAL_ENV       = 20,
-    ONLP_THERMAL_ENV_FRONT = 21,
+    ONLP_THERMAL_CPU_BOARD = 10,
+    ONLP_THERMAL_BMC_ENV   = 11,
+    ONLP_THERMAL_ENV       = 12,
+    ONLP_THERMAL_ENV_FRONT = 13,
     ONLP_THERMAL_MAX       = ONLP_THERMAL_ENV_FRONT+1,
 };
 
@@ -116,10 +100,6 @@ enum onlp_led_id {
     ONLP_LED_PSU0      = 2,
     ONLP_LED_PSU1      = 3,
     ONLP_LED_FAN       = 4,
-    //ONLP_LED_FAN_TRAY1 = 5,
-    //ONLP_LED_FAN_TRAY2 = 6,
-    //ONLP_LED_FAN_TRAY3 = 7,
-    //ONLP_LED_FAN_TRAY4 = 8,
     ONLP_LED_MAX       = ONLP_LED_FAN+1,
 };
 
@@ -168,6 +148,9 @@ enum onlp_fan_id {
 
 #define CPLD_MAX 5  //Number of MB CPLD
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
+
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
 
 /* For BMC Cached Mechanism */
 enum bmc_attr_id {

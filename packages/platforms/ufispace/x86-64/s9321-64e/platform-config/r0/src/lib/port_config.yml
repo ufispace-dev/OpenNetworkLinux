@@ -80,7 +80,6 @@ QSFPDD:
     port_name: 38
   39:
     port_name: 39
-QSFPDD:
   40:
     port_name: 40
   41:
@@ -129,7 +128,7 @@ QSFPDD:
     port_name: 62
   63:
     port_name: 63
-SFP:
+MGMT:
   64:
     port_name: 64
   65:

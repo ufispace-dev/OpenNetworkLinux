@@ -31,14 +31,16 @@
 #define PSU_FAN_RPM_MAX_AC 20000
 #define PSU_FAN_RPM_MAX_DC 18000
 
-#define CHASSIS_INFO(id, des)                               \
+#define CHASSIS_INFO(id, des)                                   \
     {                                                           \
-        { ONLP_FAN_ID_CREATE(id), des, POID_0},\
+        { ONLP_FAN_ID_CREATE(id), des, POID_0},                 \
         FAN_STATUS,                                             \
         FAN_CAPS,                                               \
         0,                                                      \
         0,                                                      \
         ONLP_FAN_MODE_INVALID,                                  \
+        COMM_STR_NOT_SUPPORTED,                                 \
+        COMM_STR_NOT_SUPPORTED                                  \
     }
 
 /*

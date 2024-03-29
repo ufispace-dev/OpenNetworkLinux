@@ -48,6 +48,7 @@
                                 " | grep %s" \
                                 " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                                 " > %s"
+//[BMC] 3.1.0
 #define CMD_BMC_SENSOR_CACHE    "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool sdr -c get "\
                                 " TEMP_CPU_PECI"\
                                 " TEMP_CPU_ENV"\

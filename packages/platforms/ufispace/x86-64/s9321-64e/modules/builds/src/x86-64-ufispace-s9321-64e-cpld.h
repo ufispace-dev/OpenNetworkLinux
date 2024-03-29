@@ -46,13 +46,13 @@ enum cpld_id {
 #define CPLD_PHY_MASK_REG                 0x23
 #define CPLD_CPLDX_MASK_REG               0x24
 #define CPLD_NTM_MASK_REG                 0x25
-#define CPLD_THERMAL_MASK_BASE_REG        0x26
+#define CPLD_THERMAL_MASK_BASE_REG        0x27
 #define CPLD_MISC_MASK_REG                0x2B
 #define CPLD_CPU_MASK_REG                 0x2C
 #define CPLD_MAC_EVT_REG                  0x30
 #define CPLD_CPLDX_EVT_REG                0x34
 #define CPLD_NTM_EVT_REG                  0x35
-#define CPLD_THERMAL_EVT_BASE_REG         0x36
+#define CPLD_THERMAL_EVT_BASE_REG         0x37
 #define CPLD_MISC_EVT_REG                 0x3B
 #define CPLD_EVT_CTRL_REG                 0x3F
 #define CPLD_MAC_RESET_REG                0x40
@@ -128,22 +128,15 @@ enum cpld_id {
 #define CPLD_OP2_MASK_REG                   0x2C
 #define CPLD_OP2_EVT_REG                    0x3C
 #define CPLD_OP2_PWR_REG                    0x90
-#define CPLD_MISC_PWR_REG                   0x91
+#define CPLD_MISC_PWR_REG                   0x92
 #define DBG_CPLD_OP2_INTR_REG               0x1C
-//CPLD2/3
-#define CPLD_SFP_STATUS_REG                 0x1D
-#define CPLD_SFP_MASK_REG                   0x2D
-#define CPLD_SFP_EVT_REG                    0x3D
-#define CPLD_OP2_RESET_REG                  0x48
-#define CPLD_SFP_CONFIG_REG                 0x55
-#define DBG_CPLD_SFP_STATUS_REG             0xED
 //FPGA
 #define FPGA_VERSION_REG                    0x02
 #define FPGA_ID_REG                         0x05
 #define FPGA_BUILD_REG                      0x04
 #define FPGA_SFP28_INTR_PRESENT_REG         0x12
-#define FPGA_SFP28_TX_FAULT_REG             0x18
-#define FPGA_SFP28_RX_LOS_REG               0x19
+#define FPGA_SFP28_TX_FAULT_REG             0x10
+#define FPGA_SFP28_RX_LOS_REG               0x11
 #define FPGA_SFP28_MASK_TX_FAULT_REG        0x20
 #define FPGA_SFP28_MASK_RX_LOS_REG          0x21
 #define FPGA_SFP28_MASK_PRESENT_REG         0x22
@@ -167,8 +160,6 @@ enum cpld_id {
 #define CPLD_SYSTEM_LED_PSU_1_MASK         MASK_HB
 #define CPLD_SYSTEM_LED_SYNC_MASK          MASK_LB
 #define CPLD_SYSTEM_LED_ID_MASK            MASK_HB
-#define CPLD_SFP28_LED_0_MASK              (0b00001111)
-#define CPLD_SFP28_LED_1_MASK              (0b11110000)
 
 
 

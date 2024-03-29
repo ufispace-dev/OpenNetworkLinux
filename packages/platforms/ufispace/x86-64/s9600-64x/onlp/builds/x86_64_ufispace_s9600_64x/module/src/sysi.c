@@ -163,16 +163,18 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
             *e++ = ONLP_THERMAL_ID_CREATE(i);
         }
     } else {
+        *e++ = THERMAL_OID_ADC_CPU;
         *e++ = THERMAL_OID_CPU_PECI;
+        *e++ = THERMAL_OID_FRONT_ENV;
+        *e++ = THERMAL_OID_OCXO;
         //*e++ = THERMAL_OID_ENV;
-        //*e++ = THERMAL_OID_FRONT_ENV;
         *e++ = THERMAL_OID_Q2CL_ENV;
         *e++ = THERMAL_OID_Q2CL_DIE;
         *e++ = THERMAL_OID_Q2CR_ENV;
         *e++ = THERMAL_OID_Q2CR_DIE;
         *e++ = THERMAL_OID_REAR_ENV_1;
         *e++ = THERMAL_OID_REAR_ENV_2;
-        //*e++ = THERMAL_OID_CPU_PKG;
+        *e++ = THERMAL_OID_CPU_PKG;
         //*e++ = THERMAL_OID_CPU1;
         //*e++ = THERMAL_OID_CPU2;
         //*e++ = THERMAL_OID_CPU3;
@@ -181,7 +183,6 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
         //*e++ = THERMAL_OID_CPU6;
         //*e++ = THERMAL_OID_CPU7;
         //*e++ = THERMAL_OID_CPU8;
-        //*e++ = THERMAL_OID_CPU_BOARD;
 
         *e++ = LED_OID_SYNC;
         *e++ = LED_OID_SYS;

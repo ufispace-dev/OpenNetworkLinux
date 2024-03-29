@@ -338,7 +338,7 @@ static ssize_t write_cpu_mux_reset(struct device *dev,
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val & 0b11111110);
             outb((reg_val | 0b00000001), REG_CPU_CTRL_2);
             mdelay(500);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val | 0b00000001);            
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val | 0b00000001);
             cpu_mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {
@@ -389,7 +389,7 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_TEMP_J2_PM3:
             reg = REG_TEMP_J2_PM3;
-            break;            
+            break;
         case ATT_TEMP_OP2:
             reg = REG_TEMP_OP2;
             break;
@@ -397,7 +397,7 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_BSP_REG:
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
-            break;            
+            break;
         default:
             return -EINVAL;
     }
@@ -425,7 +425,7 @@ static ssize_t write_lpc_callback(struct device *dev,
             break;
         case ATT_TEMP_J2_PM3:
             reg = REG_TEMP_J2_PM3;
-            break;            
+            break;
         case ATT_TEMP_OP2:
             reg = REG_TEMP_OP2;
             break;
@@ -471,18 +471,18 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             if (kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
             str = bsp_reg;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;

@@ -43,14 +43,6 @@
  *            |----[07] ONLP_THERMAL_PSU0
  *            |----[08] ONLP_THERMAL_PSU1
  *            |----[09] ONLP_THERMAL_CPU_PKG
- *            |----[10] ONLP_THERMAL_CPU1
- *            |----[11] ONLP_THERMAL_CPU2
- *            |----[12] ONLP_THERMAL_CPU3
- *            |----[13] ONLP_THERMAL_CPU4
- *            |----[14] ONLP_THERMAL_CPU5
- *            |----[15] ONLP_THERMAL_CPU6
- *            |----[16] ONLP_THERMAL_CPU7
- *            |----[17] ONLP_THERMAL_CPU8
  *            |----[01] ONLP_LED_SYSTEM
  *            |----[02] ONLP_LED_PSU0
  *            |----[03] ONLP_LED_PSU1
@@ -115,15 +107,7 @@ enum onlp_thermal_id {
     ONLP_THERMAL_PSU0      = 7,
     ONLP_THERMAL_PSU1      = 8,
     ONLP_THERMAL_CPU_PKG   = 9,
-    ONLP_THERMAL_CPU1      = 10,
-    ONLP_THERMAL_CPU2      = 11,
-    ONLP_THERMAL_CPU3      = 12,
-    ONLP_THERMAL_CPU4      = 13,
-    ONLP_THERMAL_CPU5      = 14,
-    ONLP_THERMAL_CPU6      = 15,
-    ONLP_THERMAL_CPU7      = 16,
-    ONLP_THERMAL_CPU8      = 17,
-    ONLP_THERMAL_MAX       = ONLP_THERMAL_CPU8+1,
+    ONLP_THERMAL_MAX       = ONLP_THERMAL_CPU_PKG+1,
 };
 
 #define ONLP_THERMAL_COUNT ONLP_THERMAL_MAX /*include "reserved"*/

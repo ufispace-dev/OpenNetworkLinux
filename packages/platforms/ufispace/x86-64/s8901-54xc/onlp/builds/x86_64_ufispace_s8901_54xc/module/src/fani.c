@@ -41,6 +41,8 @@ extern int ufi_psu_present_get(int id, int *psu_present);
         0,                                 \
         0,                                 \
         ONLP_FAN_MODE_INVALID,             \
+        COMM_STR_NOT_SUPPORTED,            \
+        COMM_STR_NOT_SUPPORTED,            \
     }
 
 #define PSU_FAN_INFO(id, pid)              \
@@ -51,6 +53,8 @@ extern int ufi_psu_present_get(int id, int *psu_present);
         0,                                 \
         0,                                 \
         ONLP_FAN_MODE_INVALID,             \
+        COMM_STR_NOT_SUPPORTED,            \
+        COMM_STR_NOT_SUPPORTED,            \
     }
 
 /*

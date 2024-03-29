@@ -51,8 +51,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -62,8 +62,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -73,8 +73,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -84,8 +84,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -95,8 +95,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -106,8 +106,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -117,8 +117,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -128,8 +128,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .status = (ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B),
         .caps = (ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
 };
 
