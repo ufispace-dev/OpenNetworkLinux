@@ -1,1 +1,0 @@
-!include $ONL_TEMPLATES/platform-config-platform.yml ARCH=armhf VENDOR=accton BASENAME=arm-accton-as4610-54 REVISION=r0

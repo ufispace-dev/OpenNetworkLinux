@@ -1,1 +1,0 @@
-obj-m += x86-64-ufispace-s9500-54cf-lpc.o x86-64-ufispace-s9500-54cf-cpld.o

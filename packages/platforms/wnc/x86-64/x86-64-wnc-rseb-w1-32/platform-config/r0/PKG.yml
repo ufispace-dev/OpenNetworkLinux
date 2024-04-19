@@ -1,1 +1,0 @@
-!include $ONL_TEMPLATES/platform-config-platform.yml ARCH=amd64 VENDOR=wnc BASENAME=x86-64-wnc-rseb-w1-32 REVISION=r0
