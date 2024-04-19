@@ -357,15 +357,21 @@ exit:
     return status;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int accton_i2c_psu_remove(struct i2c_client *client)
+#else
+static void accton_i2c_psu_remove(struct i2c_client *client)
+#endif
 {
     struct accton_i2c_psu_data *data = i2c_get_clientdata(client);
 
     hwmon_device_unregister(data->hwmon_dev);
     sysfs_remove_group(&client->dev.kobj, &accton_i2c_psu_group);
     kfree(data);
-    
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 /* Support psu moduel
  */

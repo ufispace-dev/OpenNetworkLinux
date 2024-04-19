@@ -79,3 +79,5 @@
 - tcpdump
 - strace
 - sysstat
+- python3
+- python3-yaml

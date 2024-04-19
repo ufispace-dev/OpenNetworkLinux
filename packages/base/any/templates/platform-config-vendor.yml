@@ -12,6 +12,7 @@ packages:
     summary: ONL Configuration Package for ${Vendor} Platforms
 
     files:
-      src/python/${VENDOR} : ${PY_INSTALL}/onl/platform/${VENDOR}
+      - src/python/${VENDOR} : ${PY_INSTALL}/onl/platform/${VENDOR}
+      - src/python/${VENDOR} : ${PY3_INSTALL}/onl/platform/${VENDOR}
 
     changelog: Changes
