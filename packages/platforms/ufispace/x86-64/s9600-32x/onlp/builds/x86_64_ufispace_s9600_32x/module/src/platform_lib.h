@@ -75,7 +75,7 @@
 #define CMD_BMC_VER_1               "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2               "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3               "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
-//Based on BMC version 3.31
+//[BMC] 3.31
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get ADC_CPU_TEMP TEMP_CPU_PECI TEMP_FRONT_ENV TEMP_OCXO TEMP_Q2CL_ENV TEMP_Q2CL_DIE TEMP_REAR_ENV_1 TEMP_REAR_ENV_2 PSU0_TEMP PSU1_TEMP FAN0_RPM FAN1_RPM FAN2_RPM FAN3_RPM PSU0_FAN PSU1_FAN FAN0_PRSNT_H FAN1_PRSNT_H FAN2_PRSNT_H FAN3_PRSNT_H PSU0_VIN PSU0_VOUT PSU0_IIN PSU0_IOUT PSU0_STBVOUT PSU0_STBIOUT PSU1_VIN PSU1_VOUT PSU1_IIN PSU1_IOUT PSU1_STBVOUT PSU1_STBIOUT > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_SDR_GET             "timeout %ds ipmitool sdr -c get %s"IPMITOOL_REDIRECT_ERR
 #define CMD_FRU_INFO_GET            "timeout %ds ipmitool fru print %d"IPMITOOL_REDIRECT_ERR" | grep '%s' | cut -d':' -f2 | awk '{$1=$1};1' | tr -d '\n'"
@@ -334,9 +334,9 @@ typedef enum thermal_oid_e {
     THERMAL_OID_Q2CL_DIE = ONLP_THERMAL_ID_CREATE(6),
     THERMAL_OID_REAR_ENV_1 = ONLP_THERMAL_ID_CREATE(7),
     THERMAL_OID_REAR_ENV_2 = ONLP_THERMAL_ID_CREATE(8),
-    THERMAL_OID_CPU_PKG = ONLP_THERMAL_ID_CREATE(9),
-    THERMAL_OID_PSU0 = ONLP_THERMAL_ID_CREATE(10),
-    THERMAL_OID_PSU1 = ONLP_THERMAL_ID_CREATE(11),
+    THERMAL_OID_PSU0 = ONLP_THERMAL_ID_CREATE(9),
+    THERMAL_OID_PSU1 = ONLP_THERMAL_ID_CREATE(10),
+    THERMAL_OID_CPU_PKG = ONLP_THERMAL_ID_CREATE(11),
 } thermal_oid_t;
 
 /* psu_id */
@@ -356,9 +356,9 @@ typedef enum thermal_id_e {
     THERMAL_ID_Q2CL_DIE = 6,
     THERMAL_ID_REAR_ENV_1 = 7,
     THERMAL_ID_REAR_ENV_2 = 8,
-    THERMAL_ID_CPU_PKG = 9,
-    THERMAL_ID_PSU0 = 10,
-    THERMAL_ID_PSU1 = 11,
+    THERMAL_ID_PSU0 = 9,
+    THERMAL_ID_PSU1 = 10,
+    THERMAL_ID_CPU_PKG = 11,
     THERMAL_ID_MAX = 12,
 } thermal_id_t;
 

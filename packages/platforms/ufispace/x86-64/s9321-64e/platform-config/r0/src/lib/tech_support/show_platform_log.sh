@@ -110,7 +110,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.1"
+    _banner "Package Version = 1.0.2"
 }
 
 function _update_gpio_max {
@@ -1668,6 +1668,13 @@ function _show_port_status {
     fi
 }
 
+function _show_cpu_info {
+    _banner "Show lscpu Info"
+    ret=$(lscpu)
+    _echo "${ret}"
+    _echo ""
+}
+
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
@@ -2313,6 +2320,7 @@ function _main {
     _show_psu_status_cpld
     _show_rov
     _show_port_status
+    _show_cpu_info
     _show_cpu_temperature
     _show_cpld_interrupt
     _show_system_led

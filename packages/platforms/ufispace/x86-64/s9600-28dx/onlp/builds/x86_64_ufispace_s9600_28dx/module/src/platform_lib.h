@@ -54,8 +54,9 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
-//FIXME
+//[BMC] 2.11
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+                                    "TEMP_ENV_OCXO "\
                                     "TEMP_CPU_PECI "\
                                     "TEMP_ENV_CPU "\
                                     "TEMP_ENV_MAC0 "\
@@ -63,8 +64,8 @@
                                     "TEMP_ENV_REAR0 "\
                                     "TEMP_ENV_REAR1 "\
                                     "TEMP_ENV_FRONT "\
-                                    "PSU0_TEMP "\
-                                    "PSU1_TEMP "\
+                                    "PSU0_TEMP1 "\
+                                    "PSU1_TEMP1 "\
                                     "FAN0_RPM "\
                                     "FAN1_RPM "\
                                     "FAN2_RPM "\
@@ -129,6 +130,7 @@ enum sensor
 };
 
 enum bmc_attr_id {
+    BMC_ATTR_ID_TEMP_ENV_OCXO,
     BMC_ATTR_ID_TEMP_CPU_PECI,
     BMC_ATTR_ID_TEMP_ENV_CPU,
     BMC_ATTR_ID_TEMP_ENV_MAC0,
@@ -179,24 +181,17 @@ enum fru_attr_id {
 enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_CPU_PECI = 10,
-    ONLP_THERMAL_ENV_CPU = 11,
-    ONLP_THERMAL_ENV_MAC0 = 12,
-    ONLP_THERMAL_MAC0 = 13,
-    ONLP_THERMAL_ENV_REAR0 = 14,
-    ONLP_THERMAL_ENV_REAR1 = 15,
-    ONLP_THERMAL_ENV_FRONT = 16,
-    ONLP_THERMAL_PSU_0 = 17,
-    ONLP_THERMAL_PSU_1 = 18,
-    ONLP_THERMAL_MAX = 19,
+    ONLP_THERMAL_ENV_OCXO = 2,
+    ONLP_THERMAL_CPU_PECI = 3,
+    ONLP_THERMAL_ENV_CPU = 4,
+    ONLP_THERMAL_ENV_MAC0 = 5,
+    ONLP_THERMAL_MAC0 = 6,
+    ONLP_THERMAL_ENV_REAR0 = 7,
+    ONLP_THERMAL_ENV_REAR1 = 8,
+    ONLP_THERMAL_ENV_FRONT = 9,
+    ONLP_THERMAL_PSU_0 = 10,
+    ONLP_THERMAL_PSU_1 = 11,
+    ONLP_THERMAL_MAX = 12,
 };
 
 /* Fan definitions*/

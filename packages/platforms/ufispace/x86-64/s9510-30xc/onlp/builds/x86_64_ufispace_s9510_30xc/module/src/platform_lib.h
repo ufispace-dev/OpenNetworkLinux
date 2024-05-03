@@ -74,6 +74,7 @@
  */
 
 #define IPMITOOL_CMD_TIMEOUT        10
+//[BMC] 4.13
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_MAC "\
                                     "TEMP_DDR4 "\

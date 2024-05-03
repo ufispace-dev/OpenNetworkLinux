@@ -89,13 +89,14 @@ static const port_attr_t port_attr[] = {
     [29]={147  ,-1    ,-1   ,179  ,83     ,51   ,41    ,TYPE_SFP },
 };
 
-#define IS_SFP(_port)         (port_attr[_port].port_type == TYPE_SFP)
-#define IS_QSFPX(_port)       (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
-#define IS_QSFP(_port)        (port_attr[_port].port_type == TYPE_QSFP)
-#define IS_QSFPDD(_port)      (port_attr[_port].port_type == TYPE_QSFPDD)
+#define IS_PORT_INVALID(_port)  (_port < 0) || (_port >= PORT_NUM)
+#define IS_SFP(_port)           (port_attr[_port].port_type == TYPE_SFP || port_attr[_port].port_type == TYPE_MGMT_SFP)
+#define IS_QSFPX(_port)         (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
+#define IS_QSFP(_port)          (port_attr[_port].port_type == TYPE_QSFP)
+#define IS_QSFPDD(_port)        (port_attr[_port].port_type == TYPE_QSFPDD)
 
-#define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
-#define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_PORT(p) { if (IS_PORT_INVALID(p)) return ONLP_STATUS_E_PARAM; }
+#define VALIDATE_SFP_PORT(p) { if (IS_PORT_INVALID(p) || !IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {

@@ -71,10 +71,6 @@ static onlp_thermal_info_t thermal_info[] = {
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {60000, 65000, 70000}
     },
-    { { THERMAL_OID_CPU_PKG, "CPU Package", 0},
-                ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
-    },
     { { THERMAL_OID_PSU0, "PSU 0 THERMAL 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {65000, 70000, 75000}
@@ -82,6 +78,10 @@ static onlp_thermal_info_t thermal_info[] = {
     { { THERMAL_OID_PSU1, "PSU 1 THERMAL 1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
                 ONLP_THERMAL_CAPS_ALL, 0, {65000, 70000, 75000}
+    },
+    { { THERMAL_OID_CPU_PKG, "CPU Package", 0},
+                ONLP_THERMAL_STATUS_PRESENT,
+                ONLP_THERMAL_CAPS_ALL, 0, THERMAL_THRESHOLD_INIT_DEFAULTS
     },
 };
 

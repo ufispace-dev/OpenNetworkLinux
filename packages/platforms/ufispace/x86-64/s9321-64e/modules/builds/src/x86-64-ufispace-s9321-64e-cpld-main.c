@@ -2,7 +2,7 @@
  * A i2c cpld driver for the ufispace_s9321_64e
  *
  * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
- * Wade He <wade.ce.he@ufispace.com>
+ * Nonodark Huang <nonodark.huang@ufispace.com>
  *
  * Based on ad7414.c
  * Copyright 2006 Stefan Roese <sr at denx.de>, DENX Software Engineering
@@ -1441,22 +1441,6 @@ static int cpld_probe(struct i2c_client *client,
             client->addr);
         status = -EIO;
         goto exit;
-    }
-
-    /* get cpld id from device */
-    ret = i2c_smbus_read_byte_data(client, CPLD_ID_REG);
-
-    if (ret < 0) {
-        dev_info(&client->dev,
-            "fail to get cpld id (0x%x) at addr (0x%x)\n",
-            CPLD_ID_REG, client->addr);
-        status = -EIO;
-        goto exit;
-    }
-
-    if (INVALID(ret, cpld1, fpga)) {
-        dev_info(&client->dev,
-            "cpld id %d(device) not valid\n", ret);
     }
 
     data->index = dev_id->driver_data;

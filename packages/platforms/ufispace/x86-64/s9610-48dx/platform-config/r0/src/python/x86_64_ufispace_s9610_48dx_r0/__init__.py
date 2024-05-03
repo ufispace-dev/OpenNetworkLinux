@@ -64,6 +64,22 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc"
     FS_PLTM_CFG="/lib/platform-config/current/onl"
+    SYS_FMT_OFFSET = "/sys/bus/i2c/devices/{}-{:04x}/{}_{}"
+    SYS_FMT = "/sys/bus/i2c/devices/{}-{:04x}/{}"
+    SYSFS_QSFP_PRESENT = "cpld_qsfp_intr_present"
+    SYSFS_QSFPDD_PRESENT = "cpld_qsfpdd_intr_present"
+    SYSFS_SFPDD_PRESENT = "cpld_sfpdd_intr_present"
+    port_type_dict = {
+        0x03: [2, 'SFP/SFP+/SFP28'],  # [dev_class, type_str]
+        0x0B: [2, 'DWDM-SFP/SFP+'],
+        0x0C: [1, 'QSFP'],
+        0x0D: [1, 'QSFP+'],
+        0x11: [1, 'QSFP28'],
+        0x18: [3, 'QSFP-DD Double Density 8x (INF-8628)'],
+        0x19: [3, 'OSFP 8x Pluggable Transceiver'],
+        0x1E: [3, 'QSFP+ or later with CMIS spec'],
+        0x1F: [3, 'SFP-DD Double Density 2X Pluggable Transceiver with CMIS spec'],
+    }
 
     def check_i2c_status(self):
         sysfs_mux_reset = self.SYSFS_LPC + "/mb_cpld/mux_reset"
@@ -99,6 +115,122 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
         else:
             msg("Warning: bsp_pr sysfs does not exist\n")
 
+    def ufi_port_to_cpld_addr(self, port):
+        CPLD_BASE_ADDR = [0x30, 0x31, 0x32, 0x33]
+
+        if port in range(0, 10):
+            return CPLD_BASE_ADDR[1]
+        elif port in range(10, 20):
+            return CPLD_BASE_ADDR[2]
+        elif port in range(20, 30):
+            return CPLD_BASE_ADDR[1]
+        elif port in range(30, 40):
+            return CPLD_BASE_ADDR[2]
+        elif port in range(40, 52):
+            return CPLD_BASE_ADDR[3]
+
+    def ufi_qsfp_port_to_sysfs_attr_offset(self, port):
+        if port in range(0, 4):
+            return 0
+        elif port in range(4, 8):
+            return 1
+        elif port in range(8, 10):
+            return 2
+        elif port in range(10, 14):
+            return 0
+        elif port in range(14, 18):
+            return 1
+        elif port in range(18, 20):
+            return 2
+        elif port in range(20, 24):
+            return 0
+        elif port in range(24, 28):
+            return 1
+        elif port in range(28, 30):
+            return 2
+        elif port in range(30, 34):
+            return 0
+        elif port in range(34, 38):
+            return 1
+        elif port in range(38, 40):
+            return 2
+
+    def ufi_port_to_bit_offset(self, port):
+        if 0 <= port < 10:
+            return port % 4
+        elif 10 <= port < 14:
+            return port % 5
+        elif 14 <= port < 18:
+            return port % 14
+        elif 18 <= port < 20:
+            return port % 18
+        elif 20 <= port < 24:
+            return port % 8
+        elif 24 <= port < 28:
+            return port % 20
+        elif 28 <= port < 30:
+            return port % 8
+        elif 30 <= port < 34:
+            return port % 26
+        elif 34 <= port < 38:
+            return port % 30
+        elif 38 <= port < 40:
+            return port % 34
+        elif 40 <= port < 48:  # QSFPDD
+            return port % 40
+        elif 48 <= port < 52:  # SFPDD
+            return port % 48
+        elif 52 <= port < 56:  # SFP
+            return port % 48
+        else:
+            return -1  # Default value for an invalid port
+
+    def ufi_port_present_get(self, port):
+        cpld_bus = 1
+        cpld_addr = self.ufi_port_to_cpld_addr(port)
+        if 0 <= port < 40:
+            attr_offset = self.ufi_qsfp_port_to_sysfs_attr_offset(port)
+            sysfs_present = self.SYS_FMT_OFFSET.format(cpld_bus, cpld_addr, self.SYSFS_QSFP_PRESENT, attr_offset)
+        elif 40 <= port < 48:  # QSFPDD
+            sysfs_present = self.SYS_FMT.format(cpld_bus, cpld_addr, self.SYSFS_QSFPDD_PRESENT)
+        elif 48 <= port < 52:  # SFPDD
+            sysfs_present = self.SYS_FMT.format(cpld_bus, cpld_addr, self.SYSFS_SFPDD_PRESENT)
+        with open(sysfs_present, "r") as f:
+            present_raw = f.read().strip()
+
+        reg_val = int(present_raw, 16)
+
+        pres_val = not ((reg_val >> self.ufi_port_to_bit_offset(port)) & 0x1)
+        return pres_val
+
+    def init_dev_class(self):
+        # init dev_class
+        for bus in range(25, 65):  # QSFP
+            # get dev_class
+            port = bus - 25
+            dev_class_sysfs_path = "/sys/bus/i2c/devices/{}-0050/dev_class".format(bus)
+            dev_class_str = subprocess.check_output("cat {}".format(dev_class_sysfs_path), shell=True)
+            dev_class = int(dev_class_str, 10)
+            # get module type
+            if self.ufi_port_present_get(port) == 1:
+                type_str = subprocess.check_output(
+                    "dd if=/sys/bus/i2c/devices/{}-0050/eeprom bs=1 count=1 skip=0 status=none | hexdump -n 1 -e '1/1 \"%02x\"'"
+                    .format(bus), shell=True)
+                if type_str == "": #i2c maybe stuck
+                    self.check_i2c_status()
+                    continue
+                type = int(type_str, 16)
+            else:
+                continue
+            # compare dev_class and type
+            if type not in self.port_type_dict:
+                self.bsp_pr("Port[{}] Type: {} is Unknown.".format(str(port), hex(type)))
+                continue
+            port_types = self.port_type_dict.get(type)
+            if dev_class != port_types[0]:
+                with open(dev_class_sysfs_path, "w") as f:
+                    f.write("{}".format(port_types[0]))
+                self.bsp_pr("Port(" + str(port) + ") dev_class=" + dev_class_str +" change to " + str(port_types[0]) +".")
     def init_eeprom(self):
         port = 0
         data = None
@@ -236,6 +368,10 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
         self.insmod("x86-64-ufispace-s9610-48dx-cpld")
         for i, addr in enumerate((0x30, 0x31, 0x32, 0x33)):
             self.new_i2c_device("s9610_48dx_cpld" + str(i+1), addr, 1)
+
+        #init dev_class
+        self.bsp_pr("Init port dev_class")
+        self.init_dev_class()
 
         #config mac rov #TBD
         self.bsp_pr("Init MAC ROV")

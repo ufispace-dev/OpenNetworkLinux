@@ -30,7 +30,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
-#include <stdbool.h>
+#include <linux/types.h>
 #include "x86-64-ufispace-s9701-78dc-cpld.h"
 
 #ifdef DEBUG

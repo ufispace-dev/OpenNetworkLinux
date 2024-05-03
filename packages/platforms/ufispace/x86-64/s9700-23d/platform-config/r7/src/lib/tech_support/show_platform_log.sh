@@ -11,9 +11,10 @@ LOG_FOLDER_NAME="log_platform_${DATESTR}"
 LOG_FILE_NAME="log_platform_${DATESTR}.log"
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 
 # MODEL_NAME: set by function _board_info
@@ -76,7 +77,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.10"
+    _banner "Package Version = 1.0.11"
 }
 
 function _update_gpio_max {
@@ -118,6 +119,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
     
@@ -136,6 +143,19 @@ function _check_filepath {
         return ${FALSE}
     else
         #_echo "File Path: ${filepath}"
+        return ${TRUE}
+    fi
+}
+
+function _check_dirpath {
+    dirpath=$1
+    if [ -z "${dirpath}" ]; then
+        _echo "ERROR, the ipnut string is empty!!!"
+        return ${FALSE}
+    elif [ ! -d "$dirpath" ]; then
+        _echo "ERROR: No such directory: ${dirpath}"
+        return ${FALSE}
+    else        
         return ${TRUE}
     fi
 }
@@ -1893,6 +1913,81 @@ function _show_ioport {
 
 }
 
+function _show_cpld_reg_sysfs {
+    _banner "Show CPLD Register"
+
+    if [ "${MODEL_NAME}" == "NCP1-1" ] ; then        
+        _check_dirpath "/sys/bus/i2c/devices/1-0030"
+        reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
+        _echo "[CPLD 1 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-0039"
+        reg_dump=$(eval "i2cdump -f -y 1 0x39 ${LOG_REDIRECT}")
+        _echo "[CPLD 2 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-003a"
+        reg_dump=$(eval "i2cdump -f -y 1 0x3a ${LOG_REDIRECT}")
+        _echo "[CPLD 3 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-003b"
+        reg_dump=$(eval "i2cdump -f -y 1 0x3b ${LOG_REDIRECT}")
+        _echo "[CPLD 4 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-003c"
+        reg_dump=$(eval "i2cdump -f -y 1 0x3c ${LOG_REDIRECT}")
+        _echo "[CPLD 5 Register]:"        
+        _echo "${reg_dump}"
+   elif [ "${MODEL_NAME}" == "NCP2-1" ] ; then        
+        _check_dirpath "/sys/bus/i2c/devices/1-0030"
+        reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
+        _echo "[CPLD 1 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-0031"
+        reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
+        _echo "[CPLD 2 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/1-0032"
+        reg_dump=$(eval "i2cdump -f -y 1 0x32 ${LOG_REDIRECT}")
+        _echo "[CPLD 3 Register]:"        
+        _echo "${reg_dump}"
+    elif [ "${MODEL_NAME}" == "NCF" ]; then
+        _check_dirpath "/sys/bus/i2c/devices/2-0030"
+        reg_dump=$(eval "i2cdump -f -y 2 0x30 ${LOG_REDIRECT}")
+        _echo "[CPLD 1 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/2-0031"
+        reg_dump=$(eval "i2cdump -f -y 2 0x31 ${LOG_REDIRECT}")
+        _echo "[CPLD 2 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/2-0032"
+        reg_dump=$(eval "i2cdump -f -y 2 0x32 ${LOG_REDIRECT}")
+        _echo "[CPLD 3 Register]:"        
+        _echo "${reg_dump}"
+        
+        _check_dirpath "/sys/bus/i2c/devices/2-0033"
+        reg_dump=$(eval "i2cdump -f -y 2 0x33 ${LOG_REDIRECT}")
+        _echo "[CPLD 4 Register]:"        
+        _echo "${reg_dump}"       
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
+}
+
+function _show_cpld_reg {
+    if [ "${BSP_INIT_FLAG}" == "1" ] ; then
+        _show_cpld_reg_sysfs
+    fi
+}
+
 function _show_onlpdump {
     _banner "Show onlpdump"
     
@@ -2803,6 +2898,41 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+
+    echo "Usage:"
+    echo "    $f [-d D_DIR]"
+    echo "Description:"
+    echo "    D_DIR, the path of destination. (default is /tmp/log)"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":d:f"
+    # default log dir
+    local log_folder_root="/tmp/log"
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -2824,6 +2954,7 @@ function _main {
     _show_system_led
     _show_beacon_led
     _show_ioport
+    _show_cpld_reg
     _show_onlpdump
     _show_onlps
     _show_system_info
@@ -2851,5 +2982,6 @@ function _main {
     echo "#   done..."
 }
 
+_getopts $@
 _main
 

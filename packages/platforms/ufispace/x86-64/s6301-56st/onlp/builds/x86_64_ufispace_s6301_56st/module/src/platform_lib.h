@@ -217,4 +217,6 @@ int get_hw_rev_id();
 
 int get_gpio_max();
 
+int ufi_port_base_get(int *base_num);
+
 #endif  /* __PLATFORM_LIB_H__ */

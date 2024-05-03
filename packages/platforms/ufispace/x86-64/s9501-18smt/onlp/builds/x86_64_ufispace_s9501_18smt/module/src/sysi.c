@@ -114,11 +114,15 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
         }
     } else {
         *e++ = THERMAL_OID_CPU_PKG;
-        *e++ = THERMAL_OID_CPU0;
-        *e++ = THERMAL_OID_CPU1;
-        *e++ = THERMAL_OID_DRAM0;
-        *e++ = THERMAL_OID_DRAM1;
+        *e++ = THERMAL_OID_DDR4;
+        *e++ = THERMAL_OID_CPU;
+        *e++ = THERMAL_OID_BMC;
+        *e++ = THERMAL_OID_FANCARD1;
+        *e++ = THERMAL_OID_FANCARD2;
         *e++ = THERMAL_OID_MAC;
+        *e++ = THERMAL_OID_HWM_MAC;
+        *e++ = THERMAL_OID_HWM_AMB;
+        *e++ = THERMAL_OID_HWM_PHY;
         //*e++ = THERMAL_OID_PSU0;
         //*e++ = THERMAL_OID_PSU1;
 
@@ -169,4 +173,3 @@ void onlp_sysi_platform_info_free(onlp_platform_info_t* pi)
         aim_free(pi->other_versions);
     }
 }
-

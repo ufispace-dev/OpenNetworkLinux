@@ -34,7 +34,6 @@
 bmc_info_t bmc_cache[] =
 {
     [BMC_ATTR_ID_TEMP_MAC]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_MAC          , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_MAC_HWM]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_MAC_HWM      , BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_TEMP_ENV_MACCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_MACCASE  , BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_TEMP_ENV_SSDCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_SSDCASE  , BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_TEMP_ENV_PSUCASE]   = {HW_PLAT_ALL  , BMC_ATTR_NAME_TEMP_ENV_PSUCASE  , BMC_DATA_FLOAT, 0},
@@ -66,7 +65,11 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_PSU1_IIN]           = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_IIN          , BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_PSU1_IOUT]          = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_IOUT         , BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_PSU1_STBVOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_STBVOUT      , BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_STBIOUT      , BMC_DATA_FLOAT, 0}
+    [BMC_ATTR_ID_PSU1_STBIOUT]       = {HW_PLAT_ALL  , BMC_ATTR_NAME_PSU1_STBIOUT      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_DC_VDD_TEMP1]       = {HW_PLAT_PVT  , BMC_ATTR_NAME_DC_VDD_TEMP1      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_DC_VDD_TEMP2]       = {HW_PLAT_PVT  , BMC_ATTR_NAME_DC_VDD_TEMP2      , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_DC_P3V3_TEMP1]      = {HW_PLAT_PVT  , BMC_ATTR_NAME_DC_P3V3_TEMP1     , BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_DC_P3V3_TEMP2]      = {HW_PLAT_PVT  , BMC_ATTR_NAME_DC_P3V3_TEMP2     , BMC_DATA_FLOAT, 0}
 };
 
 static bmc_fru_t bmc_fru_cache[] =
@@ -902,6 +905,14 @@ int get_thermal_thld(int thermal_local_id,  temp_thld_t *temp_thld) {
             temp_thld->warning = THERMAL_PSU_TEMP1_WARNING;
             temp_thld->error = THERMAL_PSU_TEMP1_ERROR;
             temp_thld->shutdown = THERMAL_PSU_TEMP1_SHUTDOWN;
+            return ONLP_STATUS_OK;
+        case ONLP_THERMAL_DC_VDD_TEMP1:
+        case ONLP_THERMAL_DC_VDD_TEMP2:
+        case ONLP_THERMAL_DC_P3V3_TEMP1:
+        case ONLP_THERMAL_DC_P3V3_TEMP2:
+            temp_thld->warning = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->error = THERMAL_STATE_NOT_SUPPORT;
+            temp_thld->shutdown = THERMAL_STATE_NOT_SUPPORT;
             return ONLP_STATUS_OK;
         default:
             break;

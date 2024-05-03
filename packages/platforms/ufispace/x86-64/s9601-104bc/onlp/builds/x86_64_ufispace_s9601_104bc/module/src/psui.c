@@ -256,7 +256,7 @@ static int update_psui_info(int local_id, onlp_psu_info_t *info)
 {
     int pw_present, pw_good;
     float data;
-    int attr_vin, attr_vout, attr_iin, attr_iout, attr_stbvout, attr_stbiout;
+    int attr_vin, attr_vout, attr_iin, attr_iout, attr_pin, attr_pout;
 
     *info = psu_info[local_id];
     ONLP_TRY(get_psu_present_status(local_id, &pw_present));
@@ -283,15 +283,15 @@ static int update_psui_info(int local_id, onlp_psu_info_t *info)
             attr_vout = BMC_ATTR_ID_PSU0_VOUT;
             attr_iin = BMC_ATTR_ID_PSU0_IIN;
             attr_iout = BMC_ATTR_ID_PSU0_IOUT;
-            attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
-            attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
+            attr_pin = BMC_ATTR_ID_PSU0_PIN;
+            attr_pout = BMC_ATTR_ID_PSU0_POUT;
         } else {
             attr_vin = BMC_ATTR_ID_PSU1_VIN;
             attr_vout = BMC_ATTR_ID_PSU1_VOUT;
             attr_iin = BMC_ATTR_ID_PSU1_IIN;
             attr_iout = BMC_ATTR_ID_PSU1_IOUT;
-            attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
-            attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
+            attr_pin = BMC_ATTR_ID_PSU1_PIN;
+            attr_pout = BMC_ATTR_ID_PSU1_POUT;
         }
 
         /* Get power vin status */
@@ -322,13 +322,19 @@ static int update_psui_info(int local_id, onlp_psu_info_t *info)
             info->caps |= ONLP_PSU_CAPS_IOUT;
         }
 
-        /* Get standby power vout */
-        ONLP_TRY(read_bmc_sensor(attr_stbvout, PSU_SENSOR, &data));
+        /* Get power in */
+        ONLP_TRY(read_bmc_sensor(attr_pin, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->mpin = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_PIN;
+        }
 
-        /* Get standby power iout */
-        ONLP_TRY(read_bmc_sensor(attr_stbiout, PSU_SENSOR, &data));
-
-        /* Get power in and out from bmc */
+        /* Get power out */
+        ONLP_TRY(read_bmc_sensor(attr_pout, PSU_SENSOR, &data));
+        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+            info->mpout = (int) (data*1000);
+            info->caps |= ONLP_PSU_CAPS_POUT;
+        }
 
         /* Get FRU (model/serial) */
         ONLP_TRY(update_psui_fru_info(local_id, info));

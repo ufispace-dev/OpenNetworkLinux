@@ -69,7 +69,7 @@
 #define CPU_PKG_CORE_TEMP_SYS_ID  "1"
 
 /* BMC attr */
-// based on BMC fw 2.21
+//[BMC] 2.21
 #define BMC_ATTR_NAME_TEMP_ENV_CPU          "TEMP_ENV_CPU"
 #define BMC_ATTR_NAME_TEMP_CPU_PECI         "TEMP_CPU_PECI"
 #define BMC_ATTR_NAME_TEMP_ENV0             "TEMP_ENV0"

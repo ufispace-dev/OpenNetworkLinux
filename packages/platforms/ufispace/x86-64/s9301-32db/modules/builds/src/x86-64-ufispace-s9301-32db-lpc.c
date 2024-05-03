@@ -177,7 +177,7 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
 {
-    if ((log_type==LOG_READ  && enable_log_read) ||
+    if((log_type==LOG_READ  && enable_log_read) ||
         (log_type==LOG_WRITE && enable_log_write) ||
         (log_type==LOG_SYS && enable_log_sys) ) {
         va_list args;
@@ -519,11 +519,11 @@ static ssize_t read_bsp_callback(struct device *dev,
 
     switch(attr->index) {
         case ATT_BSP_VERSION:
-        	str = bsp_version;
+            str = bsp_version;
             str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
-        	str = bsp_debug;
+            str = bsp_debug;
             str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
@@ -549,18 +549,18 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch(attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_version);
             break;
         case ATT_BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
             if(kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
             str = bsp_reg;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_reg);
             break;
         default:
             return -EINVAL;

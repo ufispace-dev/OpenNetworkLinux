@@ -103,6 +103,7 @@
 #define CPU_PKG_CORE_TEMP_SYS_ID  "1"
 
 /* BMC attr */
+//[BMC] 4.12
 #define BMC_ATTR_NAME_TEMP_MAC             "TEMP_MAC"
 #define BMC_ATTR_NAME_TEMP_DDR4            "TEMP_DDR4"
 #define BMC_ATTR_NAME_TEMP_BMC             "TEMP_BMC"

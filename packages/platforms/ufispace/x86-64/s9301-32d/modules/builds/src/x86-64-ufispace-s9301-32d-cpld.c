@@ -433,35 +433,35 @@ static SENSOR_DEVICE_ATTR(cpld_sfp_abs_event, S_IRUGO, \
 static SENSOR_DEVICE_ATTR(cpld_sfp_rxlos_event, S_IRUGO, \
         read_cpld_callback, NULL, CPLD_SFP_RXLOS_EVENT);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_ctrl_g0, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_RESET_CTRL_G0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_ctrl_g1, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_RESET_CTRL_G1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_ctrl_g2, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_RESET_CTRL_G2);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_reset_ctrl_g3, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_RESET_CTRL_G3);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lp_mode_g0, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_LP_MODE_G0);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lp_mode_g1, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_LP_MODE_G1);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lp_mode_g2, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_LP_MODE_G2);
 static SENSOR_DEVICE_ATTR(cpld_qsfpdd_lp_mode_g3, \
-	    S_IWUSR | S_IRUGO, \
+        S_IWUSR | S_IRUGO, \
         read_cpld_callback, write_cpld_callback, \
         CPLD_QSFPDD_LP_MODE_G3);
 static SENSOR_DEVICE_ATTR(cpld_sfp_tx_dis, S_IWUSR | S_IRUGO, \
@@ -717,7 +717,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
@@ -1515,10 +1515,10 @@ exit:
         sysfs_remove_group(&client->dev.kobj, &s9301_cpld1_group);
         break;
     case cpld2:
-    	  sysfs_remove_group(&client->dev.kobj, &s9301_cpld2_group);
+        sysfs_remove_group(&client->dev.kobj, &s9301_cpld2_group);
         break;
     case cpld3:
-    	  sysfs_remove_group(&client->dev.kobj, &s9301_cpld3_group);
+        sysfs_remove_group(&client->dev.kobj, &s9301_cpld3_group);
         break;
     default:
         break;
@@ -1536,10 +1536,10 @@ static int s9301_cpld_remove(struct i2c_client *client)
         sysfs_remove_group(&client->dev.kobj, &s9301_cpld1_group);
         break;
     case cpld2:
-    	  sysfs_remove_group(&client->dev.kobj, &s9301_cpld2_group);
+        sysfs_remove_group(&client->dev.kobj, &s9301_cpld2_group);
         break;
     case cpld3:
-    	  sysfs_remove_group(&client->dev.kobj, &s9301_cpld3_group);
+        sysfs_remove_group(&client->dev.kobj, &s9301_cpld3_group);
         break;
     }
 

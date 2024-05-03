@@ -36,6 +36,7 @@ const int CPLD_I2C_BUS = 1;
 
 bmc_info_t bmc_cache[] =
 {
+    [BMC_ATTR_ID_TEMP_ENV_OCXO] = {"TEMP_ENV_OCXO", 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI] = {"TEMP_CPU_PECI", 0},
     [BMC_ATTR_ID_TEMP_ENV_CPU]  = {"TEMP_ENV_CPU", 0},
     [BMC_ATTR_ID_TEMP_ENV_MAC0] = {"TEMP_ENV_MAC0", 0},
@@ -43,8 +44,8 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV_REAR0] = {"TEMP_ENV_REAR0", 0},
     [BMC_ATTR_ID_TEMP_ENV_REAR1] = {"TEMP_ENV_REAR1", 0},
     [BMC_ATTR_ID_TEMP_ENV_FRONT] = {"TEMP_ENV_FRONT", 0},
-    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
-    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
+    [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP1", 0},
+    [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP1", 0},
     [BMC_ATTR_ID_FAN0_RPM] = {"FAN0_RPM", 0},
     [BMC_ATTR_ID_FAN1_RPM] = {"FAN1_RPM", 0},
     [BMC_ATTR_ID_FAN2_RPM] = {"FAN2_RPM", 0},

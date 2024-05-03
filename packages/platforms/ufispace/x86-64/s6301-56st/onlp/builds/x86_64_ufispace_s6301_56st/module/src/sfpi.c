@@ -62,24 +62,36 @@ static const port_attr_t port_attr[] = {
 int sfp_start_num = 0;
 int sfp_end_num = 0;
 
+/**
+ * @brief Get the port base number.
+ * @param base_num get the base number 0 or 1, default is 0.
+ */
+int ufi_port_base_get(int *base_num) {
+    int ext_id;
+
+    *base_num = 0;
+    // read ext_id to identify port start index
+    ONLP_TRY(file_read_hex(&ext_id, LPC_MB_CPLD_PATH "/" LPC_MB_EXT_ID_ATTR));
+
+    if(ext_id == SKU_NPOE_1BASE) {
+        *base_num = 1;
+    }
+    
+    return ONLP_STATUS_OK;
+}
+
 static void port_index_update() {
-    int ext_id, rv;
+    int base_num = 0, rv;
     if(sfp_start_num != 0) {
         return;
     }
 
-    // read ext_id to identify port start index
-    rv = file_read_hex(&ext_id, LPC_MB_CPLD_PATH "/" LPC_MB_EXT_ID_ATTR);
+    rv = ufi_port_base_get(&base_num);
     if(ONLP_FAILURE(rv)) {
-        AIM_LOG_ERROR("read ext_id fail");
-        return;
+        AIM_LOG_ERROR("Fail to get port base num, ret=%d", rv);
     }
 
-    if(ext_id == SKU_NPOE_1BASE) {
-        sfp_start_num = SFP_1BASE_START_NUM;
-    } else {
-        sfp_start_num = SFP_0BASE_START_NUM;
-    }
+    sfp_start_num = SFP_0BASE_START_NUM + base_num;
     sfp_end_num = sfp_start_num + SFP_PLUS_NUM - 1;
 }
 

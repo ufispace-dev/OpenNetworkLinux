@@ -926,7 +926,7 @@ function _show_system_led_sysfs {
                    "PSU 1"
                    "PSU 0")
 
-        local led_sysfs_idx=(0 1 2 2 3)
+        local led_sysfs_idx=(0 1 2 3 4)
         local color=(-1 0 0 0 0)
         local blink=(2 2 2 2 2)
         local onoff=(3 3 3 3 3)

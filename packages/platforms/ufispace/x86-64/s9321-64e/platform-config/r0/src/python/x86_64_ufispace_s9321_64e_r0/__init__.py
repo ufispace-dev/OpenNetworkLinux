@@ -466,10 +466,13 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Enable port led control");
         self.enable_port_led_ctrl(board)
 
-        # init ice (need to have ice before bcm81381 init to avoid failure)
-        self.bsp_pr("Init ice")
-        self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        if board['hw_rev'] == 1:
+            # Management port for alpha is cpu net card
+            #                 for beta is MAC
+            # init ice (need to have ice before bcm81381 init to avoid failure)
+            self.bsp_pr("Init ice")
+            self.insmod("intel_auxiliary", False)
+            self.insmod("ice")
 
         # init bcm82399
         self.bsp_pr("Init bcm82399")

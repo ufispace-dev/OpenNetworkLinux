@@ -99,7 +99,15 @@ const char * psu_id_str[] = {
 
 bmc_info_t bmc_cache[] =
 {
+    [BMC_ATTR_ID_TEMP_DDR4]    = {"TEMP_DDR4", 0},
+    [BMC_ATTR_ID_TEMP_CPU]     = {"TEMP_CPU", 0},
+    [BMC_ATTR_ID_TEMP_BMC]     = {"TEMP_BMC", 0},
     [BMC_ATTR_ID_TEMP_MAC]     = {"TEMP_MAC", 0},
+    [BMC_ATTR_ID_TEMP_FANCARD1] = {"TEMP_FANCARD1", 0},
+    [BMC_ATTR_ID_TEMP_FANCARD2] = {"TEMP_FANCARD2", 0},
+    [BMC_ATTR_ID_HWM_TEMP_MAC] = {"HWM_TEMP_MAC", 0},
+    [BMC_ATTR_ID_HWM_TEMP_AMB] = {"HWM_TEMP_AMB", 0},
+    [BMC_ATTR_ID_HWM_TEMP_PHY] = {"HWM_TEMP_PHY", 0},
     [BMC_ATTR_ID_PSU0_TEMP1]   = {"PSU0_TEMP1", 0},
     [BMC_ATTR_ID_PSU1_TEMP1]   = {"PSU1_TEMP1", 0},
     [BMC_ATTR_ID_FAN_0]        = {"FAN_0", 0},
@@ -818,7 +826,7 @@ int bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
     int rc=0;
     float data=0;
 
-    rc = bmc_sensor_read(id - THERMAL_ID_MAC, THERMAL_SENSOR, &data);
+    rc = bmc_sensor_read(id - THERMAL_ID_DDR4, THERMAL_SENSOR, &data);
     if ( rc != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rc;

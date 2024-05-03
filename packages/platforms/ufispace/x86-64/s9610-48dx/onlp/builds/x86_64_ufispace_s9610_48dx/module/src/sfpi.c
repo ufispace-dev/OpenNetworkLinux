@@ -24,6 +24,7 @@
  ***********************************************************/
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
+#define REORG_DEV_CLASS_ENABLE 0
 
 #define QSFP_NUM              40
 #define SFPDD_NUM             4
@@ -58,11 +59,31 @@
 #define SYSFS_QSFPDD_LPMODE     "cpld_qsfpdd_lpmode"
 #define SYSFS_QSFPDD_PRESENT    "cpld_qsfpdd_intr_present"
 #define SYSFS_EEPROM            "eeprom"
+#define SYSFS_DEV_CLASS         "dev_class"
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 #define EEPROM_ADDR (0x50)
+
+typedef struct {
+    int key;  //[module_type]
+    int value;  // [dev_class]
+} PortTypeDictEntry;
+
+PortTypeDictEntry port_type_dict[] = {
+    {0x03, 2},// 'SFP/SFP+/SFP28'
+    {0x0B, 2},// 'DWDM-SFP/SFP+'
+    {0x0C, 1},// 'QSFP'
+    {0x0D, 1},// 'QSFP+'
+    {0x11, 1},// 'QSFP28'
+    {0x18, 3},// 'QSFP-DD Double Density 8x (INF-8628)'
+    {0x19, 3},// 'OSFP 8x Pluggable Transceiver'
+    {0x1E, 3},// 'QSFP+ or later with CMIS spec'
+    {0x1F, 3},// 'SFP-DD Double Density 2X Pluggable Transceiver with CMIS spec'
+};
+
+#define PORT_TYPE_DICT_SIZE (sizeof(port_type_dict) / sizeof(PortTypeDictEntry))
 
 static int ufi_port_to_cpld_addr(int port)
 {
@@ -246,7 +267,7 @@ static int ufi_sfpdd_present_get(int port, int *pres_val)
     int reg_val = 0, rc = 0;
     int cpld_bus = 0, cpld_addr = 0;
 
-    //get cpld bus and cpld addr
+    //get cpld bus andcpld addr
     cpld_bus = ufi_port_to_cpld_bus(port);
     cpld_addr = ufi_port_to_cpld_addr(port);
 
@@ -284,6 +305,48 @@ static int ufi_qsfpdd_present_get(int port, int *pres_val)
 
     return ONLP_STATUS_OK;
 }
+#if REORG_DEV_CLASS_ENABLE
+static int ufi_reorg_dev_class(int port)
+{
+    int rv, dev_class, type, bus, i;
+
+    if (!IS_QSFP(port)) { //For QSFP only, skip other ports
+        return ONLP_STATUS_OK;
+    }
+
+    bus = ufi_port_to_eeprom_bus(port);
+
+    //read dev_class
+    rv = onlp_file_read_int(&dev_class, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS);
+    if(rv < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    //read module type
+    type = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 0);
+    if (type < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    for (i = 0; i < PORT_TYPE_DICT_SIZE ; ++i) {
+        if (type != port_type_dict[i].key) {
+            continue;
+        }
+        if (port_type_dict[i].value != dev_class) {
+            ONLP_TRY(onlp_file_write_int(port_type_dict[i].value, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS));
+            AIM_LOG_INFO("Port[%d] Type(0x%02x): %d to %d.\n", port, type, dev_class, port_type_dict[i].value);
+            break;
+        } else { //dev_class is the same.
+            break;
+        }
+    }
+    if (i == PORT_TYPE_DICT_SIZE) {
+        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+#endif
 
 /**
  * @brief Initialize the SFPI subsystem.
@@ -399,7 +462,9 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 
     memset(data, 0, 256);
     bus = ufi_port_to_eeprom_bus(port);
-
+#if REORG_DEV_CLASS_ENABLE
+    ufi_reorg_dev_class(port);
+#endif
     if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
@@ -523,7 +588,9 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-
+#if REORG_DEV_CLASS_ENABLE
+    ufi_reorg_dev_class(port);
+#endif
     if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
         check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;

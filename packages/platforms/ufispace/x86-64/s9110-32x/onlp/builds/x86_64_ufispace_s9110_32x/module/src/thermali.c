@@ -101,6 +101,42 @@ static onlp_thermal_info_t thermal_info[] = {
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
         .caps = (ONLP_THERMAL_CAPS_ALL)
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DC_VDD_TEMP1),
+            .description = BMC_ATTR_NAME_DC_VDD_TEMP1,
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE)
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DC_VDD_TEMP2),
+            .description = BMC_ATTR_NAME_DC_VDD_TEMP2,
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE)
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DC_P3V3_TEMP1),
+            .description = BMC_ATTR_NAME_DC_P3V3_TEMP1,
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE)
+    },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_DC_P3V3_TEMP2),
+            .description = BMC_ATTR_NAME_DC_P3V3_TEMP2,
+            .poid = POID_0,
+        },
+        .status = ONLP_THERMAL_STATUS_PRESENT,
+        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE)
     }
 };
 
@@ -126,7 +162,10 @@ static const thrm_attr_t thrm_attr[] = {
     [ONLP_THERMAL_ENV_BMC]      ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_TEMP_ENV_BMC},
     [ONLP_THERMAL_PSU_0]        ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_PSU0_TEMP1},
     [ONLP_THERMAL_PSU_1]        ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_PSU1_TEMP1},
-
+    [ONLP_THERMAL_DC_VDD_TEMP1] ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_DC_VDD_TEMP1},
+    [ONLP_THERMAL_DC_VDD_TEMP2] ={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_DC_VDD_TEMP2},
+    [ONLP_THERMAL_DC_P3V3_TEMP1]={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_DC_P3V3_TEMP1},
+    [ONLP_THERMAL_DC_P3V3_TEMP2]={TYPE_THRM_ATTR_BMC  , BMC_ATTR_ID_DC_P3V3_TEMP2},
 };
 
 /**
@@ -137,6 +176,8 @@ static const thrm_attr_t thrm_attr[] = {
 static int get_thermal_local_id(int id, int *local_id)
 {
     int tmp_id;
+    board_t board = {0};
+
     if(local_id == NULL) {
         return ONLP_STATUS_E_PARAM;
     }
@@ -146,19 +187,42 @@ static int get_thermal_local_id(int id, int *local_id)
     }
 
     tmp_id = ONLP_OID_ID_GET(id);
-    switch (tmp_id) {
-        case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_MAC:
-        case ONLP_THERMAL_ENV_MACCASE:
-        case ONLP_THERMAL_ENV_SSDCASE:
-        case ONLP_THERMAL_ENV_PSUCASE:
-        case ONLP_THERMAL_ENV_BMC:
-        case ONLP_THERMAL_PSU_0:
-        case ONLP_THERMAL_PSU_1:
-            *local_id = tmp_id;
-            return ONLP_STATUS_OK;
-        default:
-            return ONLP_STATUS_E_INVALID;
+    ONLP_TRY(get_board_version(&board));
+
+    if(board.hw_rev <= BRD_BETA) {
+        switch (tmp_id) {
+            case ONLP_THERMAL_CPU_PKG:
+            case ONLP_THERMAL_MAC:
+            case ONLP_THERMAL_ENV_MACCASE:
+            case ONLP_THERMAL_ENV_SSDCASE:
+            case ONLP_THERMAL_ENV_PSUCASE:
+            case ONLP_THERMAL_ENV_BMC:
+            case ONLP_THERMAL_PSU_0:
+            case ONLP_THERMAL_PSU_1:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+    } else {
+        switch (tmp_id) {
+            case ONLP_THERMAL_CPU_PKG:
+            case ONLP_THERMAL_MAC:
+            case ONLP_THERMAL_ENV_MACCASE:
+            case ONLP_THERMAL_ENV_SSDCASE:
+            case ONLP_THERMAL_ENV_PSUCASE:
+            case ONLP_THERMAL_ENV_BMC:
+            case ONLP_THERMAL_PSU_0:
+            case ONLP_THERMAL_PSU_1:
+            case ONLP_THERMAL_DC_VDD_TEMP1:
+            case ONLP_THERMAL_DC_VDD_TEMP2:
+            case ONLP_THERMAL_DC_P3V3_TEMP1:
+            case ONLP_THERMAL_DC_P3V3_TEMP2:
+                *local_id = tmp_id;
+                return ONLP_STATUS_OK;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
     }
     return ONLP_STATUS_E_INVALID;
 }

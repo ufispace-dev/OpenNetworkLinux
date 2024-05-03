@@ -68,9 +68,6 @@
 #define THERMAL_MAC_WARNING              95
 #define THERMAL_MAC_ERROR                105
 #define THERMAL_MAC_SHUTDOWN             110
-#define THERMAL_MAC_HWM_WARNING          95
-#define THERMAL_MAC_HWM_ERROR            105
-#define THERMAL_MAC_HWM_SHUTDOWN         110
 #define THERMAL_ENV_MACCASE_WARNING      75
 #define THERMAL_ENV_MACCASE_ERROR        85
 #define THERMAL_ENV_MACCASE_SHUTDOWN     90
@@ -96,8 +93,8 @@
 #define CPU_PKG_CORE_TEMP_SYS_ID  "1"
 
 /* BMC attr */
+//[BMC] 1.04 for pvt and later, 0.07 for beta.
 #define BMC_ATTR_NAME_TEMP_MAC                     "TEMP_MAC"
-#define BMC_ATTR_NAME_TEMP_MAC_HWM                 "TEMP_MAC_HWM"
 #define BMC_ATTR_NAME_TEMP_ENV_MACCASE             "TEMP_ENV_MACCASE"
 #define BMC_ATTR_NAME_TEMP_ENV_SSDCASE             "TEMP_ENV_SSDCASE"
 #define BMC_ATTR_NAME_TEMP_ENV_PSUCASE             "TEMP_ENV_PSUCASE"
@@ -110,14 +107,11 @@
 #define BMC_ATTR_NAME_FAN1_RPM_R                   "FAN1_RPM_R"
 #define BMC_ATTR_NAME_FAN2_RPM_F                   "FAN2_RPM_F"
 #define BMC_ATTR_NAME_FAN2_RPM_R                   "FAN2_RPM_R"
-#define BMC_ATTR_NAME_FAN3_RPM_F                   "FAN3_RPM_F"
-#define BMC_ATTR_NAME_FAN3_RPM_R                   "FAN3_RPM_R"
 #define BMC_ATTR_NAME_PSU0_FAN1                    "PSU0_FAN1"
 #define BMC_ATTR_NAME_PSU1_FAN1                    "PSU1_FAN1"
 #define BMC_ATTR_NAME_FAN0_PRSNT_L                 "FAN0_PRSNT_L"
 #define BMC_ATTR_NAME_FAN1_PRSNT_L                 "FAN1_PRSNT_L"
 #define BMC_ATTR_NAME_FAN2_PRSNT_L                 "FAN2_PRSNT_L"
-#define BMC_ATTR_NAME_FAN3_PRSNT_L                 "FAN3_PRSNT_L"
 #define BMC_ATTR_NAME_PSU0_VIN                     "PSU0_VIN"
 #define BMC_ATTR_NAME_PSU0_VOUT                    "PSU0_VOUT"
 #define BMC_ATTR_NAME_PSU0_IIN                     "PSU0_IIN"
@@ -130,6 +124,17 @@
 #define BMC_ATTR_NAME_PSU1_IOUT                    "PSU1_IOUT"
 #define BMC_ATTR_NAME_PSU1_STBVOUT                 "PSU1_STBVOUT"
 #define BMC_ATTR_NAME_PSU1_STBIOUT                 "PSU1_STBIOUT"
+
+//only in beta
+#define BMC_ATTR_NAME_FAN3_RPM_F                   "FAN3_RPM_F"
+#define BMC_ATTR_NAME_FAN3_RPM_R                   "FAN3_RPM_R"
+#define BMC_ATTR_NAME_FAN3_PRSNT_L                 "FAN3_PRSNT_L"
+
+//only in pvt and later
+#define BMC_ATTR_NAME_DC_VDD_TEMP1                 "DC_VDD_TEMP1"
+#define BMC_ATTR_NAME_DC_VDD_TEMP2                 "DC_VDD_TEMP2"
+#define BMC_ATTR_NAME_DC_P3V3_TEMP1                "DC_P3V3_TEMP1"
+#define BMC_ATTR_NAME_DC_P3V3_TEMP2                "DC_P3V3_TEMP2"
 
 /* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
@@ -186,7 +191,6 @@ enum sensor
 enum bmc_attr_id {
     BMC_ATTR_ID_START = 0,
     BMC_ATTR_ID_TEMP_MAC = BMC_ATTR_ID_START,
-    BMC_ATTR_ID_TEMP_MAC_HWM,
     BMC_ATTR_ID_TEMP_ENV_MACCASE,
     BMC_ATTR_ID_TEMP_ENV_SSDCASE,
     BMC_ATTR_ID_TEMP_ENV_PSUCASE,
@@ -221,7 +225,11 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_IOUT,
     BMC_ATTR_ID_PSU1_STBVOUT,
     BMC_ATTR_ID_PSU1_STBIOUT,
-    BMC_ATTR_ID_LAST = BMC_ATTR_ID_PSU1_STBIOUT,
+    BMC_ATTR_ID_DC_VDD_TEMP1,
+    BMC_ATTR_ID_DC_VDD_TEMP2,
+    BMC_ATTR_ID_DC_P3V3_TEMP1,
+    BMC_ATTR_ID_DC_P3V3_TEMP2,
+    BMC_ATTR_ID_LAST = BMC_ATTR_ID_DC_P3V3_TEMP2,
     BMC_ATTR_ID_INVALID,
 };
 
@@ -293,6 +301,10 @@ enum onlp_thermal_id {
     ONLP_THERMAL_ENV_BMC,
     ONLP_THERMAL_PSU_0,
     ONLP_THERMAL_PSU_1,
+    ONLP_THERMAL_DC_VDD_TEMP1,
+    ONLP_THERMAL_DC_VDD_TEMP2,
+    ONLP_THERMAL_DC_P3V3_TEMP1,
+    ONLP_THERMAL_DC_P3V3_TEMP2,
     ONLP_THERMAL_MAX,
 };
 

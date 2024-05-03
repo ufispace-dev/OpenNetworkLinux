@@ -265,7 +265,7 @@ int mux_reg_get(struct i2c_adapter *adap, struct i2c_client *client)
 
 #endif /* #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0) */
         if(ret != 0) {
-            mdelay(CPLD_MUX_RETRY_WAIT); 
+            mdelay(CPLD_MUX_RETRY_WAIT);
         } else {
             break;
         }
@@ -315,7 +315,7 @@ static int _port_block_status_get(struct i2c_adapter *adap, struct i2c_client *c
 
 #endif /* #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0) */
         if(ret != 0) {
-            mdelay(CPLD_MUX_RETRY_WAIT); 
+            mdelay(CPLD_MUX_RETRY_WAIT);
         } else {
             break;
         }
@@ -345,7 +345,7 @@ static int mux_reg_write(struct i2c_adapter *adap, struct i2c_client *client, u8
 	stop_time = jiffies + msecs_to_jiffies(CPLD_MUX_TIMEOUT);
     do {
 
-        /* 
+        /*
         *  Write to mux register. Don't use i2c_transfer()/i2c_smbus_xfer()
         *  for this as they will try to lock adapter a second time
         */
@@ -362,7 +362,7 @@ static int mux_reg_write(struct i2c_adapter *adap, struct i2c_client *client, u8
 #endif /* #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0) */
 
         if(ret != 0) {
-            mdelay(CPLD_MUX_RETRY_WAIT); 
+            mdelay(CPLD_MUX_RETRY_WAIT);
         } else {
             break;
         }

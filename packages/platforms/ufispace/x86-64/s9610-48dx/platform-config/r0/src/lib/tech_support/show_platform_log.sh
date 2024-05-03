@@ -253,8 +253,8 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00011110)))
-    model_name_array=("Large EMUX")
+    model_id_array=($((2#00011110)) $((2#00011111)))
+    model_name_array=("Large EMUX w/o OP2", "Large EMUX w/ OP2")
     model_name=""
 
     model_id=`${IOGET} 0xE00`
@@ -924,10 +924,18 @@ function _show_nif_port_status_sysfs {
             if [ "${port_type_array[${i}]}" == "qsfp" ]; then
                 eeprom_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
                 _check_filepath ${eeprom_path}
+                dev_class_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/dev_class"
+                _check_filepath ${dev_class_path}
             elif  [ "${port_type_array[${i}]}" == "qsfpdd" ]; then
                 eeprom_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
                 _check_filepath ${eeprom_path}
+                dev_class_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/dev_class"
+                _check_filepath ${dev_class_path}
             fi
+
+            dev_class=$(eval "cat ${dev_class_path} ${LOG_REDIRECT}")
+            _echo "[Port${i} Dev Class Status]: ${dev_class}"
+
 
             for (( page_i=0; page_i<${#eeprom_page_array[@]}; page_i++ ))
             do

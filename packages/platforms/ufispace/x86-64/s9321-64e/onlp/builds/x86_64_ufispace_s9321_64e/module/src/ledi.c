@@ -35,8 +35,8 @@
 #define IS_CPLD(_node)    (_node.type == TYPE_LED_ATTR_CPLD)
 
 /*
- *  Generally, the color bit for CPLD is 4 bits, and there are 16 color sets available. 
- *  The color bit for GPIO is 2 bits (representing two GPIO pins), and there are 2 color sets. 
+ *  Generally, the color bit for CPLD is 4 bits, and there are 16 color sets available.
+ *  The color bit for GPIO is 2 bits (representing two GPIO pins), and there are 4 color sets.
  *  Therefore, we use the 16 color sets available for our application.
  */
 #define COLOR_VAL_MAX           16
@@ -393,7 +393,7 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
 
     ONLP_TRY(get_node(local_id, &node));
     ONLP_TRY(update_info(info, &node));
-    
+
 
     if(IS_GPIO(node)) {
         int led_val2 = 0;
@@ -402,7 +402,7 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
         ONLP_TRY(read_file_hex(&led_val, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
         if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
             ONLP_TRY(read_file_hex(&led_val2, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
-            led_val = operate_bit(led_val, 1, led_val2); 
+            led_val = operate_bit(led_val, 1, led_val2);
         }
     } else {
         ONLP_TRY(read_file_hex(&led_val, node.sysfs));
@@ -534,7 +534,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int local_id;
     led_node_t node = {0};
-    int i=0; 
+    int i=0;
     int found = 0;
     int led_val = 0;
     int led_val2 = 0;
