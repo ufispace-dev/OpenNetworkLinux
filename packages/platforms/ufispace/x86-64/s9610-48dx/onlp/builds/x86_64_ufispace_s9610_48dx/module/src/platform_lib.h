@@ -34,6 +34,8 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
 #define SYSFS_DEVICES        "/sys/bus/i2c/devices/"
 #define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s9610_48dx_lpc/"
 #define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
@@ -52,7 +54,7 @@
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-
+//[BMC] 2.23
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_ENV_CPU "\
                                     "TEMP_CPU_PECI "\
@@ -85,11 +87,13 @@
                                     "PSU0_IIN "\
                                     "PSU0_IOUT "\
                                     "PSU0_PIN "\
+                                    "PSU0_POUT "\
                                     "PSU1_VIN "\
                                     "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
                                     "PSU1_PIN "\
+                                    "PSU1_POUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -163,11 +167,13 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
     BMC_ATTR_ID_PSU0_PIN,
+    BMC_ATTR_ID_PSU0_POUT,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
     BMC_ATTR_ID_PSU1_PIN,
+    BMC_ATTR_ID_PSU1_POUT,
     BMC_ATTR_ID_MAX
 };
 
@@ -233,27 +239,25 @@ enum onlp_psu_id {
 enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_ENV_CPU   = 10,
-    ONLP_THERMAL_CPU_PECI  = 11,
-    ONLP_THERMAL_ENV0 = 12,
-    ONLP_THERMAL_ENV1 = 13,
-    ONLP_THERMAL_ENV2 = 14,
-    ONLP_THERMAL_ENV3 = 15,
-    ONLP_THERMAL_ENV4 = 16,
-    ONLP_THERMAL_ENV5 = 17,
-    ONLP_THERMAL_ENV_FAN0 = 18,
-    ONLP_THERMAL_ENV_FAN1 = 19,
-    ONLP_THERMAL_PSU0_TEMP1 = 20,
-    ONLP_THERMAL_PSU1_TEMP1 = 21,
-    ONLP_THERMAL_MAX = 22,
+    ONLP_THERMAL_ENV_CPU = 2,
+    ONLP_THERMAL_CPU_PECI = 3,
+    ONLP_THERMAL_ENV0 = 4,
+    ONLP_THERMAL_ENV1 = 5,
+    ONLP_THERMAL_ENV2 = 6,
+    ONLP_THERMAL_ENV3 = 7,
+    ONLP_THERMAL_ENV4 = 8,
+    ONLP_THERMAL_ENV5 = 9,
+    ONLP_THERMAL_ENV_FAN0 = 10,
+    ONLP_THERMAL_ENV_FAN1 = 11,
+    ONLP_THERMAL_PSU0_TEMP1 = 12,
+    ONLP_THERMAL_PSU1_TEMP1 = 13,
+    ONLP_THERMAL_MAX = 14,
+};
+
+enum onlp_fru_type_e {
+  ONLP_FRU_PSU = 1,
+  ONLP_FRU_FAN,
+  ONLP_FRU_TYPE_INVALID = -1
 };
 
 typedef struct bmc_info_s
@@ -300,7 +304,7 @@ void lock_init();
 
 int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-int bmc_fru_read(int local_id, bmc_fru_t *data);
+int bmc_fru_read(int local_id, bmc_fru_t *data, int type);
 void check_and_do_i2c_mux_reset(int port);
 
 uint8_t ufi_shift(uint8_t mask);

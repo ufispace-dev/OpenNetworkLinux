@@ -39,6 +39,7 @@
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
 
+//[BMC] 3.81
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "ADC_CPU_TEMP "\
                                     "TEMP_CPU_PECI "\
@@ -50,22 +51,6 @@
                                     "TEMP_ENV_2 "\
                                     "TEMP_EXT_ENV_1 "\
                                     "TEMP_EXT_ENV_2 "\
-                                    "TEMP_MAC0_PVT2 "\
-                                    "TEMP_MAC0_PVT3 "\
-                                    "TEMP_MAC0_PVT4 "\
-                                    "TEMP_MAC0_PVT6 "\
-                                    "TEMP_MAC0_HBM0 "\
-                                    "TEMP_MAC0_HBM1 "\
-                                    "TEMP_MAC1_PVT2 "\
-                                    "TEMP_MAC1_PVT3 "\
-                                    "TEMP_MAC1_PVT4 "\
-                                    "TEMP_MAC1_PVT6 "\
-                                    "TEMP_MAC1_HBM0 "\
-                                    "TEMP_MAC1_HBM1 "\
-                                    "TEMP_OP2_0 "\
-                                    "TEMP_OP2_1 "\
-                                    "TEMP_OP2_2 "\
-                                    "TEMP_OP2_3 "\
                                     "PSU0_TEMP "\
                                     "PSU1_TEMP "\
                                     "FAN0_FRONT_RPM "\
@@ -139,22 +124,6 @@ enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_ENV_2,
     BMC_ATTR_ID_TEMP_EXT_ENV_1,
     BMC_ATTR_ID_TEMP_EXT_ENV_2,
-    BMC_ATTR_ID_TEMP_MAC0_PVT2,
-    BMC_ATTR_ID_TEMP_MAC0_PVT3,
-    BMC_ATTR_ID_TEMP_MAC0_PVT4,
-    BMC_ATTR_ID_TEMP_MAC0_PVT6,    
-    BMC_ATTR_ID_TEMP_MAC0_HBM0,    
-    BMC_ATTR_ID_TEMP_MAC0_HBM1,  
-    BMC_ATTR_ID_TEMP_MAC1_PVT2,
-    BMC_ATTR_ID_TEMP_MAC1_PVT3,
-    BMC_ATTR_ID_TEMP_MAC1_PVT4,
-    BMC_ATTR_ID_TEMP_MAC1_PVT6,    
-    BMC_ATTR_ID_TEMP_MAC1_HBM0,    
-    BMC_ATTR_ID_TEMP_MAC1_HBM1,        
-    BMC_ATTR_ID_TEMP_OP2_0,            
-    BMC_ATTR_ID_TEMP_OP2_1,            
-    BMC_ATTR_ID_TEMP_OP2_2,            
-    BMC_ATTR_ID_TEMP_OP2_3,    
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
     BMC_ATTR_ID_FAN0_FRONT_RPM,
@@ -188,11 +157,11 @@ enum bmc_attr_id {
 
 enum fru_attr_id {
     FRU_ATTR_ID_PSU0_VENDOR,
-    FRU_ATTR_ID_PSU0_NAME,        
+    FRU_ATTR_ID_PSU0_NAME,
     FRU_ATTR_ID_PSU0_MODEL,
-    FRU_ATTR_ID_PSU0_SERIAL,    
+    FRU_ATTR_ID_PSU0_SERIAL,
     FRU_ATTR_ID_PSU1_VENDOR,
-    FRU_ATTR_ID_PSU1_NAME,        
+    FRU_ATTR_ID_PSU1_NAME,
     FRU_ATTR_ID_PSU1_MODEL,
     FRU_ATTR_ID_PSU1_SERIAL,
     FRU_ATTR_ID_MAX
@@ -200,45 +169,21 @@ enum fru_attr_id {
 
 /* Thermal definitions*/
 enum onlp_thermal_id {
-    ONLP_THERMAL_RESERVED = 0,
-    ONLP_THERMAL_CPU_PKG = 1,
-    ONLP_THERMAL_CPU_0 = 2,
-    ONLP_THERMAL_CPU_1 = 3,
-    ONLP_THERMAL_CPU_2 = 4,
-    ONLP_THERMAL_CPU_3 = 5,
-    ONLP_THERMAL_CPU_4 = 6,
-    ONLP_THERMAL_CPU_5 = 7,
-    ONLP_THERMAL_CPU_6 = 8,
-    ONLP_THERMAL_CPU_7 = 9,
-    ONLP_THERMAL_ADC_CPU   = 10,
-    ONLP_THERMAL_CPU_PECI  = 11,
-    ONLP_THERMAL_MAC_ENV_1 = 12,
-    ONLP_THERMAL_MAC_ENV_2 = 13,
-    ONLP_THERMAL_FRONT_ENV_1 = 14,
-    ONLP_THERMAL_FRONT_ENV_2 = 15,
-    ONLP_THERMAL_ENV_1 = 16,
-    ONLP_THERMAL_ENV_2 = 17,
-    ONLP_THERMAL_EXT_ENV_1 = 18,
-    ONLP_THERMAL_EXT_ENV_2 = 19,
-    ONLP_THERMAL_MAC0_PVT2 = 20,
-    ONLP_THERMAL_MAC0_PVT3 = 21,
-    ONLP_THERMAL_MAC0_PVT4 = 22,
-    ONLP_THERMAL_MAC0_PVT6 = 23,
-    ONLP_THERMAL_MAC0_HBM0 = 24,    
-    ONLP_THERMAL_MAC0_HBM1 = 25,        
-    ONLP_THERMAL_MAC1_PVT2 = 26,
-    ONLP_THERMAL_MAC1_PVT3 = 27,
-    ONLP_THERMAL_MAC1_PVT4 = 28,
-    ONLP_THERMAL_MAC1_PVT6 = 29,    
-    ONLP_THERMAL_MAC1_HBM0 = 30,    
-    ONLP_THERMAL_MAC1_HBM1 = 31,         
-    ONLP_THERMAL_OP2_0 = 32,             
-    ONLP_THERMAL_OP2_1 = 33,            
-    ONLP_THERMAL_OP2_2 = 34,            
-    ONLP_THERMAL_OP2_3 = 35,         
-    ONLP_THERMAL_PSU_0 = 36, 
-    ONLP_THERMAL_PSU_1 = 37,    
-    ONLP_THERMAL_MAX = 38,
+    ONLP_THERMAL_RESERVED    = 0,
+    ONLP_THERMAL_CPU_PKG     = 1,
+    ONLP_THERMAL_ADC_CPU,
+    ONLP_THERMAL_CPU_PECI,
+    ONLP_THERMAL_MAC_ENV_1,
+    ONLP_THERMAL_MAC_ENV_2,
+    ONLP_THERMAL_FRONT_ENV_1,
+    ONLP_THERMAL_FRONT_ENV_2,
+    ONLP_THERMAL_ENV_1,
+    ONLP_THERMAL_ENV_2,
+    ONLP_THERMAL_EXT_ENV_1,
+    ONLP_THERMAL_EXT_ENV_2,
+    ONLP_THERMAL_PSU_0,
+    ONLP_THERMAL_PSU_1,
+    ONLP_THERMAL_MAX,
 };
 
 #define ONLP_THERMAL_COUNT ONLP_THERMAL_MAX /*include "reserved"*/
@@ -262,6 +207,8 @@ enum onlp_fan_id {
 
 #define ONLP_FAN_COUNT ONLP_FAN_MAX /*include "reserved"*/
 
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
 
 /* PSU definitions*/
 enum onlp_psu_id {

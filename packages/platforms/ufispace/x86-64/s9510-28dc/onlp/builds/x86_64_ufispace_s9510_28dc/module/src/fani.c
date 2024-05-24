@@ -56,8 +56,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -68,8 +68,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -80,8 +80,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -92,8 +92,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -104,8 +104,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -116,8 +116,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -128,8 +128,8 @@ static onlp_fan_info_t __onlp_fan_info[] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
 };
 

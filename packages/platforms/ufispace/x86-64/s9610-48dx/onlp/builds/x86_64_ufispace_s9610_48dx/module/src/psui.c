@@ -59,8 +59,8 @@ static onlp_psu_info_t __onlp_psu_info[] = {
             },
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
         .caps = ONLP_PSU_CAPS_GET_VIN|ONLP_PSU_CAPS_GET_VOUT|ONLP_PSU_CAPS_GET_IIN|ONLP_PSU_CAPS_GET_IOUT|ONLP_PSU_CAPS_GET_PIN|ONLP_PSU_CAPS_GET_POUT,
         .type = ONLP_PSU_TYPE_AC,
     },
@@ -75,8 +75,8 @@ static onlp_psu_info_t __onlp_psu_info[] = {
             },
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
         .caps = ONLP_PSU_CAPS_GET_VIN|ONLP_PSU_CAPS_GET_VOUT|ONLP_PSU_CAPS_GET_IIN|ONLP_PSU_CAPS_GET_IOUT|ONLP_PSU_CAPS_GET_PIN|ONLP_PSU_CAPS_GET_POUT,
         .type = ONLP_PSU_TYPE_AC,
     }
@@ -157,7 +157,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 
     if(fru_in == NULL) {
         fru = &fru_tmp;
-        ONLP_TRY(bmc_fru_read(local_id, fru));
+        ONLP_TRY(bmc_fru_read(local_id, fru, ONLP_FRU_PSU));
     } else {
         fru = fru_in;
     }
@@ -236,7 +236,7 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
     bmc_fru_t fru = {0};
 
     //read fru data
-    ONLP_TRY(bmc_fru_read(local_id, &fru));
+    ONLP_TRY(bmc_fru_read(local_id, &fru, ONLP_FRU_PSU));
 
     //update FRU model
     memset(info->model, 0, sizeof(info->model));
@@ -266,7 +266,7 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 static int update_psui_info(int local_id, onlp_psu_info_t* info)
 {
     float data = 0;
-    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_pin = 0;
+    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_pin = 0, attr_pout = 0;
 
     if (local_id == ONLP_PSU_0) {
         attr_vin = BMC_ATTR_ID_PSU0_VIN;
@@ -274,12 +274,14 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
         attr_iin = BMC_ATTR_ID_PSU0_IIN;
         attr_iout = BMC_ATTR_ID_PSU0_IOUT;
         attr_pin = BMC_ATTR_ID_PSU0_PIN;
+        attr_pout = BMC_ATTR_ID_PSU0_POUT;
     } else {
         attr_vin = BMC_ATTR_ID_PSU1_VIN;
         attr_vout = BMC_ATTR_ID_PSU1_VOUT;
         attr_iin = BMC_ATTR_ID_PSU1_IIN;
         attr_iout = BMC_ATTR_ID_PSU1_IOUT;
         attr_pin = BMC_ATTR_ID_PSU1_PIN;
+        attr_pout = BMC_ATTR_ID_PSU1_POUT;
     }
 
     /* Get power vin status */
@@ -304,6 +306,9 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
     info->mpin = (int) (data*1000);
     //info->caps |= ONLP_PSU_CAPS_PIN;
 
+    ONLP_TRY(bmc_sensor_read(attr_pout, PSU_SENSOR, &data));
+    info->mpout = (int) (data*1000);
+    //info->caps |= ONLP_PSU_CAPS_POUT;
     /* Get FRU info */
     ONLP_TRY(update_psui_fru_info(local_id, info));
 

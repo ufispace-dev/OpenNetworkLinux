@@ -46,22 +46,6 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV_2] = {"TEMP_ENV_2", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_1] = {"TEMP_EXT_ENV_1", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_2] = {"TEMP_EXT_ENV_2", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_PVT2] = {"TEMP_MAC0_PVT2", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_PVT3] = {"TEMP_MAC0_PVT3", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_PVT4] = {"TEMP_MAC0_PVT4", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_PVT6] = {"TEMP_MAC0_PVT6", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_HBM0] = {"TEMP_MAC0_HBM0", 0},
-    [BMC_ATTR_ID_TEMP_MAC0_HBM1] = {"TEMP_MAC0_HBM1", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_PVT2] = {"TEMP_MAC1_PVT2", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_PVT3] = {"TEMP_MAC1_PVT3", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_PVT4] = {"TEMP_MAC1_PVT4", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_PVT6] = {"TEMP_MAC1_PVT6", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_HBM0] = {"TEMP_MAC1_HBM0", 0},
-    [BMC_ATTR_ID_TEMP_MAC1_HBM1] = {"TEMP_MAC1_HBM1", 0},
-    [BMC_ATTR_ID_TEMP_OP2_0] = {"TEMP_OP2_0", 0},
-    [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
-    [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
-    [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},
     [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
     [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},
     [BMC_ATTR_ID_FAN0_FRONT_RPM] = {"FAN0_FRONT_RPM", 0},
@@ -132,8 +116,7 @@ static onlp_shlock_t* onlp_lock = NULL;
 void lock_init()
 {
     static int sem_inited = 0;
-    if(!sem_inited)
-    {
+    if(!sem_inited) {
         onlp_shlock_create(LOCK_MAGIC, &onlp_lock, "bmc-file-lock");
         sem_inited = 1;
         check_and_do_i2c_mux_reset(-1);
@@ -200,8 +183,7 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
         if(new_time > last_time) {
             if((new_time - last_time) > cache_time) {
                 bmc_cache_expired = 1;
-            }
-            else {
+            } else {
                 bmc_cache_expired = 0;
             }
         } else if(new_time == last_time) {
@@ -224,6 +206,8 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     int cache_time = 0;
     int bmc_cache_expired = 0;
     float f_rv = 0;
+    int bmc_cache_change = 0;
+    static long file_pre_time = 0;
     long file_last_time = 0;
     static int init_cache = 1;
     char* presence_str = "Present";
@@ -254,6 +238,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
         } else {
+            if(file_pre_time != file_last_time) {
+                file_pre_time = file_last_time;
+                bmc_cache_change = 1;
+            }
             bmc_cache_expired = 0;
         }
     } else {
@@ -261,7 +249,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     }
 
     //update cache
-    if(bmc_cache_expired == 1 || init_cache == 1) {
+    if(bmc_cache_expired == 1 || init_cache == 1 || bmc_cache_change == 1) {
         if (bmc_cache_expired == 1) {
             // detect bmc status
             if(bmc_check_alive() != ONLP_STATUS_OK) {
@@ -353,6 +341,8 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     char ipmi_cmd[1024] = {0};
     int cache_time = PSU_CACHE_TIME;
     int bmc_cache_expired = 0;
+    int bmc_cache_change = 0;
+    static long file_pre_time = 0;
     long file_last_time = 0;
     int rv = ONLP_STATUS_OK;
 
@@ -369,6 +359,10 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         if(bmc_cache_expired_check(file_last_time, new_tv.tv_sec, cache_time)) {
             bmc_cache_expired = 1;
         } else {
+            if(file_pre_time != file_last_time) {
+                file_pre_time = file_last_time;
+                bmc_cache_change = 1;
+            }
             bmc_cache_expired = 0;
         }
     } else {
@@ -376,7 +370,7 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     }
 
     //update cache
-    if(bmc_cache_expired == 1 || fru->init_done == 0) {
+    if(bmc_cache_expired == 1 || fru->init_done == 0 || bmc_cache_change == 1) {
         //get fru from ipmitool and save to cache file
         if(bmc_cache_expired == 1) {
             // detect bmc status

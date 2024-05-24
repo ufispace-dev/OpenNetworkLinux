@@ -38,24 +38,16 @@
  *
  * [01] CHASSIS
  *            |----[01] ONLP_THERMAL_CPU_PKG
- *            |----[02] ONLP_THERMAL_CPU_0
- *            |----[03] ONLP_THERMAL_CPU_1
- *            |----[04] ONLP_THERMAL_CPU_2
- *            |----[05] ONLP_THERMAL_CPU_3
- *            |----[06] ONLP_THERMAL_CPU_4
- *            |----[07] ONLP_THERMAL_CPU_5
- *            |----[08] ONLP_THERMAL_CPU_6
- *            |----[09] ONLP_THERMAL_CPU_7
- *            |----[10] ONLP_THERMAL_ENV_CPU
- *            |----[11] ONLP_THERMAL_CPU_PECI
- *            |----[12] ONLP_THERMAL_ENV0
- *            |----[13] ONLP_THERMAL_ENV1
- *            |----[14] ONLP_THERMAL_ENV2
- *            |----[15] ONLP_THERMAL_ENV3
- *            |----[16] ONLP_THERMAL_ENV4
- *            |----[17] ONLP_THERMAL_ENV5
- *            |----[18] ONLP_THERMAL_ENV_FAN0
- *            |----[19] ONLP_THERMAL_ENV_FAN1
+ *            |----[02] ONLP_THERMAL_ENV_CPU
+ *            |----[03] ONLP_THERMAL_CPU_PECI
+ *            |----[04] ONLP_THERMAL_ENV0
+ *            |----[05] ONLP_THERMAL_ENV1
+ *            |----[06] ONLP_THERMAL_ENV2
+ *            |----[07] ONLP_THERMAL_ENV3
+ *            |----[08] ONLP_THERMAL_ENV4
+ *            |----[09] ONLP_THERMAL_ENV5
+ *            |----[10] ONLP_THERMAL_ENV_FAN0
+ *            |----[11] ONLP_THERMAL_ENV_FAN1
  *            |
  *            |----[01] ONLP_PSU_0----[20] ONLP_THERMAL_PSU0_TEMP1
  *            |
@@ -68,94 +60,6 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .hdr = {
             .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
             .description = "CPU Package",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_0),
-            .description = "CPU Thermal 0",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_1),
-            .description = "CPU Thermal 1",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_2),
-            .description = "CPU Thermal 2",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_3),
-            .description = "CPU Thermal 3",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_4),
-            .description = "CPU Thermal 4",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_5),
-            .description = "CPU Thermal 5",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_6),
-            .description = "CPU Thermal 6",
-            .poid = ONLP_OID_CHASSIS,
-            .status = ONLP_OID_STATUS_FLAG_PRESENT,
-        },
-        .caps = ONLP_THERMAL_CAPS_ALL,
-        .mcelsius = 0,
-        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(77000, 95000, 105000),
-    },
-    {
-        .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_7),
-            .description = "CPU Thermal 7",
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
@@ -473,7 +377,7 @@ int onlp_thermali_info_get(onlp_oid_id_t id, onlp_thermal_info_t* info)
     ONLP_TRY(onlp_thermali_hdr_get(id, &info->hdr));
 
     switch (local_id) {
-        case ONLP_THERMAL_CPU_PKG ... ONLP_THERMAL_CPU_7:
+        case ONLP_THERMAL_CPU_PKG:
             ret = update_thermali_cpu_info(local_id, info);
             break;
         case ONLP_THERMAL_ENV_CPU ... ONLP_THERMAL_PSU1_TEMP1:

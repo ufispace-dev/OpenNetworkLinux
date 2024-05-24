@@ -31,7 +31,7 @@
 #include "x86_64_ufispace_s9600_30dx_log.h"
 
 #define SYSFS_PLTM                   "/sys/devices/platform/"
-#define SYSFS_DEVICES        "/sys/bus/i2c/devices/" 
+#define SYSFS_DEVICES        "/sys/bus/i2c/devices/"
 
 #define SYSFS_LPC                 SYSFS_PLTM "x86_64_ufispace_s9600_30dx_lpc/"
 #define SYSFS_LPC_MB_CPLD  SYSFS_LPC "mb_cpld/"
@@ -67,7 +67,7 @@
 #define PVT_PSU0_TEMP "PSU0_TEMP1"
 #define PVT_PSU1_TEMP "PSU1_TEMP1"
 
-#define BETA_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+#define BETA_CMD_BMC_SENSOR_CACHE   "timeout %ds ipmitool sdr -c get "\
                                     BETA_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
                                     BETA_TEMP_ENV_MAC0" "\
@@ -100,7 +100,8 @@
                                     "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
-#define PVT_CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
+//[BMC] 2.19
+#define PVT_CMD_BMC_SENSOR_CACHE    "timeout %ds ipmitool sdr -c get "\
                                     PVT_TEMP_ENV_CPU" "\
                                     "TEMP_CPU_PECI "\
                                     PVT_TEMP_ENV_MAC0" "\
@@ -163,6 +164,9 @@ extern const int CPLD_I2C_BUS;
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
 
+#define COMM_STR_NOT_SUPPORTED              "not supported"
+#define COMM_STR_NOT_AVAILABLE              "not available"
+
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -220,14 +224,6 @@ enum fru_attr_id {
 enum onlp_thermal_id {
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PKG,
-    ONLP_THERMAL_CPU_0,
-    ONLP_THERMAL_CPU_1,
-    ONLP_THERMAL_CPU_2,
-    ONLP_THERMAL_CPU_3,
-    ONLP_THERMAL_CPU_4,
-    ONLP_THERMAL_CPU_5,
-    ONLP_THERMAL_CPU_6,
-    ONLP_THERMAL_CPU_7,
     ONLP_THERMAL_ENV_CPU,
     ONLP_THERMAL_CPU_PECI,
     ONLP_THERMAL_ENV_MAC0,

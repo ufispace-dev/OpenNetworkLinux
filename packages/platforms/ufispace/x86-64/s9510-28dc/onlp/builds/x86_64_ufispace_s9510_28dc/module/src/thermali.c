@@ -67,9 +67,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
             .poid = ONLP_OID_CHASSIS,
             .status = ONLP_OID_STATUS_FLAG_PRESENT,
         },
-        .caps = (ONLP_THERMAL_CAPS_GET_TEMPERATURE |
-                 ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD |
-                 ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD)
+        .caps = (ONLP_THERMAL_CAPS_ALL)
     },
     {
         .hdr = {

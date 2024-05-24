@@ -30,7 +30,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
-#include <stdbool.h>
+#include <linux/types.h>
 #include "x86-64-ufispace-s9701-82dc-cpld.h"
 
 #ifdef DEBUG
@@ -827,7 +827,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     switch (attr->index) {
         case BSP_DEBUG:
             str = bsp_debug;
-            str_len = sizeof(str);
+            str_len = sizeof(bsp_debug);
             ret = write_bsp(buf, str, str_len, count);
 
             if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {

@@ -33,6 +33,9 @@
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
 
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
+
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_GPIO_FMT                "/sys/class/gpio/gpio%d/value"
@@ -48,32 +51,37 @@
 #define IS_INVALID_CPLD_ADDR(_addr)     (_addr > CPLD_END_ADDR || _addr < CPLD_START_ADDR)
 
 /* Thermal threshold */
-#define THERMAL_CPU_ERROR                73
-#define THERMAL_CPU_SHUTDOWN             93
-#define THERMAL_CPU_STD_ERROR            75
-#define THERMAL_CPU_STD_SHUTDOWN         95
+#define THERMAL_WARNING_DEFAULT          77
+#define THERMAL_ERROR_DEFAULT            95
+#define THERMAL_SHUTDOWN_DEFAULT         105
+#define THERMAL_CPU_WARNING              THERMAL_WARNING_DEFAULT
+#define THERMAL_CPU_ERROR                THERMAL_ERROR_DEFAULT
+#define THERMAL_CPU_SHUTDOWN             THERMAL_SHUTDOWN_DEFAULT
+#define THERMAL_CPU_STD_WARNING          THERMAL_WARNING_DEFAULT
+#define THERMAL_CPU_STD_ERROR            THERMAL_ERROR_DEFAULT
+#define THERMAL_CPU_STD_SHUTDOWN         THERMAL_SHUTDOWN_DEFAULT
 #define THERMAL_MAC_ERROR                100
 #define THERMAL_MAC_SHUTDOWN             110
 #define THERMAL_DDR4_ERROR               101
 #define THERMAL_DDR4_SHUTDOWN            106
-#define THERMAL_BMC_ERROR                90
-#define THERMAL_BMC_SHUTDOWN             100
+#define THERMAL_BMC_ERROR                85
+#define THERMAL_BMC_SHUTDOWN             95
 #define THERMAL_FANCARD1_ERROR           85
-#define THERMAL_FANCARD1_SHUTDOWN        89
+#define THERMAL_FANCARD1_SHUTDOWN        90
 #define THERMAL_FANCARD2_ERROR           85
-#define THERMAL_FANCARD2_SHUTDOWN        89
+#define THERMAL_FANCARD2_SHUTDOWN        90
 #define THERMAL_FPGA_R_ERROR             100
 #define THERMAL_FPGA_R_SHUTDOWN          110
 #define THERMAL_FPGA_L_ERROR             101
 #define THERMAL_FPGA_L_SHUTDOWN          106
-#define THERMAL_HWM_GDDR_ERROR           100
-#define THERMAL_HWM_GDDR_SHUTDOWN        110
-#define THERMAL_HWM_MAC_ERROR            78
-#define THERMAL_HWM_MAC_SHUTDOWN         80
-#define THERMAL_HWM_AMB_ERROR            100
-#define THERMAL_HWM_AMB_SHUTDOWN         110
-#define THERMAL_HWM_NTMCARD_ERROR        100
-#define THERMAL_HWM_NTMCARD_SHUTDOWN     110
+#define THERMAL_HWM_GDDR_ERROR           91
+#define THERMAL_HWM_GDDR_SHUTDOWN        100
+#define THERMAL_HWM_MAC_ERROR            100
+#define THERMAL_HWM_MAC_SHUTDOWN         110
+#define THERMAL_HWM_AMB_ERROR            90
+#define THERMAL_HWM_AMB_SHUTDOWN         100
+#define THERMAL_HWM_NTMCARD_ERROR        91
+#define THERMAL_HWM_NTMCARD_SHUTDOWN     100
 #define THERMAL_PSU_0_WARNING            80
 #define THERMAL_PSU_0_ERROR              85
 #define THERMAL_PSU_0_SHUTDOWN           90
@@ -86,6 +94,7 @@
 #define CPU_PKG_CORE_TEMP_SYS_ID  "1"
 
 /* BMC attr */
+//[BMC] 4.12
 #define BMC_ATTR_NAME_TEMP_MAC             "TEMP_MAC"
 #define BMC_ATTR_NAME_TEMP_DDR4            "TEMP_DDR4"
 #define BMC_ATTR_NAME_TEMP_BMC             "TEMP_BMC"
@@ -121,8 +130,7 @@
 
 /* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
 #define THERMAL_CACHE_TIME      10

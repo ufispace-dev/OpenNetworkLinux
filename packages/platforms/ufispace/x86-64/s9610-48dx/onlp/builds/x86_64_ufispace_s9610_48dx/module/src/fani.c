@@ -60,8 +60,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -72,8 +72,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -84,8 +84,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -96,8 +96,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -108,8 +108,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -120,8 +120,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -132,8 +132,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -144,8 +144,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -156,8 +156,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
     {
         .hdr = {
@@ -168,8 +168,8 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
         },
         .dir = ONLP_FAN_DIR_F2B,
         .caps = (ONLP_FAN_CAPS_GET_DIR | ONLP_FAN_CAPS_GET_PERCENTAGE | ONLP_FAN_CAPS_GET_RPM),
-        .model = "",
-        .serial = "",
+        .model = COMM_STR_NOT_SUPPORTED,
+        .serial = COMM_STR_NOT_SUPPORTED,
     },
 };
 
@@ -266,6 +266,32 @@ static int update_fani_status(int local_id, onlp_oid_hdr_t* hdr)
 }
 
 /**
+ * @brief Update the information of Model and Serial from FAN FRU EEPROM
+ * @param id The FAN Local ID
+ * @param[out] info Receives the FAN information (model and serial).
+ */
+static int update_fani_fru_info(int id, onlp_fan_info_t* info)
+{
+    bmc_fru_t fru = {0};
+
+    //read fru data
+    ONLP_TRY(bmc_fru_read(id, &fru, ONLP_FRU_FAN));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    //read product name
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+    //read part num for others
+    //snprintf(info->model, sizeof(info->model), "%s", fru.part_num.val);
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
+
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Update the information structure for the given FAN
  * @param id The FAN Local ID
  * @param[out] info Receives the FAN information.
@@ -343,6 +369,8 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
         percentage = (info->rpm * 100) / sys_fan_max;
         info->percentage = percentage;
         info->hdr.status |= (rpm == 0) ? ONLP_OID_STATUS_FLAG_FAILED : ONLP_OID_STATUS_FLAG_OPERATIONAL;
+        /* Get FRU */
+        ONLP_TRY(update_fani_fru_info(local_id, info));
     } else if (local_id >= ONLP_PSU_0_FAN && local_id <= ONLP_PSU_1_FAN) {
         //get psu type
         if(local_id == ONLP_PSU_0_FAN) {

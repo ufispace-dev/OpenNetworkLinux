@@ -71,6 +71,26 @@ static onlp_fan_info_t __onlp_fan_info[ONLP_FAN_COUNT] = {
     CHASSIS_FAN_INFO(ONLP_PSU_1_FAN, "PSU 1 FAN"),
 };
 
+static bool fan_fru_supported = false;
+
+static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
+{
+    int result = ONLP_STATUS_OK;
+
+    if(fan_fru_supported) {
+        /* Get fan fru info */
+        if(result != ONLP_STATUS_OK) {
+            snprintf(info->model, sizeof(info->model), "%s", "not available");
+            snprintf(info->serial, sizeof(info->serial), "%s", "not available");
+        }
+    } else {
+        snprintf(info->model, sizeof(info->model), "%s", "not supported");
+        snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 /**
  * @brief Update the status of FAN's oid header.
  * @param id The FAN ID.
@@ -226,12 +246,14 @@ int onlp_fani_info_get(onlp_oid_id_t id, onlp_fan_info_t* info)
     ONLP_TRY(onlp_fani_hdr_get(id, &info->hdr));
 
     if (local_id > ONLP_FAN_RESERVED && local_id < ONLP_FAN_MAX) {
-        ret = update_fani_info(local_id, info);
+        ret = update_fani_info(local_id, info);	
     } else {
         AIM_LOG_ERROR("unknown FAN id (%d), func=%s\n", local_id, __FUNCTION__);
-        ret = ONLP_STATUS_E_PARAM;
+        return ONLP_STATUS_E_PARAM;
     }
 
+    //update fan fru info
+    ONLP_TRY(ufi_fan_fru_update(local_id, info));	
     return ret;
 }
 

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.0"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
@@ -11,9 +14,10 @@ LOG_FOLDER_NAME="log_platform_${DATESTR}"
 LOG_FILE_NAME="log_platform_${DATESTR}.log"
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 
 # MODEL_NAME: set by function _board_info
@@ -36,7 +40,7 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+LOG_REDIRECT=""
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
@@ -78,7 +82,11 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
@@ -120,6 +128,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
 
@@ -253,8 +267,8 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00011110)))
-    model_name_array=("Large EMUX")
+    model_id_array=($((2#00011110)) $((2#00011111)))
+    model_name_array=("Large EMUX w/o OP2", "Large EMUX w/ OP2")
     model_name=""
 
     model_id=`${IOGET} 0xE00`
@@ -924,10 +938,16 @@ function _show_nif_port_status_sysfs {
             if [ "${port_type_array[${i}]}" == "qsfp" ]; then
                 eeprom_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
                 _check_filepath ${eeprom_path}
+                dev_class_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/dev_class"
+                _check_filepath ${dev_class_path}
             elif  [ "${port_type_array[${i}]}" == "qsfpdd" ]; then
                 eeprom_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/eeprom"
                 _check_filepath ${eeprom_path}
+                dev_class_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/dev_class"
+                _check_filepath ${dev_class_path}
             fi
+            dev_class=$(eval "cat ${dev_class_path} ${LOG_REDIRECT}")
+            _echo "[Port${i} Dev Class Status]: ${dev_class}"
 
             for (( page_i=0; page_i<${#eeprom_page_array[@]}; page_i++ ))
             do
@@ -1467,7 +1487,7 @@ function _show_disk_info {
 
     cmd_array=("lsblk" \
                "lsblk -O" \
-               "parted -l /dev/sda" \
+               #"parted -l /dev/sda" \ #Avoid prompt Fix/Ingore and freeze the tech support in VROC.
                "fdisk -l /dev/sda" \
                "find /sys/fs/ -name errors_count -print -exec cat {} \;" \
                "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;" \
@@ -1788,6 +1808,50 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-d D_DIR] [-v]"
+    echo "Description:"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":d:fv"
+    # default log dir
+    local log_folder_root="/tmp/log"
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1837,4 +1901,5 @@ function _main {
     echo "#   done..."
 }
 
+_getopts $@
 _main
