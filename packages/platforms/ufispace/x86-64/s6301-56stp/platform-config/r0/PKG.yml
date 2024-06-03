@@ -1,0 +1,1 @@
+!include $ONL_TEMPLATES/platform-config-platform.yml ARCH=amd64 VENDOR=ufispace BASENAME=x86-64-ufispace-s6301-56stp REVISION=r0

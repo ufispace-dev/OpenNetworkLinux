@@ -140,19 +140,12 @@
 /* BMC cmd */
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_ERR       " 2>>"LPC_BSP_FMT"bsp_pr_err"
-#define FAN_CACHE_TIME          10
-#define PSU_CACHE_TIME          30
-#define THERMAL_CACHE_TIME      10
+#define FAN_CACHE_TIME          60
+#define PSU_CACHE_TIME          60
+#define THERMAL_CACHE_TIME      60
 #define BMC_FIELDS_MAX          20
 
-/*   IPMITOOL_CMD_TIMEOUT get from ipmitool test.
- *   Test Case: Run 100 times of CMD_BMC_SENSOR_CACHE command and 100 times of CMD_FRU_CACHE_SET command and get the execution times.
- *              We take 10s as The IPMITOOL_CMD_TIMEOUT value
- *              since the CMD_BMC_SENSOR_CACHE execution times value is between 0.216s - 2.926s and
- *                    the CMD_FRU_CACHE_SET execution times value is between 0.031s - 0.076s.
- */
-
-#define IPMITOOL_CMD_TIMEOUT        10
+#define IPMITOOL_CMD_TIMEOUT        30
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get %s"\
                                     "> "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 

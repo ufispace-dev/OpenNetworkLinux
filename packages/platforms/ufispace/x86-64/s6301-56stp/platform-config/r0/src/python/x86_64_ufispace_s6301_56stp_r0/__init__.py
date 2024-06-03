@@ -15,9 +15,9 @@ def msg(s, fatal=False):
     if fatal:
         sys.exit(1)
 
-class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
-    PLATFORM='x86-64-ufispace-s6301-56st-r0'
-    MODEL="S6301-56ST"
+class OnlPlatform_x86_64_ufispace_s6301_56stp_r0(OnlPlatformUfiSpace):
+    PLATFORM='x86-64-ufispace-s6301-56stp-r0'
+    MODEL="S6301-56STP"
     SYS_OBJECT_ID=".6301.56"
     PORT_COUNT=56
     PORT_CONFIG="48x1 + 8x10"
@@ -28,7 +28,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
     bus_i801=0
     bus_ismt=1
-    lpc_sysfs_path="/sys/devices/platform/x86_64_ufispace_s6301_56st_lpc"
+    lpc_sysfs_path="/sys/devices/platform/x86_64_ufispace_s6301_56stp_lpc"
     gpio_sys_path = "/sys/class/gpio"
 
     def check_bmc_enable(self):
@@ -36,7 +36,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
     def get_hw_ext_id(self):
         # get hardware ext id
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56st_lpc/mb_cpld/board_ext_id"
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56stp_lpc/mb_cpld/board_ext_id"
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
@@ -46,7 +46,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
     def get_hw_rev_id(self):
         # get hardware revision
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56st_lpc/mb_cpld/board_hw_id"
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56stp_lpc/mb_cpld/board_hw_id"
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
@@ -124,7 +124,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         os.system("modprobe eeprom")
 
         #CPLD
-        self.insmod("x86-64-ufispace-s6301-56st-lpc")
+        self.insmod("x86-64-ufispace-s6301-56stp-lpc")
 
         # check i2c bus status
         self.check_i2c_status()
@@ -174,6 +174,16 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         # init HWM/Temp
         self.bsp_pr("Init HWMON");
         self.init_hwmon()
+
+        # init poe
+        self.bsp_pr("Init POE");
+        os.system("modprobe x86-64-ufispace-s6301-56stp-poe")
+        self.new_i2c_devices(
+            [
+                ('s6301_56stp_poe ', 0x20, 4),
+            ]
+        )
+        os.system("echo 1 >  /sys/bus/i2c/devices/i2c-4/4-0020/sys/poe_init")
 
         # reset port led
         os.system("echo 0 > {}/mb_cpld/port_led_clear".format(self.lpc_sysfs_path))

@@ -172,10 +172,10 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 extern const int CPLD_I2C_BUS;
 
 /* BMC CMD */
-#define FAN_CACHE_TIME          10
-#define PSU_CACHE_TIME          30
-#define THERMAL_CACHE_TIME      10
-#define IPMITOOL_CMD_TIMEOUT    10
+#define FAN_CACHE_TIME          60
+#define PSU_CACHE_TIME          60
+#define THERMAL_CACHE_TIME      60
+#define IPMITOOL_CMD_TIMEOUT    30
 
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
