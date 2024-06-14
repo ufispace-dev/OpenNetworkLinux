@@ -1,5 +1,5 @@
 /*
- * A lpc driver for the ufispace_s9701_82dc
+ * A lpc driver for the ufispace_s9600_72xc
  *
  * Copyright (C) 2017-2020 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>
@@ -37,7 +37,7 @@
 
 #define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
 
-#define DRIVER_NAME "x86_64_ufispace_s9701_82dc_lpc"
+#define DRIVER_NAME "x86_64_ufispace_s9600_72xc_lpc"
 #define CPU_BDE 0
 #define CPU_SKY 1
 #define CPU_TYPE CPU_SKY
@@ -149,7 +149,7 @@ static u8 _shift(u8 mask)
     int i=0, mask_one=1;
 
     for(i=0; i<8; ++i) {
-        if ((mask & mask_one) == 1)
+        if((mask & mask_one) == 1)
             return i;
         else
             mask >>= 1;
@@ -170,7 +170,7 @@ static u8 _mask_shift(u8 val, u8 mask)
 
 static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
 {
-    if (bit_val == 0)
+    if(bit_val == 0)
         reg_val = reg_val & ~(1 << bit);
     else
         reg_val = reg_val | (1 << bit);
@@ -179,7 +179,7 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
 {
-    if ((log_type==LOG_READ  && enable_log_read) ||
+    if((log_type==LOG_READ  && enable_log_read) ||
         (log_type==LOG_WRITE && enable_log_write) ||
         (log_type==LOG_SYS && enable_log_sys) ) {
         va_list args;
@@ -251,11 +251,11 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 {
     u8 reg_val, reg_val_now, shift;
 
-    if (kstrtou8(buf, 0, &reg_val) < 0)
+    if(kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
     //apply SINGLE BIT operation if mask is specified, multiple bits are not supported
-    if (mask != MASK_ALL) {
+    if(mask != MASK_ALL) {
         reg_val_now = _read_lpc_reg(reg, 0x0);
         shift = _shift(mask);
         reg_val = _bit_operation(reg_val_now, shift, reg_val);
@@ -398,11 +398,11 @@ static ssize_t write_mux_reset_callback(struct device *dev,
     u8 mask = 0b11111111;
     static int mux_reset_flag = 0;
 
-    if (kstrtou8(buf, 0, &val) < 0)
+    if(kstrtou8(buf, 0, &val) < 0)
         return -EINVAL;
 
-    if (mux_reset_flag == 0) {
-        if (val == 0) {
+    if(mux_reset_flag == 0) {
+        if(val == 0) {
             mutex_lock(&lpc_data->access_lock);
             mux_reset_flag = 1;
             BSP_LOG_W("i2c mux reset is triggered...");
@@ -450,7 +450,7 @@ static ssize_t read_lpc_callback(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_ALL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         //CPU CPLD
         case ATT_CPU_CPLD_VERSION:
             reg = REG_CPU_CPLD_VERSION;
@@ -496,7 +496,7 @@ static ssize_t read_lpc_callback(struct device *dev,
             mask = 0x38;
             break;
         case ATT_MB_BRD_DEPH_ID:
-              reg = REG_MB_BRD_ID_1;
+            reg = REG_MB_BRD_ID_1;
             mask = 0x04;
             break;
         case ATT_MB_MUX_CTRL:
@@ -515,7 +515,7 @@ static ssize_t read_lpc_callback(struct device *dev,
 #endif
         //BSP
         case ATT_BSP_REG:
-            if (kstrtou16(bsp_reg, 0, &reg) < 0)
+            if(kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
             break;
         default:
@@ -532,7 +532,7 @@ static ssize_t write_lpc_callback(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_ALL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
@@ -549,7 +549,7 @@ static ssize_t read_bsp_callback(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     char *str=NULL;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
             break;
@@ -575,7 +575,7 @@ static ssize_t write_bsp_callback(struct device *dev,
     u16 reg = 0;
     u8 bsp_debug_u8 = 0;
 
-    switch (attr->index) {
+    switch(attr->index) {
         case ATT_BSP_VERSION:
             str = bsp_version;
             str_len = sizeof(bsp_version);
@@ -585,7 +585,7 @@ static ssize_t write_bsp_callback(struct device *dev,
             str_len = sizeof(bsp_debug);
             break;
         case ATT_BSP_REG:
-            if (kstrtou16(buf, 0, &reg) < 0)
+            if(kstrtou16(buf, 0, &reg) < 0)
                 return -EINVAL;
 
             str = bsp_reg;
@@ -595,10 +595,10 @@ static ssize_t write_bsp_callback(struct device *dev,
             return -EINVAL;
     }
 
-    if (attr->index == ATT_BSP_DEBUG) {
-        if (kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
+    if(attr->index == ATT_BSP_DEBUG) {
+        if(kstrtou8(buf, 0, &bsp_debug_u8) < 0) {
             return -EINVAL;
-        } else if (_config_bsp_log(bsp_debug_u8) < 0) {
+        } else if(_config_bsp_log(bsp_debug_u8) < 0) {
             return -EINVAL;
         }
     }
@@ -638,7 +638,7 @@ static SENSOR_DEVICE_ATTR(cpu_cpld_build,   S_IRUGO, read_lpc_callback, NULL, AT
 //SENSOR_DEVICE_ATTR - MB
 static SENSOR_DEVICE_ATTR(board_id_0,       S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_0);
 static SENSOR_DEVICE_ATTR(board_id_1,       S_IRUGO, read_lpc_callback, NULL, ATT_MB_BRD_ID_1);
-static SENSOR_DEVICE_ATTR(mb_cpld_1_version,   S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_VERSION);
+static SENSOR_DEVICE_ATTR(mb_cpld_1_version, S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_VERSION);
 static SENSOR_DEVICE_ATTR(mb_cpld_1_version_h, S_IRUGO, read_mb_cpld_1_version_h, NULL, ATT_MB_CPLD_1_VERSION_H);
 static SENSOR_DEVICE_ATTR(mb_cpld_1_build,  S_IRUGO, read_lpc_callback, NULL, ATT_MB_CPLD_1_BUILD);
 static SENSOR_DEVICE_ATTR(mux_ctrl,         S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_MB_MUX_CTRL);
@@ -656,10 +656,10 @@ static SENSOR_DEVICE_ATTR(alert_disable,    S_IRUGO, read_lpc_callback, NULL, AT
 //SENSOR_DEVICE_ATTR - BSP
 static SENSOR_DEVICE_ATTR(bsp_version,      S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug,        S_IRUGO | S_IWUSR, read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
-static SENSOR_DEVICE_ATTR(bsp_reg,          S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
+static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
 static SENSOR_DEVICE_ATTR(bsp_pr_info,      S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR(bsp_pr_err,       S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_ERR);
-static SENSOR_DEVICE_ATTR(bsp_gpio_max,     S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
 
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
@@ -754,13 +754,13 @@ static int lpc_drv_probe(struct platform_device *pdev)
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
                             GFP_KERNEL);
-    if (!lpc_data)
+    if(!lpc_data)
         return -ENOMEM;
 
     mutex_init(&lpc_data->access_lock);
 
     for (i=0; i<grp_num; ++i) {
-        switch (i) {
+        switch(i) {
             case 0:
                 grp = &cpu_cpld_attr_grp;
                 break;
@@ -781,7 +781,7 @@ static int lpc_drv_probe(struct platform_device *pdev)
     }
 
         err[i] = sysfs_create_group(&pdev->dev.kobj, grp);
-        if (err[i]) {
+        if(err[i]) {
             printk(KERN_ERR "Cannot create sysfs for group %s\n", grp->name);
             goto exit;
         } else {
@@ -793,7 +793,7 @@ static int lpc_drv_probe(struct platform_device *pdev)
 
 exit:
     for (i=0; i<grp_num; ++i) {
-        switch (i) {
+        switch(i) {
             case 0:
                 grp = &cpu_cpld_attr_grp;
                 break;
@@ -814,7 +814,7 @@ exit:
         }
 
         sysfs_remove_group(&pdev->dev.kobj, grp);
-        if (!err[i]) {
+        if(!err[i]) {
             //remove previous successful cases
             continue;
         } else {
@@ -849,7 +849,7 @@ int lpc_init(void)
     int err = 0;
 
     err = platform_driver_register(&lpc_drv);
-    if (err) {
+    if(err) {
         printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
 
@@ -857,7 +857,7 @@ int lpc_init(void)
     }
 
     err = platform_device_register(&lpc_dev);
-    if (err) {
+    if(err) {
         printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
                 __func__, __LINE__, err);
         platform_driver_unregister(&lpc_drv);
@@ -874,7 +874,7 @@ void lpc_exit(void)
 }
 
 MODULE_AUTHOR("Leo Lin <leo.yt.lin@ufispace.com>");
-MODULE_DESCRIPTION("x86_64_ufispace_s9701_82dc_lpc driver");
+MODULE_DESCRIPTION("x86_64_ufispace_s9600_72xc_lpc driver");
 MODULE_LICENSE("GPL");
 
 module_init(lpc_init);

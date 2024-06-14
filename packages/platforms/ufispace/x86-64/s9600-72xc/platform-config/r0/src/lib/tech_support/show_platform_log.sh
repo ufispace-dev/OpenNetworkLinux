@@ -66,7 +66,7 @@ start_time=$(date +%s)
 end_time=0
 elapsed_time=0
 
-SYSFS_LPC="/sys/bus/platform/devices/x86_64_ufispace_s9701_82dc_lpc"
+SYSFS_LPC="/sys/bus/platform/devices/x86_64_ufispace_s9600_72xc_lpc"
 
 function _echo {
     str="$@"
@@ -100,8 +100,8 @@ function _show_ts_version {
 
 function _update_gpio_max {
     _banner "Update GPIO MAX"
-    local sysfs="/sys/devices/platform/x86_64_ufispace_s9701_82dc_lpc/bsp/bsp_gpio_max"
-    
+    local sysfs="/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_gpio_max"
+
     GPIO_MAX=$(cat ${sysfs})
     if [ $? -eq 1 ]; then
         GPIO_MAX_INIT_FLAG=0
@@ -290,8 +290,8 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00001010)) $((2#00001001)))
-    model_name_array=("S9701-82DC w/o OP2" "S9701-82DC w OP2")
+    model_id_array=($((2#00000011)) $((2#00000110)))
+    model_name_array=("S9600-72XC w/o OP2" "S9600-72XC w OP2")
 
     model_id=`${IOGET} 0xE00`
     ret=$?
@@ -399,7 +399,7 @@ function _cpld_version_i2c {
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} build ${cpu_cpld_build}" 
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#11000000) >> 6)).$(( cpu_cpld_info & 2#00111111 )).$((cpu_cpld_build))"          
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         # MB CPLD
         mb_cpld_base_addr=0x30
         ver_reg=0x2
@@ -448,7 +448,7 @@ function _cpld_version_sysfs {
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_ver} build ${cpu_cpld_build}" 
     _echo "[CPU CPLD Version]: ${cpu_cpld_ver_h}"
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         # MB CPLD
         mb_cpld_base_addr=30
         cpld_ver_h_attr="cpld_version_h"
@@ -530,7 +530,7 @@ function _show_i2c_tree_bus_mux_i2c {
     local chip_addr1_chann=""
     local chip_addr2_chann=""
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then 
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then 
         ## ROOT_QSFP_QSFPDD-0x75
         _show_i2c_mux_devices "0x75" "8" "ROOT_0x75"
         
@@ -556,13 +556,13 @@ function _show_i2c_tree_bus_mux_i2c {
             done
         fi
 
-        ## ROOT_QSFP_QSFPDD-0x75-Channel(5~7)-0x76-Channel(0~7)
+        ## ROOT_QSFP_QSFPDD-0x75-Channel(5~6)-0x76-Channel(0~7)
         chip_addr1="0x75"
         chip_addr2="0x76"
         _check_i2c_device "${chip_addr1}"
         ret=$?
         if [ "$ret" == "0" ]; then
-            for (( chip_addr1_chann=5; chip_addr1_chann<=7; chip_addr1_chann++ ))
+            for (( chip_addr1_chann=5; chip_addr1_chann<=6; chip_addr1_chann++ ))
             do
                 # open mux channel - 0x75 (chip_addr1)
                 i2cset -y 0 ${chip_addr1} $(( 2 ** ${chip_addr1_chann} ))
@@ -600,7 +600,7 @@ function _show_i2c_device_info {
     _echo ""
 
     local pca954x_device_id=("")
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         pca954x_device_id=("0x72" "0x73" "0x75")    
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -681,7 +681,7 @@ function _show_psu_status_cpld_sysfs {
     _banner "Show PSU Status (CPLD)"
 
     bus_id=""
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then        
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then        
         bus_id="1"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -721,7 +721,7 @@ function _show_rov_sysfs {
     _banner "Show ROV"
 
     bus_id=""
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then 
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then 
         bus_id="1"
         rov_i2c_bus="9"
         rov_i2c_addr="0x70"
@@ -771,8 +771,13 @@ function _show_rov {
 function _show_sfp_port_status_sysfs {
     _banner "Show SFP Port Status / EEPROM"
     echo "    Show SFP Port Status / EEPROM, please wait..."
+    
+    bus_id=""
+    port_status_cpld_addr_array=""
+    port_status_sysfs_idx_array=""
+    port_status_bit_idx_array=""
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then 
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then 
         bus_id="1"
         sfp_port_eeprom_bus_id_base=25
 
@@ -880,44 +885,49 @@ function _show_qsfp_port_status_sysfs {
     _banner "Show QSFP Port Status / EEPROM"
     echo "    Show QSFP Port Status / EEPROM, please wait..."    
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
-        bus_id="1"
-        qsfp_port_eeprom_bus_id_base=89
-        port_status_cpld_addr="0033"
-        port_status_sysfs_idx_array=("64_71" "64_71" "64_71" "64_71" "64_71" "64_71" \
-                                     "64_71" "64_71" "72_75" "72_75" "72_75" "72_75")                                
-        port_status_bit_idx_array=("0" "1" "2" "3" "4" "5" "6" "7" \
-                                   "0" "1" "2" "3")
+    bus_id=""
+    port_status_cpld_addr_array=""
+    port_status_sysfs_idx_array=""
+    port_status_bit_idx_array=""
+    port_led_cpld_addr_array=""
+    port_led_cpld_index_array=""
 
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
+        bus_id="1"
+        port_status_cpld_addr="0033"
+        port_status_sysfs_idx="64_71"                                 
+        port_status_bit_idx_array=("0" "1" "2" "3" "4" "5" "6" "7")
+        qsfp_eeprom_bus_idx_array=(89 90 91 92 95 96 97 98)
+        
         for (( i=0; i<${#port_status_bit_idx_array[@]}; i++ ))
         do
             # Module QSFP Port Interrupt Status (0: Interrupted, 1:No Interrupt)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx_array[i]}_intr"
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx}_intr"
             _check_filepath $sysfs
             port_module_interrupt_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
             port_module_interrupt=$(( (port_module_interrupt_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
             
             # Module QSFP Port Absent Status (0: Present, 1:Absence)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx_array[i]}_pres"
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx}_pres"
             _check_filepath $sysfs
             port_module_absent_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
             port_module_absent=$(( (port_module_absent_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
             # Module QSFP Port Get Low Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx_array[i]}_lpmode"
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx}_lpmode"
             _check_filepath $sysfs
             port_lp_mode_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
             port_lp_mode=$(( (port_lp_mode_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
             
             # Module QSFP Port Reset Status (0:Reset, 1:Normal)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx_array[i]}_rst"
+            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfp_port_${port_status_sysfs_idx}_rst"
             _check_filepath $sysfs
             port_reset_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
             port_reset=$(( (port_reset_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
             # Module QSFP Port Dump EEPROM
             if [ "${port_module_absent}" == "0" ]; then
-                sysfs="/sys/bus/i2c/devices/$((qsfp_port_eeprom_bus_id_base + i))-0050/eeprom"
+                sysfs="/sys/bus/i2c/devices/${qsfp_eeprom_bus_idx_array[${i}]}-0050/eeprom"
                 _check_filepath $sysfs
                 port_eeprom_p0_1st=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
                 port_eeprom_p0_2nd=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
@@ -972,118 +982,6 @@ function _show_qsfp_port_status {
     fi
 }
 
-function _show_qsfpdd_port_status_sysfs {
-    _banner "Show QSFPDD Port Status / EEPROM"
-    echo "    Show QSFPDD Port Status / EEPROM, please wait..."
-
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
-        bus_id="1"
-        qsfpdd_port_eeprom_bus_id_base=105
-        port_status_cpld_addr="0033"
-        port_led_cpld_addr="0033"                    
-        port_status_bit_idx_array=("0" "1" "2" "3" "4" "5")
-        port_led_sysfs_idx_array=("0_1" "0_1" "2_3" "2_3" "4_5" "4_5")
-
-        for (( i=0; i<${#port_status_bit_idx_array[@]}; i++ ))
-        do
-            # Module QSFPDD Port Interrupt Status (0: Interrupted, 1:No Interrupt)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfpdd_port_intr"
-            _check_filepath $sysfs
-            port_module_interrupt_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_module_interrupt=$(( (port_module_interrupt_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
-            
-            # Module QSFPDD Port Absent Status (0: Present, 1:Absence)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfpdd_port_0_5_pres"
-            _check_filepath $sysfs
-            port_module_absent_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_module_absent=$(( (port_module_absent_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
-
-            # Module QSFPDD Port Get Low Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfpdd_port_lpmode"
-            _check_filepath $sysfs
-            port_lp_mode_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_lp_mode=$(( (port_lp_mode_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
-            
-            # Module QSFPDD Port Reset Status (0:Reset, 1:Normal)
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfpdd_port_rst"
-            _check_filepath $sysfs
-            port_reset_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_reset=$(( (port_reset_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
-
-            # Module QSFPDD Port Dump EEPROM
-            if [ "${port_module_absent}" == "0" ]; then
-                sysfs="/sys/bus/i2c/devices/$((qsfpdd_port_eeprom_bus_id_base + i))-0050/eeprom"
-                _check_filepath $sysfs
-                port_eeprom_p0_1st=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p0_2nd=$(eval  "dd if=$sysfs bs=128 count=2 skip=0  status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_1st=$(eval "dd if=$sysfs bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p17_2nd=$(eval "dd if=$sysfs bs=128 count=1 skip=18 status=none ${LOG_REDIRECT} | hexdump -C")
-                port_eeprom_p18=$(eval     "dd if=$sysfs bs=128 count=1 skip=19 status=none ${LOG_REDIRECT} | hexdump -C")
-                if [ -z "$port_eeprom_p0_1st" ]; then
-                    port_eeprom_p0_1st="ERROR!!! The result is empty. It should read failed ($sysfs)!!"
-                fi
-                
-                # Full EEPROM Log
-                if [ "${LOG_FILE_ENABLE}" == "1" ]; then
-                    hexdump -C $sysfs > ${LOG_FOLDER_PATH}/qsfpdd_port${i}_eeprom.log 2>&1
-                fi
-            else
-                port_eeprom_p0_1st="N/A"
-                port_eeprom_p0_2nd="N/A"
-                port_eeprom_p17_1st="N/A"
-                port_eeprom_p17_2nd="N/A"
-                port_eeprom_p18="N/A"
-            fi
-
-            # QSFPDD Port LED
-            sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_qsfpdd_port_${port_led_sysfs_idx_array[${i}]}_led"
-            cpld_qsfpdd_led_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            if [ $(($i % 2)) -eq 0 ]; then
-                cpld_qsfpdd_led_reg=$((cpld_qsfpdd_led_reg & 2#00001111))           # Clear higher 4 bits on reg value for even ports
-            else
-                cpld_qsfpdd_led_reg=$(((cpld_qsfpdd_led_reg & 2#11110000) >> 4))    # Clear and shift lower 4 bits on reg value for odd ports
-            fi
-            led_red=$((cpld_qsfpdd_led_reg & 2#00000001))           # (0: red off, 1:red on)
-            led_green=$(((cpld_qsfpdd_led_reg & 2#00000010) >> 1))  # (0: green off, 1:green on)
-            led_blue=$(((cpld_qsfpdd_led_reg & 2#00000100) >> 2))   # (0: blue off, 1:blue on)
-            led_blink=$(((cpld_qsfpdd_led_reg & 2#00001000) >> 3))  # (0: solid, 1:blinking)
-
-
-            _echo "[QSFPDD Port${i} Module Interrupt Reg Raw]: ${port_module_interrupt_reg}"
-            _echo "[QSFPDD Port${i} Module Interrupt]: ${port_module_interrupt}"
-            _echo "[QSFPDD Port${i} Module Absent Reg Raw]: ${port_module_absent_reg}"
-            _echo "[QSFPDD Port${i} Module Absent ]: ${port_module_absent}"
-            _echo "[QSFPDD Port${i} Low Power Mode Reg Raw]: ${port_lp_mode_reg}"
-            _echo "[QSFPDD Port${i} Low Power Mode]: ${port_lp_mode}"
-            _echo "[QSFPDD Port${i} Reset Reg Raw]: ${port_reset_reg}"
-            _echo "[QSFPDD Port${i} Reset Status]: ${port_reset}"
-            _echo "[QSFPDD Port${i} LED Reg Raw]: ${cpld_qsfpdd_led_reg}"
-            _echo "[QSFPDD Port${i} LED Status]: Red: ${led_red}, Green: ${led_green}, " \
-                                            "Blue: ${led_blue}, Blinking: ${led_blink}"                    
-            _echo "[Port${i} EEPROM Page0-0(1st)]:"
-            _echo "${port_eeprom_p0_1st}"
-            _echo "[Port${i} EEPROM Page0-0(2nd)]:"
-            _echo "${port_eeprom_p0_2nd}"
-            _echo "[Port${i} EEPROM Page17 (1st)]:"
-            _echo "${port_eeprom_p17_1st}"
-            _echo "[Port${i} EEPROM Page17 (2nd)]:"
-            _echo "${port_eeprom_p17_2nd}"
-            _echo "[Port${i} EEPROM Page18      ]:"
-            _echo "${port_eeprom_p18}"
-            _echo ""
-        done
-    else
-        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
-        exit 1
-    fi
-}
-
-function _show_qsfpdd_port_status {
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_qsfpdd_port_status_sysfs
-    fi
-}
-
 function _show_mgmt_sfp_status_sysfs {
     _banner "Show MGMT SFP Port Status / EEPROM"
     echo "    Show MGMT SFP Port Status / EEPROM, please wait..."    
@@ -1092,7 +990,7 @@ function _show_mgmt_sfp_status_sysfs {
     mgmt_sfp_port_eeprom_bus_id_base=10
     max_num=2
     
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         bus_id="1"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -1193,7 +1091,7 @@ function _show_cpu_temperature {
 function _show_system_led_sysfs {
     _banner "Show System LED"
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         sysfs1="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_1"
         sysfs2="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_2"
         sysfs3="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_3"
@@ -1221,7 +1119,7 @@ function _show_system_led {
 function _show_beacon_led_sysfs {
     _banner "Show Beacon LED"
 
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then
         sysfs="/sys/bus/i2c/devices/1-0033/cpld_beacon_led"
         _check_filepath $sysfs
         beacon_led=$(eval "cat $sysfs ${LOG_REDIRECT}")
@@ -1650,7 +1548,7 @@ function _show_bmc_info {
 function _show_bmc_device_status {    
     _banner "Show BMC Device Status"
     
-    if [[ "${MODEL_NAME}" == *"S9701-82DC"* ]]; then 
+    if [[ "${MODEL_NAME}" == *"S9600-72XC"* ]]; then 
         # Step 1: Get PSU 0 Status Registers
         _echo "[PSU 0 Device Status (BMC) ]"        
         status_word_psu0=$(eval     "ipmitool i2c bus=4 0xb0 0x2 0x79 ${LOG_REDIRECT}" | head -n 1)
@@ -1893,8 +1791,7 @@ function _main {
     _show_psu_status_cpld
     _show_rov
     _show_sfp_port_status    
-    _show_qsfp_port_status
-    _show_qsfpdd_port_status
+    _show_qsfp_port_status    
     _show_mgmt_sfp_status    
     _show_cpu_temperature 
     _show_system_led
