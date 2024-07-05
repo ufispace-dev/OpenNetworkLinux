@@ -61,7 +61,7 @@ static onlp_psu_info_t psu_info[] =
 
 static char *vendors[] = {"DELTA", "FSPGROUP"};
 
-static int ufi_psu_present_get(int id, int *psu_present)
+int ufi_psu_present_get(int id, int *psu_present)
 {
     int status = 0;
     int mask = 0;
@@ -198,18 +198,22 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
 {
     int psu_present = 0, pw_good = 0;
     float data = 0;
-    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0;
+    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_pin = 0, attr_pout = 0;
 
     if (id == ONLP_PSU_0) {
         attr_vin = BMC_ATTR_ID_PSU0_VIN;
         attr_vout = BMC_ATTR_ID_PSU0_VOUT;
         attr_iin = BMC_ATTR_ID_PSU0_IIN;
         attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+        attr_pin = BMC_ATTR_ID_PSU0_PIN;
+        attr_pout = BMC_ATTR_ID_PSU0_POUT;
     } else {
         attr_vin = BMC_ATTR_ID_PSU1_VIN;
         attr_vout = BMC_ATTR_ID_PSU1_VOUT;
         attr_iin = BMC_ATTR_ID_PSU1_IIN;
         attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+        attr_pin = BMC_ATTR_ID_PSU1_PIN;
+        attr_pout = BMC_ATTR_ID_PSU1_POUT;
     }
 
      /* Get power present status */
@@ -234,28 +238,55 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
 
     /* Get power vin status */
     ONLP_TRY(bmc_sensor_read(attr_vin, PSU_SENSOR, &data));
-    info->mvin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VIN;
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        info->mvin = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_VIN;
+    }
 
     /* Get power vout status */
     ONLP_TRY(bmc_sensor_read(attr_vout, PSU_SENSOR, &data));
-    info->mvout = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_VOUT;
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        info->mvout = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_VOUT;
+    }
 
     /* Get power iin status */
     ONLP_TRY(bmc_sensor_read(attr_iin, PSU_SENSOR, &data));
-    info->miin = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_IIN;
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        info->miin = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_IIN;
+    }
 
     /* Get power iout status */
     ONLP_TRY(bmc_sensor_read(attr_iout, PSU_SENSOR, &data));
-    info->miout = (int) (data*1000);
-    info->caps |= ONLP_PSU_CAPS_IOUT;
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        info->miout = (int) (data*1000);
+        info->caps |= ONLP_PSU_CAPS_IOUT;
+    }
 
-    /* Get power in and out */
-    info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout) / 1000;
-    info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
+    /* Get power pin status */
+    ONLP_TRY(bmc_sensor_read(attr_pin, PSU_SENSOR, &data));
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        //fallback to miin and mvin if pin is not available in older BMC version
+        if (data == 0 && info->miin > 0 && info->mvin > 0) {
+            info->mpin = (info->miin * info->mvin) / 1000;
+        } else {
+            info->mpin = (int) (data*1000);
+        }
+        info->caps |= ONLP_PSU_CAPS_PIN;
+    }
+
+    /* Get power pout status */
+    ONLP_TRY(bmc_sensor_read(attr_pout, PSU_SENSOR, &data));
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        //fallback to miout and mvout if pout is not available in older BMC version
+        if (data == 0 && info->miout > 0 && info->mvout > 0) {
+            info->mpout = (info->miout * info->mvout) / 1000;
+        } else {
+            info->mpout = (int) (data*1000);
+        }
+        info->caps |= ONLP_PSU_CAPS_POUT;
+    }
 
     /* Get FRU */
     ONLP_TRY(update_psui_fru_info(id, info));

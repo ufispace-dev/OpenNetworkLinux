@@ -141,7 +141,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
         //read from name
         if (strstr(fru->name.val, "AM") > 0) {
             *psu_type = ONLP_PSU_TYPE_AC;
-        } else if (strstr(fru->name.val, "EM") > 0) {
+        } else if (strstr(fru->name.val, "EM") > 0 || strstr(fru->name.val, "DM") > 0 ) {
             *psu_type = ONLP_PSU_TYPE_DC48;
         } else {
             AIM_LOG_ERROR("unknown PSU type, vendor=%s, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);

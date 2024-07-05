@@ -156,7 +156,7 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
         ONLP_TRY(bmc_sensor_read(fan_present_id, FAN_SENSOR, &data));
         presence = (int) data;
 
-        if(presence == 1) {
+        if(presence == BMC_ATTR_STATUS_PRES) {
             info->status |= ONLP_FAN_STATUS_PRESENT;
         } else {
             info->status &= ~ONLP_FAN_STATUS_PRESENT;
@@ -168,6 +168,11 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, FAN_SENSOR, &data));
 
     rpm = (int) data;
+
+    if(rpm == BMC_ATTR_INVALID_VAL) {
+        info->status |= ONLP_FAN_STATUS_FAILED;
+        return ONLP_STATUS_OK;
+    }
 
     //set rpm field
     info->rpm = rpm;

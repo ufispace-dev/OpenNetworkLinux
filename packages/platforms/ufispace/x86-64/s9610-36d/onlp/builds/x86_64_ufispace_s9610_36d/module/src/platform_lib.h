@@ -46,10 +46,14 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_LPC                     "/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc/"
+#define SYS_LPC_BSP                 SYS_LPC"bsp/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 
 //[BMC] 2.11
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
@@ -83,10 +87,14 @@
                                     "PSU0_VOUT "\
                                     "PSU0_IIN "\
                                     "PSU0_IOUT "\
+                                    "PSU0_PIN "\
+                                    "PSU0_POUT "\
                                     "PSU1_VIN "\
                                     "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
+                                    "PSU1_PIN "\
+                                    "PSU1_POUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -97,6 +105,10 @@
 #define BMC_FRU_KEY_PART_NUMBER     "Product Part Number"
 #define BMC_FRU_KEY_SERIAL          "Product Serial"
 
+#define BMC_ATTR_STATUS_ABS         0
+#define BMC_ATTR_STATUS_PRES        1
+#define BMC_ATTR_INVALID_VAL        999999
+
 #define CMD_FRU_CACHE_SET "timeout %ds ipmitool fru print %d " \
                            IPMITOOL_REDIRECT_ERR \
                           " | grep %s" \
@@ -104,7 +116,7 @@
                           " > %s"
 
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc/mb_cpld/mux_reset"
+#define MUX_RESET_PATH          SYS_LPC"mb_cpld/mux_reset"
 
 /* SYS */
 #define CPLD_MAX      3
@@ -123,6 +135,28 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 
 #define COMM_STR_NOT_SUPPORTED              "not supported"
 #define COMM_STR_NOT_AVAILABLE              "not available"
+
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC2_ID,
+     MAC_MAX
+};
+
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -161,10 +195,14 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_VOUT,
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
+    BMC_ATTR_ID_PSU0_PIN,
+    BMC_ATTR_ID_PSU0_POUT,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
+    BMC_ATTR_ID_PSU1_PIN,
+    BMC_ATTR_ID_PSU1_POUT,
     BMC_ATTR_ID_MAX
 };
 
@@ -207,17 +245,22 @@ enum onlp_led_id {
 
 /* psu_id */
 enum onlp_psu_id {
-    ONLP_PSU_0      = 1,
-    ONLP_PSU_1      = 2,
-    ONLP_PSU_0_VIN  = 3,
-    ONLP_PSU_0_VOUT = 4,
-    ONLP_PSU_0_IIN  = 5,
-    ONLP_PSU_0_IOUT = 6,
-    ONLP_PSU_1_VIN  = 7,
-    ONLP_PSU_1_VOUT = 8,
-    ONLP_PSU_1_IIN  = 9,
-    ONLP_PSU_1_IOUT = 10,
-    ONLP_PSU_MAX = 11,
+    ONLP_PSU_RESERVED  = 0,
+    ONLP_PSU_0,
+    ONLP_PSU_1,
+    ONLP_PSU_0_VIN,
+    ONLP_PSU_0_VOUT,
+    ONLP_PSU_0_IIN,
+    ONLP_PSU_0_IOUT,
+    ONLP_PSU_0_PIN,
+    ONLP_PSU_0_POUT,
+    ONLP_PSU_1_VIN,
+    ONLP_PSU_1_VOUT,
+    ONLP_PSU_1_IIN,
+    ONLP_PSU_1_IOUT,
+    ONLP_PSU_1_PIN,
+    ONLP_PSU_1_POUT,
+    ONLP_PSU_MAX,
 };
 
 /* thermal_id */
@@ -272,6 +315,12 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 
 int read_ioport(int addr, int *reg_val);
 
@@ -294,5 +343,7 @@ uint8_t ufi_shift(uint8_t mask);
 uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
+
+int ufi_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */
