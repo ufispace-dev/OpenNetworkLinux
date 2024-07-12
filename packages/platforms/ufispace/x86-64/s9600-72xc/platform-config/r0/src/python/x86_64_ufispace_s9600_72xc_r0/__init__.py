@@ -269,6 +269,23 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
 
         self.enable_ipmi_maintenance_mode()
 
+        # #Add set SIGDET register for HW build before PVT5: BEGIN
+        # # Define sysfs paths
+        # hw_id_path = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/mb_cpld/board_hw_id"
+        # build_id_path = "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/mb_cpld/board_build_id"
+        #
+        # # Read values from sysfs files
+        # with open(hw_id_path, 'r') as file:
+        #     hw_id = int(file.read().strip(), 16)
+        #
+        # with open(build_id_path, 'r') as file:
+        #     build_id = int(file.read().strip(), 16)
+        #
+        # # Check if values are within range
+        # if (hw_id < 0x3) or (hw_id == 0x3 and build_id < 0x4):
+        #     self.bsp_pr("less than PVT5. Set SIGDET Here");
+        # # Add SIGDET for HW build before PVT5: END
+
         # disable bmc watchdog
         self.disable_bmc_watchdog()
 

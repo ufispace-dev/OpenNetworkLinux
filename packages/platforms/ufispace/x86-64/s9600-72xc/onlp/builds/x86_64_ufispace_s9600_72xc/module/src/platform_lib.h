@@ -56,6 +56,9 @@
 #define SYS_LPC                 "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc"
 #define LPC_MB_CPLD_PATH        SYS_LPC "/mb_cpld"
 #define LPC_CPU_CPLD_PATH       SYS_LPC "/cpu_cpld"
+#define LPC_BSP_FMT                 SYS_LPC"/bsp/"
+#define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 /* LENGTH */
 #define BMC_FRU_LINE_SIZE           256
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
@@ -63,6 +66,25 @@
 /* error redirect */
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" OUTPUT_REDIRECT_ERR OUTPUT_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
 
 /* fan_id */
 enum onlp_fan_id {
@@ -184,6 +206,12 @@ typedef struct psu_support_info_s {
     int type;
 } psu_support_info_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int psu_present_get(int *pw_present, int id);
 
 int psu_pwgood_get(int *pw_good, int id);
@@ -204,4 +232,5 @@ void check_and_do_i2c_mux_reset(int port);
 
 int bmc_check_alive(void);
 
+int ufi_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

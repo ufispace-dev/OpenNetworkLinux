@@ -4,9 +4,11 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.2-bsp"
 silence=0
 MAC_RP="15:05.0"
+OP2_0_RP="15:04.0"
+OP2_1_RP="15:03.0"
 
 help()
 {
@@ -15,6 +17,7 @@ help()
     echo "Format: ${0} <target|help|version> [<silent>]"
     echo "  target:"
     echo "    mac  : Reset MAC"
+    echo "    op2  : Reset OP2"
     echo "    phy  : Reset BCM81384"
     echo "    mux  : Reset BCM81381"
     echo "  help: Show command help"
@@ -44,6 +47,16 @@ get_pcie_status()
         printf "MAC Status %s:00.0:\n" $(setpci -s ${MAC_RP} 0x19.b)
         lspci -vvv -s $(setpci -s ${MAC_RP} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl: -e LnkCap: -e LnkSta: -e UESta: -e CESta: -e SERR
         ;;
+    "op2")
+        echo "RP Status ${OP2_0_RP}:"
+        lspci -vvv -s ${OP2_0_RP} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        echo "RP Status ${OP2_1_RP}:"
+        lspci -vvv -s ${OP2_1_RP} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_0_RP} 0x19.b)
+        lspci -vvv -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_1_RP} 0x19.b)
+        lspci -vvv -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        ;;
     *)
         echo "Invalid Parameters"
         help
@@ -61,6 +74,12 @@ remove_kmod()
             rmmod linux_kernel_bde
         fi
         ;;
+    "op2")
+        kmod_cnt=`lsmod | grep kbp | wc -l`
+        if [ ${kmod_cnt} -eq 1 ]; then
+            rmmod kbp_driver
+        fi
+        ;;
     *)
         print_log "Invalid Parameters\n"
         help
@@ -73,6 +92,11 @@ remove_dev()
     case "${1}" in
     "mac")
         echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s ${MAC_RP} 0x19.b)\:00.0/remove
+        sleep 1
+        ;;
+    "op2")
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s ${OP2_0_RP} 0x19.b)\:00.0/remove
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s ${OP2_1_RP} 0x19.b)\:00.0/remove
         sleep 1
         ;;
     *)
@@ -100,6 +124,31 @@ set_2nd_bus_reset()
             sleep 0.1
         fi
         ;;
+    "op2")
+        if [ ${2} -eq 1 ]; then
+            #setpci -s ${OP2_0_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${OP2_0_RP} BRIDGE_CONTROL)
+            setpci -s ${OP2_0_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            sleep 0.1
+            #setpci -s ${OP2_1_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${OP2_1_RP} BRIDGE_CONTROL)
+            setpci -s ${OP2_1_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            sleep 1
+        else
+            #setpci -s ${OP2_0_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${OP2_0_RP} BRIDGE_CONTROL)
+            setpci -s ${OP2_0_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            sleep 0.1
+            #setpci -s ${OP2_1_RP} 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s ${OP2_1_RP} BRIDGE_CONTROL)
+            setpci -s ${OP2_1_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            sleep 1
+        fi
+        ;;
     *)
         print_log "Invalid Parameters\n"
         exit 1
@@ -112,6 +161,13 @@ enable_common_clk()
     case "${1}" in
     "mac")
         setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b=0x40
+        sleep 0.1
+        ;;
+    "op2")
+        setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 0xbc.b=0x40
+        sleep 0.1
+        setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 0xbc.b=0x40
+        sleep 0.1
         ;;
     *)
         print_log "Invalid Parameters\n"
@@ -266,6 +322,89 @@ reset_mac()
     print_log "Reset MAC Done\n\n"
 }
 
+reset_op2()
+{
+    print_log "Reset OP2...\n"
+    print_log "==============================\n"
+    #Check model name
+    #i2cset -y 0 0x71 0x1
+    bus_num_check "0x1"
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x30 0x00 | awk -F' ' '{print $NF}')
+    hex_val=$(printf "%d" "${val}")
+    sleep 0.1
+    #i2cset -y 0 0x71 0x0
+    bus_num_check "0x0"
+    sleep 0.1
+    #wo/ OP2 version, skip
+    if [ ${hex_val} -eq $(printf "%d" "0x1e") ]; then
+        print_log "wo/OP2, skip\n"
+        return 1
+    fi
+    remove_kmod op2
+
+    print_log "Before OP2 Warm Reset ...\n"
+    get_pcie_status op2
+
+    print_log "Remove OP2 from PCIe bus......"
+    remove_dev op2
+    sleep 1
+    print_log "done\n"
+
+    # set secondary bus reset to 1 before OP2 reset
+    set_2nd_bus_reset op2 1
+
+    # reset OP2
+    print_log "Reset Assertion......"
+    #i2cset -y 0 0x71 0x1
+    bus_num_check "0x1"
+    sleep 0.1
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x40 $(printf "0x%02x" $(("$val" & 0xFB)))
+    sleep 2
+    print_log "done\n"
+
+    # unreset OP2
+    print_log "Reset Deassertion......"
+    val=$(i2cget -y ${i2c_bus_f} 0x33 0x40 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    i2cset -y ${i2c_bus_f} 0x33 0x40 $(printf "0x%02x" $(("$val" | 0x04)))
+    sleep 2
+    #i2cset -y 0 0x71 0x0
+    bus_num_check "0x0"
+    sleep 0.1
+    print_log "done\n"
+
+    # set secondary bus reset to 0 after OP2 reset
+    set_2nd_bus_reset op2 0
+
+    print_log "Rescan PCIe bus......"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 1
+    print_log "done\n"
+
+    print_log "Check OP2 status......"
+    op2_cnt=`lspci | grep 9800 | wc -l`
+    if [ ${op2_cnt} -ne 2 ]; then
+        print_log "fail: After reset, 2 OP2 should be exist!\n"
+        lspci | grep 9800
+        exit 2
+    else
+        print_log "done\n"
+    fi
+
+    print_log "Enable Common Clock......"
+    enable_common_clk op2
+    print_log "done\n"
+
+    print_log "After OP2 Warm Reset ...\n"
+    get_pcie_status op2
+
+    print_log "==============================\n"
+    print_log "Reset OP2 Done\n\n"
+}
+
 main()
 {
     case ${2} in
@@ -282,6 +421,10 @@ main()
         show_ver
         reset_mac
         ;;
+    "op2")
+        show_ver
+        reset_op2
+        ;;
     "phy")
         show_ver
         reset_phy
@@ -292,6 +435,8 @@ main()
         ;;
     "all")
         show_ver
+        reset_op2
+        sleep 1
         reset_mux
         sleep 1
         reset_phy
