@@ -174,6 +174,27 @@ int check_file_exist(char *file_path, long *file_time)
     }
 }
 
+// To find max gpio and then provide the offset from default gpio max (511)
+int gpio_get_max_offset() {
+    int status;
+    uint8_t data[8];
+    FILE *p = NULL;
+
+    memset(data, 0, sizeof(data));
+
+    p = popen("cat /sys/bus/i2c/devices/0-0077/gpio/gpiochip*/base", "r");
+    if (p != NULL) {
+        fgets((char *)data, sizeof(data), p);
+        pclose(p);
+
+        status = (int) strtol((char *)data, NULL, 0);
+    } else {
+        status = 496; /* Hard code for old kernel default value */
+    }
+
+    return (status + 16 - 512);
+}
+
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
 {
     int bmc_cache_expired = 0;
@@ -683,9 +704,11 @@ qsfp_present_get(int port, int *pres_val)
     int status, rc;
     int gpio_num = 0, gpio_base1 = 453, gpio_base2 = 452;
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
 
     memset(data, 0, sizeof(data));
+
+    offset = gpio_get_max_offset();
 
     //for qsfp port 0&1
     if (port < (RJ45_NUM + SFP_NUM + SFP28_NUM) || port >= PORT_NUM) {
@@ -696,6 +719,7 @@ qsfp_present_get(int port, int *pres_val)
     //gpio_num = gpio_base - (port - SFP_NUM - SFP28_NUM);
     //only have 2 qsfp: 20,21
     gpio_num = (port == 20)?gpio_base1:gpio_base2;
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -716,7 +740,9 @@ sfp_present_get(int port, int *pres_val)
     int status, rc;
     int gpio_num = 0, gpio_base[3] = {383, 367, 355};
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -734,6 +760,7 @@ sfp_present_get(int port, int *pres_val)
         AIM_LOG_ERROR("Invalid SFP ports, port=%d\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -754,7 +781,9 @@ sfp_rx_los_get(int port, int *ctrl_val)
     int status, rc;
     int gpio_num = 0, gpio_base[3] = {351, 335, 323};
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -772,6 +801,7 @@ sfp_rx_los_get(int port, int *ctrl_val)
         AIM_LOG_ERROR("Invalid SFP ports, port=%d\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -792,7 +822,9 @@ sfp_tx_fault_get(int port, int *ctrl_val)
     int status, rc;
     int gpio_num = 0, gpio_base[3] = {447, 431, 419};
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -810,6 +842,7 @@ sfp_tx_fault_get(int port, int *ctrl_val)
         AIM_LOG_ERROR("Invalid SFP ports, port=%d\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -830,7 +863,9 @@ sfp_tx_disable_get(int port, int *ctrl_val)
     int status, rc;
     int gpio_num = 0, gpio_base[3] = {495, 479, 467};
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -848,6 +883,7 @@ sfp_tx_disable_get(int port, int *ctrl_val)
         AIM_LOG_ERROR("Invalid SFP ports, port=%d\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -868,7 +904,9 @@ qsfp_lp_mode_get(int port, int *ctrl_val)
     int status, rc;
     int gpio_num = 0, gpio_base1 = 457, gpio_base2 = 456;
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -881,6 +919,7 @@ qsfp_lp_mode_get(int port, int *ctrl_val)
     //gpio_num = gpio_base - (port - SFP_NUM - SFP28_NUM);
     //only have 2 qsfp: 20,21
     gpio_num = (port == 20)?gpio_base1:gpio_base2;
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -901,7 +940,9 @@ qsfp_reset_get(int port, int *ctrl_val)
     int status, rc;
     int gpio_num = 0, gpio_base1 = 461, gpio_base2 = 460;
     uint8_t data[8];
-    int data_len;
+    int data_len, offset;
+
+    offset = gpio_get_max_offset();
 
     memset(data, 0, sizeof(data));
 
@@ -914,6 +955,7 @@ qsfp_reset_get(int port, int *ctrl_val)
     //gpio_num = gpio_base - (port - SFP_NUM - SFP28_NUM);
     //only have 2 qsfp: 20,21
     gpio_num = (port == 20)?gpio_base1:gpio_base2;
+    gpio_num += offset;
 
     if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
@@ -933,7 +975,9 @@ sfp_tx_disable_set(int port, int ctrl_val)
 {
     int rc;
     int gpio_num = 0, gpio_base[3] = {495, 479, 467};
+    int offset;
 
+    offset = gpio_get_max_offset();
     
     //for sfp port 4~19
     if (port >= 0 && port < 4) {
@@ -949,6 +993,7 @@ sfp_tx_disable_set(int port, int ctrl_val)
         AIM_LOG_ERROR("Invalid SFP ports, port=%d\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }
+    gpio_num += offset;
 
     if ((rc = onlp_file_write_int(ctrl_val, "/sys/class/gpio/gpio%d/value",
             gpio_num)) != ONLP_STATUS_OK) {
@@ -965,6 +1010,9 @@ qsfp_lp_mode_set(int port, int ctrl_val)
 {
     int rc;
     int gpio_num = 0, gpio_base1 = 457, gpio_base2 = 456;
+    int offset;
+
+    offset = gpio_get_max_offset();
 
     //for qsfp port 0&1
     if (port < (RJ45_NUM + SFP_NUM + SFP28_NUM) || port >= PORT_NUM) {
@@ -975,6 +1023,7 @@ qsfp_lp_mode_set(int port, int ctrl_val)
     //gpio_num = gpio_base - (port - SFP_NUM - SFP28_NUM);
     //only have 2 qsfp: 20,21
     gpio_num = (port == 20)?gpio_base1:gpio_base2;
+    gpio_num += offset;
 
     if ((rc = onlp_file_write_int(ctrl_val, "/sys/class/gpio/gpio%d/value",
             gpio_num)) != ONLP_STATUS_OK) {
@@ -991,6 +1040,9 @@ qsfp_reset_set(int port, int ctrl_val)
 {
     int rc;
     int gpio_num = 0, gpio_base1 = 461, gpio_base2 = 460;
+    int offset;
+
+    offset = gpio_get_max_offset();
 
     //for qsfp port 0&1
     if (port < (RJ45_NUM + SFP_NUM + SFP28_NUM) || port >= PORT_NUM) {
@@ -1001,6 +1053,7 @@ qsfp_reset_set(int port, int ctrl_val)
     //gpio_num = gpio_base - (port - SFP_NUM - SFP28_NUM);
     //only have 2 qsfp: 20,21
     gpio_num = (port == 20)?gpio_base1:gpio_base2;
+    gpio_num += offset;
 
     if ((rc = onlp_file_write_int(ctrl_val, "/sys/class/gpio/gpio%d/value",
             gpio_num)) != ONLP_STATUS_OK) {
@@ -1160,6 +1213,9 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     char cmd_mu_result[256];
     int ucd_len=0;
     int rc=0;
+    int offset;
+
+    offset = gpio_get_max_offset();
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -1190,6 +1246,7 @@ sysi_platform_info_get(onlp_platform_info_t* pi)
     //Get HW Build Version
     for (i = 0; i < 8; i++) {
         gpio_num = gpio_base - i;
+        gpio_num += offset;
         if ((rc = onlp_file_read(data, sizeof(data), &data_len,
             "/sys/class/gpio/gpio%d/value", gpio_num)) != ONLP_STATUS_OK) {
 	        AIM_LOG_ERROR("onlp_file_read failed, error=%d, /sys/class/gpio/gpio%d/value",

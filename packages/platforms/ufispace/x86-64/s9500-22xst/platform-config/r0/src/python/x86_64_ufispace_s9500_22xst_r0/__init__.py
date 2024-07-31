@@ -177,107 +177,115 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
         #9535_BOARD_ID
         self.new_i2c_device('pca9539', 0x20, 3)
 
+        # get max gpio
+        if (os.path.exists("/sys/bus/i2c/devices/0-0077/gpio")):
+            with os.popen('cat /sys/bus/i2c/devices/0-0077/gpio/gpiochip*/base') as p:
+                data = p.read()
+                gpio_offset = (int(data) + 16) - 512
+        else:
+            gpio_offset = 0
+
         # export GPIO
         msg("Export GPIO\n")
-        for i in reversed(range(304, 512)):
+        for i in reversed(range(304+gpio_offset, 512+gpio_offset)):
             os.system("echo {} > /sys/class/gpio/export".format(i))
 
         # init GPIO direction
         msg("Config GPIO\n")
         # 9539_CPU_STATUS
-        for i in range(496, 512):
+        for i in range(496+gpio_offset, 512+gpio_offset):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         # init GPIO direction
         # 9535_SFP+_TX_DIS_1
-        for i in range(480, 496):
+        for i in range(480+gpio_offset, 496+gpio_offset):
             os.system("echo out > /sys/class/gpio/gpio{}/direction".format(i))
         # init GPIO value
         # 9535_SFP+_TX_DIS_1
-        for i in range(480, 496):
+        for i in range(480+gpio_offset, 496+gpio_offset):
             os.system("echo 0 > /sys/class/gpio/gpio{}/value".format(i))
 
         # init GPIO direction
         # 9535_SFP+_TX_DIS_2
-        for i in range(464, 480):
+        for i in range(464+gpio_offset, 480+gpio_offset):
             os.system("echo out > /sys/class/gpio/gpio{}/direction".format(i))
         # init GPIO value
         # 9535_SFP+_TX_DIS_2
-        for i in range(464, 480):
+        for i in range(464+gpio_offset, 480+gpio_offset):
             os.system("echo 0 > /sys/class/gpio/gpio{}/value".format(i))
 
         # init GPIO direction
         # 9535_QSFP28
-        os.system("echo in > /sys/class/gpio/gpio463/direction")
-        os.system("echo in > /sys/class/gpio/gpio462/direction")
-        os.system("echo out > /sys/class/gpio/gpio461/direction")
-        os.system("echo out > /sys/class/gpio/gpio460/direction")
-        os.system("echo in > /sys/class/gpio/gpio459/direction")
-        os.system("echo in > /sys/class/gpio/gpio458/direction")
-        os.system("echo out > /sys/class/gpio/gpio457/direction")
-        os.system("echo out > /sys/class/gpio/gpio456/direction")
-        os.system("echo in > /sys/class/gpio/gpio455/direction")
-        os.system("echo in > /sys/class/gpio/gpio454/direction")
-        os.system("echo in > /sys/class/gpio/gpio453/direction")
-        os.system("echo in > /sys/class/gpio/gpio452/direction")
-        os.system("echo in > /sys/class/gpio/gpio451/direction")
-        os.system("echo in > /sys/class/gpio/gpio450/direction")
-        os.system("echo in > /sys/class/gpio/gpio449/direction")
-        os.system("echo in > /sys/class/gpio/gpio448/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(463+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(462+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(461+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(460+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(459+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(458+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(457+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(456+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(455+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(454+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(453+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(452+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(451+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(450+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(449+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(448+gpio_offset)+"/direction")
         # init GPIO value
         # 9535_QSFP28
-        os.system("echo 1 > /sys/class/gpio/gpio461/value")
-        os.system("echo 1 > /sys/class/gpio/gpio460/value")
-        os.system("echo 0 > /sys/class/gpio/gpio457/value")
-        os.system("echo 0 > /sys/class/gpio/gpio456/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(461+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(460+gpio_offset)+"/value")
+        os.system("echo 0 > /sys/class/gpio/gpio"+str(457+gpio_offset)+"/value")
+        os.system("echo 0 > /sys/class/gpio/gpio"+str(456+gpio_offset)+"/value")
 
         # init GPIO direction
         # 9535_SFP+_TX_FLT_1, 9535_SFP+_TX_FLT_2
-        for i in range(416, 448):
+        for i in range(416+gpio_offset, 448+gpio_offset):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         # init GPIO direction
         # 9535_SFP+_RATE_SEL_1
-        for i in range(400, 416):
+        for i in range(400+gpio_offset, 416+gpio_offset):
             os.system("echo out > /sys/class/gpio/gpio{}/direction".format(i))
         # init GPIO value
         # 9535_SFP+_RATE_SEL_1
-        for i in range(400, 416):
+        for i in range(400+gpio_offset, 416+gpio_offset):
             os.system("echo 1 > /sys/class/gpio/gpio{}/value".format(i))
 
         # init GPIO direction
         # 9535_SFP+_RATE_SEL_2
-        os.system("echo out > /sys/class/gpio/gpio399/direction")
-        os.system("echo out > /sys/class/gpio/gpio398/direction")
-        os.system("echo out > /sys/class/gpio/gpio397/direction")
-        os.system("echo out > /sys/class/gpio/gpio396/direction")
-        os.system("echo in > /sys/class/gpio/gpio395/direction")
-        os.system("echo in > /sys/class/gpio/gpio394/direction")
-        os.system("echo in > /sys/class/gpio/gpio393/direction")
-        os.system("echo in > /sys/class/gpio/gpio392/direction")
-        os.system("echo out > /sys/class/gpio/gpio391/direction")
-        os.system("echo out > /sys/class/gpio/gpio390/direction")
-        os.system("echo out > /sys/class/gpio/gpio389/direction")
-        os.system("echo out > /sys/class/gpio/gpio388/direction")
-        os.system("echo in > /sys/class/gpio/gpio387/direction")
-        os.system("echo in > /sys/class/gpio/gpio386/direction")
-        os.system("echo in > /sys/class/gpio/gpio385/direction")
-        os.system("echo in > /sys/class/gpio/gpio384/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(399+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(398+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(397+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(396+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(395+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(394+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(393+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(392+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(391+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(390+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(389+gpio_offset)+"/direction")
+        os.system("echo out > /sys/class/gpio/gpio"+str(388+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(387+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(386+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(385+gpio_offset)+"/direction")
+        os.system("echo in > /sys/class/gpio/gpio"+str(384+gpio_offset)+"/direction")
         # init GPIO value
         # 9535_SFP+_RATE_SEL_2
-        os.system("echo 1 > /sys/class/gpio/gpio399/value")
-        os.system("echo 1 > /sys/class/gpio/gpio398/value")
-        os.system("echo 1 > /sys/class/gpio/gpio397/value")
-        os.system("echo 1 > /sys/class/gpio/gpio396/value")
-        os.system("echo 1 > /sys/class/gpio/gpio391/value")
-        os.system("echo 1 > /sys/class/gpio/gpio390/value")
-        os.system("echo 1 > /sys/class/gpio/gpio389/value")
-        os.system("echo 1 > /sys/class/gpio/gpio388/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(399+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(398+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(397+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(396+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(391+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(390+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(389+gpio_offset)+"/value")
+        os.system("echo 1 > /sys/class/gpio/gpio"+str(388+gpio_offset)+"/value")
 
         # init GPIO direction
         # 9535_SFP+_MOD_ABS_1, 9535_SFP+_MOD_ABS_2, 9535_SFP+_RX_LOS_1,
         # 9535_SFP+_RX_LOS_2, 9535_BOARD_ID
-        for i in range(304, 384):
+        for i in range(304+gpio_offset, 384+gpio_offset):
             os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
         # get mac rov config
@@ -285,14 +293,14 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
         data_4 = ""
         data_2 = ""
         data_1 = ""
-        if (os.path.exists("/sys/class/gpio/gpio306")):
-            with open("/sys/class/gpio/gpio306/value") as f:
+        if (os.path.exists("/sys/class/gpio/gpio"+str(306+gpio_offset))):
+            with open("/sys/class/gpio/gpio"+str(306+gpio_offset)+"/value") as f:
               data_4 = f.read()
-        if (os.path.exists("/sys/class/gpio/gpio305")):
-            with open("/sys/class/gpio/gpio305/value") as f:
+        if (os.path.exists("/sys/class/gpio/gpio"+str(305+gpio_offset))):
+            with open("/sys/class/gpio/gpio"+str(305+gpio_offset)+"/value") as f:
               data_2 = f.read()
-        if (os.path.exists("/sys/class/gpio/gpio304")):
-            with open("/sys/class/gpio/gpio304/value") as f:
+        if (os.path.exists("/sys/class/gpio/gpio"+str(304+gpio_offset))):
+            with open("/sys/class/gpio/gpio"+str(304+gpio_offset)+"/value") as f:
               data_1 = f.read()
         if data_4 != "" and data_2 != "" and data_1 != "":        
             data = int(data_4)*4 + int(data_2)*2 + int(data_1)*1
@@ -304,10 +312,10 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
                 os.system("i2cset -y 3 {} {} {} w".format(self.I2C_ADDR_TPS53667, self.TPS53667_ROV_ADDR, element["vol"]))
 
         # clear port interrupts
-        for gpio in range(416, 450):
+        for gpio in range(416+gpio_offset, 450+gpio_offset):
             with open("/sys/class/gpio/gpio{}/value".format(gpio)) as f:
                 f.read()
-        for gpio in range(320, 384):
+        for gpio in range(320+gpio_offset, 384+gpio_offset):
             with open("/sys/class/gpio/gpio{}/value".format(gpio)) as f:
                 f.read()
 
