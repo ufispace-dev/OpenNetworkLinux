@@ -674,7 +674,7 @@ void check_and_do_i2c_mux_reset(int port)
  * @param reset_dev The warm reset device id
  * @param ret return value.
  */
-int ufi_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
 {
     char cmd_buf[256] = {0};
     char dev_unit_buf[32] = {0};

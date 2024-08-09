@@ -782,9 +782,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, !value);
 
                     //write reg_val
-                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET)) < 0) {
+                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET)) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_RESET,  rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_RESET);
+                        AIM_LOG_ERROR(SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -856,7 +856,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, value);
 
                     //write reg_val
-                    if (onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
+                    if (onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_LPMODE,  rc, reg_val);
                         AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE);
                         check_and_do_i2c_mux_reset(port);

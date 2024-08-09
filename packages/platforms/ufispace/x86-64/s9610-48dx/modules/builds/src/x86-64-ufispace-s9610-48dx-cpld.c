@@ -122,6 +122,8 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_PSU_0,
     CPLD_SYSTEM_LED_PSU_1,
     CPLD_SYSTEM_LED_ID,
+    CPLD_HBM_PWR_CTRL,
+    CPLD_HBM_PWR_FUNC,
     DBG_CPLD_MAC_INTR,
     DBG_CPLD_CPLDX_INTR,
     DBG_CPLD_MAC_THERMAL_INTR,
@@ -361,6 +363,9 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_0, cpld_callback, CPLD_SYSTEM_
 static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_1, cpld_callback, CPLD_SYSTEM_LED_PSU_1);
 static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_id,    cpld_callback, CPLD_SYSTEM_LED_ID);
 
+static _SENSOR_DEVICE_ATTR_RW(cpld_hbm_pwr_ctrl,    cpld_callback, CPLD_HBM_PWR_CTRL);
+static _SENSOR_DEVICE_ATTR_RO(cpld_hbm_pwr_func,    cpld_callback, CPLD_HBM_PWR_FUNC);
+
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_intr,   cpld_callback, DBG_CPLD_MAC_INTR);
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_cpldx_intr, cpld_callback, DBG_CPLD_CPLDX_INTR);
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_thermal_intr, cpld_callback, DBG_CPLD_MAC_THERMAL_INTR);
@@ -561,6 +566,8 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_psu_0),
     _DEVICE_ATTR(cpld_system_led_psu_1),
     _DEVICE_ATTR(cpld_system_led_id),
+    _DEVICE_ATTR(cpld_hbm_pwr_ctrl),
+	_DEVICE_ATTR(cpld_hbm_pwr_func),
     _DEVICE_ATTR(bsp_debug),
 
     _DEVICE_ATTR(dbg_cpld_mac_intr),
@@ -1181,6 +1188,14 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_SFPDD_LED:
             reg = CPLD_SFPDD_LED_REG;
             break;
+        case CPLD_HBM_PWR_CTRL:
+            reg = CPLD_HBM_PWR_CTRL_REG;
+            mask = CPLD_HBM_PWR_CTRL_MASK;
+            break;
+        case CPLD_HBM_PWR_FUNC:
+            reg = CPLD_HBM_PWR_FUNC_REG;
+            mask = CPLD_HBM_PWR_FUNC_MASK;
+            break;
         case DBG_CPLD_MAC_INTR:
             reg = DBG_CPLD_MAC_INTR_REG;
             break;
@@ -1477,6 +1492,10 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case CPLD_SFPDD_LED:
             reg = CPLD_SFPDD_LED_REG;
+            break;
+        case CPLD_HBM_PWR_CTRL:
+            reg = CPLD_HBM_PWR_CTRL_REG;
+            mask = CPLD_HBM_PWR_CTRL_MASK;
             break;
         case DBG_CPLD_MAC_INTR:
             reg = DBG_CPLD_MAC_INTR_REG;

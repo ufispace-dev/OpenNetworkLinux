@@ -277,5 +277,5 @@ int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psui_present_status(int local_id, int *status);
 void check_and_do_i2c_mux_reset(int port);
-int ufi_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

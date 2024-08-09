@@ -71,6 +71,9 @@ enum cpld_id {
 #define CPLD_SYSTEM_LED_SYS_FAN_REG       0x80
 #define CPLD_SYSTEM_LED_PSU_REG           0x81
 #define CPLD_SYSTEM_LED_SYNC_ID_REG       0x82
+#define CPLD_HBM_PWR_CTRL_REG             0x95
+#define CPLD_HBM_PWR_FUNC_REG             0x9F
+
 #define DBG_CPLD_MAC_INTR_REG             0xE0
 #define DBG_CPLD_CPLDX_INTR_REG           0xE4
 #define DBG_CPLD_THERMAL_INTR_BASE_REG    0xE6
@@ -201,6 +204,8 @@ enum cpld_id {
 #define CPLD_SFP28_LED_1_MASK              (0b00001100)
 #define CPLD_SFP28_LED_2_MASK              (0b00110000)
 #define CPLD_SFP28_LED_3_MASK              (0b11000000)
+#define CPLD_HBM_PWR_CTRL_MASK             (0b00000001)
+#define CPLD_HBM_PWR_FUNC_MASK             (0b00000001)
 
 
 /* common manipulation */

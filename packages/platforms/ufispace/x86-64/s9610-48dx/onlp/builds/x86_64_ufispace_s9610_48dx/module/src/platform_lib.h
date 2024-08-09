@@ -46,6 +46,11 @@
 #define COMM_STR_NOT_AVAILABLE "not available"
 
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
+#define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"
+#define SYSFS_CPLD1_ID              SYSFS_CPLD1 "cpld_id"
+#define SYSFS_HBM_PWR_CTRL          SYSFS_CPLD1 "cpld_hbm_pwr_ctrl"
+#define SYSFS_HBM_PWR_FUNC          SYSFS_CPLD1 "cpld_hbm_pwr_func"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
@@ -339,6 +344,6 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
-int ufi_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */
