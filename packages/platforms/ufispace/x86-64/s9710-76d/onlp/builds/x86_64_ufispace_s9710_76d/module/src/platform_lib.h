@@ -46,10 +46,14 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_LPC                     "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/"
+#define SYS_LPC_BSP                 SYS_LPC"bsp/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 
 //[BMC] 3.21
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
@@ -127,6 +131,27 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 
 #define COMM_STR_NOT_SUPPORTED              "not supported"
 #define COMM_STR_NOT_AVAILABLE              "not available"
+
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC2_ID,
+     MAC_MAX
+};
 
 enum sensor
 {
@@ -285,6 +310,11 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
 
 int read_ioport(int addr, int *reg_val);
 
@@ -308,14 +338,6 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+
 #endif  /* __PLATFORM_LIB_H__ */
-
-
-
-
-
-
-
-
-
-

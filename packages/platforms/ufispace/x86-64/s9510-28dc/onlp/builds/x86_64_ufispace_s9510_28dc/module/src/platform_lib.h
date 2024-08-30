@@ -54,6 +54,8 @@
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x76 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/mux_reset_all"
+#define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"LPC_BSP_FMT"bsp_pr_info"
 
 #define CPLD_START_ADDR                 0x700
 #define CPLD_END_ADDR                   0x790
@@ -208,6 +210,26 @@ enum bmc_attr_id {
     BMC_ATTR_ID_INVALID,
 };
 
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
+
 /* fan_id */
 enum onlp_fan_id {
     ONLP_FAN_0 = 1,
@@ -323,6 +345,12 @@ typedef struct temp_thld_s
     int shutdown;
 }temp_thld_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int ufi_read_ioport(unsigned int addr, unsigned char *reg_val);
 int ufi_write_ioport(unsigned int addr, unsigned char reg_val);
 
@@ -354,4 +382,5 @@ int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int ufi_get_board_version(board_t *board);
 int ufi_get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
 int ufi_get_gpio_max(int *gpio_max);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

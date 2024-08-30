@@ -22,9 +22,11 @@
  * SFP Platform Implementation Interface.
  *
  ***********************************************************/
+#include <unistd.h>
+#include <fcntl.h>
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
-#define REORG_DEV_CLASS_ENABLE 0
+#define REORG_DEV_CLASS_ENABLE 1
 
 #define QSFP_NUM              40
 #define SFPDD_NUM             4
@@ -63,9 +65,20 @@
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
+#define CMIS_EEPROM_TX_DIS                    0xff
+#define CMIS_EEPROM_TX_EN                     0x0
+#define CMIS_EEPROM_PAGE_SIZE                 128
+#define CMIS_EEPROM_PAGE_TX_DIS               16
+#define CMIS_EEPROM_PAGE_SUPPORTED_CTRL_ADV   1
+#define CMIS_EEPROM_OFFSET_TX_DIS_PAGE        130
+#define CMIS_EEPROM_OFFSET_SUPPORTED_CTRL_ADV 155
+#define SFF8636_EEPROM_OFFSET_TXDIS    0x56
+#define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
+#define SFF8636_EEPROM_TX_EN           0x0
+#define EEPROM_ADDR                    0x50
 
-#define EEPROM_ADDR (0x50)
-
+#define MASK_1000_0000 0x80
+#define MASK_0000_0010 0x02
 typedef struct {
     int key;  //[module_type]
     int value;  // [dev_class]
@@ -306,12 +319,24 @@ static int ufi_qsfpdd_present_get(int port, int *pres_val)
     return ONLP_STATUS_OK;
 }
 #if REORG_DEV_CLASS_ENABLE
-static int ufi_reorg_dev_class(int port)
+/**
+ * @brief Reorganize device class for QSFP ports
+ *
+ * This function updates the device class for a given QSFP port.
+ * It reads the current device class and module type, then checks against a dev type list
+ * to determine the correct device class.
+ * If the device class needs to be updated, it writes the new value to dev_class.
+ *
+ * @param port The port number
+ * @return An error condition or current port dev_class.
+ * @return ONLP_STATUS_OK is .
+ */
+int ufi_reorg_dev_class(int port)
 {
     int rv, dev_class, type, bus, i;
 
     if (!IS_QSFP(port)) { //For QSFP only, skip other ports
-        return ONLP_STATUS_OK;
+        return ONLP_STATUS_E_UNSUPPORTED;
     }
 
     bus = ufi_port_to_eeprom_bus(port);
@@ -324,6 +349,7 @@ static int ufi_reorg_dev_class(int port)
     //read module type
     type = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 0);
     if (type < 0) {
+        AIM_LOG_ERROR("Port[%d] Addr(0x%02x): type=%d.\n", port, EEPROM_ADDR, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -344,9 +370,253 @@ static int ufi_reorg_dev_class(int port)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    return ONLP_STATUS_OK;
+    return port_type_dict[i].value;
 }
 #endif
+
+static int ufi_file_seek_writeb(const char *filename, long offset, uint8_t value)
+{
+    int fd = -1;
+
+    fd = open(filename, O_WRONLY | O_CREAT, 0644);
+    if (fd == -1) {
+        AIM_LOG_ERROR("Failed to open sysfs file");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Check for valid offset
+    if (offset < 0) {
+        AIM_LOG_ERROR("Invalid offset");
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // In the CMIS 3.0 memory map, the size of one page is 128 , TX Disable function is located on page 16, at offset 130
+    // Write value
+    if (pwrite(fd, &value, sizeof(uint8_t), offset) != sizeof(uint8_t)) {
+        AIM_LOG_ERROR("Failed to write to sysfs file");
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+
+    return ONLP_STATUS_OK;
+}
+
+static int ufi_file_seek_readb(const char *filename, long offset, uint8_t *value)
+{
+    int fd = -1;
+
+    fd = open(filename, O_RDONLY);
+    if (fd == -1) {
+        AIM_LOG_ERROR("Failed to open sysfs file");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Check for valid offset
+    if (offset < 0) {
+        AIM_LOG_ERROR("Invalid offset");
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // In the CMIS 3.0 memory map, the size of one page is 128 , TX Disable function is located on page 16, at offset 130
+    // Read value
+    if (pread(fd, value, sizeof(uint8_t), offset) != sizeof(uint8_t)) {
+        AIM_LOG_ERROR("Failed to read to sysfs file");
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Get SFF-8636 Port TX Disable Status by EEPROM
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_sff8636_txdisable_status_get(int port, int* status)
+{
+    uint8_t value = 0;
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    ONLP_TRY(value = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
+    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+    if (value == SFF8636_EEPROM_TX_DIS) {
+        *status = 1;
+        return ONLP_STATUS_OK;
+    }
+    *status = 0;
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Set SFF-8636 Port TX Disable Status by EEPROM
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_sff8636_txdisable_status_set(int port, int status)
+{
+    uint8_t value = 0, readback = 0;
+
+    if (status == 0) {
+        value = SFF8636_EEPROM_TX_EN;
+    } else if (status == 1) {
+        value = SFF8636_EEPROM_TX_DIS;
+    } else {
+        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
+    ONLP_TRY(onlp_sfpi_dev_writeb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS, value));
+    ONLP_TRY(readback = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
+    if (value != readback) {
+        AIM_LOG_ERROR("[%s] compare failed, write value=%d, readback=%d\n", __FUNCTION__, port, status);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+static int ufi_cmis_txdisable_supported(int port)
+{
+    uint8_t value = 0;
+    char route[256] = {0};
+
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    // CMIS version on lower page 0x01h
+    int cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 1);
+    int page_info = ufi_mask_shift(onlp_sfpi_dev_readb(port, EEPROM_ADDR, 2), MASK_1000_0000);
+    // create route
+    int bus = ufi_port_to_eeprom_bus(port);
+    int seek = CMIS_EEPROM_PAGE_SUPPORTED_CTRL_ADV * CMIS_EEPROM_PAGE_SIZE + CMIS_EEPROM_OFFSET_SUPPORTED_CTRL_ADV;
+
+    // check snprintf
+    int length = snprintf(route, sizeof(route), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    if (length < 0 || length >= sizeof(route)) {
+        AIM_LOG_ERROR("Error generating sysfs path\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    if (ufi_file_seek_readb(route, seek, &value) < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    int tx_dis_adv = ufi_mask_shift(value, MASK_0000_0010);
+    if (tx_dis_adv == 1 && page_info == 0 && cmis_ver >= 0x30 && cmis_ver < 0x60) {
+        return ONLP_STATUS_OK;
+    }
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
+/**
+ * @brief Get CMIS Port TX Disable Status
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_cmis_txdisable_status_get(int port, int* status)
+{
+    uint8_t value = 0;
+    char route[256] = {0};
+    int bus = 0;
+
+    // tx disable support check
+    if (ufi_cmis_txdisable_supported(port) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    bus = ufi_port_to_eeprom_bus(port);
+
+    // check snprintf
+    int length = snprintf(route, sizeof(route), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    if (length < 0 || length >= sizeof(route)) {
+        AIM_LOG_ERROR("Error generating sysfs path\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    int seek = CMIS_EEPROM_PAGE_TX_DIS * CMIS_EEPROM_PAGE_SIZE + CMIS_EEPROM_OFFSET_TX_DIS_PAGE;
+    if (ufi_file_seek_readb(route, seek, &value) < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+    if (value == CMIS_EEPROM_TX_DIS) {
+        *status = 1;
+        return ONLP_STATUS_OK;
+    }
+
+    *status = 0;
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Set CMIS Port TX Disable Status
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_cmis_txdisable_status_set(int port, int status)
+{
+    uint8_t value = 0, readback = 0;
+    char route[256] = {0};
+    int bus = 0;
+    int seek = CMIS_EEPROM_PAGE_TX_DIS * CMIS_EEPROM_PAGE_SIZE + CMIS_EEPROM_OFFSET_TX_DIS_PAGE;
+
+    // tx disable support check
+    if (ufi_cmis_txdisable_supported(port) != ONLP_STATUS_OK) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+    bus = ufi_port_to_eeprom_bus(port);
+    if (status == 0) {
+        value = CMIS_EEPROM_TX_EN;
+    } else if (status == 1) {
+        value = CMIS_EEPROM_TX_DIS;
+    } else {
+        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    // check snprintf
+    int length = snprintf(route, sizeof(route), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    if (length < 0 || length >= sizeof(route)) {
+        AIM_LOG_ERROR("Error generating sysfs path\n");
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (ufi_file_seek_writeb(route, seek, value) < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    if (ufi_file_seek_readb(route, seek, &readback) < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    if (value != readback) {
+        AIM_LOG_ERROR("[%s] compare failed, write value=%d, readback=%d\n", __FUNCTION__, port, status);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
 
 /**
  * @brief Initialize the SFPI subsystem.
@@ -499,6 +769,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     }
 
     if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
+        AIM_LOG_ERROR("Port=%d, bus=%d, devaddr=0x%02x, addr=%d\n", port, bus, devaddr, addr);
         check_and_do_i2c_mux_reset(port);
     }
 
@@ -712,8 +983,13 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
             break;
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
-        case ONLP_SFP_CONTROL_TX_DISABLE:
             if (IS_SFP(port) || IS_SFPDD(port)) {
+                *rv = 1;
+            }
+            break;
+        case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
+            if (IS_SFP(port) || IS_SFPDD(port) || IS_QSFP(port) || IS_QSFPDD(port)) {
                 *rv = 1;
             }
             break;
@@ -735,14 +1011,28 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
     int rc = 0;
     int reg_val = 0;
-    int bus = 0;
+    int cpld_bus = 0;
     int cpld_addr = 0;
     int attr_offset = 0, bit_offset = 0;
+    int dev_class = 0;
 
     VALIDATE_PORT(port);
 
-    bus = ufi_port_to_cpld_bus(port);
+    cpld_bus = ufi_port_to_cpld_bus(port);
     cpld_addr = ufi_port_to_cpld_addr(port);
+
+#if REORG_DEV_CLASS_ENABLE
+    dev_class = ufi_reorg_dev_class(port); //check dev type and reorg dev_class
+#else
+    int eeprom_bus = 0;
+
+    eeprom_bus = ufi_port_to_eeprom_bus(port);
+    rc = onlp_file_read_int(&dev_class, SYS_FMT, eeprom_bus, EEPROM_ADDR, SYSFS_DEV_CLASS);
+    if(rc < 0) {
+        AIM_LOG_ERROR("Unable to read "SYS_FMT", error=%d", eeprom_bus, EEPROM_ADDR, SYSFS_DEV_CLASS,  rc);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+#endif
 
     switch(control)
         {
@@ -751,7 +1041,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 if (IS_QSFP(port)) {
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);
-                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -762,16 +1052,16 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, !value);
 
                     //write reg_val
-                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset)) < 0) {
+                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset)) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFP_RESET,  rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_RESET);
+                        AIM_LOG_ERROR(SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_RESET);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
                 } else if (IS_QSFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_RESET) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -782,9 +1072,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, !value);
 
                     //write reg_val
-                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET)) < 0) {
+                    if ((rc=onlp_file_write_int(reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_RESET)) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_RESET,  rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET);
+                        AIM_LOG_ERROR(SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_RESET);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -795,10 +1085,11 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port) || IS_SFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -809,13 +1100,23 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, value);
 
                     //write reg_val
-                    if (onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
+                    if (onlp_file_write_int(reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_SFPDD_28_TX_DIS, rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS);
+                        AIM_LOG_ERROR(SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
+                } else if (IS_QSFPDD(port)) {
+                    ONLP_TRY(ufi_cmis_txdisable_status_set(port, value));
+                } else if (IS_QSFP(port)) {
+                    if (dev_class <= 0) {
+                        rc = dev_class; //return error condition.
+                    } else if (dev_class == 1) { //SFF8636 module
+                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_set(port, value));
+                    } else if (dev_class == 3) { //CMIS module
+                        ONLP_TRY( rc = ufi_cmis_txdisable_status_set(port, value));
+                    }
                 } else {
                     rc = ONLP_STATUS_E_UNSUPPORTED;
                 }
@@ -826,7 +1127,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 if (IS_QSFP(port)) {
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);
-                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -837,15 +1138,15 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, value);
 
                     //write reg_val
-                    if (onlp_file_write_int(reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
+                    if (onlp_file_write_int(reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFP_LPMODE,  rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_LPMODE);
+                        AIM_LOG_ERROR(SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_LPMODE);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
                     rc = ONLP_STATUS_OK;
                 } else if (IS_QSFPDD(port)) {
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -856,9 +1157,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     reg_val = ufi_bit_operation(reg_val, bit_offset, value);
 
                     //write reg_val
-                    if (onlp_file_write_int(reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
+                    if (onlp_file_write_int(reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
                         AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", SYSFS_QSFPDD_LPMODE,  rc, reg_val);
-                        AIM_LOG_ERROR(SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFPDD_LPMODE);
+                        AIM_LOG_ERROR(SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFPDD_LPMODE);
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -885,13 +1186,14 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
     int rc = 0;
     int reg_val = 0, reg_mask = 0;
-    int bus = 0;
+    int cpld_bus = 0;
     int cpld_addr = 0;
     int attr_offset = 0, bit_offset = 0;
+    int dev_class = 0;
 
     VALIDATE_PORT(port);
 
-    bus = ufi_port_to_cpld_bus(port);
+    cpld_bus = ufi_port_to_cpld_bus(port);
     cpld_addr = ufi_port_to_cpld_addr(port);
 
     switch(control)
@@ -901,7 +1203,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 if (IS_QSFP(port)) {
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);
-                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_RESET, attr_offset) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -914,7 +1216,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 
                     rc = ONLP_STATUS_OK;
                 } else if (IS_QSFPDD(port)) {
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_RESET) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_RESET) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -935,7 +1237,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             {
                 if (IS_SFP(port) || IS_SFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_RX_LOS) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_RX_LOS) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -956,7 +1258,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             {
                 if (IS_SFP(port) || IS_SFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_TX_FAULT) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_TX_FAULT) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -974,10 +1276,11 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port) || IS_SFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFPDD_28_TX_DIS) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -989,6 +1292,28 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     *value = ufi_mask_shift(reg_val, reg_mask);
 
                     rc = ONLP_STATUS_OK;
+                } else if (IS_QSFPDD(port)) {
+                    rc = ufi_cmis_txdisable_status_get(port, value);
+                } else if (IS_QSFP(port)) {
+#if REORG_DEV_CLASS_ENABLE
+                    dev_class = ufi_reorg_dev_class(port); //check dev type and reorg dev_class
+#else
+                    int eeprom_bus = 0;
+                    eeprom_bus = ufi_port_to_eeprom_bus(port);
+                    rc = onlp_file_read_int(&dev_class, SYS_FMT, eeprom_bus, EEPROM_ADDR, SYSFS_DEV_CLASS);
+                    if(rc < 0) {
+                        AIM_LOG_ERROR("Unable to read "SYS_FMT", error=%d", eeprom_bus, EEPROM_ADDR, SYSFS_DEV_CLASS,  rc);
+                        return ONLP_STATUS_E_INTERNAL;
+                    }
+#endif
+                    if (dev_class <= 0) {
+                        rc = dev_class; //return error condition.
+                    } else if (dev_class == 1) { //SFF8636 module
+                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_get(port, value));
+                    } else if (dev_class == 3) { //CMIS module
+                        rc = ufi_cmis_txdisable_status_get(port, value);
+                    }
+
                 } else {
                     rc = ONLP_STATUS_E_UNSUPPORTED;
                 }
@@ -999,7 +1324,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 if (IS_QSFP(port)) {
                     //read reg_val
                     attr_offset = ufi_qsfp_port_to_sysfs_attr_offset(port);
-                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, SYSFS_QSFP_LPMODE, attr_offset) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }
@@ -1013,7 +1338,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     rc = ONLP_STATUS_OK;
                 } else if (IS_QSFPDD(port)) {
                     //read reg_val
-                    if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
+                    if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_QSFPDD_LPMODE) < 0) {
                         check_and_do_i2c_mux_reset(port);
                         return ONLP_STATUS_E_INTERNAL;
                     }

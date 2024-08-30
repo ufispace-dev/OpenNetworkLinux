@@ -1,0 +1,411 @@
+#!/bin/bash
+
+if [ -z "${UFI_UG_PATH}" ]; then
+    export UFI_UG_PATH=$(pwd) 
+fi
+
+HW_PLAT=Q2A
+
+VER="0.0.1-bsp"
+
+function _ioget {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
+function _ioset {
+    local reg=$1
+    local val=$(printf "%02x" $(($2)))
+    printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
+}
+
+help()
+{
+    echo ""
+    echo "========================================================================================================"
+    echo "                                      - Reset mac command -(Version ${VER})"
+    echo "========================================================================================================"
+    echo "option:"
+    echo "  ${0} <device> [<loop>]"
+    echo "      - To reset mac"
+    echo "      device: Specify the chip to reset. Valid values is mac"
+    echo "      loop  : Test cycles, default is 1"
+    echo "usage:"
+    echo "  e.g. ${0} mac 3"
+    echo ""
+}
+
+get_mac_info()
+{
+    case "${HW_PLAT}" in
+    "Q2A"|"Q2U")
+        lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 >> /tmp/mac_info 2>&1
+        ;;
+    *)
+        echo "unknown platform"
+        ;;
+    esac
+
+}
+
+del_exist_log()
+{
+    if [ -f "/tmp/mac_info" ]; then
+        rm /tmp/mac_info
+    fi 
+}
+
+pre_check()
+{
+    case ${1} in
+    mac)
+        case "${HW_PLAT}" in
+        "Q2A")
+            mac_id=`lspci | grep "848[0-9]" | head -1 | awk '{print $7}'`
+            expected_mac_number=1  
+            ;;
+        "Q2U")
+            mac_id=`lspci | grep "828[0-9]" | head -1 | awk '{print $7}'`
+            expected_mac_number=1
+            ;;
+        *)
+            echo "unknown platform"
+            exit 2
+            ;;
+        esac
+
+        mac_cnt=`lspci | grep ${mac_id} | wc -l`
+        if [ ${mac_cnt} -ne ${expected_mac_number} ]; then
+            lspci | ${mac_id}
+            echo "Error message : Before test, ${expected_mac_number} MAC should be exist! ( pre_check fail )"
+            echo "resetchip - FAIL"
+            exit 2
+        fi
+        ;;
+    *)
+        echo "Invalid Parameters"
+        exit 1
+        ;;
+    esac
+}
+
+get_pcie_status()
+{
+    case ${1} in
+    mac)
+        echo "RP Status 00:0e.0"
+        lspci -vvv -s 00:0e.0 | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR'
+        printf "MAC Status %s:00.0:\n" $(setpci -s 00:0e.0 0x19.b)
+        case "${HW_PLAT}" in
+        "Q2A"|"Q2U")
+            lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR' 
+            ;;
+
+        *)
+            echo "unknown platform"
+            ;;
+        esac      
+        ;;
+    
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+verify_pcie_status()
+{
+    pcie_error=0
+    case ${1} in
+    mac)
+        case "${HW_PLAT}" in
+        "Q2A"|"Q2U")
+            # RP
+            out=`lspci -vvv -s 00:0e.0 | grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            out=`lspci -vvv -s 00:0e.0 | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
+            if [ "${out}" == "" ]; then
+                pcie_error=1   
+            fi
+            out=`lspci -vvv -s 00:0e.0 | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            out=`lspci -vvv -s 00:0e.0 | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            # MAC
+            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
+            if [ "${out}" == "" ]; then
+                pcie_error=1
+            fi
+            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
+            if [ "${out}" != "" ]; then
+                pcie_error=1
+            fi
+            ;;
+        
+        *)
+            echo "unknown platform"
+            ;;
+        esac      
+        ;;
+    
+    *)
+        ;;
+    esac
+}
+
+remove_kmod()
+{
+    case ${1} in
+    mac)
+        kmod_cnt=`lsmod | grep bde | wc -l`
+        if [ ${kmod_cnt} -eq 2 ]; then
+            rmmod linux_user_bde
+            rmmod linux_kernel_bde
+        fi
+        ;;
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+remove_dev()
+{
+    case ${1} in
+    mac)
+        if [ -d /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.0 ]; then
+            echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.0/remove
+        fi
+        if [ -d /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.1 ]; then
+            echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.1/remove
+        fi
+        sleep 1
+        ;;
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+set_2nd_bus_reset()
+{
+    case ${1} in
+    mac)
+        bc=$(setpci -s 00:0e.0 BRIDGE_CONTROL)
+        if [ ${2} -eq 1 ]; then
+            setpci -s 00:0e.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+        else
+            setpci -s 00:0e.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+        fi
+        sleep 1
+        ;;
+    *)
+        echo "Invalid Parameters"
+        exit 1
+        ;;
+    esac
+}
+
+set_dev_reset()
+{
+    case ${1} in
+    mac)
+        case "${HW_PLAT}" in
+        "Q2A"|"Q2U")
+            #val=$(ioget 0x742 | awk -F' ' '{print $NF}')
+            val=$(_ioget 0x742 | awk -F' ' '{print $NF}')
+            sleep 0.1
+            if [ ${2} -eq 1 ]; then
+                #ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
+                _ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
+            else
+                #ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
+                _ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
+            fi
+            sleep 2
+            ;;
+        *)
+            echo "unknown platform"
+            ;;
+        esac
+        ;;
+        
+    *)
+        echo "Invalid Parameters"
+        exit 1
+        ;;
+    esac
+}
+
+rescan_pcie_dev()
+{
+    case ${1} in
+    mac)
+        echo 1 > /sys/bus/pci/rescan
+        sleep 1
+        ;;
+
+    *)
+        echo "Invalid Parameters"
+        exit 1
+        ;;
+    esac
+}
+
+reset_mac()
+{
+    max=${1}
+    cnt=0
+    while [ ${cnt} -lt ${max} ]
+    do
+        echo "Reset MAC Test (${cnt})..."
+        echo "============================================================"
+
+        pre_check mac
+
+        remove_kmod mac
+        
+        echo "Before Warm Reset......"
+        get_pcie_status mac 
+        
+        printf "Remove MAC......"
+        remove_dev mac 
+        printf "done\n"
+        
+        # set secondary bus reset to 1 before MAC reset
+        printf "Set SBR......"
+        set_2nd_bus_reset mac 1
+        printf "done\n"
+        
+        # reset MAC (PCIe)
+        printf "Reset MAC......"
+        set_dev_reset mac 1
+        printf "done\n"
+
+        # rescan PCIe Bus
+        printf "Rescan PCIe......"
+        rescan_pcie_dev mac
+        printf "done\n"
+
+        printf "Check MAC Quantity......"
+        expected_mac_cnt=0
+        #mac id from pre_check mac
+        mac_cnt=`lspci | grep ${mac_id} | wc -l`
+
+        if [ ${mac_cnt} -ne ${expected_mac_cnt} ]; then
+            printf "%d, fail\n" ${mac_count}
+            echo "============================================================"
+            lspci | grep ${mac_id}
+            echo "Error message : During reset, MAC quantity(${mac_cnt}) is not as expected(${expected_mac_cnt})!"
+            echo "resetchip - FAIL"
+            exit 2
+        fi
+        printf "%d, done\n" ${mac_cnt}
+
+        # if only reset one MAC, remove another to keep PCIe enumeration order (CS00012218511)
+        printf "Remove MAC again......"
+        remove_dev mac 
+        printf "done\n"
+
+        # set secondary bus reset to 1 before reset
+        printf "Set SBR again......"
+        set_2nd_bus_reset mac 1
+        printf "done\n"
+
+        # unreset MAC (PCIe)
+        printf "Unreset MAC......"
+        set_dev_reset mac 0
+        printf "done\n"
+        
+        # set secondary bus reset to 0 after MAC reset
+        printf "Unset SBR......"
+        set_2nd_bus_reset mac 0
+        printf "done\n"
+        
+        # rescan PCIe Bus
+        printf "Rescan PCIe for MACs......"
+        rescan_pcie_dev mac 
+        printf "done\n"
+        
+        printf "Check MAC Quantity......"
+        #mac id from pre_check mac
+        mac_cnt=`lspci | grep ${mac_id} | wc -l`
+
+        if [ ${mac_cnt} -ne ${expected_mac_number} ]; then
+            printf "%d, fail\n" ${mac_cnt}
+            echo "============================================================"
+            lspci | grep ${mac_id}
+            echo "Error message : After reset, ${expected_mac_number} MACs should be exist!"
+            echo "resetchip - FAIL"
+            exit 2
+        fi
+        printf "%d, done\n" ${mac_cnt}
+
+        printf "Check RP & Device Status......"
+        verify_pcie_status mac
+        if [ ${pcie_error} -ne 0 ]; then
+            printf "fail\n"
+            echo "============================================================"
+            get_pcie_status mac 
+            echo "Error message : After reset, MAC or RP status abnormal!"
+            echo "resetchip - FAIL"
+            exit 2
+        fi
+        printf "done\n"
+
+        echo "After Warm Reset......"
+        get_pcie_status mac 
+        
+        echo "============================================================"
+
+        cnt=$((cnt+1))
+    done
+
+    echo "resetchip - PASS"
+}
+
+main()
+{
+    case ${1} in
+    "mac")
+        loop=1
+        if [ "$#" -eq 2 ]; then
+            loop=${2}
+        fi
+        echo "Test Parameters: loop - ${loop}"
+        reset_mac ${loop}
+        ;;
+
+    "help")
+        help
+        ;;
+
+    *)
+        echo ""
+        echo "Invalid parameters"
+        help
+        exit 1
+        ;;
+    esac
+}
+
+main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
+
+exit 0

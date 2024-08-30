@@ -58,6 +58,7 @@
 
 /* LPC ATTR */
 #define SYS_LPC                 "/sys/devices/platform/x86_64_ufispace_s9600_32x_lpc"
+#define LPC_BSP_FMT             SYS_LPC"/bsp/"
 #define LPC_MB_CPLD_PATH        SYS_LPC "/mb_cpld"
 #define LPC_CPU_CPLD_PATH       SYS_LPC "/cpu_cpld"
 #define LPC_CPU_CPLD_VER_ATTR   "cpu_cpld_version_h"
@@ -71,6 +72,8 @@
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 #define CMD_BIOS_VER                "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
 #define CMD_BMC_VER_1               "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2               "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
@@ -247,6 +250,26 @@ extern const int CPLD_BASE_ADDR[CPLD_MAX];
 /* PSU */
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
+
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" OUTPUT_REDIRECT_ERR OUTPUT_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
 
 enum sensor
 {
@@ -441,6 +464,13 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
+
 int psu_thermal_get(onlp_thermal_info_t* info, int id);
 
 int psu_present_get(int *pw_present, int id);
@@ -496,4 +526,6 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 extern bool bmc_enable;
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+
 #endif  /* __PLATFORM_LIB_H__ */
