@@ -138,7 +138,7 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
      .thresholds = {65000, 70000, 75000}},
     {.hdr = {
          .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
-         .description = "PSU 0 THERMAL 1",
+         .description = "PSU 1 THERMAL 1",
          .poid = ONLP_OID_CHASSIS,
          .status = ONLP_OID_STATUS_FLAG_PRESENT,
      },

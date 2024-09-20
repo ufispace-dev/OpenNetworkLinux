@@ -96,7 +96,8 @@ enum onlp_psu_id {
 };
 
 /* Thermal definitions*/
-enum onlp_thermal_id {
+enum onlp_thermal_id
+{
     ONLP_THERMAL_RESERVED = 0,
     ONLP_THERMAL_CPU_PECI = 1,
     ONLP_THERMAL_CPU_ENV,
@@ -108,14 +109,6 @@ enum onlp_thermal_id {
     ONLP_THERMAL_PSU0,
     ONLP_THERMAL_PSU1,
     ONLP_THERMAL_CPU_PKG,
-    ONLP_THERMAL_CPU1,
-    ONLP_THERMAL_CPU2,
-    ONLP_THERMAL_CPU3,
-    ONLP_THERMAL_CPU4,
-    ONLP_THERMAL_CPU5,
-    ONLP_THERMAL_CPU6,
-    ONLP_THERMAL_CPU7,
-    ONLP_THERMAL_CPU8,
     ONLP_THERMAL_MAX,
 };
 
