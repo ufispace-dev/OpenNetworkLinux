@@ -68,7 +68,7 @@
 #define FAN_REAR_MAX_RPM    32000
 #define PSU_FAN_MAX_RPM     27000
 /* if FAN_DIR_EN is defined , support fan driection detect */
-//#define FAN_DIR_EN 1
+#define FAN_DIR_EN 1
 
 static onlp_fan_info_t fan_info[] = {
     { }, /* Not used */

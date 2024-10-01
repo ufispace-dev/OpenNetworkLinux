@@ -66,6 +66,7 @@
 #define REG_CPLD_BUILD                    (REG_BASE_MB + 0x04)
 #define REG_CPLD_CHIP                     (REG_BASE_MB + 0x05)
 #define REG_BRD_EXT_ID                    (REG_BASE_MB + 0x06)
+#define REG_CPLD_RESET_BTN_INTR           (REG_BASE_MB + 0x1F)
 #define REG_I2C_MUX_RESET                 (REG_BASE_MB + 0x46)
 #define REG_I2C_MUX_RESET_2               (REG_BASE_MB + 0x47)
 #define REG_MUX_CTRL                      (REG_BASE_MB + 0x5C)
@@ -90,6 +91,7 @@
 #define MASK_MUX_RESET_ALL                (0x37) // 2#00110111
 #define MASK_MUX_RESET                    (MASK_ALL)
 #define MASK_BIOS_BOOT_ROM                (0b01000000)
+#define MASK_CPLD_RESET_BTN_INTR          (0b10000000)
 
 #define LPC_MDELAY                        (5)
 #define MDELAY_RESET_INTERVAL             (100)
@@ -114,6 +116,8 @@ enum lpc_sysfs_attributes {
     ATT_CPLD_VERSION_MINOR,
     ATT_CPLD_VERSION_BUILD,
     ATT_CPLD_VERSION_H,
+
+    ATT_CPLD_RESET_BTN_INTR,
 
     ATT_MUX_RESET,
     ATT_MUX_CTRL,
@@ -184,6 +188,8 @@ static sysfs_info_t sysfs_info[] = {
     [ATT_CPLD_VERSION_MINOR] = {REG_CPLD_VERSION, MASK_CPLD_MINOR_VER, DATA_DEC},
     [ATT_CPLD_VERSION_BUILD] = {REG_CPLD_BUILD,   MASK_ALL,            DATA_DEC},
     [ATT_CPLD_VERSION_H]     = {REG_CPLD_VERSION, MASK_ALL,            DATA_UNK},
+
+    [ATT_CPLD_RESET_BTN_INTR] = {REG_CPLD_RESET_BTN_INTR, MASK_CPLD_RESET_BTN_INTR, DATA_HEX},
 
     [ATT_MUX_RESET] = {REG_NONE,    MASK_ALL,  DATA_DEC},
     [ATT_MUX_CTRL]  = {REG_MUX_CTRL, MASK_ALL, DATA_HEX},
@@ -661,6 +667,8 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_version_build,  lpc_callback,      ATT_CPLD_V
 static _SENSOR_DEVICE_ATTR_RO(cpld_version_h,      mb_cpld_version_h, ATT_CPLD_VERSION_H);
 static _SENSOR_DEVICE_ATTR_RO(cpld_id,             lpc_callback,      ATT_CPLD_ID);
 
+static _SENSOR_DEVICE_ATTR_RW(cpld_reset_btn_intr, lpc_callback, ATT_CPLD_RESET_BTN_INTR);
+
 static _SENSOR_DEVICE_ATTR_WO(mux_reset, mux_reset, ATT_MUX_RESET);
 static _SENSOR_DEVICE_ATTR_RW(mux_ctrl, lpc_callback, ATT_MUX_CTRL);
 
@@ -694,6 +702,7 @@ static struct attribute *mb_cpld_attrs[] = {
     _DEVICE_ATTR(cpld_version_build),
     _DEVICE_ATTR(cpld_version_h),
     _DEVICE_ATTR(cpld_id),
+    _DEVICE_ATTR(cpld_reset_btn_intr),
     _DEVICE_ATTR(mux_reset),
     _DEVICE_ATTR(mux_ctrl),
     NULL,

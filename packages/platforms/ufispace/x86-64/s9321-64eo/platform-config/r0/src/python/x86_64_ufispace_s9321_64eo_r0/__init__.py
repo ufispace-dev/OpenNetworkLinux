@@ -437,10 +437,14 @@ class OnlPlatform_x86_64_ufispace_s9321_64eo_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Enable port led control")
         self.enable_port_led_ctrl(board)
 
-        # Fix me
-        # # init bcm82399
-        # self.bsp_pr("Init bcm82399")
-        # os.system("timeout 120s {} init -s 25G".format(self.PATH_EPDM_CLI))
+        # Management port for Beta is the MAC, and the MDIO is bound to the CPU
+        #                 for Pvt is the MAC, and the MDIO is bound to the it
+        if board['hw_rev'] <= 2:
+            # init bcm82399
+            self.bsp_pr("Init bcm82399")
+            os.system("timeout 120s {} init -s 25G".format(self.PATH_EPDM_CLI))
+        else:
+            pass
 
         self.bsp_pr("Init done")
 

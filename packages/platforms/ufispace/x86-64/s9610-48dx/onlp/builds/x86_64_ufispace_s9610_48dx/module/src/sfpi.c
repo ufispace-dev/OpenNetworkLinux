@@ -76,6 +76,24 @@
 #define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
 #define SFF8636_EEPROM_TX_EN           0x0
 #define EEPROM_ADDR                    0x50
+#define CMIS_PAGE_SIZE                        (128)
+#define CMIS_PAGE_SUPPORTED_CTRL_ADV          (1)
+#define CMIS_PAGE_TX_DIS                      (16)
+#define CMIS_OFFSET_REVISION                  (1)
+#define CMIS_OFFSET_MEMORY_MODEL              (2)
+#define CMIS_OFFSET_TX_DIS                    (130)
+#define CMIS_OFFSET_SUPPORTED_CTRL_ADV        (155)
+#define CMIS_MASK_MEMORY_MODEL                (MASK_1000_0000)
+#define CMIS_MASK_TX_DIS_ADV                  (MASK_0000_0010)
+#define CMIS_VAL_TX_DIS                       (0xff)
+#define CMIS_VAL_TX_EN                        (0x0)
+#define CMIS_VAL_MEMORY_MODEL_PAGED           (0)
+#define CMIS_VAL_TX_DIS_SUPPORTED             (1)
+#define CMIS_VAL_VERSION_MIN                  (0x30)
+#define CMIS_VAL_VERSION_MAX                  (0x5F)
+#define CMIS_SEEK_TX_DIS_ADV                  (CMIS_PAGE_SIZE * CMIS_PAGE_SUPPORTED_CTRL_ADV + CMIS_OFFSET_SUPPORTED_CTRL_ADV)
+#define CMIS_SEEK_TX_DIS                      (CMIS_PAGE_SIZE * CMIS_PAGE_TX_DIS + CMIS_OFFSET_TX_DIS)
+
 
 #define MASK_1000_0000 0x80
 #define MASK_0000_0010 0x02
@@ -499,33 +517,57 @@ static int ufi_sff8636_txdisable_status_set(int port, int status)
 static int ufi_cmis_txdisable_supported(int port)
 {
     uint8_t value = 0;
-    char route[256] = {0};
+    char sysfs_path[256] = {0};
+    int cmis_ver = 0;
+    int mem_model = 0;
+    int bus = 0;
+    int seek = 0;
+    int length = 0;
+    int tx_dis_adv = 0;
 
+    //Check module present
     if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
-    // CMIS version on lower page 0x01h
-    int cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 1);
-    int page_info = ufi_mask_shift(onlp_sfpi_dev_readb(port, EEPROM_ADDR, 2), MASK_1000_0000);
-    // create route
-    int bus = ufi_port_to_eeprom_bus(port);
-    int seek = CMIS_EEPROM_PAGE_SUPPORTED_CTRL_ADV * CMIS_EEPROM_PAGE_SIZE + CMIS_EEPROM_OFFSET_SUPPORTED_CTRL_ADV;
 
-    // check snprintf
-    int length = snprintf(route, sizeof(route), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
-    if (length < 0 || length >= sizeof(route)) {
-        AIM_LOG_ERROR("Error generating sysfs path\n");
+    //Check CMIS version on lower page 0x01
+    cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
+    if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
+        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+            port, cmis_ver/16, cmis_ver%16, CMIS_VAL_VERSION_MIN/16, CMIS_VAL_VERSION_MAX/16);
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    //Check CMIS memory model on lower page 0x02 bit[7]
+    mem_model = ufi_mask_shift(onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_MEMORY_MODEL), CMIS_MASK_MEMORY_MODEL);
+    if (mem_model != CMIS_VAL_MEMORY_MODEL_PAGED) {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    //Check CMIS Tx disable advertisement on page 0x01 offset[155] bit[1]
+
+    bus = ufi_port_to_eeprom_bus(port);
+    seek = CMIS_SEEK_TX_DIS_ADV;
+
+    // create and check sysfs_path
+    length = snprintf(sysfs_path, sizeof(sysfs_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    if (length < 0 || length >= sizeof(sysfs_path)) {
+        AIM_LOG_ERROR("[%s] Error generating sysfs path\n", __FUNCTION__);
         return ONLP_STATUS_E_INTERNAL;
     }
-    if (ufi_file_seek_readb(route, seek, &value) < 0) {
+
+    if (ufi_file_seek_readb(sysfs_path, seek, &value) < 0) {
         return ONLP_STATUS_E_INTERNAL;
     }
-    int tx_dis_adv = ufi_mask_shift(value, MASK_0000_0010);
-    if (tx_dis_adv == 1 && page_info == 0 && cmis_ver >= 0x30 && cmis_ver < 0x60) {
-        return ONLP_STATUS_OK;
+
+    tx_dis_adv = ufi_mask_shift(value, CMIS_MASK_TX_DIS_ADV);
+
+    if (tx_dis_adv != CMIS_VAL_TX_DIS_SUPPORTED) {
+        return ONLP_STATUS_E_UNSUPPORTED;
     }
-    return ONLP_STATUS_E_UNSUPPORTED;
+
+    return ONLP_STATUS_OK;
 }
 /**
  * @brief Get CMIS Port TX Disable Status

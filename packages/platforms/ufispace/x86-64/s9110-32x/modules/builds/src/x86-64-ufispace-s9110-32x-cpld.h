@@ -27,8 +27,13 @@ enum cpld_id {
     cpld2
 };
 
-/* CPLD 1 & CPLD 2 registers */
-#define CPLD_NONE_REG                     0x00
+/* 
+ *  Normally, the CPLD register range is 0x00-0xff.
+ *  Therefore, we define the invalid address 0x100 as CPLD_NONE_REG
+ */
+#define CPLD_NONE_REG                     0x100
+
+/* CPLD Common */
 #define CPLD_VERSION_REG                  0x02
 #define CPLD_ID_REG                       0x03
 #define CPLD_BUILD_REG                    0x04
@@ -44,6 +49,7 @@ enum cpld_id {
 #define CPLD_CPLD2_INTR_REG               0x14
 #define CPLD_PTP_INTR_REG                 0x1B
 #define CPLD_SYSTEM_INTR_REG              0x1C
+#define CPLD_RESET_BTN_INTR_REG           0x1F
 #define CPLD_MAC_MASK_REG                 0x20
 #define CPLD_HWM_MASK_REG                 0x23
 #define CPLD_CPLD2_MASK_REG               0x24
@@ -141,6 +147,7 @@ enum cpld_id {
 #define MASK_NONE            (0x00)
 #define MASK_0000_0111       (0x07)
 #define MASK_0011_1111       (0x3F)
+#define MASK_1000_0000       (0x80)
 #define MASK_1100_0000       (0xC0)
 
 /* common manipulation */

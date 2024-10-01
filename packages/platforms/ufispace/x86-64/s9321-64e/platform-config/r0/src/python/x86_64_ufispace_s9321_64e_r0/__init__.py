@@ -73,6 +73,7 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
     PATH_CPLD1_EVT_CTRL=PATH_I2C_CPLD1+"/cpld_evt_ctrl"
     PATH_CPLD2_EVT_CTRL=PATH_I2C_CPLD2+"/cpld_evt_ctrl"
     PATH_CPLD3_EVT_CTRL=PATH_I2C_CPLD3+"/cpld_evt_ctrl"
+    PATH_FPGA_EVT_CTRL=PATH_I2C_FPGA+"/fpga_evt_ctrl"
     PATH_PORT_LED_CTRL=PATH_I2C_CPLD1+"/cpld_port_led_clr"
     SYSTEM_LED_GREEN=0b00001001
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc"
@@ -351,23 +352,17 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         rov_bus=13
 
         rov_avs_array={
-            '0x7A': {'vdd_val': '0.85'   ,'vout_cmd':'0x06b2'},
-            '0x7C': {'vdd_val': '0.8375' ,'vout_cmd':'0x0699'},
-            '0x7E': {'vdd_val': '0.825'  ,'vout_cmd':'0x0681'},
-            '0x80': {'vdd_val': '0.8125' ,'vout_cmd':'0x0669'},
-            '0x82': {'vdd_val': '0.8'    ,'vout_cmd':'0x0651'},
-            '0x84': {'vdd_val': '0.7875' ,'vout_cmd':'0x0639'},
-            '0x86': {'vdd_val': '0.775'  ,'vout_cmd':'0x0621'},
-            '0x88': {'vdd_val': '0.7625' ,'vout_cmd':'0x0609'},
-            '0x8A': {'vdd_val': '0.75'   ,'vout_cmd':'0x05F0'},
-            '0x8C': {'vdd_val': '0.7375' ,'vout_cmd':'0x05D8'},
-            '0x8E': {'vdd_val': '0.725'  ,'vout_cmd':'0x05C0'},
-            '0x90': {'vdd_val': '0.7125' ,'vout_cmd':'0x05A8'},
-            '0x92': {'vdd_val': '0.7'    ,'vout_cmd':'0x0590'},
-            '0x94': {'vdd_val': '0.6875' ,'vout_cmd':'0x0578'},
-            '0x96': {'vdd_val': '0.675'  ,'vout_cmd':'0x055F'},
-            '0x98': {'vdd_val': '0.6625' ,'vout_cmd':'0x0547'},
-            '0x9A': {'vdd_val': '0.65'   ,'vout_cmd':'0x052F'}
+            0x84: {'vdd_val': '0.7875' ,'vout_cmd':'0x064F'},
+            0x86: {'vdd_val': '0.775'  ,'vout_cmd':'0x063B'},
+            0x88: {'vdd_val': '0.7625' ,'vout_cmd':'0x0622'},
+            0x8A: {'vdd_val': '0.75'   ,'vout_cmd':'0x060E'},
+            0x8C: {'vdd_val': '0.7375' ,'vout_cmd':'0x05F5'},
+            0x8E: {'vdd_val': '0.725'  ,'vout_cmd':'0x05DC'},
+            0x90: {'vdd_val': '0.7125' ,'vout_cmd':'0x05C3'},
+            0x92: {'vdd_val': '0.7'    ,'vout_cmd':'0x05AA'},
+            0x94: {'vdd_val': '0.6875' ,'vout_cmd':'0x0591'},
+            0x96: {'vdd_val': '0.675'  ,'vout_cmd':'0x0578'},
+            0x98: {'vdd_val': '0.6625' ,'vout_cmd':'0x055F'}
         }
 
         #get rov from cpld
@@ -376,10 +371,9 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         self.bsp_pr("{}={}".format(self.PATH_MAC_ROV, reg_val_str))
 
         for index, rov_addr in enumerate(rov_addrs):
-            val_key="0x{:0>2X}".format(reg_val)
-            if val_key in rov_avs_array:
-                mac_vdd_val=rov_avs_array[val_key]['vdd_val']
-                rov_reg_val=rov_avs_array[val_key]['vout_cmd']
+            if reg_val in rov_avs_array:
+                mac_vdd_val=rov_avs_array[reg_val]['vdd_val']
+                rov_reg_val=rov_avs_array[reg_val]['vout_cmd']
                 self.bsp_pr("Setting mac[{}] vdd {} with rov register value {}".format(index, mac_vdd_val, rov_reg_val) )
                 os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
 
@@ -388,6 +382,7 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         os.system("echo 1 > "+ self.PATH_CPLD1_EVT_CTRL)
         os.system("echo 1 > "+ self.PATH_CPLD2_EVT_CTRL)
         os.system("echo 1 > "+ self.PATH_CPLD3_EVT_CTRL)
+        os.system("echo 1 > "+ self.PATH_FPGA_EVT_CTRL)
 
     def enable_port_led_ctrl(self, board):
         # port led enable
@@ -453,31 +448,40 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
             self.insmod("optoe")
             self.init_eeprom(board)
 
-        self.bsp_pr("Init gpio");
+        self.bsp_pr("Init gpio")
         self.init_gpio(gpio_max, board)
+
+        #config mac rov
+        self.bsp_pr("Init MAC ROV")
+        self.init_rov()
 
         self.enable_ipmi_maintenance_mode()
 
         self.disable_bmc_watchdog()
 
-        self.bsp_pr("Enable event control");
+        self.bsp_pr("Enable event control")
         self.enable_event_ctrl(board)
 
-        self.bsp_pr("Enable port led control");
+        self.bsp_pr("Enable port led control")
         self.enable_port_led_ctrl(board)
 
+        # Management port for Alpha is the CPU network card, and the MDIO is bound to the CPU
+        #                 for Beta is the MAC, and the MDIO is bound to the CPU
+        #                 for Pvt is the MAC, and the MDIO is bound to the it
         if board['hw_rev'] == 1:
-            # Management port for alpha is cpu net card
-            #                 for beta is MAC
             # init ice (need to have ice before bcm81381 init to avoid failure)
             self.bsp_pr("Init ice")
             self.insmod("intel_auxiliary", False)
             self.insmod("ice")
-
-        # init bcm82399
-        self.bsp_pr("Init bcm82399")
-        os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
-
+            # init bcm82399
+            self.bsp_pr("Init bcm82399")
+            os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
+        elif board['hw_rev'] == 2:
+            # init bcm82399
+            self.bsp_pr("Init bcm82399")
+            os.system("timeout 120s {} init -s 25G".format(self.PATH_EPDM_CLI))
+        else:
+            pass
         self.bsp_pr("Init done")
 
         return True

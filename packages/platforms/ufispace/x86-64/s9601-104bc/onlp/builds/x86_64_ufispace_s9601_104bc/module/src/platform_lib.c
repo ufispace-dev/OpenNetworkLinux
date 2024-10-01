@@ -86,6 +86,42 @@ static bmc_fru_t bmc_fru_cache[] =
         .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
     },
+    [BMC_FRU_IDX_FAN_TRAY_0] = {
+        .bmc_fru_id = 3,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_3",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_1] = {
+        .bmc_fru_id = 4,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_4",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_2] = {
+        .bmc_fru_id = 5,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_5",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_3] = {
+        .bmc_fru_id = 6,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_6",
+        .vendor   = {BMC_FRU_KEY_MANUFACTURER ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    }
 };
 
 /*
@@ -397,6 +433,10 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
     switch(fru_id){
         case BMC_FRU_IDX_ONLP_PSU_0:
         case BMC_FRU_IDX_ONLP_PSU_1:
+        case BMC_FRU_IDX_FAN_TRAY_0:
+        case BMC_FRU_IDX_FAN_TRAY_1:
+        case BMC_FRU_IDX_FAN_TRAY_2:
+        case BMC_FRU_IDX_FAN_TRAY_3:
             break;
         default:
             return ONLP_STATUS_E_INTERNAL;

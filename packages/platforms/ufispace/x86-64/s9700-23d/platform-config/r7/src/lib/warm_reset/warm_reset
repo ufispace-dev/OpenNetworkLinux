@@ -1,0 +1,185 @@
+#!/bin/bash
+
+### bsp
+
+bus_num_check()
+{
+    set_value=${1}
+    if [ -f "/sys/bus/i2c/devices/1-0030/cpld_id" ]; then
+        #print "SYSFS exists, skip to set i2c mux...\n"
+        i2c_bus_f="-f 1"
+    else
+        i2cset -y 0 0x75 ${set_value}
+        i2c_bus_f="0"
+    fi
+}
+
+function _ioget {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
+function _ioset {
+    local reg=$1
+    local val=$(printf "%02x" $(($2)))
+    printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
+}
+
+### brcm_warm_reset_sbr.sh
+
+DBG=0
+if [ "$1" == "dbg" ]; then
+    DBG=1
+fi
+
+get_J2_fatal_err()
+{
+  val=0x`setpci -s 07:09.0 0x72.b`
+  result=$((val & 0x04))
+  echo "J2 Fatal Error: "$result
+}
+
+get_OP2_fatal_err()
+{
+  val=0x`setpci -s 07:0a.0 0x72.b`
+  result=$((val & 0x04))
+  echo "OP2 Fatal Error: "$result
+}
+
+pcie_list=("00:03.2" "06:00.0" "07:01.0" "07:02.0" "07:08.0" "07:09.0" "07:0a.0" "0b:00.0" "0c:00.0")
+dump_status()
+{
+  if [ ${DBG} == "1" ]; then
+    echo "==== Dump Status: $1"
+    #i2cdump -y -r 0-1 0 0x77
+    i2cdump -f -y -r 0-1 0 0x77
+    for i in ${!pcie_list[@]}
+    do
+      lspci -xxxvvv -s ${pcie_list[$i]} 2>/dev/null | grep -e ${pcie_list[$i]} -e DevSta -e UESta -e CESta -e SERR
+    done
+    echo "===="
+  fi
+}
+
+remove_J2()
+{
+  echo 1 > /sys/bus/pci/devices/0000:0b:00.0/remove
+}
+
+remove_OP2()
+{
+  echo 1 > /sys/bus/pci/devices/0000:0c:00.0/remove
+}
+
+reset_J2()
+{
+  #ioset 0x74d 0xbf
+  _ioset 0x74d 0xbf
+}
+
+reset_OP2()
+{
+  #ioset 0x74d 0xfd
+  _ioset 0x74d 0xfd
+}
+
+rescan_J2()
+{
+  echo 1 > /sys/bus/pci/devices/0000:07:09.0/rescan
+}
+
+rescan_OP2()
+{
+  echo 1 > /sys/bus/pci/devices/0000:07:0a.0/rescan
+}
+
+reset_sbr()
+{
+  echo "Reset SBR $1 $2"
+  if [ $2 -eq 1 ]; then
+    bc=$(setpci -s $1 BRIDGE_CONTROL)
+    setpci -s $1 BRIDGE_CONTROL=$(printf "%04x" $((0x$bc | 0x40)))
+  else
+    bc=$(setpci -s $1 BRIDGE_CONTROL)
+    setpci -s $1 BRIDGE_CONTROL=$(printf "%04x" $((0x$bc & 0xBF)))
+  fi
+}
+
+lspci_status()
+{
+  lspci -xxxvvv -s 00:03.2
+  lspci -xxxvvv -s 06:00.0
+  lspci -xxxvvv -s 07:09.0
+  lspci -xxxvvv -s 0b:00.0
+  lspci -xxxvvv -s 07:0a.0
+  lspci -xxxvvv -s 0c:00.0
+}
+
+main_brcm_warm_reset_sbr()
+{
+  get_J2_fatal_err
+  get_OP2_fatal_err
+
+  dump_status "Before Remove"
+  echo "Remove J2/OP2"
+  remove_J2
+  remove_OP2
+  sleep 1
+
+  echo "Rest SBR"
+  reset_sbr 07:09.0 1
+  sleep 1
+  dump_status "After J2 RP Reset"
+  reset_sbr 07:0a.0 1
+  sleep 1
+  dump_status "After OP2 RP Reset"
+
+  echo "Reset J2"
+  reset_J2
+  sleep 1
+  dump_status "After J2 Reset"
+
+  echo "Reset OP2"
+  reset_OP2
+  sleep 1
+  dump_status "After OP2 Reset"
+
+  echo "Unreset SBR"
+  reset_sbr 07:09.0 0
+  sleep 1
+  dump_status "After unreset J2 SBR"
+  reset_sbr 07:0a.0 0
+  sleep 1
+  dump_status "After unreset OP2 SBR"
+
+  echo "Rescan J2/OP2"
+  rescan_J2
+  sleep 1
+  dump_status "After Rescan J2"
+  rescan_OP2
+  sleep 1
+  dump_status "After Rescan OP2"
+  sleep 5
+  dump_status "After Rescan OP2, wait 5 seconds"
+}
+
+### main
+
+main()
+{
+    case ${1} in
+    "mac")
+        main_brcm_warm_reset_sbr
+        ;;
+    "all")
+        main_brcm_warm_reset_sbr
+        ;;
+    *)
+        printf "\n"
+        printf "Invalid parameters ${1}"
+        exit 1
+        ;;
+    esac
+}
+
+main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}

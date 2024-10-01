@@ -139,7 +139,7 @@ static onlp_led_info_t led_info[] =
     {
         .hdr = {
             .id =  ONLP_LED_ID_CREATE(ONLP_LED_SYS_ID),
-            .description = "Chassis LED 1 (ID LED)",
+            .description = "Chassis LED 6 (ID LED)",
             .poid = POID_0
         },
         .status = LED_STATUS,

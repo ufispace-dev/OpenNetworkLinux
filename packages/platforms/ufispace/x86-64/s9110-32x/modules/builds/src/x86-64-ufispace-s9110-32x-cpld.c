@@ -87,7 +87,7 @@
 
 /* CPLD sysfs attributes index  */
 enum cpld_sysfs_attributes {
-    //CPLD 1 & CPLD 2
+    // CPLD Common
     CPLD_MAJOR_VER,
     CPLD_MINOR_VER,
     CPLD_ID,
@@ -106,6 +106,7 @@ enum cpld_sysfs_attributes {
     CPLD_CPLD2_INTR,
     CPLD_PTP_INTR,
     CPLD_SYSTEM_INTR,
+    CPLD_RESET_BTN_INTR,
 
     CPLD_MAC_MASK,
     CPLD_HWM_MASK,
@@ -229,14 +230,14 @@ enum data_type {
 };
 
 typedef struct  {
-    u8 reg;
+    u16 reg;
     u8 mask;
     u8 data_type;
 } attr_reg_map_t;
 
 static attr_reg_map_t attr_reg[]= {
 
-    //CPLD 1 & CPLD 2
+    // CPLD Common
     [CPLD_MAJOR_VER]        = {CPLD_VERSION_REG          , MASK_1100_0000, DATA_DEC},
     [CPLD_MINOR_VER]        = {CPLD_VERSION_REG          , MASK_0011_1111, DATA_DEC},
     [CPLD_ID]               = {CPLD_ID_REG               , MASK_0000_0111, DATA_DEC},
@@ -255,6 +256,7 @@ static attr_reg_map_t attr_reg[]= {
     [CPLD_CPLD2_INTR]       = {CPLD_CPLD2_INTR_REG       , MASK_ALL      , DATA_HEX},
     [CPLD_PTP_INTR]         = {CPLD_PTP_INTR_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_SYSTEM_INTR]      = {CPLD_SYSTEM_INTR_REG      , MASK_ALL      , DATA_HEX},
+    [CPLD_RESET_BTN_INTR]   = {CPLD_RESET_BTN_INTR_REG   , MASK_1000_0000, DATA_HEX},
 
     [CPLD_MAC_MASK]         = {CPLD_MAC_MASK_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_HWM_MASK]         = {CPLD_HWM_MASK_REG         , MASK_ALL      , DATA_HEX},
@@ -431,7 +433,7 @@ static const unsigned short cpld_i2c_addr[] = { 0x30, 0x31, I2C_CLIENT_END };
 
 /* define all support register access of cpld in attribute */
 
-// CPLD 1 & CPLD2
+// CPLD Common
 static SENSOR_DEVICE_ATTR_RO(cpld_major_ver           , cpld, CPLD_MAJOR_VER);
 static SENSOR_DEVICE_ATTR_RO(cpld_minor_ver           , cpld, CPLD_MINOR_VER);
 static SENSOR_DEVICE_ATTR_RO(cpld_id                  , cpld, CPLD_ID);
@@ -450,6 +452,7 @@ static SENSOR_DEVICE_ATTR_RO(cpld_hwm_intr            , cpld, CPLD_HWM_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_cpld2_intr          , cpld, CPLD_CPLD2_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_ptp_intr            , cpld, CPLD_PTP_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_system_intr         , cpld, CPLD_SYSTEM_INTR);
+static SENSOR_DEVICE_ATTR_RW(cpld_reset_btn_intr      , cpld, CPLD_RESET_BTN_INTR);
 
 static SENSOR_DEVICE_ATTR_RW(cpld_mac_mask            , cpld, CPLD_MAC_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_hwm_mask            , cpld, CPLD_HWM_MASK);
@@ -569,22 +572,26 @@ static SENSOR_DEVICE_ATTR_RW(bsp_debug                , bsp_callback, BSP_DEBUG)
 
 /* cpld 1 */
 static struct attribute *cpld1_attributes[] = {
-    _DEVICE_ATTR(cpld_board_id_0),
-    _DEVICE_ATTR(cpld_board_id_1),
-    _DEVICE_ATTR(cpld_sku_ext),
-
+    // CPLD Common
     _DEVICE_ATTR(cpld_major_ver),
     _DEVICE_ATTR(cpld_minor_ver),
     _DEVICE_ATTR(cpld_id),
     _DEVICE_ATTR(cpld_build),
     _DEVICE_ATTR(cpld_version_h),
     _DEVICE_ATTR(cpld_chip),
+    _DEVICE_ATTR(cpld_evt_ctrl),
+
+    // CPLD 1
+    _DEVICE_ATTR(cpld_board_id_0),
+    _DEVICE_ATTR(cpld_board_id_1),
+    _DEVICE_ATTR(cpld_sku_ext),
 
     _DEVICE_ATTR(cpld_mac_intr),
     _DEVICE_ATTR(cpld_hwm_intr),
     _DEVICE_ATTR(cpld_cpld2_intr),
     _DEVICE_ATTR(cpld_ptp_intr),
     _DEVICE_ATTR(cpld_system_intr),
+    _DEVICE_ATTR(cpld_reset_btn_intr),
 
     _DEVICE_ATTR(cpld_mac_mask),
     _DEVICE_ATTR(cpld_hwm_mask),
@@ -595,8 +602,6 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_mac_evt),
     _DEVICE_ATTR(cpld_hwm_evt),
     _DEVICE_ATTR(cpld_cpld2_evt),
-
-    _DEVICE_ATTR(cpld_evt_ctrl),
 
     _DEVICE_ATTR(cpld_mac_reset),
     _DEVICE_ATTR(cpld_system_reset),
@@ -636,13 +641,16 @@ static struct attribute *cpld1_attributes[] = {
 /* cpld 2 */
 static struct attribute *cpld2_attributes[] = {
 
+    // CPLD Common
     _DEVICE_ATTR(cpld_major_ver),
     _DEVICE_ATTR(cpld_minor_ver),
     _DEVICE_ATTR(cpld_id),
     _DEVICE_ATTR(cpld_build),
     _DEVICE_ATTR(cpld_version_h),
     _DEVICE_ATTR(cpld_chip),
+    _DEVICE_ATTR(cpld_evt_ctrl),
 
+    // CPLD 2
     _DEVICE_ATTR(cpld_qsfp_abs_0_7),
     _DEVICE_ATTR(cpld_qsfp_abs_8_15),
     _DEVICE_ATTR(cpld_qsfp_abs_16_23),
@@ -684,8 +692,6 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_sfp_evt_abs_0_1),
     _DEVICE_ATTR(cpld_sfp_evt_rxlos_0_1),
     _DEVICE_ATTR(cpld_sfp_evt_txflt_0_1),
-
-    _DEVICE_ATTR(cpld_evt_ctrl),
 
     _DEVICE_ATTR(cpld_qsfp_reset_0_7),
     _DEVICE_ATTR(cpld_qsfp_reset_8_15),
@@ -888,7 +894,7 @@ static ssize_t cpld_show(struct device *dev,
     u8 data_type=DATA_UNK;
 
     switch (attr->index) {
-        //CPLD 1 & CPLD 2
+        // CPLD Common
         case CPLD_MAJOR_VER:
         case CPLD_MINOR_VER:
         case CPLD_ID:
@@ -906,6 +912,7 @@ static ssize_t cpld_show(struct device *dev,
         case CPLD_CPLD2_INTR:
         case CPLD_PTP_INTR:
         case CPLD_SYSTEM_INTR:
+        case CPLD_RESET_BTN_INTR:
 
         case CPLD_MAC_MASK:
         case CPLD_HWM_MASK:
@@ -1037,10 +1044,11 @@ static ssize_t cpld_store(struct device *dev,
 
     switch (attr->index) {
 
-        // CPLD 1 & CPLD2
+        // CPLD Common
         case CPLD_EVT_CTRL:
 
         //CPLD 1
+        case CPLD_RESET_BTN_INTR:
         case CPLD_MAC_MASK:
         case CPLD_HWM_MASK:
         case CPLD_CPLD2_MASK:
@@ -1332,115 +1340,6 @@ static int cpld_remove(struct i2c_client *client)
     return 0;
 }
 
-#if 0 /* FIXME */
-#define I2C_RW_RETRY_COUNT  3
-#define I2C_RW_RETRY_INTERVAL 60
-
-static int s9110_32x_cpld_read_internal(struct i2c_client *client, u8 reg)
-{
-    int retry = I2C_RW_RETRY_COUNT;
-    int reg_val = 0;
-    struct cpld_data *data = i2c_get_clientdata(client);
-
-    while (retry) {
-        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
-        if (unlikely(reg_val < 0)) {
-            msleep(I2C_RW_RETRY_INTERVAL);
-            retry--;
-
-            if (retry == 0) {
-                dev_err(&client->dev, "%s() retry %d times but still failed, reg=%x\n", __func__, I2C_RW_RETRY_COUNT, reg);
-            }
-
-            continue;
-        }
-
-        break;
-    }
-
-    return reg_val;
-}
-
-static int s9110_32x_cpld_write_internal(struct i2c_client *client, u8 reg, u8 value)
-{
-    int ret = 0, retry = I2C_RW_RETRY_COUNT;
-    struct cpld_data *data = i2c_get_clientdata(client);
-
-    while (retry) {
-        I2C_WRITE_BYTE_DATA(ret, &data->access_lock, client, reg, value);
-        if (unlikely(ret < 0)) {
-            msleep(I2C_RW_RETRY_INTERVAL);
-            retry--;
-
-            if (retry == 0) {
-                dev_err(&client->dev, "%s() retry %d times but still failed, reg=%x\n", __func__, I2C_RW_RETRY_COUNT, reg);
-            }
-
-            continue;
-        }
-        break;
-    }
-
-    return ret;
-}
-
-
-int s9110_32x_cpld_psu_mux_sel(u8 mux_sel)
-{
-    unsigned short cpld_addr = cpld_i2c_addr[0];
-    u8 reg = CPLD_MUX_CTRL_REG;
-    u8 reg_val = 0;
-    u8 psu_mux_mask = 0x06;
-    u8 mux_sel_val = 0;
-
-    struct list_head   *list_node = NULL;
-    struct cpld_client_node *cpld_node = NULL;
-    int ret = -EIO;
-
-    switch(mux_sel) {
-    case 0:
-        //psu 0
-        mux_sel_val = 0x04;
-        break;
-    case 1:
-        //psu 1
-        mux_sel_val = 0x02;
-        break;
-    default:
-        //bmc
-        mux_sel_val = psu_mux_mask;
-        break;
-    }
-
-    mutex_lock(&list_lock);
-
-    list_for_each(list_node, &cpld_client_list)
-    {
-        cpld_node = list_entry(list_node, struct cpld_client_node, list);
-
-        if (cpld_node->client->addr == cpld_addr) {
-            //read current reg value
-            reg_val = s9110_32x_cpld_read_internal(cpld_node->client, reg);
-            //clear psu_mux_sel bits (bit 1 and 2)
-            reg_val &= ~psu_mux_mask;
-            //modify psu_mux_sel bits (bit 1 and 2)
-            reg_val |= mux_sel_val;
-            //write reg value
-            s9110_32x_cpld_write_internal(cpld_node->client, reg, reg_val);
-
-            break;
-        } else {
-            pr_err("cpld_node->client->addr=%x, cpld_addr=%x\n", cpld_node->client->addr, cpld_addr);
-        }
-    }
-
-    mutex_unlock(&list_lock);
-
-    return ret;
-}
-EXPORT_SYMBOL(s9110_32x_cpld_psu_mux_sel);
-#endif
-
 MODULE_DEVICE_TABLE(i2c, cpld_id);
 
 static struct i2c_driver cpld_driver = {
@@ -1467,6 +1366,7 @@ static void __exit cpld_exit(void)
 
 MODULE_AUTHOR("Nonodark Huang <nonodark.huang@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9110_32x_cpld driver");
+MODULE_VERSION("1.0.1");
 MODULE_LICENSE("GPL");
 
 module_init(cpld_init);

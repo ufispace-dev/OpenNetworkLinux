@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="28x25 + 2x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.11'
+    BSP_VERSION='1.0.12'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc"

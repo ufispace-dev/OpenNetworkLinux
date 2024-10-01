@@ -63,7 +63,11 @@
 #define REG_BASE_MB                       0x700
 #define REG_BASE_EC                       0xE300
 
-#define REG_NONE                           0x00
+/* 
+ *  Normally, the LPC register range is 0x00-0xff.
+ *  Therefore, we define the invalid address 0x100 as REG_NONE
+ */
+#define REG_NONE                           0x100
 //MB CPLD
 #define REG_BRD_ID_0                      (REG_BASE_MB + 0x00)
 #define REG_BRD_ID_1                      (REG_BASE_MB + 0x01)
@@ -72,6 +76,7 @@
 #define REG_CPLD_BUILD                    (REG_BASE_MB + 0x04)
 #define REG_CPLD_CHIP                     (REG_BASE_MB + 0x05)
 #define REG_BRD_EXT_ID                    (REG_BASE_MB + 0x06)
+#define REG_CPLD_RESET_BTN_INTR           (REG_BASE_MB + 0x1F)
 #define REG_I2C_MUX_RESET                 (REG_BASE_MB + 0x46)
 #define REG_MUX_CTRL                      (REG_BASE_MB + 0x5C)
 #define REG_CPLD1_MISC_CTRL               (REG_BASE_MB + 0x5D)
@@ -119,6 +124,7 @@ enum lpc_sysfs_attributes {
     ATT_CPLD_VERSION_H,
     ATT_CPLD_CHIP,
     ATT_BRD_EXT_ID,
+    ATT_CPLD_RESET_BTN_INTR,
     ATT_MUX_RESET_ALL,
     ATT_MUX_CTRL,
     ATT_UART_CTRL,
@@ -175,6 +181,7 @@ attr_reg_map_t attr_reg[]= {
     [ATT_CPLD_VERSION_H]      = {REG_NONE         , MASK_NONE     , DATA_UNK},
     [ATT_CPLD_CHIP]           = {REG_CPLD_CHIP    , MASK_0000_0011, DATA_DEC},
     [ATT_BRD_EXT_ID]          = {REG_BRD_EXT_ID   , MASK_0000_0111, DATA_DEC},
+    [ATT_CPLD_RESET_BTN_INTR] = {REG_CPLD_RESET_BTN_INTR, MASK_1000_0000, DATA_HEX},
     [ATT_MUX_RESET_ALL]       = {REG_I2C_MUX_RESET, MASK_0011_1111, DATA_DEC},
     [ATT_MUX_CTRL]            = {REG_MUX_CTRL     , MASK_ALL      , DATA_HEX},
     [ATT_UART_CTRL]           = {REG_MUX_CTRL     , MASK_0010_0000, DATA_DEC},
@@ -534,6 +541,7 @@ static ssize_t lpc_callback_show(struct device *dev,
         case ATT_CPLD_VERSION_H:
         case ATT_CPLD_CHIP:
         case ATT_BRD_EXT_ID:
+        case ATT_CPLD_RESET_BTN_INTR:
         case ATT_MUX_RESET_ALL:
         case ATT_MUX_CTRL:
         case ATT_UART_CTRL:
@@ -574,6 +582,7 @@ static ssize_t lpc_callback_store(struct device *dev,
 
     switch (attr->index) {
         //MB CPLD
+        case ATT_CPLD_RESET_BTN_INTR:
         case ATT_MUX_CTRL:
         case ATT_UART_CTRL:
         case ATT_USB_CTRL:
@@ -750,6 +759,7 @@ static SENSOR_DEVICE_ATTR_RO(cpld_build          , lpc_callback     , ATT_CPLD_B
 static SENSOR_DEVICE_ATTR_RO(cpld_version_h      , mb_cpld_version_h, ATT_CPLD_VERSION_H);
 static SENSOR_DEVICE_ATTR_RO(cpld_chip           , lpc_callback     , ATT_CPLD_CHIP);
 static SENSOR_DEVICE_ATTR_RO(board_ext_id        , lpc_callback     , ATT_BRD_EXT_ID);
+static SENSOR_DEVICE_ATTR_RW(cpld_reset_btn_intr , lpc_callback     , ATT_CPLD_RESET_BTN_INTR);
 static SENSOR_DEVICE_ATTR_WO(mux_reset_all       , mux_reset_all    , ATT_MUX_RESET_ALL);
 static SENSOR_DEVICE_ATTR_RW(mux_ctrl            , lpc_callback     , ATT_MUX_CTRL);
 static SENSOR_DEVICE_ATTR_RW(uart_ctrl           , lpc_callback     , ATT_UART_CTRL);
@@ -789,6 +799,7 @@ static struct attribute *mb_cpld_attrs[] = {
     _DEVICE_ATTR(cpld_version_h),
     _DEVICE_ATTR(cpld_chip),
     _DEVICE_ATTR(board_ext_id),
+    _DEVICE_ATTR(cpld_reset_btn_intr),
     _DEVICE_ATTR(mux_reset_all),
     _DEVICE_ATTR(mux_ctrl),
     _DEVICE_ATTR(uart_ctrl),

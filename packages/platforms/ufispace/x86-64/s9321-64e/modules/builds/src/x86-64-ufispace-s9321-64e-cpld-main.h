@@ -100,56 +100,56 @@ enum cpld_id {
 
 /* CPLD 2 and CPLD 3*/
 // Interrupt status
-#define CPLD_QSFPDD_PORT_0_7_16_53_INTR_REG             0x10
+#define CPLD_QSFPDD_PORT_0_7_16_23_INTR_REG             0x10
 #define CPLD_QSFPDD_PORT_8_15_24_31_INTR_REG            0x11
 #define CPLD_QSFPDD_PORT_32_39_48_55_INTR_REG           0x12
 #define CPLD_QSFPDD_PORT_40_47_56_63_INTR_REG           0x13
-#define CPLD_QSFPDD_PORT_0_7_16_53_PRES_REG             0x14
+#define CPLD_QSFPDD_PORT_0_7_16_23_PRES_REG             0x14
 #define CPLD_QSFPDD_PORT_8_15_24_31_PRES_REG            0x15
 #define CPLD_QSFPDD_PORT_32_39_48_55_PRES_REG           0x16
 #define CPLD_QSFPDD_PORT_40_47_56_63_PRES_REG           0x17
 #define CPLD_QSFPDD_PORT_0_15_16_31_FUSE_REG            0x18
 #define CPLD_QSFPDD_PORT_32_47_48_63_FUSE_REG           0x19
-#define CPLD_QSFPDD_PORT_0_7_16_53_STUCK_REG            0x1A
+#define CPLD_QSFPDD_PORT_0_7_16_23_STUCK_REG            0x1A
 #define CPLD_QSFPDD_PORT_8_15_24_31_STUCK_REG           0x1B
 #define CPLD_QSFPDD_PORT_32_39_48_55_STUCK_REG          0x1C
 #define CPLD_QSFPDD_PORT_40_47_56_63_STUCK_REG          0x1D
 // Interrupt mask
-#define CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK_REG        0x20
+#define CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK_REG        0x20
 #define CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK_REG       0x21
 #define CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK_REG      0x22
 #define CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK_REG      0x23
-#define CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK_REG        0x24
+#define CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK_REG        0x24
 #define CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK_REG       0x25
 #define CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK_REG      0x26
 #define CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK_REG      0x27
 #define CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK_REG       0x28
 #define CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK_REG      0x29
-#define CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK_REG       0x2A
+#define CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK_REG       0x2A
 #define CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK_REG      0x2B
 #define CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK_REG     0x2C
 #define CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK_REG     0x2D
 // Interrupt event
-#define CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT_REG       0x30
+#define CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT_REG       0x30
 #define CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT_REG      0x31
 #define CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT_REG     0x32
 #define CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT_REG     0x33
-#define CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT_REG       0x34
+#define CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT_REG       0x34
 #define CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT_REG      0x35
 #define CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT_REG     0x36
 #define CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT_REG     0x37
 #define CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT_REG      0x38
 #define CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT_REG     0x39
-#define CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT_REG      0x3A
+#define CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT_REG      0x3A
 #define CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT_REG     0x3B
 #define CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT_REG    0x3C
 #define CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT_REG    0x3D
 // Port ctrl
-#define CPLD_QSFPDD_PORT_0_7_16_53_RST_REG              0x40
+#define CPLD_QSFPDD_PORT_0_7_16_23_RST_REG              0x40
 #define CPLD_QSFPDD_PORT_8_15_24_31_RST_REG             0x41
 #define CPLD_QSFPDD_PORT_32_39_48_55_RST_REG            0x42
 #define CPLD_QSFPDD_PORT_40_47_56_63_RST_REG            0x43
-#define CPLD_QSFPDD_PORT_0_7_16_53_LPMODE_REG           0x44
+#define CPLD_QSFPDD_PORT_0_7_16_23_LPMODE_REG           0x44
 #define CPLD_QSFPDD_PORT_8_15_24_31_LPMODE_REG          0x45
 #define CPLD_QSFPDD_PORT_32_39_48_55_LPMODE_REG         0x46
 #define CPLD_QSFPDD_PORT_40_47_56_63_LPMODE_REG         0x47
@@ -157,11 +157,11 @@ enum cpld_id {
 #define CPLD_I2C_CONTROL_REG                            0xA0
 #define CPLD_I2C_RELAY_REG                              0xA5
 // Interrupt debug
-#define CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR_REG         0xE0
+#define CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR_REG         0xE0
 #define CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR_REG        0xE1
 #define CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR_REG       0xE2
 #define CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR_REG       0xE3
-#define CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES_REG         0xE4
+#define CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES_REG         0xE4
 #define CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES_REG        0xE5
 #define CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES_REG       0xE6
 #define CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES_REG       0xE7
@@ -172,7 +172,8 @@ enum cpld_id {
 #define FPGA_VERSION_REG                                0x02
 #define FPGA_BUILD_REG                                  0x04
 #define FPGA_CHIP_REG                                   0x05
-#define FPGA_MGMT_PORT_0_1_RATE_SEL_REG                 0x0B
+#define FPGA_MGMT_PORT_0_1_TX_RATE_SEL_REG              0x0A
+#define FPGA_MGMT_PORT_0_1_RX_RATE_SEL_REG              0x0B
 #define FPGA_MGMT_PORT_0_1_TX_DIS_REG                   0x0C
 #define FPGA_MGMT_PORT_0_1_TX_FAULT_REG                 0x10
 #define FPGA_MGMT_PORT_0_1_RX_LOS_REG                   0x11
@@ -186,6 +187,7 @@ enum cpld_id {
 #define FPGA_MGMT_PORT_0_1_RX_LOS_EVENT_REG             0x31
 #define FPGA_MGMT_PORT_0_1_PRES_EVENT_REG               0x32
 #define FPGA_MGMT_PORT_0_1_STUCK_EVENT_REG              0x33
+#define FPGA_EVT_CTRL_REG                               0x3F
 #define FPGA_LAN_PORT_RELAY_REG                         0x40
 
 //MASK
@@ -197,6 +199,7 @@ enum cpld_id {
 #define MASK_0000_0100                     (0x04)
 #define MASK_0000_0111                     (0x07)
 #define MASK_0000_1000                     (0x08)
+#define MASK_0000_1101                     (0x0D)
 #define MASK_0000_1111                     (0x0F)
 #define MASK_0001_0000                     (0x10)
 #define MASK_0001_1000                     (0x18)
@@ -206,6 +209,7 @@ enum cpld_id {
 #define MASK_0100_0000                     (0x40)
 #define MASK_1000_0000                     (0x80)
 #define MASK_1100_0000                     (0xC0)
+#define MASK_1101_0000                     (0xD0)
 #define MASK_1111_0000                     (0xF0)
 
 
@@ -243,9 +247,68 @@ struct chip_desc {
 #endif /* #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0) */
 };
 
+/*
+ *  Generally, the color bit for CPLD is 4 bits, and there are 16 color sets available.
+ *  The color bit for GPIO is 2 bits (representing two GPIO pins), and there are 4 color sets.
+ *  Therefore, we use the 16 color sets available for our application.
+ */
+#define COLOR_VAL_MAX           16
+
+typedef enum {
+    LED_COLOR_DARK,
+    LED_COLOR_GREEN,
+    LED_COLOR_YELLOW,
+    LED_COLOR_RED,
+    LED_COLOR_BLUE,
+    LED_COLOR_GREEN_BLINK,
+    LED_COLOR_YELLOW_BLINK,
+    LED_COLOR_RED_BLINK,
+    LED_COLOR_BLUE_BLINK,
+    LED_COLOR_CYAN=100,
+    LED_COLOR_MAGENTA,
+    LED_COLOR_WHITE,
+    LED_COLOR_CYAN_BLINK,
+    LED_COLOR_MAGENTA_BLINK,
+    LED_COLOR_WHITE_BLINK,
+} s3ip_led_status_e;
+
+typedef enum {
+    TYPE_LED_UNNKOW = 0,
+    // Blue
+    TYPE_LED_1_SETS,
+
+    // Green, Yellow
+    TYPE_LED_2_SETS,
+
+    // Red, Green, Blue, Yellow, Cyan, Magenta, white
+    TYPE_LED_7_SETS,
+    TYPE_LED_SETS_MAX,
+} led_type_e;
+
+typedef enum {
+    PORT_NONE_BLOCK = 0,
+    PORT_BLOCK      = 1,
+} port_block_status_e;
+
+typedef struct
+{
+    short int val;
+    int status;
+} color_obj_t;
+
+typedef struct  {
+    int type;
+    u8 reg;
+    u8 mask;
+    u8 color_mask;
+    u8 data_type;
+    color_obj_t color_obj[COLOR_VAL_MAX];
+} led_node_t;
+
+
 u8 _mask_shift(u8 val, u8 mask);
-u8 _cpld_reg_write(struct device *dev, u8 reg, u8 reg_val);
-u8 _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_write(struct device *dev, u8 reg, u8 reg_val);
+int _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
 int mux_select_chan(struct i2c_mux_core *muxc, u32 chan);
 int mux_deselect_mux(struct i2c_mux_core *muxc, u32 chan);
 ssize_t idle_state_show(struct device *dev,

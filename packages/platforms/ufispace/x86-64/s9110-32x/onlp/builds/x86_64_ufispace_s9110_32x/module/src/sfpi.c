@@ -759,7 +759,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 
     //read gpio value
     if ((rc = read_file_hex(&reg_val, sysfs)) < 0) {
-        AIM_LOG_ERROR("onlp_sfpi_control_get() failed, error=%d, sysfs=%s, gpio_num=%d", rc, sysfs);
+        AIM_LOG_ERROR("onlp_sfpi_control_get() failed, error=%d, sysfs=%s", rc, sysfs);
         check_and_do_i2c_mux_reset(port);
         return rc;
     }

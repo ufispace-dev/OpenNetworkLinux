@@ -103,6 +103,7 @@ enum cpld_sysfs_attributes {
     CPLD_CPU_NMI_INTR,
     CPLD_PTP_INTR,
     CPLD_SYSTEM_INTR,
+    CPLD_RESET_BTN_INTR,
 
     CPLD_MAC_MASK,
     CPLD_HWM_MASK,
@@ -352,6 +353,7 @@ static sysfs_info_t sysfs_info[] = {
     [CPLD_CPU_NMI_INTR]   = {CPLD_CPU_NMI_INTR_REG,   MASK_ALL, PERM_R},
     [CPLD_PTP_INTR]       = {CPLD_PTP_INTR_REG,   MASK_ALL, PERM_R},
     [CPLD_SYSTEM_INTR]    = {CPLD_SYSTEM_INTR_REG, MASK_ALL, PERM_R},
+    [CPLD_RESET_BTN_INTR] = {CPLD_RESET_BTN_INTR_REG, MASK_CPLD_RESET_BTN_INTR, PERM_RW},
 
     [CPLD_MAC_MASK]       = {CPLD_MAC_MASK_REG,   MASK_ALL, PERM_RW},
     [CPLD_HWM_MASK]       = {CPLD_HWM_MASK_REG,   MASK_ALL, PERM_RW},
@@ -563,6 +565,7 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_ioexp_intr, cpld_callback, CPLD_SFP_IOEXP
 static _SENSOR_DEVICE_ATTR_RO(cpld_cpu_nmi_intr,   cpld_callback, CPLD_CPU_NMI_INTR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_ptp_intr,       cpld_callback, CPLD_PTP_INTR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_system_intr,    cpld_callback, CPLD_SYSTEM_INTR);
+static _SENSOR_DEVICE_ATTR_RW(cpld_reset_btn_intr, cpld_callback, CPLD_RESET_BTN_INTR);
 
 static _SENSOR_DEVICE_ATTR_RW(cpld_mac_mask,       cpld_callback, CPLD_MAC_MASK);
 static _SENSOR_DEVICE_ATTR_RW(cpld_hwm_mask,       cpld_callback, CPLD_HWM_MASK);
@@ -746,6 +749,7 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_cpu_nmi_intr),
     _DEVICE_ATTR(cpld_ptp_intr),
     _DEVICE_ATTR(cpld_system_intr),
+    _DEVICE_ATTR(cpld_reset_btn_intr),
 
     _DEVICE_ATTR(cpld_mac_mask),
     _DEVICE_ATTR(cpld_hwm_mask),
@@ -1507,6 +1511,7 @@ static void __exit cpld_exit(void)
 
 MODULE_AUTHOR("Jason Tsai <jason.cy.tsai@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s8901_54xc_cpld driver");
+MODULE_VERSION("1.0.1");
 MODULE_LICENSE("GPL");
 
 module_init(cpld_init);

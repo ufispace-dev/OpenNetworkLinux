@@ -226,6 +226,10 @@ enum bmc_oem_id {
 enum bmc_fru_id {
     BMC_FRU_IDX_ONLP_PSU_0,
     BMC_FRU_IDX_ONLP_PSU_1,
+    BMC_FRU_IDX_FAN_TRAY_0,
+    BMC_FRU_IDX_FAN_TRAY_1,
+    BMC_FRU_IDX_FAN_TRAY_2,
+    BMC_FRU_IDX_FAN_TRAY_3,
 
     BMC_FRU_IDX_INVALID = -1,
 };

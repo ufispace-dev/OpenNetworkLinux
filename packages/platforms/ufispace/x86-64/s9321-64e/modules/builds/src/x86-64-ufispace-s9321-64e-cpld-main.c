@@ -129,8 +129,10 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_PSU_0,
     CPLD_SYSTEM_LED_PSU_1,
     CPLD_SYSTEM_LED_SYNC,
-    CPLD_SFP28_LED_0,
-    CPLD_SFP28_LED_1,
+    CPLD_MGMT_PORT_0_LED_STATUS,
+    CPLD_MGMT_PORT_0_LED_SPEED,
+    CPLD_MGMT_PORT_1_LED_STATUS,
+    CPLD_MGMT_PORT_1_LED_SPEED,
     CPLD_PORT_LED_CLR,
     CPLD_MISC_PWR,
     DBG_CPLD_MAC_INTR,
@@ -139,63 +141,63 @@ enum cpld_sysfs_attributes {
     DBG_CPLD_MISC_INTR,
 
     //CPLD 2 and CPLD 3
-    CPLD_QSFPDD_PORT_0_7_16_53_INTR,
+    CPLD_QSFPDD_PORT_0_7_16_23_INTR,
     CPLD_QSFPDD_PORT_8_15_24_31_INTR,
     CPLD_QSFPDD_PORT_32_39_48_55_INTR,
     CPLD_QSFPDD_PORT_40_47_56_63_INTR,
-    CPLD_QSFPDD_PORT_0_7_16_53_PRES,
+    CPLD_QSFPDD_PORT_0_7_16_23_PRES,
     CPLD_QSFPDD_PORT_8_15_24_31_PRES,
     CPLD_QSFPDD_PORT_32_39_48_55_PRES,
     CPLD_QSFPDD_PORT_40_47_56_63_PRES,
     CPLD_QSFPDD_PORT_0_15_16_31_FUSE,
     CPLD_QSFPDD_PORT_32_47_48_63_FUSE,
-    CPLD_QSFPDD_PORT_0_7_16_53_STUCK,
+    CPLD_QSFPDD_PORT_0_7_16_23_STUCK,
     CPLD_QSFPDD_PORT_8_15_24_31_STUCK,
     CPLD_QSFPDD_PORT_32_39_48_55_STUCK,
     CPLD_QSFPDD_PORT_40_47_56_63_STUCK,
-    CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK,
+    CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK,
     CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK,
     CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK,
     CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK,
-    CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK,
+    CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK,
     CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK,
     CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK,
     CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK,
     CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK,
     CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK,
-    CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK,
+    CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK,
     CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK,
     CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK,
     CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK,
-    CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT,
+    CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT,
     CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT,
     CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT,
     CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT,
-    CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT,
+    CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT,
     CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT,
     CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT,
     CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT,
     CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT,
     CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT,
-    CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT,
+    CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT,
     CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT,
     CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT,
     CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT,
-    CPLD_QSFPDD_PORT_0_7_16_53_RST,
+    CPLD_QSFPDD_PORT_0_7_16_23_RST,
     CPLD_QSFPDD_PORT_8_15_24_31_RST,
     CPLD_QSFPDD_PORT_32_39_48_55_RST,
     CPLD_QSFPDD_PORT_40_47_56_63_RST,
-    CPLD_QSFPDD_PORT_0_7_16_53_LPMODE,
+    CPLD_QSFPDD_PORT_0_7_16_23_LPMODE,
     CPLD_QSFPDD_PORT_8_15_24_31_LPMODE,
     CPLD_QSFPDD_PORT_32_39_48_55_LPMODE,
     CPLD_QSFPDD_PORT_40_47_56_63_LPMODE,
     CPLD_I2C_CONTROL,
     CPLD_I2C_RELAY,
-    CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR,
+    CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR,
     CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR,
     CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR,
     CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR,
-    CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES,
+    CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES,
     CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES,
     CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES,
     CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES,
@@ -208,7 +210,8 @@ enum cpld_sysfs_attributes {
     FPGA_BUILD,
     FPGA_VERSION_H,
     FPGA_CHIP,
-    FPGA_MGMT_PORT_0_1_RATE_SEL,
+    FPGA_MGMT_PORT_0_1_TX_RATE_SEL,
+    FPGA_MGMT_PORT_0_1_RX_RATE_SEL,
     FPGA_MGMT_PORT_0_1_TX_DIS,
     FPGA_MGMT_PORT_0_1_TX_FAULT,
     FPGA_MGMT_PORT_0_1_RX_LOS,
@@ -222,6 +225,7 @@ enum cpld_sysfs_attributes {
     FPGA_MGMT_PORT_0_1_RX_LOS_EVENT,
     FPGA_MGMT_PORT_0_1_PRES_EVENT,
     FPGA_MGMT_PORT_0_1_STUCK_EVENT,
+    FPGA_EVT_CTRL,
     FPGA_LAN_PORT_RELAY,
 
     //MUX
@@ -288,8 +292,10 @@ static attr_reg_map_t attr_reg[]= {
     [CPLD_SYSTEM_LED_PSU_0]                     = {CPLD_SYSTEM_LED_PSU_REG                       , MASK_0000_1111, DATA_HEX},
     [CPLD_SYSTEM_LED_PSU_1]                     = {CPLD_SYSTEM_LED_PSU_REG                       , MASK_1111_0000, DATA_HEX},
     [CPLD_SYSTEM_LED_SYNC]                      = {CPLD_SYSTEM_LED_SYNC_REG                      , MASK_0000_1111, DATA_HEX},
-    [CPLD_SFP28_LED_0]                          = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_0000_1111, DATA_HEX},
-    [CPLD_SFP28_LED_1]                          = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_1111_0000, DATA_HEX},
+    [CPLD_MGMT_PORT_0_LED_STATUS]               = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_0000_1101, DATA_DEC},
+    [CPLD_MGMT_PORT_0_LED_SPEED]                = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_0000_0010, DATA_DEC},
+    [CPLD_MGMT_PORT_1_LED_STATUS]               = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_1101_0000, DATA_DEC},
+    [CPLD_MGMT_PORT_1_LED_SPEED]                = {CPLD_SFP_PORT_0_1_LED_REG                     , MASK_0010_0000, DATA_DEC},
     [CPLD_PORT_LED_CLR]                         = {CPLD_PORT_LED_CLR_REG                         , MASK_0000_0001, DATA_DEC},
     [CPLD_MISC_PWR]                             = {CPLD_MISC_PWR_REG                             , MASK_ALL      , DATA_HEX},
     [DBG_CPLD_MAC_INTR]                         = {DBG_CPLD_MAC_INTR_REG                         , MASK_ALL      , DATA_HEX},
@@ -298,63 +304,63 @@ static attr_reg_map_t attr_reg[]= {
     [DBG_CPLD_MISC_INTR]                        = {DBG_CPLD_MISC_INTR_REG                        , MASK_ALL      , DATA_HEX},
 
     // CPLD 2
-    [CPLD_QSFPDD_PORT_0_7_16_53_INTR]           = {CPLD_QSFPDD_PORT_0_7_16_53_INTR_REG           , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_INTR]           = {CPLD_QSFPDD_PORT_0_7_16_23_INTR_REG           , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_INTR]          = {CPLD_QSFPDD_PORT_8_15_24_31_INTR_REG          , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_INTR]         = {CPLD_QSFPDD_PORT_32_39_48_55_INTR_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_INTR]         = {CPLD_QSFPDD_PORT_40_47_56_63_INTR_REG         , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_PRES]           = {CPLD_QSFPDD_PORT_0_7_16_53_PRES_REG           , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_PRES]           = {CPLD_QSFPDD_PORT_0_7_16_23_PRES_REG           , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_PRES]          = {CPLD_QSFPDD_PORT_8_15_24_31_PRES_REG          , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_PRES]         = {CPLD_QSFPDD_PORT_32_39_48_55_PRES_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_PRES]         = {CPLD_QSFPDD_PORT_40_47_56_63_PRES_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_0_15_16_31_FUSE]          = {CPLD_QSFPDD_PORT_0_15_16_31_FUSE_REG          , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_47_48_63_FUSE]         = {CPLD_QSFPDD_PORT_32_47_48_63_FUSE_REG         , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_STUCK]          = {CPLD_QSFPDD_PORT_0_7_16_53_STUCK_REG          , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_STUCK]          = {CPLD_QSFPDD_PORT_0_7_16_23_STUCK_REG          , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_STUCK]         = {CPLD_QSFPDD_PORT_8_15_24_31_STUCK_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_STUCK]        = {CPLD_QSFPDD_PORT_32_39_48_55_STUCK_REG        , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_STUCK]        = {CPLD_QSFPDD_PORT_40_47_56_63_STUCK_REG        , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK]      = {CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK_REG      , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK]      = {CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK_REG      , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK]     = {CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK]    = {CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK]    = {CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK_REG    , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK]      = {CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK_REG      , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK]      = {CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK_REG      , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK]     = {CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK]    = {CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK]    = {CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK]     = {CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK]    = {CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK_REG    , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK]     = {CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK_REG     , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK]     = {CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK]    = {CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK]   = {CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK_REG   , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK]   = {CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK_REG   , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT]     = {CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT_REG     , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT]     = {CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT]    = {CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT]   = {CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT_REG   , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT]   = {CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT_REG   , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT]     = {CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT_REG     , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT]     = {CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT]    = {CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT]   = {CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT_REG   , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT]   = {CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT_REG   , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT]    = {CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT]   = {CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT_REG   , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT]    = {CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT_REG    , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT]    = {CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT_REG    , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT]   = {CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT_REG   , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT]  = {CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT_REG  , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT]  = {CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT_REG  , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_RST]            = {CPLD_QSFPDD_PORT_0_7_16_53_RST_REG            , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_RST]            = {CPLD_QSFPDD_PORT_0_7_16_23_RST_REG            , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_RST]           = {CPLD_QSFPDD_PORT_8_15_24_31_RST_REG           , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_RST]          = {CPLD_QSFPDD_PORT_32_39_48_55_RST_REG          , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_RST]          = {CPLD_QSFPDD_PORT_40_47_56_63_RST_REG          , MASK_ALL      , DATA_HEX},
-    [CPLD_QSFPDD_PORT_0_7_16_53_LPMODE]         = {CPLD_QSFPDD_PORT_0_7_16_53_LPMODE_REG         , MASK_ALL      , DATA_HEX},
+    [CPLD_QSFPDD_PORT_0_7_16_23_LPMODE]         = {CPLD_QSFPDD_PORT_0_7_16_23_LPMODE_REG         , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_8_15_24_31_LPMODE]        = {CPLD_QSFPDD_PORT_8_15_24_31_LPMODE_REG        , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_32_39_48_55_LPMODE]       = {CPLD_QSFPDD_PORT_32_39_48_55_LPMODE_REG       , MASK_ALL      , DATA_HEX},
     [CPLD_QSFPDD_PORT_40_47_56_63_LPMODE]       = {CPLD_QSFPDD_PORT_40_47_56_63_LPMODE_REG       , MASK_ALL      , DATA_HEX},
     [CPLD_I2C_CONTROL]                          = {CPLD_I2C_CONTROL_REG                          , MASK_ALL      , DATA_HEX},
     [CPLD_I2C_RELAY]                            = {CPLD_I2C_RELAY_REG                            , MASK_ALL      , DATA_HEX},
-    [CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR]       = {CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR_REG       , MASK_ALL      , DATA_HEX},
+    [CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR]       = {CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR_REG       , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR]      = {CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR_REG      , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR]     = {CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR]     = {CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR_REG     , MASK_ALL      , DATA_HEX},
-    [CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES]       = {CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES_REG       , MASK_ALL      , DATA_HEX},
+    [CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES]       = {CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES_REG       , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES]      = {CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES_REG      , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES]     = {CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES_REG     , MASK_ALL      , DATA_HEX},
     [CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES]     = {CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES_REG     , MASK_ALL      , DATA_HEX},
@@ -367,7 +373,8 @@ static attr_reg_map_t attr_reg[]= {
     [FPGA_BUILD]                                = {FPGA_BUILD_REG                                , MASK_ALL      , DATA_DEC},
     [FPGA_VERSION_H]                            = {NONE_REG                                      , MASK_NONE     , DATA_UNK},
     [FPGA_CHIP]                                 = {FPGA_CHIP_REG                                 , MASK_ALL      , DATA_DEC},
-    [FPGA_MGMT_PORT_0_1_RATE_SEL]               = {FPGA_MGMT_PORT_0_1_RATE_SEL_REG               , MASK_ALL      , DATA_HEX},
+    [FPGA_MGMT_PORT_0_1_TX_RATE_SEL]            = {FPGA_MGMT_PORT_0_1_TX_RATE_SEL_REG            , MASK_ALL      , DATA_HEX},
+    [FPGA_MGMT_PORT_0_1_RX_RATE_SEL]            = {FPGA_MGMT_PORT_0_1_RX_RATE_SEL_REG            , MASK_ALL      , DATA_HEX},
     [FPGA_MGMT_PORT_0_1_TX_DIS]                 = {FPGA_MGMT_PORT_0_1_TX_DIS_REG                 , MASK_ALL      , DATA_HEX},
     [FPGA_MGMT_PORT_0_1_TX_FAULT]               = {FPGA_MGMT_PORT_0_1_TX_FAULT_REG               , MASK_ALL      , DATA_HEX},
     [FPGA_MGMT_PORT_0_1_RX_LOS]                 = {FPGA_MGMT_PORT_0_1_RX_LOS_REG                 , MASK_ALL      , DATA_HEX},
@@ -381,6 +388,7 @@ static attr_reg_map_t attr_reg[]= {
     [FPGA_MGMT_PORT_0_1_RX_LOS_EVENT]           = {FPGA_MGMT_PORT_0_1_RX_LOS_EVENT_REG           , MASK_ALL      , DATA_HEX},
     [FPGA_MGMT_PORT_0_1_PRES_EVENT]             = {FPGA_MGMT_PORT_0_1_PRES_EVENT_REG             , MASK_ALL      , DATA_HEX},
     [FPGA_MGMT_PORT_0_1_STUCK_EVENT]            = {FPGA_MGMT_PORT_0_1_STUCK_EVENT_REG            , MASK_ALL      , DATA_HEX},
+    [FPGA_EVT_CTRL]                             = {FPGA_EVT_CTRL_REG                             , MASK_ALL      , DATA_HEX},
     [FPGA_LAN_PORT_RELAY]                       = {FPGA_LAN_PORT_RELAY_REG                       , MASK_ALL      , DATA_HEX},
 
     // MUX
@@ -407,8 +415,8 @@ static ssize_t cpld_show(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t cpld_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-static ssize_t cpld_reg_read(struct device *dev, char *buf, u8 reg, u8 mask, u8 data_type);
-static ssize_t cpld_reg_write(struct device *dev, const char *buf, size_t count, u8 reg, u8 mask);
+static ssize_t cpld_reg_read(struct device *dev, u8 *reg_val, u8 reg, u8 mask);
+static ssize_t cpld_reg_write(struct device *dev, u8 reg_val, size_t count, u8 reg, u8 mask);
 static ssize_t bsp_read(char *buf, char *str);
 static ssize_t bsp_write(const char *buf, char *str, size_t str_len, size_t count);
 static ssize_t bsp_callback_show(struct device *dev,
@@ -416,6 +424,10 @@ static ssize_t bsp_callback_show(struct device *dev,
 static ssize_t bsp_callback_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
 static ssize_t version_h_show(struct device *dev, struct device_attribute *da, char *buf);
+static ssize_t led_show(struct device *dev,
+        struct device_attribute *da, char *buf);
+static ssize_t led_store(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count);
 
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
@@ -486,8 +498,10 @@ static SENSOR_DEVICE_ATTR_RW(cpld_system_led_fan           , cpld, CPLD_SYSTEM_L
 static SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_0         , cpld, CPLD_SYSTEM_LED_PSU_0);
 static SENSOR_DEVICE_ATTR_RW(cpld_system_led_psu_1         , cpld, CPLD_SYSTEM_LED_PSU_1);
 static SENSOR_DEVICE_ATTR_RW(cpld_system_led_sync          , cpld, CPLD_SYSTEM_LED_SYNC);
-static SENSOR_DEVICE_ATTR_RW(cpld_sfp28_led_0              , cpld, CPLD_SFP28_LED_0);
-static SENSOR_DEVICE_ATTR_RW(cpld_sfp28_led_1              , cpld, CPLD_SFP28_LED_1);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_0_led_status   , led , CPLD_MGMT_PORT_0_LED_STATUS);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_0_led_speed    , cpld, CPLD_MGMT_PORT_0_LED_SPEED);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_1_led_status   , led , CPLD_MGMT_PORT_1_LED_STATUS);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_1_led_speed    , cpld, CPLD_MGMT_PORT_1_LED_SPEED);
 static SENSOR_DEVICE_ATTR_RW(cpld_port_led_clr             , cpld, CPLD_PORT_LED_CLR);
 static SENSOR_DEVICE_ATTR_RO(cpld_misc_pwr                 , cpld, CPLD_MISC_PWR);
 static SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_intr             , cpld, DBG_CPLD_MAC_INTR);
@@ -496,63 +510,63 @@ static SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_thermal_intr     , cpld, DBG_CPLD_MAC_
 static SENSOR_DEVICE_ATTR_RO(dbg_cpld_misc_intr            , cpld, DBG_CPLD_MISC_INTR);
 
 //CPLD 2 and CPLD 3
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_53_INTR);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_23_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_1       , cpld, CPLD_QSFPDD_PORT_8_15_24_31_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_2       , cpld, CPLD_QSFPDD_PORT_32_39_48_55_INTR);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_3       , cpld, CPLD_QSFPDD_PORT_40_47_56_63_INTR);
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_0    , cpld, CPLD_QSFPDD_PORT_0_7_16_53_PRES);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_0    , cpld, CPLD_QSFPDD_PORT_0_7_16_23_PRES);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_1    , cpld, CPLD_QSFPDD_PORT_8_15_24_31_PRES);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_2    , cpld, CPLD_QSFPDD_PORT_32_39_48_55_PRES);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_present_3    , cpld, CPLD_QSFPDD_PORT_40_47_56_63_PRES);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_0       , cpld, CPLD_QSFPDD_PORT_0_15_16_31_FUSE);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_fuse_1       , cpld, CPLD_QSFPDD_PORT_32_47_48_63_FUSE);
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_stuck_0           , cpld, CPLD_QSFPDD_PORT_0_7_16_53_STUCK);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_stuck_0           , cpld, CPLD_QSFPDD_PORT_0_7_16_23_STUCK);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_stuck_1           , cpld, CPLD_QSFPDD_PORT_8_15_24_31_STUCK);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_stuck_2           , cpld, CPLD_QSFPDD_PORT_32_39_48_55_STUCK);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_stuck_3           , cpld, CPLD_QSFPDD_PORT_40_47_56_63_STUCK);
-static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_1       , cpld, CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_2       , cpld, CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_port_3       , cpld, CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK);
-static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_0    , cpld, CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK);
+static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_0    , cpld, CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_1    , cpld, CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_2    , cpld, CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_present_3    , cpld, CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_0       , cpld, CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_fuse_1       , cpld, CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK);
-static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_stuck_0      , cpld, CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_stuck_0      , cpld, CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_stuck_1      , cpld, CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_stuck_2      , cpld, CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_mask_stuck_3      , cpld, CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK);
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_0        , cpld, CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_0        , cpld, CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_1        , cpld, CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_2        , cpld, CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_port_3        , cpld, CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT);
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_0     , cpld, CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_0     , cpld, CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_1     , cpld, CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_2     , cpld, CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_present_3     , cpld, CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_0        , cpld, CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_fuse_1        , cpld, CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT);
-static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_stuck_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT);
+static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_stuck_0       , cpld, CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_stuck_1       , cpld, CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_stuck_2       , cpld, CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT);
 static SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_evt_stuck_3       , cpld, CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT);
-static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_0           , cpld, CPLD_QSFPDD_PORT_0_7_16_53_RST);
+static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_0           , cpld, CPLD_QSFPDD_PORT_0_7_16_23_RST);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_1           , cpld, CPLD_QSFPDD_PORT_8_15_24_31_RST);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_2           , cpld, CPLD_QSFPDD_PORT_32_39_48_55_RST);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_reset_3           , cpld, CPLD_QSFPDD_PORT_40_47_56_63_RST);
-static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_0          , cpld, CPLD_QSFPDD_PORT_0_7_16_53_LPMODE);
+static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_0          , cpld, CPLD_QSFPDD_PORT_0_7_16_23_LPMODE);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_1          , cpld, CPLD_QSFPDD_PORT_8_15_24_31_LPMODE);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_2          , cpld, CPLD_QSFPDD_PORT_32_39_48_55_LPMODE);
 static SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_3          , cpld, CPLD_QSFPDD_PORT_40_47_56_63_LPMODE);
 static SENSOR_DEVICE_ATTR_RW(cpld_i2c_ctrl                 , cpld, CPLD_I2C_CONTROL);
 static SENSOR_DEVICE_ATTR_RW(cpld_i2c_relay                , cpld, CPLD_I2C_RELAY);
-static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_0   , cpld, CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR);
+static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_0   , cpld, CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_1   , cpld, CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_2   , cpld, CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_3   , cpld, CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR);
-static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_0, cpld, CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES);
+static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_0, cpld, CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_1, cpld, CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_2, cpld, CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES);
 static SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_3, cpld, CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES);
@@ -565,7 +579,8 @@ static SENSOR_DEVICE_ATTR_RO(fpga_major_ver                , cpld, FPGA_MAJOR_VE
 static SENSOR_DEVICE_ATTR_RO(fpga_build_ver                , cpld, FPGA_BUILD);
 static SENSOR_DEVICE_ATTR_RO(fpga_version_h                , version_h, FPGA_VERSION_H);
 static SENSOR_DEVICE_ATTR_RO(fpga_id                       , cpld, FPGA_CHIP);
-static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_rate_cap           , cpld, FPGA_MGMT_PORT_0_1_RATE_SEL);
+static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_tx_rate_cap        , cpld, FPGA_MGMT_PORT_0_1_TX_RATE_SEL);
+static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_rx_rate_cap        , cpld, FPGA_MGMT_PORT_0_1_RX_RATE_SEL);
 static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_tx_dis             , cpld, FPGA_MGMT_PORT_0_1_TX_DIS);
 static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_tx_fault           , cpld, FPGA_MGMT_PORT_0_1_TX_FAULT);
 static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_rx_los             , cpld, FPGA_MGMT_PORT_0_1_RX_LOS);
@@ -575,10 +590,11 @@ static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_mask_tx_fault      , cpld, FPGA_MGMT_POR
 static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_mask_rx_los        , cpld, FPGA_MGMT_PORT_0_1_RX_LOS_MASK);
 static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_mask_present       , cpld, FPGA_MGMT_PORT_0_1_PRES_MASK);
 static SENSOR_DEVICE_ATTR_RW(fpga_sfp28_mask_stuck         , cpld, FPGA_MGMT_PORT_0_1_STUCK_MASK);
-static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_present        , cpld, FPGA_MGMT_PORT_0_1_TX_FAULT_EVENT);
-static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_tx_fault       , cpld, FPGA_MGMT_PORT_0_1_RX_LOS_EVENT);
-static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_rx_los         , cpld, FPGA_MGMT_PORT_0_1_PRES_EVENT);
+static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_tx_fault       , cpld, FPGA_MGMT_PORT_0_1_TX_FAULT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_rx_los         , cpld, FPGA_MGMT_PORT_0_1_RX_LOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_present        , cpld, FPGA_MGMT_PORT_0_1_PRES_EVENT);
 static SENSOR_DEVICE_ATTR_RO(fpga_sfp28_evt_stuck          , cpld, FPGA_MGMT_PORT_0_1_STUCK_EVENT);
+static SENSOR_DEVICE_ATTR_RW(fpga_evt_ctrl                 , cpld, FPGA_EVT_CTRL);
 static SENSOR_DEVICE_ATTR_RO(fpga_lan_port_relay           , cpld, FPGA_LAN_PORT_RELAY);
 
 //BSP DEBUG
@@ -634,8 +650,10 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_psu_0),
     _DEVICE_ATTR(cpld_system_led_psu_1),
     _DEVICE_ATTR(cpld_system_led_sync),
-    _DEVICE_ATTR(cpld_sfp28_led_0),
-    _DEVICE_ATTR(cpld_sfp28_led_1),
+    _DEVICE_ATTR(cpld_mgmt_port_0_led_status),
+    _DEVICE_ATTR(cpld_mgmt_port_0_led_speed),
+    _DEVICE_ATTR(cpld_mgmt_port_1_led_status),
+    _DEVICE_ATTR(cpld_mgmt_port_1_led_speed),
     _DEVICE_ATTR(cpld_port_led_clr),
     _DEVICE_ATTR(cpld_misc_pwr),
     _DEVICE_ATTR(dbg_cpld_mac_intr),
@@ -806,7 +824,8 @@ static struct attribute *fpga_attributes[] = {
     _DEVICE_ATTR(fpga_build_ver),
     _DEVICE_ATTR(fpga_version_h),
     _DEVICE_ATTR(fpga_id),
-    _DEVICE_ATTR(fpga_sfp28_rate_cap),
+    _DEVICE_ATTR(fpga_sfp28_tx_rate_cap),
+    _DEVICE_ATTR(fpga_sfp28_rx_rate_cap),
     _DEVICE_ATTR(fpga_sfp28_tx_dis),
     _DEVICE_ATTR(fpga_sfp28_tx_fault),
     _DEVICE_ATTR(fpga_sfp28_rx_los),
@@ -820,6 +839,7 @@ static struct attribute *fpga_attributes[] = {
     _DEVICE_ATTR(fpga_sfp28_evt_tx_fault),
     _DEVICE_ATTR(fpga_sfp28_evt_rx_los),
     _DEVICE_ATTR(fpga_sfp28_evt_stuck),
+    _DEVICE_ATTR(fpga_evt_ctrl),
     _DEVICE_ATTR(fpga_lan_port_relay),
     NULL
 };
@@ -869,7 +889,7 @@ u8 _mask_shift(u8 val, u8 mask)
     return (val & mask) >> shift;
 }
 
-static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+static ssize_t _parse_data(char *buf, unsigned int data, u8 data_type)
 {
     if(buf == NULL) {
         return -1;
@@ -925,6 +945,27 @@ static int _config_bsp_log(u8 log_type)
             return -EINVAL;
     }
     return 0;
+}
+
+static int _store_value_check(int index, u8 reg_val, char **range) {
+    int ret = 0;
+    if(range == NULL) {
+        return -2;
+    }
+
+    switch (index) {
+        case CPLD_MGMT_PORT_0_LED_SPEED:
+        case CPLD_MGMT_PORT_1_LED_SPEED:
+            if(reg_val != 0 && reg_val != 1) {
+                ret = -1;
+            }
+            *range = "0 or 1";
+            break;
+        default:
+            break;
+    }
+
+    return ret;
 }
 
 /* get bsp value */
@@ -1002,6 +1043,8 @@ static ssize_t cpld_show(struct device *dev,
     u8 reg = 0;
     u8 mask = MASK_NONE;
     u8 data_type=DATA_UNK;
+    u8 reg_val = 0;
+    int ret = 0;
 
     switch (attr->index) {
         // CPLD Common
@@ -1046,8 +1089,8 @@ static ssize_t cpld_show(struct device *dev,
         case CPLD_SYSTEM_LED_PSU_0:
         case CPLD_SYSTEM_LED_PSU_1:
         case CPLD_SYSTEM_LED_SYNC:
-        case CPLD_SFP28_LED_0:
-        case CPLD_SFP28_LED_1:
+        case CPLD_MGMT_PORT_0_LED_SPEED:
+        case CPLD_MGMT_PORT_1_LED_SPEED:
         case CPLD_PORT_LED_CLR:
         case CPLD_MISC_PWR:
         case DBG_CPLD_MAC_INTR:
@@ -1056,63 +1099,63 @@ static ssize_t cpld_show(struct device *dev,
         case DBG_CPLD_MISC_INTR:
 
         //CPLD 2
-        case CPLD_QSFPDD_PORT_0_7_16_53_INTR:
+        case CPLD_QSFPDD_PORT_0_7_16_23_INTR:
         case CPLD_QSFPDD_PORT_8_15_24_31_INTR:
         case CPLD_QSFPDD_PORT_32_39_48_55_INTR:
         case CPLD_QSFPDD_PORT_40_47_56_63_INTR:
-        case CPLD_QSFPDD_PORT_0_7_16_53_PRES:
+        case CPLD_QSFPDD_PORT_0_7_16_23_PRES:
         case CPLD_QSFPDD_PORT_8_15_24_31_PRES:
         case CPLD_QSFPDD_PORT_32_39_48_55_PRES:
         case CPLD_QSFPDD_PORT_40_47_56_63_PRES:
         case CPLD_QSFPDD_PORT_0_15_16_31_FUSE:
         case CPLD_QSFPDD_PORT_32_47_48_63_FUSE:
-        case CPLD_QSFPDD_PORT_0_7_16_53_STUCK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_STUCK:
         case CPLD_QSFPDD_PORT_8_15_24_31_STUCK:
         case CPLD_QSFPDD_PORT_32_39_48_55_STUCK:
         case CPLD_QSFPDD_PORT_40_47_56_63_STUCK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK:
         case CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK:
         case CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_INTR_EVENT:
+        case CPLD_QSFPDD_PORT_0_7_16_23_INTR_EVENT:
         case CPLD_QSFPDD_PORT_8_15_24_31_INTR_EVENT:
         case CPLD_QSFPDD_PORT_32_39_48_55_INTR_EVENT:
         case CPLD_QSFPDD_PORT_40_47_56_63_INTR_EVENT:
-        case CPLD_QSFPDD_PORT_0_7_16_53_PRES_EVENT:
+        case CPLD_QSFPDD_PORT_0_7_16_23_PRES_EVENT:
         case CPLD_QSFPDD_PORT_8_15_24_31_PRES_EVENT:
         case CPLD_QSFPDD_PORT_32_39_48_55_PRES_EVENT:
         case CPLD_QSFPDD_PORT_40_47_56_63_PRES_EVENT:
         case CPLD_QSFPDD_PORT_0_15_16_31_FUSE_EVENT:
         case CPLD_QSFPDD_PORT_32_47_48_63_FUSE_EVENT:
-        case CPLD_QSFPDD_PORT_0_7_16_53_STUCK_EVENT:
+        case CPLD_QSFPDD_PORT_0_7_16_23_STUCK_EVENT:
         case CPLD_QSFPDD_PORT_8_15_24_31_STUCK_EVENT:
         case CPLD_QSFPDD_PORT_32_39_48_55_STUCK_EVENT:
         case CPLD_QSFPDD_PORT_40_47_56_63_STUCK_EVENT:
-        case CPLD_QSFPDD_PORT_0_7_16_53_RST:
+        case CPLD_QSFPDD_PORT_0_7_16_23_RST:
         case CPLD_QSFPDD_PORT_8_15_24_31_RST:
         case CPLD_QSFPDD_PORT_32_39_48_55_RST:
         case CPLD_QSFPDD_PORT_40_47_56_63_RST:
-        case CPLD_QSFPDD_PORT_0_7_16_53_LPMODE:
+        case CPLD_QSFPDD_PORT_0_7_16_23_LPMODE:
         case CPLD_QSFPDD_PORT_8_15_24_31_LPMODE:
         case CPLD_QSFPDD_PORT_32_39_48_55_LPMODE:
         case CPLD_QSFPDD_PORT_40_47_56_63_LPMODE:
         case CPLD_I2C_CONTROL:
         case CPLD_I2C_RELAY:
-        case CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR:
+        case CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR:
         case CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR:
         case CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR:
         case CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR:
-        case CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES:
+        case CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES:
         case CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES:
         case CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES:
         case CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES:
@@ -1124,7 +1167,8 @@ static ssize_t cpld_show(struct device *dev,
         case FPGA_MAJOR_VER:
         case FPGA_BUILD:
         case FPGA_CHIP:
-        case FPGA_MGMT_PORT_0_1_RATE_SEL:
+        case FPGA_MGMT_PORT_0_1_TX_RATE_SEL:
+        case FPGA_MGMT_PORT_0_1_RX_RATE_SEL:
         case FPGA_MGMT_PORT_0_1_TX_DIS:
         case FPGA_MGMT_PORT_0_1_TX_FAULT:
         case FPGA_MGMT_PORT_0_1_RX_LOS:
@@ -1138,6 +1182,7 @@ static ssize_t cpld_show(struct device *dev,
         case FPGA_MGMT_PORT_0_1_RX_LOS_EVENT:
         case FPGA_MGMT_PORT_0_1_PRES_EVENT:
         case FPGA_MGMT_PORT_0_1_STUCK_EVENT:
+        case FPGA_EVT_CTRL:
         case FPGA_LAN_PORT_RELAY:
 
             reg = attr_reg[attr->index].reg;
@@ -1147,7 +1192,12 @@ static ssize_t cpld_show(struct device *dev,
         default:
             return -EINVAL;
     }
-    return cpld_reg_read(dev, buf, reg, mask, data_type);
+
+    ret = cpld_reg_read(dev, &reg_val, reg, mask);
+    if( ret < 0) {
+        return ret;
+    }
+    return _parse_data(buf, reg_val, data_type);
 }
 
 /* set cpld register value */
@@ -1155,8 +1205,24 @@ static ssize_t cpld_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    u8 reg_val = 0;
     u8 reg = 0;
     u8 mask = MASK_NONE;
+    char *range = NULL;
+    int ret = 0;
+
+    if (kstrtou8(buf, 0, &reg_val) < 0)
+        return -EINVAL;
+
+    ret = _store_value_check(attr->index, reg_val, &range);
+    if (ret < 0) {
+        if(ret == -2) {
+            return -EINVAL;
+        } else {
+            pr_err("Input is out of range(%s)\n", range);
+            return -EINVAL;
+        }
+    }
 
     switch (attr->index) {
         // CPLD Common
@@ -1179,40 +1245,40 @@ static ssize_t cpld_store(struct device *dev,
         case CPLD_SYSTEM_LED_PSU_0:
         case CPLD_SYSTEM_LED_PSU_1:
         case CPLD_SYSTEM_LED_SYNC:
-        case CPLD_SFP28_LED_0:
-        case CPLD_SFP28_LED_1:
+        case CPLD_MGMT_PORT_0_LED_SPEED:
+        case CPLD_MGMT_PORT_1_LED_SPEED:
         case CPLD_PORT_LED_CLR:
 
         //CPLD 2
-        case CPLD_QSFPDD_PORT_0_7_16_53_INTR_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_INTR_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_INTR_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_INTR_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_INTR_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_PRES_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_PRES_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_PRES_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_PRES_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_PRES_MASK:
         case CPLD_QSFPDD_PORT_0_15_16_31_FUSE_MASK:
         case CPLD_QSFPDD_PORT_32_47_48_63_FUSE_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_STUCK_MASK:
+        case CPLD_QSFPDD_PORT_0_7_16_23_STUCK_MASK:
         case CPLD_QSFPDD_PORT_8_15_24_31_STUCK_MASK:
         case CPLD_QSFPDD_PORT_32_39_48_55_STUCK_MASK:
         case CPLD_QSFPDD_PORT_40_47_56_63_STUCK_MASK:
-        case CPLD_QSFPDD_PORT_0_7_16_53_RST:
+        case CPLD_QSFPDD_PORT_0_7_16_23_RST:
         case CPLD_QSFPDD_PORT_8_15_24_31_RST:
         case CPLD_QSFPDD_PORT_32_39_48_55_RST:
         case CPLD_QSFPDD_PORT_40_47_56_63_RST:
-        case CPLD_QSFPDD_PORT_0_7_16_53_LPMODE:
+        case CPLD_QSFPDD_PORT_0_7_16_23_LPMODE:
         case CPLD_QSFPDD_PORT_8_15_24_31_LPMODE:
         case CPLD_QSFPDD_PORT_32_39_48_55_LPMODE:
         case CPLD_QSFPDD_PORT_40_47_56_63_LPMODE:
         case CPLD_I2C_CONTROL:
         case CPLD_I2C_RELAY:
-        case CPLD_DBG_QSFPDD_PORT_0_7_16_53_INTR:
+        case CPLD_DBG_QSFPDD_PORT_0_7_16_23_INTR:
         case CPLD_DBG_QSFPDD_PORT_8_15_24_31_INTR:
         case CPLD_DBG_QSFPDD_PORT_32_39_48_55_INTR:
         case CPLD_DBG_QSFPDD_PORT_40_47_56_63_INTR:
-        case CPLD_DBG_QSFPDD_PORT_0_7_16_53_PRES:
+        case CPLD_DBG_QSFPDD_PORT_0_7_16_23_PRES:
         case CPLD_DBG_QSFPDD_PORT_8_15_24_31_PRES:
         case CPLD_DBG_QSFPDD_PORT_32_39_48_55_PRES:
         case CPLD_DBG_QSFPDD_PORT_40_47_56_63_PRES:
@@ -1220,12 +1286,14 @@ static ssize_t cpld_store(struct device *dev,
         case CPLD_DBG_QSFPDD_PORT_32_47_48_63_FUSE:
 
         //FPGA
-        case FPGA_MGMT_PORT_0_1_RATE_SEL:
+        case FPGA_MGMT_PORT_0_1_TX_RATE_SEL:
+        case FPGA_MGMT_PORT_0_1_RX_RATE_SEL:
         case FPGA_MGMT_PORT_0_1_TX_DIS:
         case FPGA_MGMT_PORT_0_1_TX_FAULT_MASK:
         case FPGA_MGMT_PORT_0_1_RX_LOS_MASK:
         case FPGA_MGMT_PORT_0_1_PRES_MASK:
         case FPGA_MGMT_PORT_0_1_STUCK_MASK:
+        case FPGA_EVT_CTRL:
 
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
@@ -1233,13 +1301,11 @@ static ssize_t cpld_store(struct device *dev,
         default:
             return -EINVAL;
     }
-    return cpld_reg_write(dev, buf, count, reg, mask);
+    return cpld_reg_write(dev, reg_val, count, reg, mask);
 }
 
 /* get cpld register value */
-u8 _cpld_reg_read(struct device *dev,
-                    u8 reg,
-                    u8 mask)
+int _cpld_reg_read(struct device *dev, u8 reg, u8 mask)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct i2c_mux_core *muxc = i2c_get_clientdata(client);
@@ -1258,23 +1324,27 @@ u8 _cpld_reg_read(struct device *dev,
 
 /* get cpld register value */
 static ssize_t cpld_reg_read(struct device *dev,
-                    char *buf,
+                    u8 *reg_val,
                     u8 reg,
-                    u8 mask,
-                    u8 data_type)
+                    u8 mask)
 {
-    int reg_val;
+    int ret = 0;
 
-    reg_val = _cpld_reg_read(dev, reg, mask);
-    if (unlikely(reg_val < 0)) {
-        dev_err(dev, "cpld_reg_read() error, reg_val=%d\n", reg_val);
-        return reg_val;
-    } else {
-        return _parse_data(buf, reg_val, data_type);
+    if(reg_val == NULL) {
+        return -EINVAL;
     }
+
+    ret = _cpld_reg_read(dev, reg, mask);
+    if (unlikely(ret < 0)) {
+        dev_err(dev, "cpld_reg_read() error, reg_val=%d\n", ret);
+        return ret;
+    }
+
+    *reg_val = (u8)ret;
+    return 0;
 }
 
-u8 _cpld_reg_write(struct device *dev,
+int _cpld_reg_write(struct device *dev,
                     u8 reg,
                     u8 reg_val)
 {
@@ -1291,16 +1361,13 @@ u8 _cpld_reg_write(struct device *dev,
 
 /* set cpld register value */
 static ssize_t cpld_reg_write(struct device *dev,
-                    const char *buf,
+                    u8 reg_val,
                     size_t count,
                     u8 reg,
                     u8 mask)
 {
-    u8 reg_val, reg_val_now, shift;
+    u8 reg_val_now, shift;
     int ret = 0;
-
-    if (kstrtou8(buf, 0, &reg_val) < 0)
-        return -EINVAL;
 
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
@@ -1337,6 +1404,9 @@ static ssize_t version_h_show(struct device *dev,
     int major =-1;
     int minor =-1;
     int build =-1;
+    int major_val = -1;
+    int minor_val = -1;
+    int build_val = -1;
 
     switch(attr->index) {
         case CPLD_VERSION_H:
@@ -1357,12 +1427,121 @@ static ssize_t version_h_show(struct device *dev,
     }
 
     if (major >= 0 && minor >= 0 && build >= 0) {
-        return sprintf(buf, "%d.%02d.%03d",
-                _cpld_reg_read(dev, attr_reg[major].reg, attr_reg[major].mask),
-                _cpld_reg_read(dev, attr_reg[minor].reg, attr_reg[minor].mask),
-                _cpld_reg_read(dev, attr_reg[build].reg, attr_reg[build].mask));
+        major_val = _cpld_reg_read(dev, attr_reg[major].reg, attr_reg[major].mask);
+        minor_val = _cpld_reg_read(dev, attr_reg[minor].reg, attr_reg[minor].mask);
+        build_val = _cpld_reg_read(dev, attr_reg[build].reg, attr_reg[build].mask);
+
+        if(major_val < 0 || minor_val < 0 || build_val < 0)
+            return -EIO ;
+
+        return sprintf(buf, "%d.%02d.%03d", major_val, minor_val, build_val);
     }
-    return -1;
+    return -EINVAL;
+}
+
+static int _get_led_node(int index, led_node_t *node)
+{
+    color_obj_t mgmt_port_set[COLOR_VAL_MAX] = {
+        [0] = {.status = LED_COLOR_DARK           , .val = 0b00000000},
+        [1] = {.status = LED_COLOR_DARK           , .val = 0b00000001},
+        [2] = {.status = LED_COLOR_DARK           , .val = 0b00000100},
+        [3] = {.status = LED_COLOR_DARK           , .val = 0b00000101},
+        [4] = {.status = LED_COLOR_GREEN          , .val = 0b00001001},
+        [5] = {.status = LED_COLOR_GREEN_BLINK    , .val = 0b00001101},
+        [6] = {.status = LED_COLOR_YELLOW         , .val = 0b00001000},
+        [7] = {.status = LED_COLOR_YELLOW_BLINK   , .val = 0b00001100},
+        [8] = {.val = -1}
+    };
+
+    switch (index){
+        case CPLD_MGMT_PORT_0_LED_STATUS:
+        case CPLD_MGMT_PORT_1_LED_STATUS:
+            node->type=TYPE_LED_2_SETS;
+            node->reg = attr_reg[index].reg;
+            node->mask= attr_reg[index].mask;
+            node->color_mask = MASK_0000_1101;
+            node->data_type = attr_reg[index].data_type;
+            memcpy(node->color_obj, mgmt_port_set, sizeof(mgmt_port_set));
+            break;
+        default:
+            return -EINVAL;
+    }
+    return 0;
+}
+
+static ssize_t led_show(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    led_node_t node = {0};
+    int status = LED_COLOR_DARK;
+    int led_val = 0;
+    int found = 0;
+    int i = 0;
+
+    if(_get_led_node(attr->index,&node) != 0) {
+        return -EINVAL;		
+    }
+
+    led_val=_cpld_reg_read(dev, node.reg, node.mask);
+
+    if(led_val < 0) {
+        return led_val;
+    }
+
+    for(i= 0; i<COLOR_VAL_MAX; i++) {
+        if(node.color_obj[i].val == -1)
+            break;
+
+        if((led_val & node.color_mask) == node.color_obj[i].val) {
+            status = node.color_obj[i].status;
+            found=1;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        pr_err("Led value not in definition!!\n");
+        return -EINVAL;
+    }
+
+    return _parse_data(buf, status, node.data_type);
+}
+
+static ssize_t led_store(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    led_node_t node = {0};
+    int status = LED_COLOR_DARK;
+    short int val;
+    int found = 0;
+    int i = 0;
+
+    if(_get_led_node(attr->index,&node) != 0) {
+        return -EINVAL;		
+    }
+
+    if (kstrtoint(buf, 0, &status) < 0)
+        return -EINVAL;
+
+    for(i= 0; i<COLOR_VAL_MAX; i++) {
+        if(node.color_obj[i].val == -1)
+            break;
+
+        if(status == node.color_obj[i].status) {
+            found=1;
+            val = node.color_obj[i].val;
+            break;
+        }
+    }
+
+    if(found == 0) {
+        pr_err("Led value not in definition!!\n");
+        return -EINVAL;
+    }
+
+    return cpld_reg_write(dev, (u8)val, count, node.reg, node.mask);
 }
 
 /* add valid cpld client to list */
@@ -1419,7 +1598,6 @@ static int cpld_probe(struct i2c_client *client,
     struct device *dev = &client->dev;
     struct cpld_data *data = NULL;
     struct i2c_mux_core *muxc;
-    int ret = -EPERM;
 
     muxc = i2c_mux_alloc(adap, dev, CPLD_MAX_NCHANS, sizeof(*data), 0,
                 mux_select_chan, mux_deselect_mux);
@@ -1515,7 +1693,12 @@ exit:
 }
 
 /* cpld drvier remove */
-static int cpld_remove(struct i2c_client *client)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+static int
+#else
+static void
+#endif
+cpld_remove(struct i2c_client *client)
 {
     struct i2c_mux_core *muxc = i2c_get_clientdata(client);
     struct device *dev = &client->dev;
@@ -1550,7 +1733,9 @@ static int cpld_remove(struct i2c_client *client)
     }
 
     cpld_remove_client(client);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 MODULE_DEVICE_TABLE(i2c, cpld_id);

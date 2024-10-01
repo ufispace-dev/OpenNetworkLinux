@@ -136,7 +136,7 @@ static int get_platform_info(onlp_platform_info_t* pi)
     ONLP_TRY(onlp_file_read((uint8_t*)&fpga_ver, ONLP_CONFIG_INFO_STR_MAX -1, &len, SYSFS_FPGA_VER_H));
 
     pi->cpld_versions = aim_fstrdup(
-        "CPU_CPLD='%s';MB_CPLD1='%s';MB CPLD2='%s';MB_CPLD3='%s';MB_FPGA='%s'",
+        "CPU_CPLD='%s';MB_CPLD1='%s';MB_CPLD2='%s';MB_CPLD3='%s';MB_FPGA='%s'",
         cpu_cpld_ver,
         mb_cpld1_ver,
         mb_cpld2_ver,

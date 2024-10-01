@@ -78,6 +78,7 @@ static onlp_psu_info_t psu_info[] =
 static psu_support_info_t psu_support_list[] =
 {
     {"DELTA", "DTQ3000AN12C12", ONLP_PSU_TYPE_AC},
+    {"DELTA", "DTQ3001DS12L1P", ONLP_PSU_TYPE_DC48},
 };
 
 static int get_node(int local_id, psu_node_t* node)
