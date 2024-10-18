@@ -26,6 +26,7 @@
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
 
 /* Addresses to scan */
 static const unsigned short normal_i2c[] = { /*0x50, 0x51, 0x52, 0x53, 0x54,
@@ -234,12 +235,18 @@ exit:
     return err;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int sys_eeprom_remove(struct i2c_client *client)
+#else
+static void sys_eeprom_remove(struct i2c_client *client)
+#endif
 {
     sysfs_remove_bin_file(&client->dev.kobj, &sys_eeprom_attr);
     kfree(i2c_get_clientdata(client));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 static const struct i2c_device_id sys_eeprom_id[] = {
