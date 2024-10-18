@@ -802,7 +802,11 @@ static ssize_t optoe_bin_write(struct file *filp, struct kobject *kobj,
 	return optoe_read_write(optoe, buf, off, count, OPTOE_WRITE_OP);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int optoe_remove(struct i2c_client *client)
+#else
+static void optoe_remove(struct i2c_client *client)
+#endif
 {
 	struct optoe_data *optoe;
 	int i;
@@ -820,7 +824,9 @@ static int optoe_remove(struct i2c_client *client)
 
 	kfree(optoe->writebuf);
 	kfree(optoe);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
+#endif
 }
 
 static ssize_t show_dev_class(struct device *dev,
