@@ -1,0 +1,303 @@
+#!/bin/bash
+
+VER="0.0.1-bsp"
+silence=0
+
+help()
+{
+    echo ""
+    echo "== Utility for reset operation =="
+    echo "Format: ${0} <target> [<silent>]"
+    echo "  target:"
+    echo "    mac  : Reset MAC"
+    echo "  version: Show script version"    
+    echo "  silent(optional): Don't display reset result"
+    echo ""
+}
+
+function _ioget {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
+function _ioset {
+    local reg=$1
+    local val=$(printf "%02x" $(($2)))
+    printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
+}
+
+show_ver()
+{
+    echo "== Utility for reset operation (Version ${VER}) =="
+}
+
+print_log()
+{
+    if [ ${silence} -ne 1 ]; then
+        printf "${1}"
+    fi
+}
+
+remove_temp_file()
+{
+    rm mac0_*
+}
+
+get_pcie_status()
+{
+    if [ ${silence} -eq 1 ]; then
+        return
+    fi
+
+    case "${1}" in
+    "mac")
+        echo "RP Status 16:00.0:"
+        lspci -vvv -s 16:00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "MAC Status %s:00.0:\n" $(setpci -s 16:00.0 0x19.b)
+        lspci -vvv -s $(setpci -s 16:00.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        ;;
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+remove_kmod()
+{
+    case "${1}" in
+    "mac")
+        kmod_cnt=`lsmod | grep bde | wc -l`
+        if [ ${kmod_cnt} -eq 2 ]; then
+            rmmod linux_ngbde
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+remove_dev()
+{
+    case "${1}" in
+    "mac")
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 16:00.0 0x19.b)\:00.0/remove
+        sleep 1
+        ;;
+
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+set_2nd_bus_reset()
+{
+    case "${1}" in
+    "mac")
+        if [ ${2} -eq 1 ]; then
+            #setpci -s 16:00.0 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
+            setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            sleep 1
+        else
+            #setpci -s 16:00.0 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
+            setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            sleep 1
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+save_mac_pcie_config()
+{
+  if [ "$1" == "ori" ]; then
+    lspci -xxx -s $(setpci -s 16:00.0 0x19.b):00.0 > mac0_ori
+  else
+    lspci -xxx -s $(setpci -s 16:00.0 0x19.b):00.0 > mac0_new
+  fi
+}
+
+declare -a array_0
+declare -a array_1
+
+restore_mac_pcie_config()
+{
+  if [ ${1} -eq 0 ]; then
+    pcie_dev=$(setpci -s 16:00.0 0x19.b)":00.0"
+  elif [ ${1} -eq 1 ]; then
+    pcie_dev=$(setpci -s 64:03.0 0x19.b)":00.0"
+  fi
+
+  # get diff
+  diff mac${1}_ori mac${1}_new | grep : | sed 's/> //g' | sed 's/< //g' | sed 's/://g'  > mac${1}_diff
+  #cat mac${1}_diff
+  print_log "$(cat mac${1}_diff)\n"
+
+  # Process diff portions
+  cnt=0
+  while read line
+  do
+    if [ $cnt -eq 0 ]; then
+      array_0=($line)
+    else
+      array_1=($line)
+    fi
+
+    cnt=$((cnt+1))
+    if [ $cnt -eq 2 ]; then
+      if [ "${array_0[0]}" == "10" ] || [ "${array_0[0]}" == "20" ]; then
+        cnt=0
+        continue
+      fi
+
+      for idx in `seq 1 4 16`
+      do
+        if [ "${array_0[idx]}" != "${array_1[idx]}" ] ||
+           [ "${array_0[idx+1]}" != "${array_1[idx+1]}" ] ||
+           [ "${array_0[idx+2]}" != "${array_1[idx+2]}" ] ||
+           [ "${array_0[idx+3]}" != "${array_1[idx+3]}" ]; then
+          addr=$((0x${array_0[0]}+$((idx-1))))
+          val0=0x${array_0[idx]}
+          val1=0x${array_0[idx+1]}
+          val2=0x${array_0[idx+2]}
+          val3=0x${array_0[idx+3]}
+          cmd=`printf "setpci -s %s 0x%02x.l=0x%02x%02x%02x%02x" $pcie_dev $addr $val3 $val2 $val1 $val0`
+          print_log "$cmd\n"
+          $cmd
+        fi
+      done
+      cnt=0
+    fi
+  done < mac0_diff
+}
+
+reset_mac()
+{
+    #ioset 0xe85 0x00
+    _ioset 0xe85 0x00
+
+    print_log "Reset MAC...\n"
+    print_log "==============================\n"
+    remove_kmod mac
+
+    print_log "Before MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    print_log "Save MAC status or PCIe configuration......"
+    save_mac_pcie_config ori
+    sleep 0.1
+    print_log "done\n"
+
+    print_log "Remove MAC from PCIe bus......"
+    remove_dev mac
+    sleep 1
+    print_log "done\n"
+
+    # set secondary bus reset to 1 before MAC reset
+    set_2nd_bus_reset mac 1
+
+    # reset MAC
+    print_log "Reset Assertion......"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
+    sleep 0.1
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xFE)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xFE)))
+    sleep 2
+    print_log "done\n"
+
+
+    # unreset MAC
+    print_log "Reset Deassertion......"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
+    sleep 0.1
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" | 0xFF)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" | 0xFF)))
+    sleep 2
+    print_log "done\n"
+
+    # set secondary bus reset to 0 after MAC reset
+    set_2nd_bus_reset mac 0
+
+    print_log "Rescan PCIe bus......"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 1
+    print_log "done\n"
+
+    print_log "Check MAC status......"
+    mac_cnt=`lspci | grep 780 | wc -l`
+    if [ ${mac_cnt} -ne 1 ]; then
+        print_log "fail: After reset, MAC should be exist!\n"
+        lspci | grep 780
+        exit 2
+    else
+        print_log "done\n"
+    fi
+
+    print_log "Save MAC status or PCIe configuration again......"
+    save_mac_pcie_config new
+    sleep 0.1
+    print_log "done\n"
+
+    print_log "Restore MAC status or PCIe configuration......\n"
+    restore_mac_pcie_config 0
+    sleep 0.1
+    print_log "done\n"
+
+    print_log "After MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    #LED_CLR
+    #ioset 0xe85 0x01
+    _ioset 0xe85 0x01
+
+    print_log "==============================\n"
+    print_log "Reset MAC Done\n\n"
+}
+
+main()
+{
+    case ${2} in
+    1)
+        silence=1
+        ;;
+    *)
+        silence=0
+        ;;
+    esac
+
+    case ${1} in
+    "mac")
+        reset_mac
+        remove_temp_file
+        ;;
+    "version")
+        show_ver
+        ;;        
+    "help")
+        help
+        ;;
+    *)
+        print_log "\n"
+        print_log "Invalid parameters"
+        help
+        exit 1
+        ;;
+    esac
+}
+
+main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
+
+exit 0
