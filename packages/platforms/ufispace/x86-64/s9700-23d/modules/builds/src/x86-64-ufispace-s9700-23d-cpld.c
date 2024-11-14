@@ -30,6 +30,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s9700-23d-cpld.h"
 
 #ifdef DEBUG
@@ -1696,7 +1697,11 @@ exit:
 }
 
 /* cpld drvier remove */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int apollo_cpld_remove(struct i2c_client *client)
+#else
+static void apollo_cpld_remove(struct i2c_client *client)
+#endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
@@ -1713,7 +1718,9 @@ static int apollo_cpld_remove(struct i2c_client *client)
     }
 
     apollo_cpld_remove_client(client);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 MODULE_DEVICE_TABLE(i2c, apollo_cpld_id);
