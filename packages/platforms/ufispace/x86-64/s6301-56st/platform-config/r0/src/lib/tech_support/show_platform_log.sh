@@ -1,19 +1,36 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.0.0"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+DEFAULT_LOG_FOLDER_NAME="log_platform_${DATESTR}"
+DEFAULT_LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+DEFAULT_LOG_FOLDER_ROOT="/tmp/log"
+DEFAULT_LOG_FOLDER_PATH="${DEFAULT_LOG_FOLDER_ROOT}/${DEFAULT_LOG_FOLDER_NAME}"
+DEFAULT_LOG_FILE_PATH="${DEFAULT_LOG_FOLDER_PATH}/${DEFAULT_LOG_FILE_NAME}"
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 
 # PLAT: This script is compatible with the platform.
@@ -44,10 +61,10 @@ HEADER_PROMPT=1
 LS_OPTION="-alu"
 
 # Log Redirection
-# LOG_REDIRECT="2> /dev/null": remove the error message from console
-# LOG_REDIRECT=""            : show the error message in console
-# LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+# LOG_REDIRECT="2> /dev/null"        : remove the error message from console
+# LOG_REDIRECT=""                    : show the error message in console
+# LOG_REDIRECT="2>> $LOG_FILE_PATH"  : show the error message in stdout, then stdout may send to console or file in _echo()
+LOG_REDIRECT="2>> $LOG_FILE_PATH"
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
@@ -57,6 +74,8 @@ GPIO_MAX_INIT_FLAG=0
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 # I2C Bus
 i801_bus=""
@@ -102,6 +121,10 @@ function _pkg_version {
     _banner "Package Version = 1.0.0"
 }
 
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
+}
+
 function _update_gpio_max {
     _banner "Update GPIO MAX"
 
@@ -140,6 +163,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi        
+        
         if [ "${HEADER_PROMPT}" == "1" ]; then
             echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
         else
@@ -463,35 +492,37 @@ function _ucd_version {
     fi
 
     #get ucd version via i2cdump
-    ucd_ver_ascii=$(eval "i2cdump -f -y 5 0x34 s 0x9b | awk '{if (\$1 == \"00:\" ) print \$7 }' ${LOG_REDIRECT}")
+    ucd_ver_ascii=$(eval "i2cdump -f -y 5 0x34 s 0x9b 2>/dev/null | awk '{if (\$1 == \"00:\" ) print \$7 }' ${LOG_REDIRECT}")
     ret=$?
 
     #check return code
     if [ ! $ret -eq 0 ] ; then
-        _echo "Require i2cdump to get UCD version"
+        _echo "Fail to get UCD version"
         return $ret
     fi
 
 
-    #get ucd date via BMC
-    ucd_date_ascii=$(eval "i2cdump -f -y 5 0x34 s 0x9d | awk '{if (\$1 == \"00:\" ) print \$8 }' ${LOG_REDIRECT}")
+    #get ucd date via i2cdump
+    ucd_date_ascii=$(eval "i2cdump -f -y 5 0x34 s 0x9d 2>/dev/null | awk '{if (\$1 == \"00:\" ) print \$8 }' ${LOG_REDIRECT}")
     ret=$?
 
     #check return code
     if [ ! $ret -eq 0 ] ; then
-        _echo "Require i2cdump to get UCD version"
+        _echo "Fail to get UCD date"
         return $ret
     fi
 
-    _echo "[${brd[i]} MFR_REVISION    ]: ${ucd_ver_ascii}"
-    _echo "[${brd[i]} MFR_DATE        ]: ${ucd_date_ascii}"
+    _echo "[UCD MFR_REVISION ]: ${ucd_ver_ascii}"
+    _echo "[UCD MFR_DATE     ]: ${ucd_date_ascii}"
 }
 
 
 function _show_version {
     _bios_version
     _cpld_version
-    _ucd_version
+    if [ "${BSP_INIT_FLAG}" == "1" ]; then
+        _ucd_version
+    fi
 }
 
 function _show_i2c_tree_bus {
@@ -544,6 +575,12 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -1287,6 +1324,67 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"    
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fi:v"
+    # default log dir
+    local log_folder_root=$DEFAULT_LOG_FOLDER_ROOT
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    if [ -z "$identifier" ]; then
+        LOG_FOLDER_NAME="${DEFAULT_LOG_FOLDER_NAME}"
+        LOG_FILE_NAME="${DEFAULT_LOG_FILE_NAME}"
+    else
+        LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+        LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    fi
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1322,7 +1420,8 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
+_getopts $@
 _main

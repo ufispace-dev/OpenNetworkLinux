@@ -162,6 +162,29 @@ static int ufi_bmc_fan_info_get(onlp_fan_info_t* info, int id)
             info->status &= ~ONLP_FAN_STATUS_PRESENT;
             return ONLP_STATUS_OK;
         }
+    } else if (id >= ONLP_PSU_0_FAN && id <= ONLP_PSU_1_FAN) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (id) {
+            case ONLP_PSU_0_FAN:
+                psu_id = ONLP_PSU_0;
+                break;
+            case ONLP_PSU_1_FAN:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(ufi_psu_present_get(psu_id, &pw_present));
+
+        //update psu fan presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_FAN_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_PRESENT;
+            return ONLP_STATUS_OK;
+        }
     }
 
     //get fan rpm

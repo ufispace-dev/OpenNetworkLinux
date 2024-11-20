@@ -1,19 +1,31 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.1"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -t 3 | grep "Serial Number" | cut -d : -f 2 | xargs)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 
 # MODEL_NAME: set by function _board_info
@@ -36,7 +48,7 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+LOG_REDIRECT=""
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
@@ -78,7 +90,11 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
@@ -120,6 +136,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
 
@@ -932,10 +954,8 @@ function _show_nif_port_status_sysfs {
                 dev_class_path="/sys/bus/i2c/devices/$((nif_port_eeprom_bus_id_base + i))-0050/dev_class"
                 _check_filepath ${dev_class_path}
             fi
-
             dev_class=$(eval "cat ${dev_class_path} ${LOG_REDIRECT}")
             _echo "[Port${i} Dev Class Status]: ${dev_class}"
-
 
             for (( page_i=0; page_i<${#eeprom_page_array[@]}; page_i++ ))
             do
@@ -1796,6 +1816,58 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-d D_DIR] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":d:fi:v"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1842,7 +1914,8 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
+_getopts $@
 _main

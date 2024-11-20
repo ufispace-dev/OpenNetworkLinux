@@ -525,12 +525,6 @@ static int ufi_cmis_txdisable_supported(int port)
     int length = 0;
     int tx_dis_adv = 0;
 
-    //Check module present
-    if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
-        return ONLP_STATUS_E_UNSUPPORTED;
-    }
-
     //Check CMIS version on lower page 0x01
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
@@ -578,13 +572,19 @@ static int ufi_cmis_txdisable_supported(int port)
  */
 static int ufi_cmis_txdisable_status_get(int port, int* status)
 {
+    int ret = 0;
     uint8_t value = 0;
     char route[256] = {0};
     int bus = 0;
 
+    //Check module present
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
     // tx disable support check
-    if (ufi_cmis_txdisable_supported(port) != ONLP_STATUS_OK) {
-        return ONLP_STATUS_E_UNSUPPORTED;
+    if ((ret=ufi_cmis_txdisable_supported(port)) != ONLP_STATUS_OK) {
+        return ret;
     }
     bus = ufi_port_to_eeprom_bus(port);
 
@@ -625,6 +625,11 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
     int bus = 0;
     int seek = CMIS_EEPROM_PAGE_TX_DIS * CMIS_EEPROM_PAGE_SIZE + CMIS_EEPROM_OFFSET_TX_DIS_PAGE;
 
+    //Check module present
+    if (onlp_sfpi_is_present(port) !=  1) {
+        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
     // tx disable support check
     if (ufi_cmis_txdisable_supported(port) != ONLP_STATUS_OK) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -1351,7 +1356,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     if (dev_class <= 0) {
                         rc = dev_class; //return error condition.
                     } else if (dev_class == 1) { //SFF8636 module
-                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_get(port, value));
+                        rc = ufi_sff8636_txdisable_status_get(port, value);
                     } else if (dev_class == 3) { //CMIS module
                         rc = ufi_cmis_txdisable_status_get(port, value);
                     }

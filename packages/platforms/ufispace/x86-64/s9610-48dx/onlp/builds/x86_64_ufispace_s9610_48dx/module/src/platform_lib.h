@@ -55,6 +55,7 @@
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
 #define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc/bsp/"
+#define LPC_CPU_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc/cpu_cpld/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
@@ -125,6 +126,10 @@
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
 extern const int CPLD_I2C_BUS[CPLD_MAX];
 
+/* I2C Get/Set command*/
+#define CMD_I2C_GET "i2cget -f -y %d %d %d"
+#define CMD_I2C_SET "i2cset -f -y %d %d %d %d"
+
 /* BMC CMD */
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
@@ -147,6 +152,13 @@ enum reset_dev_type {
     WARM_RESET_OP2,
     WARM_RESET_GB,
     WARM_RESET_MAX
+};
+
+enum cpld_id_e {
+  CPLD_1,
+  CPLD_2,
+  CPLD_3,
+  CPLD_4
 };
 
 enum mac_unit_id {
@@ -344,6 +356,11 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *sku_id, int *build_id);
+
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val);
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val);
 
 #endif  /* __PLATFORM_LIB_H__ */

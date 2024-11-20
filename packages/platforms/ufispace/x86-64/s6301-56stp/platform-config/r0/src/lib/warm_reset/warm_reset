@@ -1,56 +1,7 @@
 #!/bin/bash
 
-if [ -z "${UFI_UG_PATH}" ]; then
-    export UFI_UG_PATH=$(pwd) 
-fi
-
-VER="0.0.2-bsp"
-
-function _get_i2c_root {
-
-    i801_bus="-1"
-    ismt_bus="-1"
-    if [ -f "/sys/bus/i2c/devices/i2c-0/name" ]; then
-        i2c_root=`cat /sys/bus/i2c/devices/i2c-0/name`
-    fi
-
-    if echo "$i2c_root" | grep -q "I801"; then
-        i801_bus="0"
-    fi
-
-    if echo "$i2c_root" | grep -q "iSMT"; then
-        ismt_bus="0"
-    fi
-
-    if [ -f "/sys/bus/i2c/devices/i2c-1/name" ]; then
-        i2c_root=`cat /sys/bus/i2c/devices/i2c-1/name`
-    fi
-
-    if echo "$i2c_root" | grep -q "I801"; then
-        i801_bus="1"
-    fi
-
-    if echo "$i2c_root" | grep -q "iSMT"; then
-        ismt_bus="1"
-    fi
-
-    if [ "$ismt_bus" = "-1" ]; then
-        echo "Not supported"
-        exit -1
-    fi
-}
-
-bus_num_check()
-{
-    set_value=${1}
-    if [ -f "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_version" ]; then
-        #printf "SYSFS exists, skip to set i2c mux...\n"
-        i2c_bus_f="-f 4"
-    else
-        i2cset -y ${ismt_bus} 0x75 ${set_value}
-        i2c_bus_f="${ismt_bus}"
-    fi
-}
+VER="0.0.1-bsp"
+silence=0
 
 function _ioget {
     reg=$1
@@ -63,10 +14,18 @@ function _ioset {
     printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
 }
 
+print_log()
+{
+    if [ ${silence} -ne 1 ]; then
+        printf "${1}\n"
+    fi
+}
+
 check_board_bits_type()
 {   
     cpld_sku_type_reg=0x701
-    reg_value=`_ioget $cpld_sku_type_reg | awk -F' ' '{print $NF}'`
+    #reg_value=`ioget $cpld_sku_type_reg | awk -F' ' '{print $NF}'`
+    reg_value=$(_ioget $cpld_sku_type_reg)
     # bit 5
     sku_8bit_value=$(($reg_value & 0x20))
     sku_8bit_type=$(($sku_8bit_value >> 5))
@@ -78,12 +37,16 @@ check_boardid_hwrev()
     #1: SKU ID Types, 8bit
     if [ ${sku_8bit_type} -eq 1 ]; then
 
-        cpld_skuid_value=$(_ioget 0x700 | awk -F" " {'print $NF'})
-        cpld_hw_rev_value=$(_ioget 0x701 | awk -F" " {'print $NF'})
+        #cpld_skuid_value=$(ioget 0x700 | awk -F" " {'print $NF'})
+        cpld_skuid_value=$(_ioget 0x700)
+        #cpld_hw_rev_value=$(ioget 0x701 | awk -F" " {'print $NF'})
+        cpld_hw_rev_value=$(_ioget 0x701)
 
         #check board id value
         if [ "$((cpld_skuid_value & 0xff))" == 254 ]; then
             HW_PLAT="HAWKEYE"
+        elif [ "$((cpld_skuid_value & 0xff))" == 253 ]; then
+           HW_PLAT="X2" 
         else
             HW_PLAT="NA"
         fi
@@ -111,28 +74,26 @@ check_boardid_hwrev()
         fi
     else
         #enable i2c mux 0x75, ch2
-        _get_i2c_root
-        if [ -n "$(i2cget -f -y ${ismt_bus} 0x75 2>&1 | grep 'Error')" ]; then
-            echo "No i2c mux 0x75, Alpha"
+        if [ -n "$(i2cset -y 0 0x75 0x4  2>&1 | grep 'Error')" ]; then
+            print_log "No i2c mux 0x75, Alpha"
             HW_REV="ALPHA"
         else
-            bus_num_check "0x4"
             sleep 0.3
             #check if ioexp(0x20) exist or not
-            i2cget -y ${i2c_bus_f} 0x20 0 > /dev/null
+            i2cget -y 0 0x20 0 > /dev/null
             if [ $? -ne 0 ]; then
-                echo "IOEXP 0x20 doesn't exist"
+                print_log "IOEXP 0x20 doesn't exist"
                 HW_REV="ALPHA"
             else
                 sleep 0.3
                 #Configure 0x20 ioexp default value
-                i2cset -y ${i2c_bus_f} 0x20 0x4 0x0
-                i2cset -y ${i2c_bus_f} 0x20 0x5 0x0
-                i2cset -y ${i2c_bus_f} 0x20 0x6 0xff
-                i2cset -y ${i2c_bus_f} 0x20 0x7 0xff
+                i2cset -y 0 0x20 0x4 0x0
+                i2cset -y 0 0x20 0x5 0x0
+                i2cset -y 0 0x20 0x6 0xff
+                i2cset -y 0 0x20 0x7 0xff
 
                 #check hw rev value
-                hw_rev_value=`i2cget -y ${i2c_bus_f} 0x20 0x1`
+                hw_rev_value=`i2cget -y 0 0x20 0x1`
                 if [ "$((hw_rev_value & 0xC))" == 12 ]; then
                     HW_REV="PVT"
                 elif [ "$((hw_rev_value & 0x8))" == 8 ]; then
@@ -176,37 +137,47 @@ check_boardid_hwrev()
         fi
 
         #close the i2c mux
-        bus_num_check "0x0"
+        i2cset -y 0 0x75 0x0
     fi
-    echo $HW_PLAT
-    echo $HW_REV
-    echo $BUILD_REV
+    print_log "$HW_PLAT $HW_REV $BUILD_REV"
+    export set HARDWARE_PLATFORM=${HW_PLAT}
+    export set HARDWARE_REVISION=${HW_REV}
+
+}
+
+show_ver()
+{
+    echo "== Utility for reset operation (Version ${VER}) =="
 }
 
 help()
 {
     echo ""
     echo "========================================================================================================"
-    echo "                                      - Reset mac command -(Version ${VER})"
+    echo "                                      - Reset mac command -"
     echo "========================================================================================================"
     echo "option:"
-    echo "  ${0} <device> [<loop>]"
+    echo "  ${0} <device|version> [<loop>] [<silent>]"
     echo "      - To reset mac"
-    echo "      device: Specify the chip to reset. Valid values is mac"
+    echo "      device: Specify the chip to reset. Valid value is mac"
+    echo "      version: Show script version"
     echo "      loop  : Test cycles, default is 1"
+    echo "      silent(optional): Don't display reset result, default is 0"
     echo "usage:"
-    echo "  e.g. ${0} mac 3"
+    echo "  e.g. ${0} mac 1"
     echo ""
+    echo "Note:"
+    echo "      Currently Hawkeye platform reset mac and i210 need periodic time, others support <loop> option"
 }
 
 get_mac_info()
 {
     case "${HW_PLAT}" in
-    "Q2A"|"Q2U")
-        lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 >> /tmp/mac_info 2>&1
+    "X2")
+        lspci -vvv -s $(setpci -s 00:09.0 0x19.b):00.0 >> /tmp/mac_info 2>&1
         ;;
     *)
-        echo "unknown platform"
+        print_log "unknown platform"
         ;;
     esac
 
@@ -224,16 +195,12 @@ pre_check()
     case ${1} in
     mac)
         case "${HW_PLAT}" in
-        "Q2A")
-            mac_id=`lspci | grep "848[0-9]" | head -1 | awk '{print $7}'`
-            expected_mac_number=1  
-            ;;
-        "Q2U")
-            mac_id=`lspci | grep "828[0-9]" | head -1 | awk '{print $7}'`
+        "X2")
+            mac_id=`lspci | grep "b27" | head -1 | awk '{print $7}'`
             expected_mac_number=1
             ;;
         *)
-            echo "unknown platform"
+            print_log "unknown platform"
             exit 2
             ;;
         esac
@@ -241,13 +208,14 @@ pre_check()
         mac_cnt=`lspci | grep ${mac_id} | wc -l`
         if [ ${mac_cnt} -ne ${expected_mac_number} ]; then
             lspci | ${mac_id}
-            echo "Error message : Before test, ${expected_mac_number} MAC should be exist! ( pre_check fail )"
-            echo "resetchip - FAIL"
+            print_log "Error message : Before test, ${expected_mac_number} MAC should be exist! ( pre_check fail )"
+            print_log "resetchip - FAIL"
             exit 2
         fi
         ;;
+
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         exit 1
         ;;
     esac
@@ -255,24 +223,29 @@ pre_check()
 
 get_pcie_status()
 {
+    if [ ${silence} -eq 1 ]; then
+        return
+    fi
+
     case ${1} in
     mac)
-        echo "RP Status 00:0e.0"
-        lspci -vvv -s 00:0e.0 | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR'
-        printf "MAC Status %s:00.0:\n" $(setpci -s 00:0e.0 0x19.b)
         case "${HW_PLAT}" in
-        "Q2A"|"Q2U")
-            lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR' 
-            ;;
-
+        "X2")
+            echo "RP Status 00:09.0"
+            lspci -vvv -s 00:09.0 | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR'
+            printf "MAC Status %s:00.0:\n" $(setpci -s 00:09.0 0x19.b)
+            del_exist_log
+            #save mac info to /tmp/mac_info
+            get_mac_info 
+            cat /tmp/mac_info | grep -e 'DevSta:' -e 'LnkSta:' -e 'UESta:' -e 'CESta:' -e 'SERR'
+            ;;  
         *)
-            echo "unknown platform"
+            print_log "unknown platform"
             ;;
         esac      
-        ;;
-    
+        ;;    
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         help
         ;;
     esac
@@ -284,49 +257,47 @@ verify_pcie_status()
     case ${1} in
     mac)
         case "${HW_PLAT}" in
-        "Q2A"|"Q2U")
+        "X2")
             # RP
-            out=`lspci -vvv -s 00:0e.0 | grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
+            out=`lspci -vvv -s 00:09.0 | grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
-            out=`lspci -vvv -s 00:0e.0 | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
+            out=`lspci -vvv -s 00:09.0 | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
             if [ "${out}" == "" ]; then
                 pcie_error=1   
             fi
-            out=`lspci -vvv -s 00:0e.0 | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
+            out=`lspci -vvv -s 00:09.0 | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
-            out=`lspci -vvv -s 00:0e.0 | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
+            out=`lspci -vvv -s 00:09.0 | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
             # MAC
-            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
+            out=`cat /tmp/mac_info| grep -e 'DevSta:' | grep -e 'UncorrErr+' -e 'FatalErr+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
-            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
+            out=`cat /tmp/mac_info | grep -e 'LnkSta:' | grep 'Speed' | grep 'Width'`
             if [ "${out}" == "" ]; then
                 pcie_error=1
             fi
-            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
+            out=`cat /tmp/mac_info | grep -e 'UESta:' | grep -e 'DLP+' -e 'SDES+' -e 'TLP+' -e 'FCP+' -e 'CmpltTO+' -e 'CmpltAbrt+' -e 'UnxCmplt+' -e 'RxOF+' -e 'MalfTLP+' -e 'ECRC+' -e 'ACSViol+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
-            out=`lspci -vvv -s $(setpci -s 00:0e.0 0x19.b):00.0 | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
+            out=`cat /tmp/mac_info | grep -e 'CESta:' | grep -e 'RxErr+' -e 'BadTLP+' -e 'BadDLLP+' -e 'Rollover+' -e 'Timeout+'`
             if [ "${out}" != "" ]; then
                 pcie_error=1
             fi
             ;;
-        
         *)
-            echo "unknown platform"
+            print_log "unknown platform"
             ;;
         esac      
-        ;;
-    
+        ;;    
     *)
         ;;
     esac
@@ -343,7 +314,7 @@ remove_kmod()
         fi
         ;;
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         help
         ;;
     esac
@@ -353,16 +324,21 @@ remove_dev()
 {
     case ${1} in
     mac)
-        if [ -d /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.0 ]; then
-            echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.0/remove
-        fi
-        if [ -d /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.1 ]; then
-            echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0e.0 0x19.b)\:00.1/remove
-        fi
+        case "${HW_PLAT}" in
+        "X2")
+            if [ -d /sys/bus/pci/devices/0000\:$(setpci -s 00:09.0 0x19.b)\:00.0 ]; then
+                echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:09.0 0x19.b)\:00.0/remove
+            fi
+            ;;
+        *)
+            print_log "unknown platform"
+            exit 2
+            ;;
+        esac
         sleep 1
         ;;
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         help
         ;;
     esac
@@ -372,16 +348,24 @@ set_2nd_bus_reset()
 {
     case ${1} in
     mac)
-        bc=$(setpci -s 00:0e.0 BRIDGE_CONTROL)
-        if [ ${2} -eq 1 ]; then
-            setpci -s 00:0e.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-        else
-            setpci -s 00:0e.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-        fi
+        case "${HW_PLAT}" in
+        "X2")
+            bc=$(setpci -s 00:09.0 BRIDGE_CONTROL)
+            if [ ${2} -eq 1 ]; then
+                setpci -s 00:09.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            else
+                setpci -s 00:09.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            fi
+            ;;
+        *)
+            print_log "unknown platform"
+            exit 2
+            ;;
+        esac
         sleep 1
         ;;
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         exit 1
         ;;
     esac
@@ -392,24 +376,26 @@ set_dev_reset()
     case ${1} in
     mac)
         case "${HW_PLAT}" in
-        "Q2A"|"Q2U")
-            val=$(_ioget 0x742 | awk -F' ' '{print $NF}')
+        "X2")
+            #val=$(ioget 0x742 | awk -F' ' '{print $NF}')
+            val=$(_ioget 0x742)
             sleep 0.1
             if [ ${2} -eq 1 ]; then
+                #ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
                 _ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
             else
+                #ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
                 _ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
             fi
             sleep 2
             ;;
         *)
-            echo "unknown platform"
+            print_log "unknown platform"
             ;;
         esac
-        ;;
-        
+        ;;        
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         exit 1
         ;;
     esac
@@ -422,9 +408,8 @@ rescan_pcie_dev()
         echo 1 > /sys/bus/pci/rescan
         sleep 1
         ;;
-
     *)
-        echo "Invalid Parameters"
+        print_log "Invalid Parameters"
         exit 1
         ;;
     esac
@@ -436,92 +421,111 @@ reset_mac()
     cnt=0
     while [ ${cnt} -lt ${max} ]
     do
-        echo "Reset MAC Test (${cnt})..."
-        echo "============================================================"
+        print_log "Reset MAC Test (${cnt})..."
+        print_log "============================================================"
 
         pre_check mac
 
         remove_kmod mac
         
-        echo "Before Warm Reset......"
+        print_log "Before Warm Reset......"
         get_pcie_status mac 
-        
-        printf "Remove MAC......"
+
+        print_log "Remove MAC......"
         remove_dev mac 
-        printf "done\n"
+        print_log "done"
         
         # set secondary bus reset to 1 before MAC reset
-        printf "Set SBR......"
+        print_log "Set SBR......"
         set_2nd_bus_reset mac 1
-        printf "done\n"
+        print_log "done"
         
         # reset MAC (PCIe)
-        printf "Reset MAC......"
+        print_log "Reset MAC......"
         set_dev_reset mac 1
-        printf "done\n"
+        print_log "done"
 
         # unreset MAC (PCIe)
-        printf "Unreset MAC......"
+        print_log "Unreset MAC......"
         set_dev_reset mac 0
-        printf "done\n"
+        print_log "done"
         
         # set secondary bus reset to 0 after MAC reset
-        printf "Unset SBR......"
+        print_log "Unset SBR......"
         set_2nd_bus_reset mac 0
-        printf "done\n"
+        print_log "done"
         
         # rescan PCIe Bus
-        printf "Rescan PCIe for MACs......"
+        print_log "Rescan PCIe for MACs......"
         rescan_pcie_dev mac 
-        printf "done\n"
+        print_log "done"
         
-        printf "Check MAC Quantity......"
+        print_log "Check MAC Quantity......"
         #mac id from pre_check mac
         mac_cnt=`lspci | grep ${mac_id} | wc -l`
 
         if [ ${mac_cnt} -ne ${expected_mac_number} ]; then
-            printf "%d, fail\n" ${mac_cnt}
-            echo "============================================================"
+            print_log "%d, fail\n" ${mac_cnt}
+            print_log "============================================================"
             lspci | grep ${mac_id}
-            echo "Error message : After reset, ${expected_mac_number} MACs should be exist!"
-            echo "resetchip - FAIL"
+            print_log "Error message : After reset, ${expected_mac_number} MACs should be exist!"
+            print_log "resetchip - FAIL"
             exit 2
         fi
-        printf "%d, done\n" ${mac_cnt}
+        print_log "%d, done\n" ${mac_cnt}
 
-        printf "Check RP & Device Status......"
+        print_log "Check RP & Device Status......"
         verify_pcie_status mac
         if [ ${pcie_error} -ne 0 ]; then
-            printf "fail\n"
-            echo "============================================================"
+            print_log "fail\n"
+            print_log "============================================================"
             get_pcie_status mac 
-            echo "Error message : After reset, MAC or RP status abnormal!"
-            echo "resetchip - FAIL"
+            print_log "Error message : After reset, MAC or RP status abnormal!"
+            print_log "resetchip - FAIL"
             exit 2
         fi
-        printf "done\n"
+        print_log "done\n"
 
-        echo "After Warm Reset......"
+        print_log "After Warm Reset......"
         get_pcie_status mac 
         
-        echo "============================================================"
+        print_log "============================================================"
 
         cnt=$((cnt+1))
     done
 
-    echo "resetchip - PASS"
+    print_log "resetchip - PASS"
 }
 
 main()
-{   
+{
+    case ${3} in
+    1)
+        silence=1
+        ;;
+    *)
+        silence=0
+        ;;
+    esac
+
+    #### Check SKU ID bits Types 
+    check_board_bits_type
+
+    ##### The below function should retrieve $HW_REV and $HW_PLAT
+    check_boardid_hwrev
+
     case ${1} in
     "mac")
         loop=1
         if [ "$#" -eq 2 ]; then
             loop=${2}
         fi
-        echo "Test Parameters: loop - ${loop}"
+        print_log "Test Parameters: loop - ${loop}"
         reset_mac ${loop}
+        ;;
+
+    "version")
+        show_ver
         ;;
 
     "help")
@@ -529,19 +533,11 @@ main()
         ;;
 
     *)
-        echo ""
-        echo "Invalid parameters"
         help
         exit 1
         ;;
     esac
 }
-
-#### Check SKU ID bits Types 
-check_board_bits_type
-
-##### The below function should retrieve $HW_REV and $HW_PLAT
-check_boardid_hwrev
 
 main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
 

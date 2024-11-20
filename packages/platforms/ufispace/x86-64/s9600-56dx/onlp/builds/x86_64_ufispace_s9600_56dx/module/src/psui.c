@@ -63,7 +63,7 @@ static onlp_psu_info_t psu_info[] =
 
 static char *vendors[] = {"DELTA", "FSPGROUP"};
 
-static int ufi_psu_present_get(int id, int *psu_present)
+int ufi_psu_present_get(int id, int *psu_present)
 {
     int status = 0;
     int mask = 0;

@@ -310,6 +310,9 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Init bcm82752")
         os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init mdio 10G optics")
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done")
 
         return True

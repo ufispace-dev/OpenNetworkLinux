@@ -35,7 +35,7 @@
 static const char *mac_unit_str[] = {"",   ""};
 static const warm_reset_data_t warm_reset_data[] = {
 //                     unit_max | dev | unit
-    [WARM_RESET_ALL] = {-1,      NULL, NULL},
+    [WARM_RESET_ALL] = {-1,      "mac", NULL},
     [WARM_RESET_MAC] = {MAC_MAX, "mac", mac_unit_str},
     [WARM_RESET_PHY] = {-1,      NULL, NULL}, //not support
     [WARM_RESET_MUX] = {-1,      NULL, NULL}, //not support
@@ -663,6 +663,70 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     return reg_val;
 }
 
+/**
+ * @brief read cpld register
+ * @param cpld_id The CPLD id (CPLD_1)
+ * @param reg The CPLD register to read (0x00-0x90)
+ * @param[out] reg_val The value of register (0x00-0xff)
+ */
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val)
+{
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d.", CPLD_1);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0x90) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0x90.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val == NULL) {
+        AIM_LOG_ERROR("reg_val is null");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //read cpld reg
+    if (ufi_read_ioport(CPLD_START_ADDR + reg, reg_val) < 0) {
+            AIM_LOG_ERROR("read cpld reg failed, reg=%d\n", reg);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief write cpld register
+ * @param cpld_id The CPLD id (CPLD_1)
+ * @param reg The CPLD register to write (0x00-0x90)
+ * @param reg_val The value to write (0x00-0xff)
+ */
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val)
+{
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d.", CPLD_1);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0x90) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0x90.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val < 0x0 || reg_val > 0xff) {
+        AIM_LOG_ERROR("Invalid reg value, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //write cpld reg
+    if (ufi_write_ioport(CPLD_START_ADDR + reg, reg_val) < 0) {
+            AIM_LOG_ERROR("write cpld reg failed, reg=%d\n", reg);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
 int get_hw_rev_id(void)
 {
     int hw_rev;
@@ -697,6 +761,34 @@ int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id)
     ONLP_TRY(file_read_hex(build_id, "/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/ec/cpu_rev_build_id"));
 
     return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief read mac hbm power status
+ * @param[out] pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_read_hbm_pwr_ctrl(int *pwr_ctrl)
+{
+    if (pwr_ctrl == NULL) {
+        AIM_LOG_ERROR("pwr_ctrl is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    return ONLP_STATUS_E_UNSUPPORTED;
+}
+
+/**
+ * @brief write mac hbm power status
+ * @param pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_write_hbm_pwr_ctrl(int pwr_ctrl)
+{
+    if (pwr_ctrl < 0 || pwr_ctrl > 1) {
+        AIM_LOG_ERROR("Invalid pwr_ctrl value %d, it should be 0 or 1.", pwr_ctrl);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    return ONLP_STATUS_E_UNSUPPORTED;
 }
 
 int ufi_get_thermal_thld(int thermal_local_id,  temp_thld_t *temp_thld) {

@@ -395,6 +395,7 @@ int ufi_get_board_version(board_t *board);
 int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val);
 int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val);
 int ufi_get_cpu_rev(int *rev_sku, int *rev_hw, int *rev_build);
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *sku_id, int *build_id);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */
 

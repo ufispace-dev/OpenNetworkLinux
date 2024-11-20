@@ -195,7 +195,7 @@ static int get_node(int local_id, thrm_node_t *node) {
 
     switch(local_id) {
         case ONLP_THERMAL_CPU_PKG:
-            node->type = TYPE_THRM_ATTR_GENERAL_SYSFS;
+            node->type = TYPE_THRM_ATTR_CPU_SYSFS;
             node->temp_idx = 1;
             node->warning  = THERMAL_WARNING_DEFAULT;
             node->error    = THERMAL_ERROR_DEFAULT;

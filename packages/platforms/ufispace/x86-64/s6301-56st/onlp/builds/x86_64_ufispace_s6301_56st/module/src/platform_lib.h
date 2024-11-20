@@ -66,7 +66,6 @@
 #define GPIO_MAX_SYSFS              LPC_BSP_PATH "bsp_gpio_max"
 #define MUX_RESET_SYSFS             LPC_MB_CPLD_PATH "mux_reset"
 
-
 #define RJ45_NUM                    48
 #define SFP_PLUS_NUM                8
 #define PORT_NUM                    (RJ45_NUM + SFP_PLUS_NUM)
@@ -119,6 +118,35 @@
 /* VALUES */
 #define MIN_GPIO_MAX                128
 #define HW_REV_ALPHA                1
+
+/* Warm Reset */
+#define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_PATH"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"LPC_BSP_PATH"bsp_pr_info"
+#define WARM_RESET_PATH             "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT          60
+#define CMD_WARM_RESET              "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
+
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
 
 /* fan_id */
 enum onlp_fan_id {
@@ -218,5 +246,7 @@ int get_hw_rev_id();
 int get_gpio_max();
 
 int ufi_port_base_get(int *base_num);
+
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */

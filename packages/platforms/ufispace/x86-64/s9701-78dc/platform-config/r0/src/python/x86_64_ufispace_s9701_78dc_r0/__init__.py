@@ -270,4 +270,7 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9701-78dc-r0/onl/epdm_cli init 10G")
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         return True

@@ -87,6 +87,7 @@ enum cpld_sysfs_attributes {
     CPLD_MINOR_VER,
     CPLD_BUILD_VER,
     CPLD_VERSION_H,
+    CPLD_TEST,
 
     CPLD_MAC_INTR,
     CPLD_CPLDX_INTR,
@@ -244,6 +245,9 @@ enum cpld_sysfs_attributes {
     CPLD_SFP_EVT,
     CPLD_SFP_CONFIG,
     DBG_CPLD_SFP_STATUS,
+
+    //BIT
+    CPLD_BIT,
 
     //BSP DEBUG
     BSP_DEBUG
@@ -508,6 +512,9 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,    cpld_callback, CPLD_SFP_EVT);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config, cpld_callback, CPLD_SFP_CONFIG);
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_sfp_status, cpld_callback, DBG_CPLD_SFP_STATUS);
 
+//BIT
+static _SENSOR_DEVICE_ATTR_RW(cpld_bit, cpld_callback, CPLD_BIT);
+
 //BSP DEBUG
 static _SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, BSP_DEBUG);
 
@@ -574,6 +581,9 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_cpldx_intr),
     _DEVICE_ATTR(dbg_cpld_mac_thermal_intr),
     _DEVICE_ATTR(dbg_cpld_misc_intr),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -667,6 +677,9 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_sfp_evt),
     _DEVICE_ATTR(cpld_sfp_config),
     _DEVICE_ATTR(dbg_cpld_sfp_status),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -747,7 +760,7 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(dbg_cpld_qsfp_intr_fuse_1),
     _DEVICE_ATTR(dbg_cpld_qsfp_intr_fuse_2),
 
-    //CPLD 2/3
+    _DEVICE_ATTR(cpld_bit),
 
     NULL
 };
@@ -836,6 +849,9 @@ static struct attribute *cpld4_attributes[] = {
     _DEVICE_ATTR(cpld_sfp_evt),
     _DEVICE_ATTR(cpld_sfp_config),
     _DEVICE_ATTR(dbg_cpld_sfp_status),
+
+    _DEVICE_ATTR(cpld_bit),
+
     NULL
 };
 
@@ -1382,6 +1398,10 @@ static ssize_t read_cpld_callback(struct device *dev,
         case DBG_CPLD_SFP_STATUS:
             reg = DBG_CPLD_SFP_STATUS_REG;
             break;
+        //BIT
+        case CPLD_BIT:
+            reg = CPLD_BIT_REG;
+            break;
         default:
             return -EINVAL;
     }
@@ -1615,6 +1635,10 @@ static ssize_t write_cpld_callback(struct device *dev,
             break;
         case DBG_CPLD_SFP_STATUS:
             reg = DBG_CPLD_SFP_STATUS_REG;
+            break;
+        //BIT
+        case CPLD_BIT:
+            reg = CPLD_BIT_REG;
             break;
         default:
             return -EINVAL;

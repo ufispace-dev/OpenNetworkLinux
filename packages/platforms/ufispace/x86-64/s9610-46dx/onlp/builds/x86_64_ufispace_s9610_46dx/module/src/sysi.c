@@ -102,11 +102,13 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         "[CPU CPLD] %s\n"
         "[MB CPLD1] %s\n"
         "[MB CPLD2] %s\n"
-        "[MB CPLD3] %s\n",
+        "[MB CPLD3] %s\n"
+        "[MB CPLD4] %s\n",
         cpu_cpld_ver_out,
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],
-        mb_cpld_ver_out[2]);
+        mb_cpld_ver_out[2],
+        mb_cpld_ver_out[3]);
 
     //Get HW Build Version
     ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));

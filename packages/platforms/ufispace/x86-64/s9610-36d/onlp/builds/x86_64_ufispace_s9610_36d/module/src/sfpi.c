@@ -280,12 +280,6 @@ static int ufi_cmis_txdisable_supported(int port)
     int length = 0;
     int tx_dis_adv = 0;
 
-    //Check module present
-    if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
-        return ONLP_STATUS_E_UNSUPPORTED;
-    }
-
     //Check CMIS version on lower page 0x01
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
@@ -339,6 +333,12 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
     int bus = 0;
     int length = 0;
 
+    // Check module present
+    if (onlp_sfpi_is_present(port) != 1) {
+        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
+
     // tx disable support check
     if ((ret=ufi_cmis_txdisable_supported(port)) != ONLP_STATUS_OK) {
         return ret;
@@ -380,6 +380,12 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
     char sysfs_path[256] = {0};
     int bus = 0;
     int seek = CMIS_SEEK_TX_DIS;
+
+    // Check module present
+    if (onlp_sfpi_is_present(port) != 1) {
+        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
+        return ONLP_STATUS_OK;
+    }
 
     // tx disable support check
     if (ufi_cmis_txdisable_supported(port) != ONLP_STATUS_OK) {
@@ -552,7 +558,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -574,7 +580,7 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -599,7 +605,7 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = ufi_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -644,7 +650,7 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     VALIDATE_PORT(port);
     int bus = ufi_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -695,7 +701,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
     VALIDATE_SFP_PORT(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -770,6 +776,10 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
             break;
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
+            if (IS_SFP(port)) {
+                *rv = 1;
+            }
+            break;
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_SFP(port) || IS_QSFPDD(port)) {

@@ -859,10 +859,33 @@ int bmc_fan_info_get(onlp_fan_info_t* info, int id)
         if( (info->status & ONLP_FAN_STATUS_PRESENT) != ONLP_FAN_STATUS_PRESENT ) {
             return ONLP_STATUS_OK;
         }
+    } else if (id >= FAN_ID_PSU0_FAN && id <= FAN_ID_PSU1_FAN) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (id) {
+            case FAN_ID_PSU0_FAN:
+                psu_id = ONLP_PSU_0;
+                break;
+            case FAN_ID_PSU1_FAN:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(psu_present_get(&pw_present, psu_id));
+
+        //update psu fan presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_FAN_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_FAN_STATUS_PRESENT;
+            return ONLP_STATUS_OK;
+        }
     }
 
     //get fan rpm
-    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 3, FAN_SENSOR, &data);
+    rv = bmc_sensor_read(id - FAN_ID_FAN0 + 11, FAN_SENSOR, &data);
     if ( rv != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rv;

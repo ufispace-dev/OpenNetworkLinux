@@ -346,4 +346,6 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
+int ufi_psu_present_get(int id, int *psu_present);
+
 #endif  /* __PLATFORM_LIB_H__ */

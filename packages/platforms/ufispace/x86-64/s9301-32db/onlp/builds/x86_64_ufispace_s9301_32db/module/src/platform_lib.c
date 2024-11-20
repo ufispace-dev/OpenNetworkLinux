@@ -180,7 +180,7 @@ static bmc_fru_t bmc_fru_cache[] =
 
 static const warm_reset_data_t warm_reset_data[] = {
     //                     unit_max | dev | unit
-    [WARM_RESET_ALL] = {-1, NULL, NULL},
+    [WARM_RESET_ALL] = {MAC_MAX, "mac", NULL},
     [WARM_RESET_MAC] = {MAC_MAX, "mac", NULL},
     [WARM_RESET_PHY] = {-1, NULL, NULL}, // not support
     [WARM_RESET_MUX] = {-1, NULL, NULL}, // not support

@@ -4,9 +4,53 @@ if [ -z "${UFI_UG_PATH}" ]; then
     export UFI_UG_PATH=$(pwd) 
 fi
 
-HW_PLAT=Q2U
+VER="0.0.2-bsp"
 
-VER="0.0.1-bsp"
+function _get_i2c_root {
+
+    i801_bus="-1"
+    ismt_bus="-1"
+    if [ -f "/sys/bus/i2c/devices/i2c-0/name" ]; then
+        i2c_root=`cat /sys/bus/i2c/devices/i2c-0/name`
+    fi
+
+    if echo "$i2c_root" | grep -q "I801"; then
+        i801_bus="0"
+    fi
+
+    if echo "$i2c_root" | grep -q "iSMT"; then
+        ismt_bus="0"
+    fi
+
+    if [ -f "/sys/bus/i2c/devices/i2c-1/name" ]; then
+        i2c_root=`cat /sys/bus/i2c/devices/i2c-1/name`
+    fi
+
+    if echo "$i2c_root" | grep -q "I801"; then
+        i801_bus="1"
+    fi
+
+    if echo "$i2c_root" | grep -q "iSMT"; then
+        ismt_bus="1"
+    fi
+
+    if [ "$ismt_bus" = "-1" ]; then
+        echo "Not supported"
+        exit -1
+    fi
+}
+
+bus_num_check()
+{
+    set_value=${1}
+    if [ -f "/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/bsp/bsp_version" ]; then
+        #printf "SYSFS exists, skip to set i2c mux...\n"
+        i2c_bus_f="-f 4"
+    else
+        i2cset -y ${ismt_bus} 0x75 ${set_value}
+        i2c_bus_f="${ismt_bus}"
+    fi
+}
 
 function _ioget {
     reg=$1
@@ -17,6 +61,126 @@ function _ioset {
     local reg=$1
     local val=$(printf "%02x" $(($2)))
     printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
+}
+
+check_board_bits_type()
+{   
+    cpld_sku_type_reg=0x701
+    reg_value=`_ioget $cpld_sku_type_reg | awk -F' ' '{print $NF}'`
+    # bit 5
+    sku_8bit_value=$(($reg_value & 0x20))
+    sku_8bit_type=$(($sku_8bit_value >> 5))
+}
+
+check_boardid_hwrev()
+{   
+    #0: SKU ID Types, 4bit
+    #1: SKU ID Types, 8bit
+    if [ ${sku_8bit_type} -eq 1 ]; then
+
+        cpld_skuid_value=$(_ioget 0x700 | awk -F" " {'print $NF'})
+        cpld_hw_rev_value=$(_ioget 0x701 | awk -F" " {'print $NF'})
+
+        #check board id value
+        if [ "$((cpld_skuid_value & 0xff))" == 254 ]; then
+            HW_PLAT="HAWKEYE"
+        else
+            HW_PLAT="NA"
+        fi
+
+        #check hw rev value
+        if [ "$((cpld_hw_rev_value & 0x03))" == 0 ]; then
+            HW_REV="PROTO"
+        elif [ "$((cpld_hw_rev_value & 0x03))" == 1 ]; then
+            HW_REV="ALPHA"
+        elif [ "$((cpld_hw_rev_value & 0x03))" == 2 ]; then
+            HW_REV="BETA"
+        else
+            HW_REV="PVT"
+        fi
+
+        #check build rev value
+        if [ "$((cpld_hw_rev_value & 0x18))" == 0 ]; then
+            BUILD_REV="ONE"
+        elif [ "$((cpld_hw_rev_value & 0x18))" == 8 ]; then
+            BUILD_REV="TWO"
+        elif [ "$((cpld_hw_rev_value & 0x18))" == 16 ]; then
+            BUILD_REV="THREE"
+        else
+            BUILD_REV="FOUR"
+        fi
+    else
+        #enable i2c mux 0x75, ch2
+        _get_i2c_root
+        if [ -n "$(i2cget -f -y ${ismt_bus} 0x75 2>&1 | grep 'Error')" ]; then
+            echo "No i2c mux 0x75, Alpha"
+            HW_REV="ALPHA"
+        else
+            bus_num_check "0x4"
+            sleep 0.3
+            #check if ioexp(0x20) exist or not
+            i2cget -y ${i2c_bus_f} 0x20 0 > /dev/null
+            if [ $? -ne 0 ]; then
+                echo "IOEXP 0x20 doesn't exist"
+                HW_REV="ALPHA"
+            else
+                sleep 0.3
+                #Configure 0x20 ioexp default value
+                i2cset -y ${i2c_bus_f} 0x20 0x4 0x0
+                i2cset -y ${i2c_bus_f} 0x20 0x5 0x0
+                i2cset -y ${i2c_bus_f} 0x20 0x6 0xff
+                i2cset -y ${i2c_bus_f} 0x20 0x7 0xff
+
+                #check hw rev value
+                hw_rev_value=`i2cget -y ${i2c_bus_f} 0x20 0x1`
+                if [ "$((hw_rev_value & 0xC))" == 12 ]; then
+                    HW_REV="PVT"
+                elif [ "$((hw_rev_value & 0x8))" == 8 ]; then
+                    HW_REV="ALPHA"
+                elif [ "$((hw_rev_value & 0x4))" == 4 ]; then
+                    HW_REV="BETA"
+                else
+                    HW_REV="PROTO"
+                fi
+
+                #check board id value
+                if [ "$((hw_rev_value & 0xf0))" == "$((16#10))" ]; then
+                    HW_PLAT="QAX"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#00))"  ]; then
+                    HW_PLAT="QAX-Lite"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#20))"  ]; then
+                    HW_PLAT="QAX-NTM"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#30))"  ]; then
+                    HW_PLAT="QUX-FS"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#40))"  ]; then
+                    HW_PLAT="QUX-HB"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#50))"  ]; then
+                    HW_PLAT="Q2A"
+                elif [ "$((hw_rev_value & 0xf0))" == "$((16#60))"  ]; then
+                    HW_PLAT="Q2U"
+                else
+                    HW_PLAT="NA"
+                fi
+
+                #check build rev value
+                if [ "$((hw_rev_value & 0x3))" == 3 ]; then
+                    BUILD_REV="FOUR"
+                elif [ "$((hw_rev_value & 0x3))" == 1 ]; then
+                    BUILD_REV="THREE"
+                elif [ "$((hw_rev_value & 0x3))" == 2 ]; then
+                    BUILD_REV="TWO"
+                else
+                    BUILD_REV="ONE"
+                fi
+            fi
+        fi
+
+        #close the i2c mux
+        bus_num_check "0x0"
+    fi
+    echo $HW_PLAT
+    echo $HW_REV
+    echo $BUILD_REV
 }
 
 help()
@@ -229,14 +393,11 @@ set_dev_reset()
     mac)
         case "${HW_PLAT}" in
         "Q2A"|"Q2U")
-            #val=$(ioget 0x742 | awk -F' ' '{print $NF}')
             val=$(_ioget 0x742 | awk -F' ' '{print $NF}')
             sleep 0.1
             if [ ${2} -eq 1 ]; then
-                #ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
                 _ioset 0x742 $(printf "0x%02x" $(("$val" & 0xfc)))
             else
-                #ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
                 _ioset 0x742 $(printf "0x%02x" $(("$val" | 0xff)))
             fi
             sleep 2
@@ -299,36 +460,6 @@ reset_mac()
         set_dev_reset mac 1
         printf "done\n"
 
-        # rescan PCIe Bus
-        printf "Rescan PCIe......"
-        rescan_pcie_dev mac
-        printf "done\n"
-
-        printf "Check MAC Quantity......"
-        expected_mac_cnt=0
-        #mac id from pre_check mac
-        mac_cnt=`lspci | grep ${mac_id} | wc -l`
-
-        if [ ${mac_cnt} -ne ${expected_mac_cnt} ]; then
-            printf "%d, fail\n" ${mac_count}
-            echo "============================================================"
-            lspci | grep ${mac_id}
-            echo "Error message : During reset, MAC quantity(${mac_cnt}) is not as expected(${expected_mac_cnt})!"
-            echo "resetchip - FAIL"
-            exit 2
-        fi
-        printf "%d, done\n" ${mac_cnt}
-
-        # if only reset one MAC, remove another to keep PCIe enumeration order (CS00012218511)
-        printf "Remove MAC again......"
-        remove_dev mac 
-        printf "done\n"
-
-        # set secondary bus reset to 1 before reset
-        printf "Set SBR again......"
-        set_2nd_bus_reset mac 1
-        printf "done\n"
-
         # unreset MAC (PCIe)
         printf "Unreset MAC......"
         set_dev_reset mac 0
@@ -382,7 +513,7 @@ reset_mac()
 }
 
 main()
-{
+{   
     case ${1} in
     "mac")
         loop=1
@@ -405,6 +536,12 @@ main()
         ;;
     esac
 }
+
+#### Check SKU ID bits Types 
+check_board_bits_type
+
+##### The below function should retrieve $HW_REV and $HW_PLAT
+check_boardid_hwrev
 
 main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
 

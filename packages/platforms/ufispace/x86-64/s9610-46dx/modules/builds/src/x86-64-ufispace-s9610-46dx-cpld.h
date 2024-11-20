@@ -42,7 +42,7 @@ enum cpld_id {
 #define CPLD_MISC_INTR_REG                0x1B
 #define CPLD_CPU_INTR_REG                 0x1C
 #define CPLD_MAC_MASK_REG                 0x20
-#define CPLD_PHY_MASK_REG                 0x20
+#define CPLD_PHY_MASK_REG                 0x23
 #define CPLD_CPLDX_MASK_REG               0x24
 #define CPLD_NTM_MASK_REG                 0x25
 #define CPLD_THERMAL_MASK_BASE_REG        0x26
@@ -78,6 +78,8 @@ enum cpld_id {
 #define DBG_CPLD_CPLDX_INTR_REG           0xE4
 #define DBG_CPLD_THERMAL_INTR_BASE_REG    0xE6
 #define DBG_CPLD_MISC_INTR_REG            0xEB
+
+#define CPLD_BIT_REG                      0xFF
 
 //CPLD 2-3
 //interrupt status

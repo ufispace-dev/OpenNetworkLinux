@@ -1,22 +1,34 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.0"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 # PLAT: This script is compatible with the platform.
-PLAT="S9321-64E S9725-64E"
+PLAT="S9321-64E"
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
@@ -28,7 +40,6 @@ BSP_INIT_FLAG=""
 
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IOGET="${SCRIPTPATH}/ioget"
 FPGA_PORT_EEPROM="${SCRIPTPATH}/fpga_port_eeprom.bin"
 
 # LOG_FILE_ENABLE=1: Log all the platform info to log files (${LOG_FILE_NAME})
@@ -48,7 +59,7 @@ LS_OPTION="-alu"
 # LOG_REDIRECT="2> /dev/null"        : remove the error message from console
 # LOG_REDIRECT=""                    : show the error message in console
 # LOG_REDIRECT="2>> $LOG_FILE_PATH"  : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>> $LOG_FILE_PATH"
+LOG_REDIRECT=""
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
@@ -78,6 +89,9 @@ PORT_T_MGMT=4
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -110,7 +124,11 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.2"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
@@ -128,6 +146,11 @@ function _update_gpio_max {
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
 
+function _dd_read_byte {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
 function _update_fpga_pci_enable {
     _banner "Update FPGA enable flag"
 
@@ -141,13 +164,6 @@ function _update_fpga_pci_enable {
 
 function _check_env {
     #_banner "Check Environment"
-
-    # check utility
-    if [ ! -f "${IOGET}" ]; then
-        echo "Error!!! ioget(${IOGET}) file not found!!! Exit!!!"
-        echo "Please update the ioget file path in script or put the ioget under ${IOGET}."
-        exit 1
-    fi
 
     # check basic commands
     cmd_array=("ipmitool" "lsusb" "dmidecode")
@@ -191,14 +207,33 @@ function _check_env {
 
 function _check_filepath {
     filepath=$1
+    silent="${2:-0}" 
+
     if [ -z "${filepath}" ]; then
-        _echo "ERROR, the ipnut string is empty!!!"
+        if [ "$silent" = "0" ]; then
+            _echo "ERROR, the ipnut string is empty!!!"
+        fi
         return ${FALSE}
     elif [ ! -f "$filepath" ]; then
-        _echo "ERROR: No such file: ${filepath}"
+        if [ "$silent" = "0" ]; then
+            _echo "ERROR: No such file: ${filepath}"
+        fi
         return ${FALSE}
     else
         #_echo "File Path: ${filepath}"
+        return ${TRUE}
+    fi
+}
+
+function _check_dirpath {
+    dirpath=$1
+    if [ -z "${dirpath}" ]; then
+        _echo "ERROR, the ipnut string is empty!!!"
+        return ${FALSE}
+    elif [ ! -d "$dirpath" ]; then
+        _echo "ERROR: No such directory: ${dirpath}"
+        return ${FALSE}
+    else
         return ${TRUE}
     fi
 }
@@ -237,11 +272,11 @@ function _check_bsp_init {
 }
 
 function _get_i2c_root {
-    if _check_filepath "/sys/bus/i2c/devices/i2c-0/name" ;then
+    if _check_filepath "/sys/bus/i2c/devices/i2c-0/name" 1 ;then
         i2c_0=`cat /sys/bus/i2c/devices/i2c-0/name`
     fi
 
-    if _check_filepath "/sys/bus/i2c/devices/i2c-1/name" ;then
+    if _check_filepath "/sys/bus/i2c/devices/i2c-1/name" 1 ;then
         i2c_1=`cat /sys/bus/i2c/devices/i2c-1/name`
     fi
 
@@ -344,24 +379,22 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
-    model_id_array=($((2#00011000)) $((2#00011001)))
-    model_name_array=("S9321-64E" "S9725-64E")
+    model_id_array=($((2#00011000)))
+    model_name_array=("S9321-64E")
     model_name=""
 
-    model_id=`${IOGET} 0xE00`
+    model_id=$(_dd_read_byte 0xE00)
     ret=$?
     if [ $ret -eq 0 ]; then
-        model_id=`echo ${model_id} | awk -F" " '{print $NF}'`
         model_id=$((model_id))
     else
         _echo "Get board model id failed ($ret), Exit!!"
         exit $ret
     fi
 
-    board_rev_id=`${IOGET} 0xE01`
+    board_rev_id=$(_dd_read_byte 0xE01)
     ret=$?
     if [ $ret -eq 0 ]; then
-        board_rev_id=`echo ${board_rev_id} | awk -F" " '{print $NF}'`
         board_rev_id=$((board_rev_id))
     else
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
@@ -413,10 +446,7 @@ function _bios_version {
     _banner "Show BIOS Version"
 
     bios_ver=$(eval "cat /sys/class/dmi/id/bios_version ${LOG_REDIRECT}")
-    bios_boot_sel=`${IOGET} 0x602`
-    if [ $? -eq 0 ]; then
-        bios_boot_sel=`echo ${bios_boot_sel} | awk -F" " '{print $NF}'`
-    fi
+    bios_boot_sel=$(_dd_read_byte 0x602)
 
     # CPU CPLD BIOS_MUXSEL D[7]
     bios_boot_sel=$(((bios_boot_sel & 2#10000000) >> 7))
@@ -445,17 +475,9 @@ function _cpld_version_lpc {
     # case $PLAT in
     #     *$MODEL_NAME* )
     #         # MB CPLD S9601-104BC
-    #         mb_cpld_ver=`${IOGET} 0x702`
-    #         ret=$?
-    #         if [ ${ret} -eq 0 ]; then
-    #             mb_cpld_ver=`echo ${mb_cpld_ver} | awk -F" " '{print $NF}'`
-    #         fi
+    #         mb_cpld_ver=$(_dd_read_byte 0x702)
 
-    #         mb_cpld_build=`${IOGET} 0x704`
-    #         ret=$?
-    #         if [ ${ret} -eq 0 ]; then
-    #             mb_cpld_build=`echo ${mb_cpld_build} | awk -F" " '{print $NF}'`
-    #         fi
+    #         mb_cpld_build=$(_dd_read_byte 0x704)
 
     #         _echo "[MB CPLD Version]: $(( (mb_cpld_ver & 2#11000000) >> 6)).$(( mb_cpld_ver & 2#00111111 ))"
     #         _echo "[MB CPLD Build  ]: $(( mb_cpld_build ))"
@@ -468,25 +490,26 @@ function _cpld_version_lpc {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     case $PLAT in
         *$MODEL_NAME* )
             # CPU CPLD
-            cpu_cpld_info=`${IOGET} 0x600`
+            cpu_cpld_info=$(_dd_read_byte 0x600)
             ret=$?
-            if [ $ret -eq 0 ]; then
-                cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
-            else
+            if [ $ret -ne 0 ]; then
                 _echo "Get CPU CPLD version info failed ($ret), Exit!!"
                 exit $ret
             fi
 
-            cpu_cpld_build=`${IOGET} 0x6e0`
+            cpu_cpld_build=$(_dd_read_byte 0x6e0)
             ret=$?
-            if [ $ret -eq 0 ]; then
-                cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
-            else
+            if [ $ret -ne 0 ]; then
                 _echo "Get CPU CPLD build info failed ($ret), Exit!!"
                 exit $ret
             fi
@@ -584,6 +607,11 @@ function _cpld_version {
 }
 
 function _fpga_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show FPGA Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show FPGA Version (I2C)"
     case $PLAT in
         *$MODEL_NAME* )
@@ -695,11 +723,11 @@ function _show_version {
 }
 
 function _show_i2c_tree_bus {
-    _banner "Show I2C Tree Bus 0"
+    _banner "Show I2C Tree Bus i801"
 
-    ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
+    ret=$(eval "i2cdetect -y "${i801_bus}" ${LOG_REDIRECT}")
 
-    _echo "[I2C Tree 0]:"
+    _echo "[I2C Tree ${i801_bus}]:"
     _echo "${ret}"
 }
 
@@ -748,17 +776,22 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
     local chip_addr1=""
-    local bus=""
+    local bus="${i801_bus}"
 
     case $PLAT in
         *$MODEL_NAME* )
             # ROOT-0x72
             chip_addr1="0x72"
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}"
+            _check_i2c_device "${bus}" "${chip_addr1}"
             ret=$?
             if [ "$ret" == "0" ]; then
 
@@ -768,7 +801,7 @@ function _show_i2c_tree_bus_mux_i2c {
 
             # ROOT-0x73
             chip_addr1="0x73"
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}"
+            _check_i2c_device "${bus}" "${chip_addr1}"
             ret=$?
             if [ "$ret" == "0" ]; then
 
@@ -1001,15 +1034,13 @@ function _show_rov_sysfs {
             rov_config_reg="0x21"
 
             vdd_val=(
-                '0.85V'  '0.8375V' '0.825V' '0.8125V' '0.8V'    '0.7875V'
-                '0.775V' '0.7625V' '0.75V'  '0.7375V' '0.725V'  '0.7125V'
-                '0.7V'   '0.6875V' '0.675V' '0.6625V' '0.65V'
+                '0.7875V'  '0.775V' '0.7625V' '0.75V' '0.7375V' '0.725V'
+                '0.7125V'  '0.7V'   '0.6875V' '0.675V''0.6625V'
             )
 
             vout_cmd=(
-                '0x06b2' '0x0699' '0x0681' '0x0669' '0x0651' '0x0639'
-                '0x0621' '0x0609' '0x05F0' '0x05D8' '0x05C0' '0x05A8'
-                '0x0590' '0x0578' '0x055F' '0x0547' '0x052F'
+                '0x064F' '0x063B' '0x0622' '0x060E' '0x05F5' '0x05DC'
+                '0x05C3' '0x05AA' '0x0591' '0x0578' '0x055F'
             )
             # Read MAC ROV Status
             if _check_filepath "/sys/bus/i2c/devices/${bus_id}-0030/cpld_mac_rov" ;then
@@ -1036,15 +1067,12 @@ function _show_rov_sysfs {
                         fi
                         _printf "%-26.26s%s\n"  "[MAC ROV[${i}] AVS        ]  " ": ${cpld_mac_rov_reg}"
                         _printf "%-26.26s%s\n"  "[MAC ROV[${i}] AVS Array  ]  " ":"
-                        _printf "%-26.26s%s\n"  "    ROV AVS                  " ": [0x7A, 0x7C, 0x7E, 0x80, 0x82, 0x84]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0x86, 0x88, 0x8A, 0x8C, 0x8E, 0x90]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0x92, 0x94, 0x96, 0x98, 0x9A      ]"
-                        _printf "%-26.26s%s\n"  "    VDDC Voltage             " ": [0.85V  , 0.8375V, 0.825V , 0.8125V, 0.8V   , 0.7875V]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0.775V , 0.7625V, 0.75V  , 0.7375V, 0.725V , 0.7125V]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0.7V   , 0.6875V, 0.675V , 0.6625V, 0.65V           ]"
-                        _printf "%-26.26s%s\n"  "    Vout Command             " ": [0x06b2, 0x0699, 0x0681, 0x0669, 0x0651, 0x0639]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0x0609, 0x05F0, 0x05D8, 0x05C0, 0x05A8, 0x0590]"
-                        _printf "%-26.26s%s\n"  "                             " "  [0x0578, 0x055F, 0x0547, 0x052F                ]"
+                        _printf "%-26.26s%s\n"  "    ROV AVS                  " ": [0x84, 0x86, 0x88, 0x8A, 0x8C, 0x8E]"
+                        _printf "%-26.26s%s\n"  "                             " "  [0x90, 0x92, 0x94, 0x96, 0x98      ]"
+                        _printf "%-26.26s%s\n"  "    VDDC Voltage             " ": [0.7875V, 0.775V, 0.7625V, 0.75V , 0.7375V, 0.725V]"
+                        _printf "%-26.26s%s\n"  "                             " "  [0.7125V, 0.7V  , 0.6875V, 0.675V, 0.6625V        ]"
+                        _printf "%-26.26s%s\n"  "    Vout Command             " ": [0x064F, 0x063B, 0x0622, 0x060E, 0x05F5, 0x05DC]"
+                        _printf "%-26.26s%s\n"  "                             " "  [0x05C3, 0x05AA, 0x0591, 0x0578, 0x055F        ]"
                         _printf "%-26.26s%s\n"  "[MAC ROV[${i}] Config     ]  " ": $(printf "0x%04X" ${rov_controller_config})"
                         _printf "%-26.26s%s\n"  "[MAC ROV[${i}] Config Volt]  " ": ${rov_controller_config_volt}"
                         _printf "%-26.26s%s\n"  "[MAC ROV[${i}] Output Volt]  " ": ${rov_controller_output_volt}V"
@@ -1203,7 +1231,8 @@ function _show_port_status_sysfs {
                                 "${SYSFS_CPLD2}/cpld_qsfpdd_intr_port_3"             #33
                                 "${SYSFS_CPLD3}/cpld_qsfpdd_intr_port_2"             #34
                                 "${SYSFS_CPLD3}/cpld_qsfpdd_intr_port_3"             #35
-                                "${SYSFS_FPGA}/fpga_sfp28_rate_cap"                  #36
+                                "${SYSFS_FPGA}/fpga_sfp28_rx_rate_cap"               #36
+                                "${SYSFS_FPGA}/fpga_sfp28_tx_rate_cap"               #37
                             )
 
             port_name_array=(
@@ -1458,7 +1487,7 @@ function _show_port_status_sysfs {
             #   56    57    58    59    60    61    62    63
                 -1    -1    -1    -1    -1    -1    -1    -1
             #   64    65
-                36    36
+                37    37
             )
 
             # ref sys_port_array
@@ -1511,7 +1540,7 @@ function _show_port_status_sysfs {
                 # Port Absent Status (0: Present, 1:Absence)
                 local idx=${port_absent_array[i]}
                 local sysfs_path="${sys_port_array[idx]}"
-                local bit_stream=${port_bit_array[i]}
+                local bit_stream=$((port_bit_array[i]))
                 if [ "${port_absent_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                     reg=$(eval "cat ${sysfs_path}")
                     if [ $bit_stream -gt 7 ]; then
@@ -1841,13 +1870,72 @@ function _show_system_led {
 }
 
 function _show_beacon_led_sysfs {
-    # Not Support
+    _banner "Show Beacon LED"
+    local sgg7=(           "A"   "B"   "C"   "D"   "E"   "F"   "G" )
+    #                      502   501   496   498   497   500   499
+    local sgg7_left_off=(  9     10    15    13    14    11    12 )
+    #                      504   507   509   510   508   505   506
+    local sgg7_right_off=( 7     4     2     1     3     6     5  )
+    local sgg7_mum=( "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F")
+    local sgg7_value=( 
+            "0000001"  # 0
+            "1001111"  # 1
+            "0010010"  # 2
+            "0000110"  # 3
+            "1001100"  # 4
+            "0100100"  # 5
+            "0100000"  # 6
+            "0001101"  # 7
+            "0000000"  # 8
+            "0001100"  # 9
+            "0001000"  # A
+            "1100000"  # B
+            "0110001"  # C
+            "1000010"  # D
+            "0110000"  # E
+            "0111000"  # F
+        )
+
+    local sgg7_left=""
+    local sgg7_right=""
+    local sgg7_left_num=""
+    local sgg7_right_num=""
+
+    for (( i=0; i<${#sgg7[@]}; i++))
+    do
+        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_left_off[i] ))/value)
+        sgg7_left=$sgg7_left$num
+        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_right_off[i] ))/value)
+        sgg7_right=$sgg7_right$num
+    done
+
+    for (( i=0; i<${#sgg7_value[@]}; i++))
+    do
+        if [ "$sgg7_left" == "${sgg7_value[i]}" ]; then
+            sgg7_left_num=${sgg7_mum[i]}
+        fi
+
+        if [ "$sgg7_right" == "${sgg7_value[i]}" ]; then
+            sgg7_right_num=${sgg7_mum[i]}
+        fi
+
+        if [ "${sgg7_left_num}" != "" ] && [ "${sgg7_right_num}" != "" ]; then
+            break
+        fi
+    done
+
+    _echo "[Left Beacon LED pin A:B:C:D:E:F:G] : ${sgg7_left}"
+    _echo "[Left Beacon LED number(0-F)]       : ${sgg7_left_num}"
+    _echo "[Right Beacon LED pin A:B:C:D:E:F:G]: ${sgg7_right}"
+    _echo "[Right Beacon LED number(0-F)]      : ${sgg7_right_num}"
     return 0
 }
 
 function _show_beacon_led {
     if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
-        _show_beacon_led_sysfs
+        if [ "${HW_REV}" = "Alpha" ]; then
+            _show_beacon_led_sysfs
+        fi
     fi
 }
 
@@ -1862,11 +1950,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x700" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0x700
@@ -1877,11 +1966,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x800" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0xE00
@@ -1892,20 +1982,64 @@ function _show_ioport {
 
     while [ "${reg}" != "0xF00" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
-    ret=$(eval "${IOGET} 0x501 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf000 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
-    _echo "${ret}"
+    reg="0x501"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf000"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf011"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+}
 
+function _show_cpld_reg_sysfs {
+    _banner "Show CPLD Register"
+
+    case $PLAT in
+        *$MODEL_NAME* )
+            if _check_dirpath "$SYSFS_CPLD1"; then
+                reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
+                _echo "[CPLD 1 Register]:"
+                _echo "${reg_dump}"
+            fi
+
+            if _check_dirpath "$SYSFS_CPLD2"; then
+                reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
+                _echo "[CPLD 2 Register]:"
+                _echo "${reg_dump}"
+            fi
+
+            if _check_dirpath "$SYSFS_CPLD3"; then
+                reg_dump=$(eval "i2cdump -f -y 1 0x32 ${LOG_REDIRECT}")
+                _echo "[CPLD 3 Register]:"
+                _echo "${reg_dump}"
+            fi
+            if _check_dirpath "$SYSFS_FPGA"; then
+                reg_dump=$(eval "i2cdump -f -y 1 0x37 ${LOG_REDIRECT}")
+                _echo "[FPGA Register]:"
+                _echo "${reg_dump}"
+            fi
+            ;;
+        *)
+            _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+            exit 1
+            ;;
+    esac
+}
+
+function _show_cpld_reg {
+    if [ "${BSP_INIT_FLAG}" == "1" ] ; then
+        _show_cpld_reg_sysfs
+    fi
 }
 
 function _show_onlpdump {
@@ -2060,7 +2194,7 @@ function _show_disk_info {
 
     cmd_array=("lsblk" \
                "lsblk -O" \
-               "parted -l /dev/sda" \
+               #"parted -l /dev/sda" \ #Avoid prompt Fix/Ingore and freeze the tech support in VROC.
                "fdisk -l /dev/sda" \
                "find /sys/fs/ -name errors_count -print -exec cat {} \;" \
                "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;" \
@@ -2305,6 +2439,69 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -h                show tech support script usage"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -b"
+    echo "    $f -d /var/log"
+    echo "    $f -h"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fhi:v"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+                OPT_BYPASS_I2C_COMMAND=${TRUE}
+                ;;
+            d)
+                log_folder_root=${OPTARG}
+                ;;
+            f)
+                LOG_FAST=${TRUE}
+                ;;
+            h)
+                usage
+                exit 0
+                ;;
+            i)
+                identifier=${OPTARG}
+                ;;
+            v)
+                _show_ts_version
+                exit 0
+                ;;
+            ?)
+                echo "Invalid option: -${OPTARG}."
+                usage
+                exit -1
+                ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -2324,8 +2521,9 @@ function _main {
     _show_cpu_temperature
     _show_cpld_interrupt
     _show_system_led
-    #_show_beacon_led # Not support
+    _show_beacon_led
     _show_ioport
+    _show_cpld_reg
     _show_onlpdump
     _show_onlps
     _show_system_info
@@ -2352,7 +2550,7 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
-
+_getopts $@
 _main

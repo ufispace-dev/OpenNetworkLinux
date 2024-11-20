@@ -1,14 +1,25 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.2"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
 LOG_FOLDER_ROOT=""
@@ -16,12 +27,11 @@ LOG_FOLDER_PATH=""
 LOG_FILE_PATH=""
 LOG_FAST=${FALSE}
 
-
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -35,16 +45,23 @@ LOG_FILE_ENABLE=1
 # Log Redirection
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
-LOG_REDIRECT="2> /dev/null"
+# LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
+LOG_REDIRECT=""
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
 
+# Sysfs
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9705_48d_lpc"
+
 # Execution Time
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -77,12 +94,16 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.11"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
     _banner "Update GPIO MAX"
-    local sysfs="/sys/devices/platform/x86_64_ufispace_s9705_48d_lpc/bsp/bsp_gpio_max"
+    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
 
     GPIO_MAX=$(cat ${sysfs})
     if [ $? -eq 1 ]; then
@@ -155,7 +176,7 @@ function _check_dirpath {
     elif [ ! -d "$dirpath" ]; then
         _echo "ERROR: No such directory: ${dirpath}"
         return ${FALSE}
-    else        
+    else
         return ${TRUE}
     fi
 }
@@ -182,9 +203,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    i2c_bus_0=$(eval "i2cdetect -y 0 ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${i2c_bus_0}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -278,6 +298,12 @@ function _show_board_info {
     _echo "[Board Type and Revision (BOT)]: ${model_name} ${hw_rev} ${build_rev}"
 
     if [ "${model_name}" == "NCF" ]; then
+        if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+            _echo "[Board Type/Rev Reg Raw  (TOP)]: (Bypass)"
+            _echo "[Board Type and Revision (TOP)]: (Bypass)"
+            return
+        fi
+
         _check_filepath "/sys/bus/i2c/devices/2-0032/cpld_board_type"
         board_info_top=$(eval "cat /sys/bus/i2c/devices/2-0032/cpld_board_type ${LOG_REDIRECT}")
 
@@ -335,6 +361,11 @@ function _bmc_version {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
@@ -349,6 +380,7 @@ function _cpld_version_i2c {
 
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} "
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#01000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))"
+
 
     if [ "${MODEL_NAME}" == "NCF" ]; then
         # MB CPLD NCF
@@ -626,6 +658,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -853,28 +890,30 @@ function _show_sys_devices {
     _echo "#${ret[*]}"
 }
 
-function _show_cpu_eeprom_i2c {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_i2c {
+    _banner "Show System EEPROM"
 
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    #first read return empty content
+    sys_eeprom=$(eval "i2cdump -f -y 0 0x57 c")
+    #second read return correct content
+    sys_eeprom=$(eval "i2cdump -f -y 0 0x57 c")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom_sysfs {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_sysfs {
+    _banner "Show System EEPROM"
 
-    cpu_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    sys_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom {
+function _show_sys_eeprom {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_cpu_eeprom_sysfs
+        _show_sys_eeprom_sysfs
     else
-        _show_cpu_eeprom_i2c
+        _show_sys_eeprom_i2c
     fi
 }
 
@@ -1945,66 +1984,66 @@ function _show_ioport {
 function _show_cpld_reg_sysfs {
     _banner "Show CPLD Register"
 
-    if [ "${MODEL_NAME}" == "NCP1-1" ] ; then        
+    if [ "${MODEL_NAME}" == "NCP1-1" ] ; then
         _check_dirpath "/sys/bus/i2c/devices/1-0030"
         reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
-        _echo "[CPLD 1 Register]:"        
+        _echo "[CPLD 1 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-0039"
         reg_dump=$(eval "i2cdump -f -y 1 0x39 ${LOG_REDIRECT}")
-        _echo "[CPLD 2 Register]:"        
+        _echo "[CPLD 2 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-003a"
         reg_dump=$(eval "i2cdump -f -y 1 0x3a ${LOG_REDIRECT}")
-        _echo "[CPLD 3 Register]:"        
+        _echo "[CPLD 3 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-003b"
         reg_dump=$(eval "i2cdump -f -y 1 0x3b ${LOG_REDIRECT}")
-        _echo "[CPLD 4 Register]:"        
+        _echo "[CPLD 4 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-003c"
         reg_dump=$(eval "i2cdump -f -y 1 0x3c ${LOG_REDIRECT}")
-        _echo "[CPLD 5 Register]:"        
+        _echo "[CPLD 5 Register]:"
         _echo "${reg_dump}"
-   elif [ "${MODEL_NAME}" == "NCP2-1" ] ; then        
+   elif [ "${MODEL_NAME}" == "NCP2-1" ] ; then
         _check_dirpath "/sys/bus/i2c/devices/1-0030"
         reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
-        _echo "[CPLD 1 Register]:"        
+        _echo "[CPLD 1 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-0031"
         reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
-        _echo "[CPLD 2 Register]:"        
+        _echo "[CPLD 2 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/1-0032"
         reg_dump=$(eval "i2cdump -f -y 1 0x32 ${LOG_REDIRECT}")
-        _echo "[CPLD 3 Register]:"        
+        _echo "[CPLD 3 Register]:"
         _echo "${reg_dump}"
     elif [ "${MODEL_NAME}" == "NCF" ]; then
         _check_dirpath "/sys/bus/i2c/devices/2-0030"
         reg_dump=$(eval "i2cdump -f -y 2 0x30 ${LOG_REDIRECT}")
-        _echo "[CPLD 1 Register]:"        
+        _echo "[CPLD 1 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/2-0031"
         reg_dump=$(eval "i2cdump -f -y 2 0x31 ${LOG_REDIRECT}")
-        _echo "[CPLD 2 Register]:"        
+        _echo "[CPLD 2 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/2-0032"
         reg_dump=$(eval "i2cdump -f -y 2 0x32 ${LOG_REDIRECT}")
-        _echo "[CPLD 3 Register]:"        
+        _echo "[CPLD 3 Register]:"
         _echo "${reg_dump}"
-        
+
         _check_dirpath "/sys/bus/i2c/devices/2-0033"
         reg_dump=$(eval "i2cdump -f -y 2 0x33 ${LOG_REDIRECT}")
-        _echo "[CPLD 4 Register]:"        
-        _echo "${reg_dump}"       
+        _echo "[CPLD 4 Register]:"
+        _echo "${reg_dump}"
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -2929,26 +2968,44 @@ function _compression {
 
 usage() {
     local f=$(basename "$0")
-
+    echo ""
     echo "Usage:"
-    echo "    $f [-d D_DIR]"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
     echo "Description:"
-    echo "    D_DIR, the path of destination. (default is /tmp/log)"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
     exit -1
 }
 
 function _getopts {
-    local OPTSTRING=":d:f"
+    local OPTSTRING=":bd:fi:v"
     # default log dir
     local log_folder_root="/tmp/log"
+    local identifier=$SN
 
     while getopts ${OPTSTRING} opt; do
         case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
             d)
               log_folder_root=${OPTARG}
               ;;
             f)
               LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
               ;;
             ?)
               echo "Invalid option: -${OPTARG}."
@@ -2958,8 +3015,11 @@ function _getopts {
     done
 
     LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
     LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
     LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
 }
 
 function _main {
@@ -2972,7 +3032,7 @@ function _main {
     _show_i2c_tree
     _show_i2c_device_info
     _show_sys_devices
-    _show_cpu_eeprom
+    _show_sys_eeprom
     _show_psu_status_cpld
     _show_rov
     _show_nif_port_status
@@ -2988,7 +3048,7 @@ function _main {
     _show_onlps
     _show_system_info
     _show_cpld_error_log
-    _show_memory_correctable_error_count
+    #_show_memory_correctable_error_count
     _show_usb_info
     _show_scsi_device_info
     _show_onie_upgrade_info
@@ -3008,9 +3068,8 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
 _getopts $@
 _main
-

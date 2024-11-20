@@ -165,6 +165,11 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
+enum cpld_id_e {
+  CPLD_1,
+  CPLD_MAX
+};
+
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -380,6 +385,8 @@ int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int ufi_get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int ufi_get_board_version(board_t *board);
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val);
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val);
 int ufi_get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
 int ufi_get_gpio_max(int *gpio_max);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);

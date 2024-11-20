@@ -1,26 +1,37 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.1"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
-
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
 
@@ -36,18 +47,24 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+LOG_REDIRECT=""
 
 # GPIO_OFFSET: update by function _update_gpio_offset
 GPIO_OFFSET=0
+
+# Sysfs
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9600_64x_lpc"
 
 # Execution Time
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
 
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
+
 function _echo {
-    str="$@"
+    str="$1"
 
     if [ "${LOG_FILE_ENABLE}" == "1" ] && [ -f "${LOG_FILE_PATH}" ]; then
         echo "${str}" >> "${LOG_FILE_PATH}"
@@ -69,7 +86,11 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_offset {
@@ -115,6 +136,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
 
@@ -159,9 +186,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    i2c_bus_0=$(eval "i2cdetect -y 0 ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${i2c_bus_0}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -328,6 +354,11 @@ function _bmc_version {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
@@ -487,6 +518,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -1731,6 +1767,62 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fi:sv"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1779,4 +1871,5 @@ function _main {
     echo "#   done..."
 }
 
+_getopts $@
 _main

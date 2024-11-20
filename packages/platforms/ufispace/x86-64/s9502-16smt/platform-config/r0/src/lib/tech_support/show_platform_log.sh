@@ -1,26 +1,37 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.1"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
-
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -43,7 +54,7 @@ LS_OPTION="-alu"
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+LOG_REDIRECT=""
 
 # GPIO_OFFSET: update by function _update_gpio_offset
 GPIO_OFFSET=0
@@ -56,6 +67,8 @@ elapsed_time=0
 # I2C Bus
 i801_bus=""
 ismt_bus=""
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$1"
@@ -80,7 +93,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.0"
+    _banner "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_offset {
@@ -100,6 +113,10 @@ function _update_gpio_offset {
     _echo "[GPIOCHIP MAX    ]: ${max_gpiochip}"
     _echo "[GPIOCHIP MAX NUM]: ${max_gpiochip_num}"
     _echo "[GPIO OFFSET     ]: ${GPIO_OFFSET}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _check_env {
@@ -188,10 +205,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # We use ismt bus device status (cpu eeprom, i2c mux 0 ...) to check bsp init status
-    local bus=$(eval "i2cdetect -y ${ismt_bus} ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${bus}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f /sys/devices/platform/x86_64_ufispace_s9502_16smt_lpc/bsp/bsp_version ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -416,6 +431,10 @@ function _cpld_version {
 }
 
 function _ucd_version {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show UCD Version (Bypass)"
+        return
+    fi
 
     _banner "Show UCD Version"
 
@@ -506,6 +525,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -928,17 +952,17 @@ function _show_port_status {
 function _show_cpu_temperature_sysfs {
     _banner "show CPU Temperature"
 
-    cpu_temp_array=("2" "4" "6" "8" "10" "12" "14" "16")
+    cpu_temp_array=("1" "2" "4" "6" "8" "10" "12" "14" "16")
 
     for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
     do
-        if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_input" ]; then
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_input"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_max"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_crit"
-            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
-            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
-            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
+        if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input" ]; then
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input"
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max"
+            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit"
+            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
+            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
+            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon1/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
         elif [ -f "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input" ]; then
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max"
@@ -1494,6 +1518,62 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fi:sv"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1532,4 +1612,5 @@ function _main {
     echo "#   done..."
 }
 
+_getopts $@
 _main

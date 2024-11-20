@@ -205,5 +205,8 @@ class OnlPlatform_x86_64_ufispace_s9301_32db_r0(OnlPlatformUfiSpace):
         # enable port led
         os.system("echo 1 > /sys/bus/i2c/devices/2-0030/cpld_port_led_clr_ctrl")
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done");
         return True

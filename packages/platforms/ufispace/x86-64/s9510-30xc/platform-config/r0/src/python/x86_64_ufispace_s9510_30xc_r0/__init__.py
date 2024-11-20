@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="28x25 + 2x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.12'
+    BSP_VERSION='1.0.13'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc"
@@ -338,6 +338,9 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
 
         # disable bmc watchdog
         self.disable_bmc_watchdog()
+
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
 
         self.bsp_pr("Init done");
         return True

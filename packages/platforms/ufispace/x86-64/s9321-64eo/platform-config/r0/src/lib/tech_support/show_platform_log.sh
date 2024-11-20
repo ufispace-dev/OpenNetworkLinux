@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.0"
+TS_VERSION="1.0.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -90,6 +90,9 @@ PORT_T_OSFP=5
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -391,6 +394,7 @@ function _show_board_info {
     fi
 
     board_rev_id=$(_dd_read_byte 0xE01)
+    ret=$?
     if [ $ret -eq 0 ]; then
         board_rev_id=$((board_rev_id))
     else
@@ -487,6 +491,11 @@ function _cpld_version_lpc {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     case $PLAT in
@@ -599,6 +608,11 @@ function _cpld_version {
 }
 
 function _fpga_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show FPGA Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show FPGA Version (I2C)"
     case $PLAT in
         *$MODEL_NAME* )
@@ -763,6 +777,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -1523,7 +1542,7 @@ function _show_port_status_sysfs {
                 # Port Absent Status (0: Present, 1:Absence)
                 local idx=${port_absent_array[i]}
                 local sysfs_path="${sys_port_array[idx]}"
-                local bit_stream=${port_bit_array[i]}
+                local bit_stream=$((port_bit_array[i]))
                 if [ "${port_absent_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                     reg=$(eval "cat ${sysfs_path}")
                     if [ $bit_stream -gt 7 ]; then
@@ -2418,43 +2437,54 @@ usage() {
     local f=$(basename "$0")
     echo ""
     echo "Usage:"
-    echo "    $f [-d D_DIR] [-i identifier] [-v]"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
     echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
     echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -h                show tech support script usage"
     echo "  -i                insert an identifier in the log file name"
     echo "  -v                show tech support script version"
     echo "Example:"
+    echo "    $f -b"
     echo "    $f -d /var/log"
+    echo "    $f -h"
     echo "    $f -i identifier"
     echo "    $f -v"
-    exit -1
 }
 
 function _getopts {
-    local OPTSTRING=":d:fi:v"
+    local OPTSTRING=":bd:fhi:v"
     # default log dir
     local log_folder_root="/tmp/log"
     local identifier=$SN
 
     while getopts ${OPTSTRING} opt; do
         case ${opt} in
+            b)
+                OPT_BYPASS_I2C_COMMAND=${TRUE}
+                ;;
             d)
-              log_folder_root=${OPTARG}
-              ;;
+                log_folder_root=${OPTARG}
+                ;;
             f)
-              LOG_FAST=${TRUE}
-              ;;
+                LOG_FAST=${TRUE}
+                ;;
+            h)
+                usage
+                exit 0
+                ;;
             i)
-              identifier=${OPTARG}
-              ;;
+                identifier=${OPTARG}
+                ;;
             v)
-              _show_ts_version
-              exit 0
-              ;;
+                _show_ts_version
+                exit 0
+                ;;
             ?)
-              echo "Invalid option: -${OPTARG}."
-              usage
-              ;;
+                echo "Invalid option: -${OPTARG}."
+                usage
+                exit -1
+                ;;
         esac
     done
 

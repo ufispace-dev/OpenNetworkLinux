@@ -768,6 +768,11 @@ int ufi_get_cpu_rev(int *rev_sku, int *rev_hw, int *rev_build)
     return ONLP_STATUS_OK;
 }
 
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *sku_id, int *build_id)
+{
+    return ufi_get_cpu_rev(sku_id, rev_id, build_id);
+}
+
 /**
  * @brief read mac hbm power status
  * @param[out] pwr_ctrl The value of power status (0: power off, 1: power on)

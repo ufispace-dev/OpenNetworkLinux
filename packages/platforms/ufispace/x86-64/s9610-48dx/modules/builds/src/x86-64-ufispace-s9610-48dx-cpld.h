@@ -79,6 +79,8 @@ enum cpld_id {
 #define DBG_CPLD_THERMAL_INTR_BASE_REG    0xE6
 #define DBG_CPLD_MISC_INTR_REG            0xEB
 
+#define CPLD_BIT_REG                      0xFF
+
 //CPLD 2-3
 //interrupt status
 #define CPLD_QSFP_INTR_PORT_BASE_REG      0x10

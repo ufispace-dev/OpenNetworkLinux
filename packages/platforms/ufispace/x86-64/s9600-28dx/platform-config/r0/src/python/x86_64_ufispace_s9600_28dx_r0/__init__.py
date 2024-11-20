@@ -303,6 +303,9 @@ class OnlPlatform_x86_64_ufispace_s9600_28dx_r0(OnlPlatformUfiSpace):
         # disable bmc watchdog
         self.disable_bmc_watchdog()
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done")
 
         return True

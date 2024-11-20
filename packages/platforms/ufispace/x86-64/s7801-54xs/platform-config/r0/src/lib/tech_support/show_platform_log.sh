@@ -1,26 +1,37 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.1"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
-
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -60,6 +71,7 @@ SYSFS_DEV="/sys/bus/i2c/devices"
 SYSFS_CPLD1=""
 SYSFS_CPLD2=""
 FMT_SYSFS_GPIO_VAL="/sys/class/gpio/gpio%s/value"
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s7801_54xs_lpc"
 
 # Execution Time
 start_time=$(date +%s)
@@ -69,6 +81,9 @@ elapsed_time=0
 # Port
 SFP_PORTS=48
 QSFP_PORTS=6
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -101,12 +116,16 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.1"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
     _banner "Update GPIO MAX"
-    local sysfs="/sys/devices/platform/x86_64_ufispace_s7801_54xs_lpc/bsp/bsp_gpio_max"
+    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
 
     GPIO_MAX=$(cat ${sysfs})
     if [ $? -eq 1 ]; then
@@ -185,6 +204,19 @@ function _check_filepath {
     fi
 }
 
+function _check_dirpath {
+    dirpath=$1
+    if [ -z "${dirpath}" ]; then
+        _echo "ERROR, the ipnut string is empty!!!"
+        return ${FALSE}
+    elif [ ! -d "$dirpath" ]; then
+        _echo "ERROR: No such directory: ${dirpath}"
+        return ${FALSE}
+    else
+        return ${TRUE}
+    fi
+}
+
 function _check_i2c_device {
     i2c_bus=$1
     i2c_addr=$2
@@ -208,10 +240,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # We use ismt bus device status (cpu eeprom, i2c mux 0 ...) to check bsp init status
-    local bus=$(eval "i2cdetect -y ${ismt_bus} ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${bus}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -221,6 +251,10 @@ function _check_bsp_init {
 }
 
 function _get_i2c_root {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        return
+    fi
+
     if _check_filepath "/sys/bus/i2c/devices/i2c-0/name" ;then
         i2c_0=`cat /sys/bus/i2c/devices/i2c-0/name`
     fi
@@ -409,6 +443,11 @@ function _bmc_version {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     if [[ $MODEL_NAME == *"S7801-54XS"* ]]; then
@@ -522,6 +561,11 @@ function _show_version {
 }
 
 function _show_i2c_tree_bus {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus 0"
 
     ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
@@ -571,6 +615,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -639,6 +688,11 @@ function _show_i2c_tree {
 }
 
 function _show_i2c_device_info {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Device Info (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Device Info"
 
     local pca954x_device_id=("")
@@ -705,10 +759,13 @@ function _show_sys_devices {
     _echo "${ret}"
 }
 
-
-
 function _show_sys_eeprom_i2c {
-    _banner "Show CPU EEPROM"
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show System EEPROM (Bypass)"
+        return
+    fi
+
+    _banner "Show System EEPROM"
 
     mux_addr="0x70"
     eeprom_addr="0x53"
@@ -1302,6 +1359,33 @@ function _show_ioport {
 
 }
 
+function _show_cpld_reg_sysfs {
+    _banner "Show CPLD Register"
+
+    if [ "${MODEL_NAME}" == "S7801-54XS" ]; then
+        if _check_dirpath "${SYSFS_CPLD1}" ;then
+            reg_dump=$(eval "i2cdump -f -y ${CPLD_BUS} 0x30 ${LOG_REDIRECT}")
+            _echo "[CPLD 1 Register]:"
+            _echo "${reg_dump}"
+        fi
+
+        if _check_dirpath "${SYSFS_CPLD2}" ;then
+            reg_dump=$(eval "i2cdump -f -y ${CPLD_BUS} 0x31 ${LOG_REDIRECT}")
+            _echo "[CPLD 2 Register]:"
+            _echo "${reg_dump}"
+        fi
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
+}
+
+function _show_cpld_reg {
+    if [ "${BSP_INIT_FLAG}" == "1" ] ; then
+        _show_cpld_reg_sysfs
+    fi
+}
+
 function _show_onlpdump {
     _banner "Show onlpdump"
 
@@ -1675,6 +1759,62 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fi:v"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1695,6 +1835,7 @@ function _main {
     _show_cpld_interrupt
     _show_system_led
     _show_ioport
+    _show_cpld_reg
     _show_onlpdump
     _show_onlps
     _show_system_info
@@ -1721,8 +1862,8 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
+_getopts $@
 _main
-

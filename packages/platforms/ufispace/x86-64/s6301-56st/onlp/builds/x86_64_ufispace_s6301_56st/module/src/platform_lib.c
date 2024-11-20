@@ -31,6 +31,16 @@
 #include <sys/time.h>
 #include "platform_lib.h"
 
+static const warm_reset_data_t warm_reset_data[] = {
+    //                     unit_max | dev | unit
+    [WARM_RESET_ALL] = {MAC_MAX, "mac", NULL},
+    [WARM_RESET_MAC] = {MAC_MAX, "mac", NULL},
+    [WARM_RESET_PHY] = {-1, NULL, NULL}, // not support
+    [WARM_RESET_MUX] = {-1, NULL, NULL}, // not support
+    [WARM_RESET_OP2] = {-1, NULL, NULL}, // not support
+    [WARM_RESET_GB] = {-1, NULL, NULL},  // not support
+};
+
 /* execute system command */
 int exec_cmd(char *cmd, char* out, int size)
 {
@@ -157,4 +167,62 @@ int get_gpio_max() {
     return gpio_max;
 }
 
+/**
+ * @brief warm reset for mac
+ * @param unit_id The warm reset device unit id
+ * @param reset_dev The warm reset device id
+ * @param ret return value.
+ */
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
+{
+    char cmd_buf[256] = {0};
+    char dev_unit_buf[32] = {0};
+    const warm_reset_data_t *data = NULL;
+    int ret = 0;
 
+    if (reset_dev >= WARM_RESET_MAX)
+    {
+        AIM_LOG_ERROR("%s() dev_id(%d) out of range.", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (access(WARM_RESET_PATH, F_OK) == -1)
+    {
+        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, WARM_RESET_PATH);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (warm_reset_data[reset_dev].warm_reset_dev_str == NULL)
+    {
+        AIM_LOG_ERROR("%s() reset_dev not support, reset_dev=%d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    data = &warm_reset_data[reset_dev];
+
+    if (data != NULL && data->warm_reset_dev_str != NULL)
+    {
+        snprintf(dev_unit_buf, sizeof(dev_unit_buf), "%s", data->warm_reset_dev_str);
+        if (data->unit_str != NULL && unit_id < data->unit_max)
+        { // assuming unit_max is defined
+            snprintf(dev_unit_buf + strlen(dev_unit_buf), sizeof(dev_unit_buf) - strlen(dev_unit_buf),
+                     " %s", data->unit_str[unit_id]);
+        }
+        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, dev_unit_buf);
+        AIM_LOG_INFO("%s() info, warm reset cmd=%s", __func__, cmd_buf); // TODO
+        ret = system(cmd_buf);
+    }
+    else
+    {
+        AIM_LOG_ERROR("%s() error, invalid reset_dev %d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (ret != 0)
+    {
+        AIM_LOG_ERROR("%s() error, please check dmesg error output.", __func__);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ret;
+}

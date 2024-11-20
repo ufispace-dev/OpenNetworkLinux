@@ -345,6 +345,9 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         # set system led to green
         self.set_system_led_green()
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done")
 
         return True

@@ -292,5 +292,8 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9701-82dc-r0/onl/epdm_cli init")
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done");
         return True

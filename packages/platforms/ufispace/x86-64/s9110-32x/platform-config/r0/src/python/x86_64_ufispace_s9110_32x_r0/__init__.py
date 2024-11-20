@@ -62,7 +62,7 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="32x100 + 1x10"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.12'
+    BSP_VERSION='1.0.13'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/2-0030/cpld_system_led_sys"
@@ -360,6 +360,9 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
 
         # set system led to green
         self.set_system_led_green()
+
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
 
         self.bsp_pr("Init done")
         return True

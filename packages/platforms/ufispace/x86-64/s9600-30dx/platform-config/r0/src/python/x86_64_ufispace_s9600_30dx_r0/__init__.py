@@ -312,6 +312,9 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done")
 
         return True

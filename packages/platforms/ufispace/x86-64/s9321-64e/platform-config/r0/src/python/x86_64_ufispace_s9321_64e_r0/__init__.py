@@ -482,6 +482,10 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
             os.system("timeout 120s {} init -s 25G".format(self.PATH_EPDM_CLI))
         else:
             pass
+        
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         self.bsp_pr("Init done")
 
         return True

@@ -293,5 +293,8 @@ class OnlPlatform_x86_64_ufispace_s9700_23d_r2(OnlPlatformUfiSpace):
         self.enable_ipmi_maintenance_mode()
         self.disable_bmc_watchdog()
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         return True
 

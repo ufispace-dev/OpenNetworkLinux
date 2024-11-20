@@ -1,28 +1,38 @@
 #!/bin/bash
 
+#Tech Support script version
+TS_VERSION="1.1.1"
+
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
+# Device Serial Number
+SN=$(dmidecode -s chassis-serial-number)
+if [ ! $? -eq 0 ]; then
+    SN=""
+elif [[ $SN = *" "* ]]; then
+    #SN contains space charachater inside
+    SN=""
+fi
 
 # DATESTR: The format of log folder and log file
 DATESTR=$(date +"%Y%m%d%H%M%S")
-LOG_FOLDER_NAME="log_platform_${DATESTR}"
-LOG_FILE_NAME="log_platform_${DATESTR}.log"
+LOG_FOLDER_NAME=""
+LOG_FILE_NAME=""
 
 # LOG_FOLDER_ROOT: The root folder of log files
-LOG_FOLDER_ROOT="/tmp/log"
-LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
-LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
-
+LOG_FOLDER_ROOT=""
+LOG_FOLDER_PATH=""
+LOG_FILE_PATH=""
+LOG_FAST=${FALSE}
 
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
-
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 IOGET="${SCRIPTPATH}/ioget"
@@ -36,15 +46,22 @@ LOG_FILE_ENABLE=1
 # LOG_REDIRECT="2> /dev/null": remove the error message from console
 # LOG_REDIRECT=""            : show the error message in console
 # LOG_REDIRECT="2>&1"        : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT="2>&1"
+LOG_REDIRECT=""
 
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
+GPIO_MAX_INIT_FLAG=0
+
+# Sysfs
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc"
 
 # Execution Time
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -77,18 +94,25 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.1"
+    _banner "Package Version = ${TS_VERSION}"
+}
+
+function _show_ts_version {
+    echo "Package Version = ${TS_VERSION}"
 }
 
 function _update_gpio_max {
     _banner "Update GPIO MAX"
+    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
 
-    GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max)
+    GPIO_MAX=$(cat ${sysfs})
     if [ $? -eq 1 ]; then
-        echo "_update_gpio_max() failed and exit. command=cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"
-        exit
+        GPIO_MAX_INIT_FLAG=0
+    else
+        GPIO_MAX_INIT_FLAG=1
     fi
 
+    _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
 
@@ -116,6 +140,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
 
@@ -127,7 +157,7 @@ function _check_env {
 function _check_filepath {
     filepath=$1
     if [ -z "${filepath}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     elif [ ! -f "$filepath" ]; then
         _echo "ERROR: No such file: ${filepath}"
@@ -138,11 +168,24 @@ function _check_filepath {
     fi
 }
 
+function _check_dirpath {
+    dirpath=$1
+    if [ -z "${dirpath}" ]; then
+        _echo "ERROR, the ipnut string is empty!!!"
+        return ${FALSE}
+    elif [ ! -d "$dirpath" ]; then
+        _echo "ERROR: No such directory: ${dirpath}"
+        return ${FALSE}
+    else
+        return ${TRUE}
+    fi
+}
+
 function _check_i2c_device {
     i2c_addr=$1
 
     if [ -z "${i2c_addr}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     fi
 
@@ -160,9 +203,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    i2c_bus_0=$(eval "i2cdetect -y 0 ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${i2c_bus_0}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -336,6 +378,11 @@ function _bmc_version {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
@@ -420,7 +467,7 @@ function _cpld_version_sysfs {
         exit $ret
     fi
 
-    cpu_cpld_version_h=`cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/cpu_cpld/cpu_cpld_version_h`
+    cpu_cpld_version_h=`cat ${SYSFS_LPC}/cpu_cpld/cpu_cpld_version_h`
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_version_h=`echo ${cpu_cpld_version_h} | awk -F" " '{print $NF}'`
@@ -505,6 +552,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -623,9 +675,9 @@ function _show_sys_eeprom_i2c {
     _banner "Show System EEPROM"
 
     #first read return empty content
-    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    sys_eeprom=$(eval "i2cdump -f -y 0 0x57 c")
     #second read return correct content
-    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    sys_eeprom=$(eval "i2cdump -f -y 0 0x57 c")
     _echo "[System EEPROM]:"
     _echo "${sys_eeprom}"
 }
@@ -1114,7 +1166,7 @@ function _show_system_led_sysfs2 {
 
 function _show_system_led {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_system_led_sysfs
+        #_show_system_led_sysfs
         _show_system_led_sysfs2
     fi
 }
@@ -1174,6 +1226,37 @@ function _show_ioport {
     ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
     _echo "${ret}"
 
+}
+
+function _show_cpld_reg_sysfs {
+    _banner "Show CPLD Register"
+
+    if [[ $MODEL_NAME == *"NCP1-3"* ]]; then
+        _check_dirpath "/sys/bus/i2c/devices/1-0030"
+        reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
+        _echo "[CPLD 1 Register]:"
+        _echo "${reg_dump}"
+
+        _check_dirpath "/sys/bus/i2c/devices/1-0031"
+        reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
+        _echo "[CPLD 2 Register]:"
+        _echo "${reg_dump}"
+
+        _check_dirpath "/sys/bus/i2c/devices/1-0032"
+        reg_dump=$(eval "i2cdump -f -y 1 0x32 ${LOG_REDIRECT}")
+        _echo "[CPLD 3 Register]:"
+        _echo "${reg_dump}"
+
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
+}
+
+function _show_cpld_reg {
+    if [ "${BSP_INIT_FLAG}" == "1" ] ; then
+        _show_cpld_reg_sysfs
+    fi
 }
 
 function _show_onlpdump {
@@ -1661,6 +1744,62 @@ function _compression {
     fi
 }
 
+usage() {
+    local f=$(basename "$0")
+    echo ""
+    echo "Usage:"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
+    echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
+    echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -i                insert an identifier in the log file name"
+    echo "  -v                show tech support script version"
+    echo "Example:"
+    echo "    $f -d /var/log"
+    echo "    $f -i identifier"
+    echo "    $f -v"
+    exit -1
+}
+
+function _getopts {
+    local OPTSTRING=":bd:fi:v"
+    # default log dir
+    local log_folder_root="/tmp/log"
+    local identifier=$SN
+
+    while getopts ${OPTSTRING} opt; do
+        case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
+            d)
+              log_folder_root=${OPTARG}
+              ;;
+            f)
+              LOG_FAST=${TRUE}
+              ;;
+            i)
+              identifier=${OPTARG}
+              ;;
+            v)
+              _show_ts_version
+              exit 0
+              ;;
+            ?)
+              echo "Invalid option: -${OPTARG}."
+              usage
+              ;;
+        esac
+    done
+
+    LOG_FOLDER_ROOT=${log_folder_root}
+    LOG_FOLDER_NAME="log_platform_${identifier}_${DATESTR}"
+    LOG_FILE_NAME="log_platform_${identifier}_${DATESTR}.log"
+    LOG_FOLDER_PATH="${LOG_FOLDER_ROOT}/${LOG_FOLDER_NAME}"
+    LOG_FILE_PATH="${LOG_FOLDER_PATH}/${LOG_FILE_NAME}"
+    LOG_REDIRECT="2>> $LOG_FILE_PATH"
+}
+
 function _main {
     echo "The script will take a few minutes, please wait..."
     _check_env
@@ -1680,6 +1819,7 @@ function _main {
     _show_cpld_interrupt
     _show_system_led
     _show_ioport
+    _show_cpld_reg
     _show_onlpdump
     _show_onlps
     _show_system_info
@@ -1705,8 +1845,8 @@ function _main {
     _show_time
     _compression
 
-    echo "#   done..."
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
+_getopts $@
 _main
-
