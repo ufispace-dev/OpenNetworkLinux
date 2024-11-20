@@ -31,6 +31,7 @@
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s7801-54xs-cpld.h"
 
 #ifdef DEBUG
@@ -1333,7 +1334,11 @@ exit:
 }
 
 /* cpld drvier remove */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int cpld_remove(struct i2c_client *client)
+#else
+static void cpld_remove(struct i2c_client *client)
+#endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
@@ -1347,7 +1352,9 @@ static int cpld_remove(struct i2c_client *client)
     }
 
     cpld_remove_client(client);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 static int s7801_54xs_cpld_read_internal(struct i2c_client *client, u8 reg)
