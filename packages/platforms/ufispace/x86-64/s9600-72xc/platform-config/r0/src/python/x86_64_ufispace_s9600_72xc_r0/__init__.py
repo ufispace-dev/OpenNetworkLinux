@@ -7,7 +7,6 @@ import sys
 import subprocess
 import time
 import fcntl
-import commands
 
 
 def msg(s, fatal=False):
@@ -36,7 +35,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -93,13 +92,13 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
                                         self.ROV_I2C_ADDR,
                                         self.ROV_CONFIG_REG,
                                         self.ROV_CONFIG[rov_stamp])
-        retcode, output = commands.getstatusoutput(cmd)
-        if retcode != 0:
-            mgs("set_macrov_config failed, cmd={}, output={}\n".format(cmd, output))
-            return False
-        else:
-            msg("set_mac_rov_config addr=0x{:02X}, rov_stamp=0x{:02X}, rov_voltage={}\n".
-                format(self.ROV_I2C_ADDR, rov_stamp, self.vid_to_volt_str(self.ROV_CONFIG[rov_stamp])))
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("set_mac_rov_config failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
+
+        msg("set_mac_rov_config addr=0x{:02X}, rov_stamp=0x{:02X}, rov_voltage={}\n".
+            format(self.ROV_I2C_ADDR, rov_stamp, self.vid_to_volt_str(self.ROV_CONFIG[rov_stamp])))
         return True
 
     def check_bmc_enable(self):
