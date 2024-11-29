@@ -21,6 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 #include <linux/module.h>
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
@@ -395,3 +397,8 @@ MODULE_LICENSE("GPL");
 
 module_init(cpr_4011_4mxx_init);
 module_exit(cpr_4011_4mxx_exit);
+
+#else
+#include <linux/module.h>
+MODULE_LICENSE("GPL");
+#endif

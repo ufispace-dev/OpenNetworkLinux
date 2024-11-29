@@ -18,6 +18,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -231,3 +233,8 @@ module_i2c_driver(emerson700_pmbus_driver);
 MODULE_AUTHOR("Audi Hsu	");
 MODULE_DESCRIPTION("Emerson 700 PMBus driver");
 MODULE_LICENSE("GPL");
+
+#else
+#include <linux/module.h>
+MODULE_LICENSE("GPL");
+#endif

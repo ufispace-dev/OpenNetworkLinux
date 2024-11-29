@@ -26,6 +26,7 @@
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
 
 /* Addresses to scan */
 static const unsigned short normal_i2c[] = { /*0x50, 0x51, 0x52, 0x53, 0x54,
@@ -200,13 +201,22 @@ static int mb_eeprom_detect(struct i2c_client *client, struct i2c_board_info *in
 		return -ENODEV;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 	strlcpy(info->type, "eeprom", I2C_NAME_SIZE);
+#else    
+    strscpy(info->type, "eeprom", I2C_NAME_SIZE);
+#endif
+
 
 	return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int mb_eeprom_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
+#else
+static int mb_eeprom_probe(struct i2c_client *client)
+#endif
 {
 	struct eeprom_data *data;
 	int err;
@@ -234,12 +244,18 @@ exit:
 	return err;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int mb_eeprom_remove(struct i2c_client *client)
+#else
+static void mb_eeprom_remove(struct i2c_client *client)
+#endif
 {
 	sysfs_remove_bin_file(&client->dev.kobj, &mb_eeprom_attr);
 	kfree(i2c_get_clientdata(client));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
+#endif
 }
 
 static const struct i2c_device_id mb_eeprom_id[] = {
@@ -255,7 +271,11 @@ static struct i2c_driver mb_eeprom_driver = {
 	.remove		= mb_eeprom_remove,
 	.id_table	= mb_eeprom_id,
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 	.class		= I2C_CLASS_DDC | I2C_CLASS_SPD,
+#else    
+    .class      = I2C_CLASS_SPD,
+#endif
 	.detect		= mb_eeprom_detect,
 	.address_list	= normal_i2c,
 };
@@ -263,5 +283,5 @@ static struct i2c_driver mb_eeprom_driver = {
 module_i2c_driver(mb_eeprom_driver);
 
 MODULE_AUTHOR("Wade <wade.ce.he@ufispace.com>");
-MODULE_DESCRIPTION("UfiSpace Mother Borad EEPROM driver");
+MODULE_DESCRIPTION("UfiSpace Mother Board EEPROM driver");
 MODULE_LICENSE("GPL");

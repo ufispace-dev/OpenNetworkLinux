@@ -300,7 +300,7 @@ temp_devname_handler__(netsnmp_request_info *req,
     char device_name[ONLP_SNMP_CONFIG_MAX_NAME_LENGTH+ONLP_SNMP_CONFIG_MAX_DESC_LENGTH];
 
     snprintf(device_name,  sizeof(device_name),
-             "%s %s%s", "Thermal", ss->name, ss->desc);
+             "%s %s%s", "Thermal", ss->name, ss->desc) < 0 ? abort() : (void)0;
 
     snmp_set_var_typed_value(req->requestvb,
                              ASN_OCTET_STR,
@@ -403,7 +403,7 @@ fan_devname_handler__(netsnmp_request_info *req,
 {
     char device_name[ONLP_SNMP_CONFIG_MAX_NAME_LENGTH+ONLP_SNMP_CONFIG_MAX_DESC_LENGTH];
     snprintf(device_name,  sizeof(device_name),
-             "%s %s%s", "Fan", ss->name, ss->desc);
+             "%s %s%s", "Fan", ss->name, ss->desc) < 0 ? abort() : (void)0;
 
     snmp_set_var_typed_value(req->requestvb,
                              ASN_OCTET_STR,
@@ -603,7 +603,7 @@ psu_devname_handler__(netsnmp_request_info *req,
 {
     char device_name[ONLP_SNMP_CONFIG_MAX_NAME_LENGTH+ONLP_SNMP_CONFIG_MAX_DESC_LENGTH];
     snprintf(device_name,  sizeof(device_name),
-             "%s %s%s", "PSU", ss->name, ss->desc);
+             "%s %s%s", "PSU", ss->name, ss->desc) < 0 ? abort() : (void)0;
 
     snmp_set_var_typed_value(req->requestvb,
                              ASN_OCTET_STR,

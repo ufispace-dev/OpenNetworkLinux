@@ -1,0 +1,38 @@
+From de0fbf985619035d261b3e02a187386908ad6d13 Mon Sep 17 00:00:00 2001
+From: "jason.cy.tsai" <jason.cy.tsai@ufispace.com>
+Date: Thu, 24 Oct 2024 11:23:30 +0800
+Subject: [PATCH] drivers i2c-smbus disable i2c_register_spd
+
+---
+ drivers/i2c/i2c-smbus.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/i2c/i2c-smbus.c b/drivers/i2c/i2c-smbus.c
+index 74807c6db..0e9cbad39 100644
+--- a/drivers/i2c/i2c-smbus.c
++++ b/drivers/i2c/i2c-smbus.c
+@@ -17,6 +17,9 @@
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+ 
++static int disable_i2c_register_spd = 1;
++module_param(disable_i2c_register_spd, int, 0);
++
+ struct i2c_smbus_alert {
+ 	struct work_struct	alert;
+ 	struct i2c_client	*ara;		/* Alert response address */
+@@ -320,6 +323,11 @@ void i2c_register_spd(struct i2c_adapter *adap)
+ 	u64 mem_size;
+ 	const char *name;
+ 
++    //disable spd scan to prevent address conflict between spd and sys eeprom
++    if (disable_i2c_register_spd == 1) {
++        return;
++    }
++
+ 	while ((handle = dmi_memdev_handle(slot_count)) != 0xffff) {
+ 		slot_count++;
+ 
+-- 
+2.25.1
+

@@ -125,6 +125,7 @@
 #include <linux/sysfs.h>
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
+#include <linux/version.h>
 
 #ifdef EEPROM_CLASS
 #include <linux/eeprom_class.h>
@@ -801,7 +802,11 @@ static ssize_t optoe_bin_write(struct file *filp, struct kobject *kobj,
 	return optoe_read_write(optoe, buf, off, count, OPTOE_WRITE_OP);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int optoe_remove(struct i2c_client *client)
+#else
+static void optoe_remove(struct i2c_client *client)
+#endif
 {
 	struct optoe_data *optoe;
 	int i;
@@ -819,7 +824,10 @@ static int optoe_remove(struct i2c_client *client)
 
 	kfree(optoe->writebuf);
 	kfree(optoe);
-	return 0;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+    return 0;
+#endif
 }
 
 static ssize_t show_dev_class(struct device *dev,
@@ -860,7 +868,11 @@ static ssize_t set_dev_class(struct device *dev,
 		/* SFP family */
 		/* if it doesn't exist, create 0x51 i2c address */
 		if (!optoe->client[1]) {
-			optoe->client[1] = i2c_new_dummy(client->adapter, 0x51);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+            optoe->client[1] = i2c_new_dummy(client->adapter, 0x51);
+#else
+            optoe->client[1] = i2c_new_dummy_device(client->adapter, 0x51);
+#endif
 			if (!optoe->client[1]) {
 				dev_err(&client->dev,
 					"address 0x51 unavailable\n");
@@ -942,9 +954,15 @@ static struct attribute_group optoe_attr_group = {
 	.attrs = optoe_attrs,
 };
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int optoe_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
+#else
+static int optoe_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *id = i2c_client_get_device_id(client);
+#endif
 	int err;
 	int use_smbus = 0;
 	struct optoe_platform_data chip;
@@ -1095,7 +1113,11 @@ static int optoe_probe(struct i2c_client *client,
 
 	/* SFF-8472 spec requires that the second I2C address be 0x51 */
 	if (num_addresses == 2) {
-		optoe->client[1] = i2c_new_dummy(client->adapter, 0x51);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+        optoe->client[1] = i2c_new_dummy(client->adapter, 0x51);
+#else
+		optoe->client[1] = i2c_new_dummy_device(client->adapter, 0x51);
+#endif
 		if (!optoe->client[1]) {
 			dev_err(&client->dev, "address 0x51 unavailable\n");
 			err = -EADDRINUSE;

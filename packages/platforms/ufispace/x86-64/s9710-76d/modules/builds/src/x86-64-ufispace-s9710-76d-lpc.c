@@ -27,6 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\n", \
@@ -54,7 +55,7 @@
 #define CPU_TYPE CPU_SKY
 
 /* LPC registers */
-
+#define REG_BASE_BDE_CONFIG               0x500
 #define REG_BASE_CPU                      0x600
 
 #if CPU_TYPE == CPU_SKY
@@ -89,6 +90,8 @@
 #else
 #define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x00)
 #define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
+
+#define REG_ALERT_GPIO                    (REG_BASE_BDE_CONFIG + 0x01)
 #endif
 
 //Thermal
@@ -136,6 +139,7 @@ enum lpc_sysfs_attributes {
     ATT_ALERT_STATUS,
 #if CPU_TYPE == CPU_BDE
     ATT_ALERT_DISABLE,
+    ATT_ALERT_GPIO,
 #endif
     //BSP
     ATT_BSP_VERSION,
@@ -144,6 +148,8 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
+
     //Thermal
     ATT_TEMP_MAC0_PVT2,
     ATT_TEMP_MAC0_PVT3,
@@ -161,6 +167,28 @@ enum lpc_sysfs_attributes {
     ATT_TEMP_MAC1_HBM1,
     ATT_TEMP_OP2_2,
     ATT_TEMP_OP2_3,
+
+    //ONIE
+    ATT_PRODUCT_NAME,
+    ATT_PART_NUMBER,
+    ATT_SERIAL_NUMBER,
+    ATT_BASE_MAC_ADDRESS,
+    ATT_MANUFACTURE_DATE,
+    ATT_DEVICE_VERSION,
+    ATT_LABEL_REVISION,
+    ATT_PLATFORM_NAME,
+    ATT_ONIE_VERSION,
+    ATT_MAC_ADDRESSES,
+    ATT_MANUFACTURER,
+    ATT_COUNTRY_CODE,
+    ATT_VENDOR_NAME,
+    ATT_DIAG_VERSION,
+    ATT_SERVICE_TAG,
+    ATT_VENDOR_EXTENSION,
+    ATT_CRC_32,
+
+    //BDE
+    ATT_GPIO_ALERT,
     ATT_MAX
 };
 
@@ -179,6 +207,31 @@ enum bsp_log_ctrl {
 
 struct lpc_data_s {
     struct mutex    access_lock;
+};
+
+typedef struct onie_info_s
+{
+    u8 data[512];
+} onie_info_t;
+
+static onie_info_t onie_info[] = {
+    [ATT_PRODUCT_NAME     - ATT_PRODUCT_NAME] = {""},
+    [ATT_PART_NUMBER      - ATT_PRODUCT_NAME] = {""},
+    [ATT_SERIAL_NUMBER    - ATT_PRODUCT_NAME] = {""},
+    [ATT_BASE_MAC_ADDRESS - ATT_PRODUCT_NAME] = {""},
+    [ATT_MANUFACTURE_DATE - ATT_PRODUCT_NAME] = {""},
+    [ATT_DEVICE_VERSION   - ATT_PRODUCT_NAME] = {""},
+    [ATT_LABEL_REVISION   - ATT_PRODUCT_NAME] = {""},
+    [ATT_PLATFORM_NAME    - ATT_PRODUCT_NAME] = {""},
+    [ATT_ONIE_VERSION     - ATT_PRODUCT_NAME] = {""},
+    [ATT_MAC_ADDRESSES    - ATT_PRODUCT_NAME] = {""},
+    [ATT_MANUFACTURER     - ATT_PRODUCT_NAME] = {""},
+    [ATT_COUNTRY_CODE     - ATT_PRODUCT_NAME] = {""},
+    [ATT_VENDOR_NAME      - ATT_PRODUCT_NAME] = {""},
+    [ATT_DIAG_VERSION     - ATT_PRODUCT_NAME] = {""},
+    [ATT_SERVICE_TAG      - ATT_PRODUCT_NAME] = {""},
+    [ATT_VENDOR_EXTENSION - ATT_PRODUCT_NAME] = {""},
+    [ATT_CRC_32           - ATT_PRODUCT_NAME] = {""},
 };
 
 struct lpc_data_s *lpc_data;
@@ -396,6 +449,32 @@ static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t coun
     return count;
 }
 
+/* get onie value */
+static ssize_t read_onie(char *buf, char *str)
+{
+    ssize_t len=0;
+
+    mutex_lock(&lpc_data->access_lock);
+    len=sprintf(buf, "%s", str);
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_R("reg_val=%s", str);
+
+    return len;
+}
+
+/* set onie value */
+static ssize_t write_onie(const char *buf, char *str, size_t str_len, size_t count)
+{
+    mutex_lock(&lpc_data->access_lock);
+    snprintf(str, str_len, "%s", buf);
+    mutex_unlock(&lpc_data->access_lock);
+
+    BSP_LOG_W("reg_val=%s", str);
+
+    return count;
+}
+
 /* get gpio max value */
 static ssize_t read_gpio_max(struct device *dev,
                     struct device_attribute *da,
@@ -404,7 +483,28 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t read_gpio_base(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d\n", -1);
+#else
+        return sprintf(buf, "%d\n", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -522,12 +622,13 @@ static ssize_t read_lpc_callback(struct device *dev,
         //I2C Alert
         case ATT_ALERT_STATUS:
             reg = REG_ALERT_STATUS;
-            mask = 0x20;
             break;
 #if CPU_TYPE == CPU_BDE
         case ATT_ALERT_DISABLE:
             reg = REG_ALERT_DISABLE;
-            mask = 0x04;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
             break;
 #endif
         //BSP
@@ -555,6 +656,7 @@ static ssize_t write_lpc_callback(struct device *dev,
     u8 mask = MASK_ALL;
 
     switch (attr->index) {
+        //MB CPLD
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
@@ -567,6 +669,18 @@ static ssize_t write_lpc_callback(struct device *dev,
             reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
             init_bmc_mailbox();
             break;
+        //I2C Alert
+        case ATT_ALERT_STATUS:
+            reg = REG_ALERT_STATUS;
+            break;
+#if CPU_TYPE == CPU_BDE
+        case ATT_ALERT_DISABLE:
+            reg = REG_ALERT_DISABLE;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
+            break;
+#endif
         default:
             return -EINVAL;
     }
@@ -721,6 +835,47 @@ static ssize_t write_bsp_pr_callback(struct device *dev,
     return str_len;
 }
 
+/* get onie parameter value */
+static ssize_t read_onie_callback(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    char *str=NULL;
+    int index = 0;
+
+    switch (attr->index) {
+        case ATT_PRODUCT_NAME...ATT_CRC_32:
+            index = attr->index - ATT_PRODUCT_NAME;
+            str = onie_info[index].data;
+            break;
+        default:
+            return -EINVAL;
+    }
+    return read_onie(buf, str);
+}
+
+/* set onie parameter value */
+static ssize_t write_onie_callback(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int str_len=0;
+    char *str=NULL;
+    int index = 0;
+
+    switch (attr->index) {
+        case ATT_PRODUCT_NAME...ATT_CRC_32:
+            index = attr->index - ATT_PRODUCT_NAME;
+            str = onie_info[index].data;
+            str_len = sizeof(onie_info[index].data);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    return write_onie(buf, str, str_len, count);
+}
+
 //SENSOR_DEVICE_ATTR - CPU
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version,     lpc_callback, ATT_CPU_CPLD_VERSION);
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_version_h,   cpu_cpld_version_h, ATT_CPU_CPLD_VERSION_H);
@@ -752,9 +907,10 @@ static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_minor_ver, lpc_callback, ATT_MB_CPLD_1_M
 static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build_ver, lpc_callback, ATT_MB_CPLD_1_BUILD_VER);
 
 //SENSOR_DEVICE_ATTR - I2C Alert
-static _SENSOR_DEVICE_ATTR_RO(alert_status,    lpc_callback, ATT_ALERT_STATUS);
+static _SENSOR_DEVICE_ATTR_RW(alert_status,    lpc_callback, ATT_ALERT_STATUS);
 #if CPU_TYPE == CPU_BDE
 static _SENSOR_DEVICE_ATTR_RO(alert_disable,   lpc_callback, ATT_ALERT_DISABLE);
+static _SENSOR_DEVICE_ATTR_RW(alert_gpio,      lpc_callback, ATT_ALERT_GPIO);
 #endif
 //SENSOR_DEVICE_ATTR - BSP
 static _SENSOR_DEVICE_ATTR_RW(bsp_version, bsp_callback, ATT_BSP_VERSION);
@@ -762,7 +918,8 @@ static _SENSOR_DEVICE_ATTR_RW(bsp_debug,   bsp_callback, ATT_BSP_DEBUG);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
-static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max,  NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_base,   S_IRUGO, read_gpio_base, NULL, ATT_BSP_GPIO_BASE);
 
 //SENSOR_DEVICE_ATTR - Thermal
 static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt2,  lpc_callback, ATT_TEMP_MAC0_PVT2);
@@ -781,6 +938,25 @@ static _SENSOR_DEVICE_ATTR_RW(temp_mac1_hbm0,  lpc_callback, ATT_TEMP_MAC1_HBM0)
 static _SENSOR_DEVICE_ATTR_RW(temp_mac1_hbm1,  lpc_callback, ATT_TEMP_MAC1_HBM1);
 static _SENSOR_DEVICE_ATTR_RW(temp_op2_2,      lpc_callback, ATT_TEMP_OP2_2);
 static _SENSOR_DEVICE_ATTR_RW(temp_op2_3,      lpc_callback, ATT_TEMP_OP2_3);
+
+//SENSOR_DEVICE_ATTR - Onie
+static _SENSOR_DEVICE_ATTR_RW(product_name,     onie_callback, ATT_PRODUCT_NAME);
+static _SENSOR_DEVICE_ATTR_RW(part_number,      onie_callback, ATT_PART_NUMBER);
+static _SENSOR_DEVICE_ATTR_RW(serial_number,    onie_callback, ATT_SERIAL_NUMBER);
+static _SENSOR_DEVICE_ATTR_RW(base_mac_address, onie_callback, ATT_BASE_MAC_ADDRESS);
+static _SENSOR_DEVICE_ATTR_RW(manufacture_date, onie_callback, ATT_MANUFACTURE_DATE);
+static _SENSOR_DEVICE_ATTR_RW(device_version,   onie_callback, ATT_DEVICE_VERSION);
+static _SENSOR_DEVICE_ATTR_RW(label_revision,   onie_callback, ATT_LABEL_REVISION);
+static _SENSOR_DEVICE_ATTR_RW(platform_name,    onie_callback, ATT_PLATFORM_NAME);
+static _SENSOR_DEVICE_ATTR_RW(onie_version,     onie_callback, ATT_ONIE_VERSION);
+static _SENSOR_DEVICE_ATTR_RW(mac_addresses,    onie_callback, ATT_MAC_ADDRESSES);
+static _SENSOR_DEVICE_ATTR_RW(manufacturer,     onie_callback, ATT_MANUFACTURER);
+static _SENSOR_DEVICE_ATTR_RW(country_code,     onie_callback, ATT_COUNTRY_CODE);
+static _SENSOR_DEVICE_ATTR_RW(vendor_name,      onie_callback, ATT_VENDOR_NAME);
+static _SENSOR_DEVICE_ATTR_RW(diag_version,     onie_callback, ATT_DIAG_VERSION);
+static _SENSOR_DEVICE_ATTR_RW(service_tag,      onie_callback, ATT_SERVICE_TAG);
+static _SENSOR_DEVICE_ATTR_RW(vendor_extension, onie_callback, ATT_VENDOR_EXTENSION);
+static _SENSOR_DEVICE_ATTR_RW(crc_32,           onie_callback, ATT_CRC_32);
 
 static struct attribute *cpu_cpld_attrs[] = {
     _DEVICE_ATTR(cpu_cpld_version),
@@ -833,6 +1009,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_reg),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_gpio_base),
     NULL,
 };
 
@@ -853,6 +1030,34 @@ static struct attribute *temp_attrs[] = {
     _DEVICE_ATTR(temp_mac1_hbm1),
     _DEVICE_ATTR(temp_op2_2),
     _DEVICE_ATTR(temp_op2_3),
+    NULL,
+};
+
+static struct attribute *onie_attrs[] = {
+    _DEVICE_ATTR(product_name),
+    _DEVICE_ATTR(part_number),
+    _DEVICE_ATTR(serial_number),
+    _DEVICE_ATTR(base_mac_address),
+    _DEVICE_ATTR(manufacture_date),
+    _DEVICE_ATTR(device_version),
+    _DEVICE_ATTR(label_revision),
+    _DEVICE_ATTR(platform_name),
+    _DEVICE_ATTR(onie_version),
+    _DEVICE_ATTR(mac_addresses),
+    _DEVICE_ATTR(manufacturer),
+    _DEVICE_ATTR(country_code),
+    _DEVICE_ATTR(vendor_name),
+    _DEVICE_ATTR(diag_version),
+    _DEVICE_ATTR(service_tag),
+    _DEVICE_ATTR(vendor_extension),
+    _DEVICE_ATTR(crc_32),
+    NULL,
+};
+
+static struct attribute *bde_attrs[] = {
+#if CPU_TYPE == CPU_BDE
+    _DEVICE_ATTR(alert_gpio),
+#endif
     NULL,
 };
 
@@ -886,6 +1091,16 @@ static struct attribute_group temp_attr_grp = {
     .attrs = temp_attrs,
 };
 
+static struct attribute_group onie_attr_grp = {
+    .name = "onie",
+    .attrs = onie_attrs,
+};
+
+static struct attribute_group bde_attr_grp = {
+    .name = "bde",
+    .attrs = bde_attrs,
+};
+
 static void lpc_dev_release( struct device * dev)
 {
     return;
@@ -901,12 +1116,11 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 6;
-    int err[6] = {0};
+    int i = 0, grp_num = 8;
+    int err[8] = {0};
     struct attribute_group *grp;
 
-    lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
-                    GFP_KERNEL);
+    lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s), GFP_KERNEL);
     if (!lpc_data)
         return -ENOMEM;
 
@@ -931,6 +1145,12 @@ static int lpc_drv_probe(struct platform_device *pdev)
                 break;
             case 5:
                 grp = &temp_attr_grp;
+                break;
+            case 6:
+                grp = &onie_attr_grp;
+                break;
+            case 7:
+                grp = &bde_attr_grp;
                 break;
             default:
                 break;
@@ -968,6 +1188,12 @@ exit:
             case 5:
                 grp = &temp_attr_grp;
                 break;
+            case 6:
+                grp = &onie_attr_grp;
+                break;
+            case 7:
+                grp = &bde_attr_grp;
+                break;
             default:
                 break;
         }
@@ -992,6 +1218,8 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &onie_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &bde_attr_grp);
 
     return 0;
 }
@@ -1004,7 +1232,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
@@ -1027,15 +1255,15 @@ int lpc_init(void)
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);
 }
 
+module_init(lpc_init);
+module_exit(lpc_exit);
+
 MODULE_AUTHOR("Jason Tsai <jason.cy.tsai@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9710_76d_lpc driver");
 MODULE_LICENSE("GPL");
-
-module_init(lpc_init);
-module_exit(lpc_exit);
