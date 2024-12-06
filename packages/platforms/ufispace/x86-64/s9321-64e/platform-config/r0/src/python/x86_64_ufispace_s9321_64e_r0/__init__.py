@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -137,20 +136,22 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         }
 
         for key, val in board_attrs.items():
-            cmd = "cat {}".format(val["sysfs"])
-            status, output = commands.getstatusoutput(cmd)
-            if status != 0:
-                self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}".format(status, output, cmd), self.LEVEL_ERR)
+            cmd = ["cat", val["sysfs"]]
+            try:
+                output = subprocess.check_output(cmd)
+            except Exception as e:
+                self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
                 output="1"
             board[key] = int(output, 10)
 
         return board
 
     def get_gpio_max(self):
-        cmd = "cat " + self.PATH_BSP_GPIO_MAX
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}".format(status, output, cmd), self.LEVEL_ERR)
+        cmd = ["cat", self.PATH_BSP_GPIO_MAX]
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
 
         gpio_max = int(output, 10)

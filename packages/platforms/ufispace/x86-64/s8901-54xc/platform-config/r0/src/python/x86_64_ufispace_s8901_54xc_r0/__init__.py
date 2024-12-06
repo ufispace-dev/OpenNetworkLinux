@@ -4,9 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
-import time
 import fcntl
 import yaml
 
@@ -35,7 +33,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -275,14 +273,16 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
     def get_gpio_max(self):
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc/bsp/bsp_gpio_max"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            self.bsp_pr("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
-            output="511"
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("get_gpio_max() failed, exception={}\n".format(e), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO MAX value -1\n", self.LEVEL_ERR)
+            output="-1"
 
         gpio_max = int(output, 10)
-        self.bsp_pr("GPIO MAX: {}".format(gpio_max));
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max))
 
         return gpio_max
 
@@ -351,4 +351,3 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Init done")
 
         return True
-

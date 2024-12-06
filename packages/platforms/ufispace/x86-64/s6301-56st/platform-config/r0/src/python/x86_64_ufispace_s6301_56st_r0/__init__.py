@@ -5,7 +5,6 @@ from ctypes import c_int, sizeof
 import os
 import sys
 import subprocess
-import commands
 import time
 import fcntl
 
@@ -37,20 +36,26 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
     def get_hw_ext_id(self):
         # get hardware ext id
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56st_lpc/mb_cpld/board_ext_id"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            output="0"
+
+        output="0"
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get hwr ext id from LPC failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
+
         ext_id = int(output, 10)
         return ext_id
 
     def get_hw_rev_id(self):
         # get hardware revision
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s6301_56st_lpc/mb_cpld/board_hw_id"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            output="0"
+
+        output="0"
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get hwr rev id from LPC failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
+     
         hw_rev_id = int(output, 10)
         return hw_rev_id
 
@@ -101,10 +106,12 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
     def get_gpio_max(self):
         cmd = "cat {}/bsp/bsp_gpio_max".format(self.lpc_sysfs_path)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}".format(status, output, cmd), self.LEVEL_ERR)
-            output="511"
+
+        output="511"
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR) 
 
         gpio_max = int(output, 10)
 
