@@ -4,9 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
-import time
 import fcntl
 
 def msg(s, fatal=False):
@@ -34,7 +32,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -246,11 +244,12 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
         os.system("ipmitool mc watchdog off")
 
     def get_board_id(self):
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/board_id_1"
-        status, output = commands.getstatusoutput(
-            "cat /sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/board_id_1")
-        if status != 0:
-            msg("Get board id from LPC failed, status=%s, output=%s, cmd=%s\n" % (status, output, cmd))
+        cmd = ["cat",  "/sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/board_id_1"]
+        output = ""
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get board id from LPC failed, exception={}, output={}, cmd={}\n".format(e, output, cmd))
             return
 
         board_id = int(output, 10)

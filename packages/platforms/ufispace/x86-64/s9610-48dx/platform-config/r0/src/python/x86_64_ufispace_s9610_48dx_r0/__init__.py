@@ -4,9 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
-import time
 import fcntl
 import yaml
 
@@ -35,7 +33,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))

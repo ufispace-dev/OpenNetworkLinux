@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -62,7 +61,7 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="28x25 + 2x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.13'
+    BSP_VERSION='1.1.0'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc"
@@ -111,10 +110,11 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
             msg("Warning: bsp logging sys is not exist\n")
 
     def get_gpio_max(self):
-        cmd = "cat {}/bsp_gpio_max".format(self.PATH_LPC_GRP_BSP)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+        cmd = ["cat", self.PATH_LPC_GRP_BSP+"/bsp_gpio_max"]
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
 
         gpio_max = int(output, 10)
@@ -223,21 +223,21 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
         gpio_dir = ["in"] * gpio_tnumber
 
         # init GPIO direction to output low
-        for off in range(-22, -24, -1) + \
-                 range(-32, -48, -1) + \
-                 range(-48, -52, -1) + \
-                 range(-56, -64, -1):
+        for off in list(range(-22, -24, -1)) + \
+                 list(range(-32, -48, -1)) + \
+                 list(range(-48, -52, -1)) + \
+                 list(range(-56, -64, -1)):
             gpio_dir[gpio_max + off] = "low"
 
         # init GPIO direction to output high
-        for off in range(-18, -20, -1) + \
-                 range(-96, -112, -1) + \
-                 range(-112, -116, -1) + \
-                 range(-120, -128, -1):
+        for off in list(range(-18, -20, -1)) + \
+                 list(range(-96, -112, -1)) + \
+                 list(range(-112, -116, -1)) + \
+                 list(range(-120, -128, -1)):
             gpio_dir[gpio_max + off] = "high"
 
         # export GPIO and configure direction
-        for i in range(gpio_min, gpio_tnumber):
+        for i in list(range(gpio_min, gpio_tnumber)):
             os.system("echo {} > {}/export".format(i, self.PATH_SYS_GPIO))
             os.system("echo {} > {}/gpio{}/direction".format(gpio_dir[i], self.PATH_SYS_GPIO, i))
 
@@ -280,10 +280,11 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
                 f.write(self.BSP_VERSION)
 
         # get hardware revision
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/mb_cpld/board_hw_id"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            msg("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n", status, output, cmd)
+        cmd = ["cat", "/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc/mb_cpld/board_hw_id"]
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
             output="1"
 
         hw_rev_id = int(output, 16)

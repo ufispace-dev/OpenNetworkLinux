@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -62,7 +61,7 @@ class OnlPlatform_x86_64_ufispace_s9601_104bc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="96x25 + 4x200 + 4x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.7'
+    BSP_VERSION='1.1.0'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/5-0030/cpld_system_led_sys"
@@ -128,20 +127,22 @@ class OnlPlatform_x86_64_ufispace_s9601_104bc_r0(OnlPlatformUfiSpace):
         }
 
         for key, val in board_attrs.items():
-            cmd = "cat {}".format(val["sysfs"])
-            status, output = commands.getstatusoutput(cmd)
-            if status != 0:
-                self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+            cmd = ["cat", val["sysfs"]]
+            try:
+                output = subprocess.check_output(cmd)
+            except Exception as e:
+                self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
                 output="1"
             board[key] = int(output, 10)
 
         return board
 
     def get_gpio_max(self):
-        cmd = "cat {}/bsp_gpio_max".format(self.PATH_LPC_GRP_BSP)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+        cmd = ["cat", self.PATH_LPC_GRP_BSP+"/bsp_gpio_max"]
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
 
         gpio_max = int(output, 10)

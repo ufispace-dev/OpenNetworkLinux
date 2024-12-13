@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -170,11 +169,13 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def get_gpio_max(self):
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            self.bsp_pr("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+        cmd = ["cat", "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"]
+        output = ""
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}, output={}, cmd={}\n".format(e, output, ' '.join(cmd)), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO MAX value 511\n")
             output="511"
 
         gpio_max = int(output, 10)
@@ -208,9 +209,11 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
 
     def config_sfp_mux(self, val):
         cmd = "echo {} > /sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl".format(val)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("enable_sfp_mux() failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+        output = ""
+        try:
+            output = subprocess.check_output(cmd, shell=True)
+        except Exception as e:
+            self.bsp_pr("config_sfp_mux() failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
 
     def baseconfig(self):
 
