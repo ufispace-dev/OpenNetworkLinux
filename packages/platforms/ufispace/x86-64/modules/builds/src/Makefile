@@ -1,5 +1,6 @@
 obj-m += x86-64-ufispace-eeprom-mb.o
 obj-m += x86-64-ufispace-sys-eeprom.o
+obj-m += x86-64-ufispace-irq-handler.o
 
 #i40e ccflags
 ccflags-y += -I$(src)/i40e -DUSE_INTEL_AUX_BUS
