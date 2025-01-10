@@ -30,6 +30,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s9610-36d-cpld.h"
 
 #ifdef DEBUG
@@ -54,6 +55,7 @@
     mutex_unlock(lock); \
     BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
 }
+
 #define I2C_WRITE_BYTE_DATA(ret, lock, i2c_client, reg, val) \
 { \
     mutex_lock(lock); \
@@ -122,7 +124,11 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_1,
     CPLD_SYSTEM_LED_2,
     CPLD_LED_CLEAR,
-
+    DBG_CPLD_MAC_INTR,
+    DBG_CPLD_PHY_INTR,
+    DBG_CPLD_CPLDX_INTR,
+    DBG_CPLD_MAC_THERMAL_INTR,
+    DBG_CPLD_MISC_INTR,
 
     //CPLD 2-5
     CPLD_QSFPDD_INTR_PORT_0,
@@ -158,6 +164,15 @@ enum cpld_sysfs_attributes {
     CPLD_QSFPDD_LPMODE_0,
     CPLD_QSFPDD_LPMODE_1,
     CPLD_QSFPDD_LPMODE_2,
+    DBG_CPLD_QSFPDD_INTR_PORT_0,
+    DBG_CPLD_QSFPDD_INTR_PORT_1,
+    DBG_CPLD_QSFPDD_INTR_PORT_2,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_0,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_1,
+    DBG_CPLD_QSFPDD_INTR_PRESENT_2,
+    DBG_CPLD_QSFPDD_INTR_FUSE_0,
+    DBG_CPLD_QSFPDD_INTR_FUSE_1,
+    DBG_CPLD_QSFPDD_INTR_FUSE_2,
 
     //CPLD 2
     CPLD_OP2_INTR,
@@ -166,12 +181,14 @@ enum cpld_sysfs_attributes {
     CPLD_OP2_RESET,
     CPLD_OP2_PWR,
     CPLD_MISC_PWR,
+    DBG_CPLD_OP2_INTR,
 
     //CPLD 2/3
     CPLD_SFP_STATUS,
     CPLD_SFP_MASK,
     CPLD_SFP_EVT,
     CPLD_SFP_CONFIG,
+    DBG_CPLD_SFP_STATUS,
 
     //BSP DEBUG
     BSP_DEBUG
@@ -291,6 +308,12 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_1, cpld_callback, CPLD_SYSTEM_LED_
 static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_2, cpld_callback, CPLD_SYSTEM_LED_2);
 static _SENSOR_DEVICE_ATTR_RW(cpld_led_clear,    cpld_callback, CPLD_LED_CLEAR);
 
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_intr,   cpld_callback, DBG_CPLD_MAC_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_phy_intr,   cpld_callback, DBG_CPLD_PHY_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_cpldx_intr, cpld_callback, DBG_CPLD_CPLDX_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_thermal_intr, cpld_callback, DBG_CPLD_MAC_THERMAL_INTR);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_misc_intr, cpld_callback, DBG_CPLD_MISC_INTR);
+
 //CPLD 2-5
 
 static _SENSOR_DEVICE_ATTR_RO(cpld_qsfpdd_intr_port_0, cpld_callback, CPLD_QSFPDD_INTR_PORT_0);
@@ -338,6 +361,18 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_0, cpld_callback, CPLD_QSFPDD_L
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_1, cpld_callback, CPLD_QSFPDD_LPMODE_1);
 static _SENSOR_DEVICE_ATTR_RW(cpld_qsfpdd_lpmode_2, cpld_callback, CPLD_QSFPDD_LPMODE_2);
 
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_port_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_PORT_2);
+
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_present_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_PRESENT_2);
+
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_0, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_0);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_1, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_1);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_qsfpdd_intr_fuse_2, cpld_callback, DBG_CPLD_QSFPDD_INTR_FUSE_2);
+
 //CPLD 2
 static _SENSOR_DEVICE_ATTR_RO(cpld_op2_intr,     cpld_callback, CPLD_OP2_INTR);
 static _SENSOR_DEVICE_ATTR_RW(cpld_op2_mask,     cpld_callback, CPLD_OP2_MASK);
@@ -345,12 +380,14 @@ static _SENSOR_DEVICE_ATTR_RO(cpld_op2_evt,      cpld_callback, CPLD_OP2_EVT);
 static _SENSOR_DEVICE_ATTR_RW(cpld_op2_reset,    cpld_callback, CPLD_OP2_RESET);
 static _SENSOR_DEVICE_ATTR_RO(cpld_op2_pwr,      cpld_callback, CPLD_OP2_PWR);
 static _SENSOR_DEVICE_ATTR_RO(cpld_misc_pwr,     cpld_callback, CPLD_MISC_PWR);
+static _SENSOR_DEVICE_ATTR_RW(dbg_cpld_op2_intr, cpld_callback, DBG_CPLD_OP2_INTR);
 
 //CPLD 2/3
 static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_status, cpld_callback, CPLD_SFP_STATUS);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_mask,   cpld_callback, CPLD_SFP_MASK);
 static _SENSOR_DEVICE_ATTR_RO(cpld_sfp_evt,    cpld_callback, CPLD_SFP_EVT);
 static _SENSOR_DEVICE_ATTR_RW(cpld_sfp_config, cpld_callback, CPLD_SFP_CONFIG);
+static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_sfp_status, cpld_callback, DBG_CPLD_SFP_STATUS);
 
 //BSP DEBUG
 static _SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, BSP_DEBUG);
@@ -413,6 +450,12 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_2),
     _DEVICE_ATTR(cpld_led_clear),
     _DEVICE_ATTR(bsp_debug),
+
+    _DEVICE_ATTR(dbg_cpld_mac_intr),
+    _DEVICE_ATTR(dbg_cpld_phy_intr),
+    _DEVICE_ATTR(dbg_cpld_cpldx_intr),
+    _DEVICE_ATTR(dbg_cpld_mac_thermal_intr),
+    _DEVICE_ATTR(dbg_cpld_misc_intr),
     NULL
 };
 
@@ -475,6 +518,18 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
     _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
 
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
+
     //CPLD2 only
 
     _DEVICE_ATTR(cpld_op2_intr),
@@ -483,6 +538,7 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_op2_reset),
     _DEVICE_ATTR(cpld_op2_pwr),
     _DEVICE_ATTR(cpld_misc_pwr),
+    _DEVICE_ATTR(dbg_cpld_op2_intr),
 
     //CPLD 2/3
 
@@ -490,6 +546,7 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(cpld_sfp_mask),
     _DEVICE_ATTR(cpld_sfp_evt),
     _DEVICE_ATTR(cpld_sfp_config),
+    _DEVICE_ATTR(dbg_cpld_sfp_status),
     NULL
 };
 
@@ -552,12 +609,25 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(cpld_qsfpdd_lpmode_1),
     _DEVICE_ATTR(cpld_qsfpdd_lpmode_2),
 
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_port_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_present_2),
+
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_0),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_1),
+    _DEVICE_ATTR(dbg_cpld_qsfpdd_intr_fuse_2),
+
     //CPLD 2/3
 
     _DEVICE_ATTR(cpld_sfp_status),
     _DEVICE_ATTR(cpld_sfp_mask),
     _DEVICE_ATTR(cpld_sfp_evt),
     _DEVICE_ATTR(cpld_sfp_config),
+    _DEVICE_ATTR(dbg_cpld_sfp_status),
     NULL
 };
 
@@ -887,6 +957,33 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
+        case DBG_CPLD_MAC_INTR:
+            reg = DBG_CPLD_MAC_INTR_REG;
+            break;
+        case DBG_CPLD_PHY_INTR:
+            reg = DBG_CPLD_PHY_INTR_REG;
+            break;
+        case DBG_CPLD_CPLDX_INTR:
+            reg = DBG_CPLD_CPLDX_INTR_REG;
+            break;
+        case DBG_CPLD_MAC_THERMAL_INTR:
+            reg = DBG_CPLD_THERMAL_INTR_BASE_REG;
+            break;
+        case DBG_CPLD_MISC_INTR:
+            reg = DBG_CPLD_MISC_INTR_REG;
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PORT_0 ... DBG_CPLD_QSFPDD_INTR_PORT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PORT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_0 ... DBG_CPLD_QSFPDD_INTR_PRESENT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_0 ... DBG_CPLD_QSFPDD_INTR_FUSE_2:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_FUSE_0);
+            break;
         //CPLD 2
         case CPLD_OP2_INTR:
             reg = CPLD_OP2_INTR_REG;
@@ -906,6 +1003,9 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_MISC_PWR:
             reg = CPLD_MISC_PWR_REG;
             break;
+        case DBG_CPLD_OP2_INTR:
+            reg = DBG_CPLD_OP2_INTR_REG;
+            break;
         //CPLD 2/3
         case CPLD_SFP_STATUS:
             reg = CPLD_SFP_STATUS_REG;
@@ -919,6 +1019,8 @@ static ssize_t read_cpld_callback(struct device *dev,
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
             break;
+        case DBG_CPLD_SFP_STATUS:
+            reg = DBG_CPLD_SFP_STATUS_REG;
             break;
         default:
             return -EINVAL;
@@ -1007,12 +1109,42 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = CPLD_QSFPDD_LPMODE_BASE_REG +
                  (attr->index - CPLD_QSFPDD_LPMODE_0);
             break;
+        case DBG_CPLD_MAC_INTR:
+            reg = DBG_CPLD_MAC_INTR_REG;
+            break;
+        case DBG_CPLD_PHY_INTR:
+            reg = DBG_CPLD_PHY_INTR_REG;
+            break;
+        case DBG_CPLD_CPLDX_INTR:
+            reg = DBG_CPLD_CPLDX_INTR_REG;
+            break;
+        case DBG_CPLD_MAC_THERMAL_INTR:
+            reg = DBG_CPLD_THERMAL_INTR_BASE_REG;
+            break;
+        case DBG_CPLD_MISC_INTR:
+            reg = DBG_CPLD_MISC_INTR_REG;
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PORT_0 ... DBG_CPLD_QSFPDD_INTR_PORT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PORT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PORT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_PRESENT_0 ... DBG_CPLD_QSFPDD_INTR_PRESENT_2:
+            reg = DBG_CPLD_QSFPDD_INTR_PRESENT_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_PRESENT_0);
+            break;
+        case DBG_CPLD_QSFPDD_INTR_FUSE_0 ... DBG_CPLD_QSFPDD_INTR_FUSE_2:
+            reg = DBG_CPLD_QSFPDD_INTR_FUSE_BASE_REG +
+                 (attr->index - DBG_CPLD_QSFPDD_INTR_FUSE_0);
+            break;
         //CPLD 2
         case CPLD_OP2_MASK:
             reg = CPLD_OP2_MASK_REG;
             break;
         case CPLD_OP2_RESET:
             reg = CPLD_OP2_RESET_REG;
+            break;
+        case DBG_CPLD_OP2_INTR:
+            reg = DBG_CPLD_OP2_INTR_REG;
             break;
         //CPLD 2/3
         case CPLD_SFP_MASK:
@@ -1021,6 +1153,8 @@ static ssize_t write_cpld_callback(struct device *dev,
         case CPLD_SFP_CONFIG:
             reg = CPLD_SFP_CONFIG_REG;
             break;
+        case DBG_CPLD_SFP_STATUS:
+            reg = DBG_CPLD_SFP_STATUS_REG;
             break;
         default:
             return -EINVAL;
@@ -1168,9 +1302,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -1264,7 +1404,11 @@ exit:
 }
 
 /* cpld drvier remove */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int cpld_remove(struct i2c_client *client)
+#else
+static void cpld_remove(struct i2c_client *client)
+#endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
@@ -1281,7 +1425,10 @@ static int cpld_remove(struct i2c_client *client)
     }
 
     cpld_remove_client(client);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 MODULE_DEVICE_TABLE(i2c, cpld_id);

@@ -27,14 +27,15 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
-    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
 #define BSP_LOG_W(fmt, args...) \
-    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
-#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\n", ##args)
 
 #define _SENSOR_DEVICE_ATTR_RO(_name, _func, _index)     \
     SENSOR_DEVICE_ATTR(_name, S_IRUGO, read_##_func, NULL, _index)
@@ -54,7 +55,7 @@
 #define CPU_TYPE CPU_SKY
 
 /* LPC registers */
-
+#define REG_BASE_BDE_CONFIG               0x500
 #define REG_BASE_CPU                      0x600
 
 #if CPU_TYPE == CPU_SKY
@@ -88,6 +89,8 @@
 #else
 #define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x00)
 #define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
+
+#define REG_ALERT_GPIO                    (REG_BASE_BDE_CONFIG + 0x01)
 #endif
 
 //Thermal
@@ -133,6 +136,7 @@ enum lpc_sysfs_attributes {
     ATT_ALERT_STATUS,
 #if CPU_TYPE == CPU_BDE
     ATT_ALERT_DISABLE,
+    ATT_ALERT_GPIO,
 #endif
     //BSP
     ATT_BSP_VERSION,
@@ -141,6 +145,8 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
+
     //Thermal
     ATT_TEMP_MAC0_PVT2,
     ATT_TEMP_MAC0_PVT3,
@@ -158,6 +164,9 @@ enum lpc_sysfs_attributes {
     ATT_TEMP_MAC1_HBM1,
     ATT_TEMP_OP2_2,
     ATT_TEMP_OP2_3,
+
+    //BDE
+    ATT_GPIO_ALERT,
     ATT_MAX
 };
 
@@ -370,9 +379,9 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 /* get bsp value */
 static ssize_t read_bsp(char *buf, char *str)
 {
-	ssize_t len=0;
+    ssize_t len=0;
 
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -384,7 +393,7 @@ static ssize_t read_bsp(char *buf, char *str)
 /* set bsp value */
 static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
 {
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -401,7 +410,28 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t read_gpio_base(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d\n", -1);
+#else
+        return sprintf(buf, "%d\n", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -515,12 +545,13 @@ static ssize_t read_lpc_callback(struct device *dev,
         //I2C Alert
         case ATT_ALERT_STATUS:
             reg = REG_ALERT_STATUS;
-            mask = 0x20;
             break;
 #if CPU_TYPE == CPU_BDE
         case ATT_ALERT_DISABLE:
             reg = REG_ALERT_DISABLE;
-            mask = 0x04;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
             break;
 #endif
         //BSP
@@ -548,6 +579,7 @@ static ssize_t write_lpc_callback(struct device *dev,
     u8 mask = MASK_ALL;
 
     switch (attr->index) {
+        //MB CPLD
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
@@ -556,6 +588,18 @@ static ssize_t write_lpc_callback(struct device *dev,
             reg = REG_TEMP_BASE + (attr->index - ATT_TEMP_MAC0_PVT2);
             init_bmc_mailbox();
             break;
+        //I2C Alert
+        case ATT_ALERT_STATUS:
+            reg = REG_ALERT_STATUS;
+            break;
+#if CPU_TYPE == CPU_BDE
+        case ATT_ALERT_DISABLE:
+            reg = REG_ALERT_DISABLE;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
+            break;
+#endif
         default:
             return -EINVAL;
     }
@@ -703,9 +747,7 @@ static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build_ver, lpc_callback, ATT_CPU_CPLD_BUI
 //SENSOR_DEVICE_ATTR - MB
 static _SENSOR_DEVICE_ATTR_RO(board_id_0,        lpc_callback, ATT_MB_BRD_ID_0);
 static _SENSOR_DEVICE_ATTR_RO(board_id_1,        lpc_callback, ATT_MB_BRD_ID_1);
-//static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_version, lpc_callback, ATT_MB_CPLD_1_VERSION);
 static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_version_h, mb_cpld_1_version_h, ATT_MB_CPLD_1_VERSION_H);
-//static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build,   lpc_callback, ATT_MB_CPLD_1_BUILD);
 static _SENSOR_DEVICE_ATTR_RW(mux_ctrl,          lpc_callback, ATT_MB_MUX_CTRL);
 static _SENSOR_DEVICE_ATTR_RO(board_sku_id,      lpc_callback, ATT_MB_BRD_SKU_ID);
 static _SENSOR_DEVICE_ATTR_RO(board_hw_id,       lpc_callback, ATT_MB_BRD_HW_ID);
@@ -719,9 +761,10 @@ static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_minor_ver, lpc_callback, ATT_MB_CPLD_1_M
 static _SENSOR_DEVICE_ATTR_RO(mb_cpld_1_build_ver, lpc_callback, ATT_MB_CPLD_1_BUILD_VER);
 
 //SENSOR_DEVICE_ATTR - I2C Alert
-static _SENSOR_DEVICE_ATTR_RO(alert_status,    lpc_callback, ATT_ALERT_STATUS);
+static _SENSOR_DEVICE_ATTR_RW(alert_status,    lpc_callback, ATT_ALERT_STATUS);
 #if CPU_TYPE == CPU_BDE
 static _SENSOR_DEVICE_ATTR_RO(alert_disable,   lpc_callback, ATT_ALERT_DISABLE);
+static _SENSOR_DEVICE_ATTR_RW(alert_gpio,      lpc_callback, ATT_ALERT_GPIO);
 #endif
 //SENSOR_DEVICE_ATTR - BSP
 static _SENSOR_DEVICE_ATTR_RW(bsp_version, bsp_callback, ATT_BSP_VERSION);
@@ -729,7 +772,8 @@ static _SENSOR_DEVICE_ATTR_RW(bsp_debug,   bsp_callback, ATT_BSP_DEBUG);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
-static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max,  NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_base,   S_IRUGO, read_gpio_base, NULL, ATT_BSP_GPIO_BASE);
 
 //SENSOR_DEVICE_ATTR - Thermal
 static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt2,  lpc_callback, ATT_TEMP_MAC0_PVT2);
@@ -760,9 +804,7 @@ static struct attribute *cpu_cpld_attrs[] = {
 };
 
 static struct attribute *mb_cpld_attrs[] = {
-    //_DEVICE_ATTR(mb_cpld_1_version),
     _DEVICE_ATTR(mb_cpld_1_version_h),
-    //_DEVICE_ATTR(mb_cpld_1_build),
     _DEVICE_ATTR(mb_cpld_1_major_ver),
     _DEVICE_ATTR(mb_cpld_1_minor_ver),
     _DEVICE_ATTR(mb_cpld_1_build_ver),
@@ -799,6 +841,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_reg),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_gpio_base),
     NULL,
 };
 
@@ -871,8 +914,7 @@ static int lpc_drv_probe(struct platform_device *pdev)
     int err[6] = {0};
     struct attribute_group *grp;
 
-    lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
-                    GFP_KERNEL);
+    lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s), GFP_KERNEL);
     if (!lpc_data)
         return -ENOMEM;
 
@@ -888,12 +930,12 @@ static int lpc_drv_probe(struct platform_device *pdev)
                 break;
             case 2:
                 grp = &bios_attr_grp;
-            	break;
+                break;
             case 3:
-            	grp = &i2c_alert_attr_grp;
-            	break;
+                grp = &i2c_alert_attr_grp;
+                break;
             case 4:
-            	grp = &bsp_attr_grp;
+                grp = &bsp_attr_grp;
                 break;
             case 5:
                 grp = &temp_attr_grp;
@@ -920,16 +962,16 @@ exit:
                 grp = &cpu_cpld_attr_grp;
                 break;
             case 1:
-            	grp = &mb_cpld_attr_grp;
+                grp = &mb_cpld_attr_grp;
                 break;
             case 2:
-            	grp = &bios_attr_grp;
-            	break;
+                grp = &bios_attr_grp;
+                break;
             case 3:
-            	grp = &i2c_alert_attr_grp;
-            	break;
+                grp = &i2c_alert_attr_grp;
+                break;
             case 4:
-            	grp = &bsp_attr_grp;
+                grp = &bsp_attr_grp;
                 break;
             case 5:
                 grp = &temp_attr_grp;
@@ -970,38 +1012,38 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
     err = platform_driver_register(&lpc_drv);
     if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
+        printk(KERN_ERR "%s(#%d): platform_driver_register failed(%d)\n",
                 __func__, __LINE__, err);
 
-    	return err;
+        return err;
     }
 
     err = platform_device_register(&lpc_dev);
     if (err) {
-    	printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
+        printk(KERN_ERR "%s(#%d): platform_device_register failed(%d)\n",
                 __func__, __LINE__, err);
-    	platform_driver_unregister(&lpc_drv);
-    	return err;
+        platform_driver_unregister(&lpc_drv);
+        return err;
     }
 
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);
 }
 
+module_init(lpc_init);
+module_exit(lpc_exit);
+
 MODULE_AUTHOR("Jason Tsai <jason.cy.tsai@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9610_36d_lpc driver");
 MODULE_LICENSE("GPL");
-
-module_init(lpc_init);
-module_exit(lpc_exit);
