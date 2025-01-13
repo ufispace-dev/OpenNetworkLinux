@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="2.0.0"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -35,7 +35,6 @@ HW_REV=""
 BSP_INIT_FLAG=""
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IOGET="${SCRIPTPATH}/ioget"
 
 # LOG_FILE_ENABLE=1: Log all the platform info to log files (${LOG_FILE_NAME})
 # LOG_FILE_ENABLE=0: Print all the platform info in console
@@ -51,6 +50,8 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # Sysfs
 SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc"
@@ -102,29 +103,38 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
+}
+
+function _dd_read_byte {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
 }
 
 function _check_env {
     #_banner "Check Environment"
-
-    # check utility
-    if [ ! -f "${IOGET}" ]; then
-        echo "Error!!! ioget(${IOGET}) file not found!!! Exit!!!"
-        echo "Please update the ioget file path in script or put the ioget under ${IOGET}."
-        exit 1
-    fi
 
     # check basic commands
     cmd_array=("ipmitool" "lsusb" "dmidecode")
@@ -295,20 +305,18 @@ function _show_board_info {
     model_name_array=("NCP3-SA")
     model_name=""
 
-    model_id=`${IOGET} 0xE00`
+    model_id=$(_dd_read_byte 0xE00)
     ret=$?
     if [ $ret -eq 0 ]; then
-        model_id=`echo ${model_id} | awk -F" " '{print $NF}'`
         model_id=$((model_id))
     else
         _echo "Get board model id failed ($ret), Exit!!"
         exit $ret
     fi
 
-    board_rev_id=`${IOGET} 0xE01`
+    board_rev_id=$(_dd_read_byte 0xE01)
     ret=$?
     if [ $ret -eq 0 ]; then
-        board_rev_id=`echo ${board_rev_id} | awk -F" " '{print $NF}'`
         board_rev_id=$((board_rev_id))
     else
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
@@ -356,10 +364,7 @@ function _bios_version {
     _banner "Show BIOS Version"
 
     bios_ver=$(eval "cat /sys/class/dmi/id/bios_version ${LOG_REDIRECT}")
-    bios_boot_rom=`${IOGET} 0x602`
-    if [ $? -eq 0 ]; then
-        bios_boot_rom=`echo ${bios_boot_rom} | awk -F" " '{print $NF}'`
-    fi
+    bios_boot_rom=$(_dd_read_byte 0x602)
 
     _echo "[BIOS Vesion  ]: ${bios_ver}"
     _echo "[BIOS Boot ROM]: ${bios_boot_rom}"
@@ -386,27 +391,22 @@ function _cpld_version_i2c {
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_info=$(_dd_read_byte 0x600)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD version info failed ($ret), Exit!!"
         exit $ret
     fi
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
+    cpu_cpld_build=$(_dd_read_byte 0x6e0)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD build info failed ($ret), Exit!!"
         exit $ret
     fi
 
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} build ${cpu_cpld_build}"
     _printf "[CPU CPLD Version]: %d.%02d.%03d\n" $(( (cpu_cpld_info & 2#11000000) >> 6)) $(( cpu_cpld_info & 2#00111111 )) $((cpu_cpld_build))
-
 
     if [[ $MODEL_NAME == *"NCP3-SA"* ]]; then
         # MB CPLD NCP3
@@ -450,7 +450,7 @@ function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_info=$(_dd_read_byte 0x600)
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
@@ -459,7 +459,7 @@ function _cpld_version_sysfs {
         exit $ret
     fi
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
+    cpu_cpld_build=$(_dd_read_byte 0x6e0)
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
@@ -1124,20 +1124,39 @@ function _show_beacon_led_sysfs {
     _banner "Show Beacon LED"
 
     if [[ $MODEL_NAME == *"NCP3-SA"* ]]; then
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+            # Left LED
         for ((i=15;i>=9;i--))
         do
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_lled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_lled}"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_led}"
         done
 
         # Right LED
         for ((i=7;i>=1;i--))
         do
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_led}"
+            done
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            # Left LED
+            for ((i=1;i<=7;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
+            done
+
+            # Right LED
+            for ((i=9;i<=15;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
         done
+        fi
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -1145,7 +1164,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_beacon_led_sysfs
     fi
 }
@@ -1161,11 +1180,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x700" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0x700
@@ -1176,11 +1196,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x800" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0xE00
@@ -1191,19 +1212,23 @@ function _show_ioport {
 
     while [ "${reg}" != "0xF00" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
-    ret=$(eval "${IOGET} 0x501 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf000 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
-    _echo "${ret}"
+    reg="0x501"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf000"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf011"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
 
 }
 

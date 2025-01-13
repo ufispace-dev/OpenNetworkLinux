@@ -189,7 +189,7 @@ int pmbus_thermal_info_get(onlp_thermal_info_t* info, int local_id)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
 
     if(local_id == ONLP_THERMAL_PSU0) {
         psu_id = ONLP_PSU_0;
@@ -231,10 +231,10 @@ int pmbus_thermal_info_get(onlp_thermal_info_t* info, int local_id)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp)
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     buf = atof((const char *)result);

@@ -144,6 +144,31 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
         return ONLP_STATUS_E_PARAM;
     }
 
+    if (id >= ONLP_THERMAL_PSU_0 && id <= ONLP_THERMAL_PSU_1) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (id) {
+            case ONLP_THERMAL_PSU_0:
+                psu_id = ONLP_PSU_0;
+                break;
+            case ONLP_THERMAL_PSU_1:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(ufi_psu_present_get(psu_id, &pw_present));
+
+        //update psu thermal presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_THERMAL_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_THERMAL_STATUS_PRESENT ;
+            return ONLP_STATUS_OK;
+        }
+    }
+
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));
     info->mcelsius = (int) (data*1000);
 

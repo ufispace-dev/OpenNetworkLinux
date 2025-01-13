@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -34,7 +33,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -87,7 +86,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
 
         # init QSFPDD EEPROM
         for bus in range(21, 69):
-            self.new_i2c_device('optoe1', 0x50, bus)
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
             subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
             port = port + 1
@@ -119,20 +118,117 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
 
     def get_gpio_max(self):
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9705_48d_lpc/bsp/bsp_gpio_max"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            msg("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            msg("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
-            output="511"
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            msg("get_gpio_max() failed, exception={}\n".format(e))
+            msg("Use default GPIO MAX value -1\n")
+            output="-1"
 
         gpio_max = int(output, 10)
         msg("GPIO MAX: {}\n".format(gpio_max))
 
         return gpio_max
 
+    def get_gpio_base(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9705_48d_lpc/bsp/bsp_gpio_base"
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            msg("get_gpio_base() failed, exception={}\n".format(e))
+            msg("Use default GPIO Base value -1\n")
+            output="-1"
+
+        gpio_base = int(output, 10)
+        msg("GPIO Base: {}\n".format(gpio_base))
+
+        return gpio_base
+
+    def init_gpio(self):
+        # init GPIO sysfs
+        self.new_i2c_device('pca9539', 0x74, 1)
+        self.new_i2c_device('pca9555', 0x20, 3)
+        self.new_i2c_device('pca9539', 0x77, 0)
+
+        #get gpio_max/gpio_base
+        gpio_max = self.get_gpio_max()
+        gpio_base = self.get_gpio_base()
+        is_gpio_base = False
+
+        if gpio_base >= 0 :
+            base = gpio_base
+            is_gpio_base = True
+        elif gpio_max >= 0:
+            base = gpio_max
+            is_gpio_base = False
+        else:
+            msg("invalid gpio_max {} and gpio_base {}, bsp init stopped".format(gpio_max, gpio_base), self.LEVEL_ERR)
+            exit(1)
+
+        if is_gpio_base:
+            # export GPIO
+            for i in range(base, base+48):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+
+            # init GPIO direction
+            # pca9539 0x74
+            os.system("echo high > /sys/class/gpio/gpio" + str(base)    + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+1)  + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base+2)  + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base+3)  + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base+4)  + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base+5)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+6)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+7)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+8)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+9)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+10) + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+11) + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+12) + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base+13) + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base+14) + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base+15) + "/direction")
+
+            # init GPIO direction
+            # pca9535 0x20, pca9539 0x77
+            for i in range(base+16, base+48):
+                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
+        else:
+            # export GPIO
+            for i in range(base-47, base+1):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+
+            # init GPIO direction
+            # pca9539 0x74
+            os.system("echo high > /sys/class/gpio/gpio" + str(base)    + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base-1)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-2)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-3)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-4)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-5)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-6)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-7)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-8)  + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-9)  + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base-10) + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base-11) + "/direction")
+            os.system("echo low  > /sys/class/gpio/gpio" + str(base-12) + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base-13) + "/direction")
+            os.system("echo in   > /sys/class/gpio/gpio" + str(base-14) + "/direction")
+            os.system("echo high > /sys/class/gpio/gpio" + str(base-15) + "/direction")
+
+            # init GPIO direction
+            # pca9535 0x20, pca9539 0x77
+            for i in range(base-47, base-15):
+                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
+
     def baseconfig(self):
 
         # load default kernel driver
+        os.system("modprobe -r i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -208,41 +304,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             ]
         )
 
-        # init GPIO sysfs
-        self.new_i2c_device('pca9539', 0x74, 1)
-        self.new_i2c_device('pca9555', 0x20, 3)
-        self.new_i2c_device('pca9539', 0x77, 0)
-
-        #get gpio_max
-        gpio_max = self.get_gpio_max()
-
-        # export GPIO
-        for i in range(gpio_max-47, gpio_max+1):
-            os.system("echo {} > /sys/class/gpio/export".format(i))
-
-        # init GPIO direction
-        # pca9539 0x74
-        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max)    + "/direction")
-        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-1)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-2)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-3)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-4)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-5)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-6)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-7)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-8)  + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-9)  + "/direction")
-        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-10) + "/direction")
-        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-11) + "/direction")
-        os.system("echo low  > /sys/class/gpio/gpio" + str(gpio_max-12) + "/direction")
-        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-13) + "/direction")
-        os.system("echo in   > /sys/class/gpio/gpio" + str(gpio_max-14) + "/direction")
-        os.system("echo high > /sys/class/gpio/gpio" + str(gpio_max-15) + "/direction")
-
-        # init GPIO direction
-        # pca9535 0x20, pca9539 0x77
-        for i in range(gpio_max-47, gpio_max-15):
-            os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
+        self.init_gpio()
 
         #CPLD
         self.insmod("x86-64-ufispace-s9705-48d-cpld")
@@ -275,7 +337,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             msg("Setting mac vdd %1.2f with rov register value 0x%x\n" % (mac_vdd_val, rov_reg_val) )
             os.system("i2cset -y {} {} {} {} w".format(rov_bus[index], 0x70, 0x21, rov_reg_val))
 
+        # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
+
+        #disable watchdog
         self.disable_bmc_watchdog()
 
         # sets the System Event Log (SEL) timestamp to the current system time
@@ -405,10 +470,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["value"]
             out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_preamble hidata {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_preamble lowdata {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
             if int(out, 16) != set_value:
@@ -425,20 +490,20 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             set_value = CLKGEN_CONFIG["FREE_RUN"]["perform_freerun"][i]["value"]
             if (hidata == 0x2 and lowdata == 0x9d) or (hidata == 0x2 and lowdata == 0xa9):
                 out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
-                if out != "":
+                if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cset -y {} {} 0x1 {} w".format(bus, addr, lowdata), shell=True)
-                if out != "":
+                if len(out) != 0:
                     msg("Set word data perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cget -y {} {} {} w".format(bus, addr, lowdata), shell=True)
                 if int(out, 16) != set_value:
                     msg("Get word data perform_freerun {} for compare failed.{}=/={}".format(i, int(out, 16), set_value))
             else:
                 out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
-                if out != "":
+                if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
-                if out != "":
+                if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
                 out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
                 if int(out, 16) != set_value:
@@ -450,10 +515,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["value"]
             out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
             if int(out, 16) != set_value:
@@ -465,10 +530,10 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r7(OnlPlatformUfiSpace):
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_post_amble"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_post_amble"][i]["value"]
             out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_post_amble {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
-            if out != "":
+            if len(out) != 0:
                 msg("Set write_post_amble {} for CLKGEN failed.".format(i))
             out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
             if int(out, 16) != set_value:

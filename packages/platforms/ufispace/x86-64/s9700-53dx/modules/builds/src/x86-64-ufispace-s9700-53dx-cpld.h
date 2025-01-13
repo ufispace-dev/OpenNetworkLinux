@@ -97,6 +97,12 @@ enum LED_GREEN {
 #define CPLD_QSFP_LED_BLINK_BASE_REG      0x90
 #define CPLD_PSU_STATUS_BASE_REG          0x44
 
+#define CPLD_WRITE_PROTECT_REG            0x71
+#define CPLD_WP_EVT_BASE_REG              0x78
+#define CPLD4_QSFPDD_WP_EVT_BASE_REG      0x7D
+#define CPLD_WP_PROBE_7E_REG              0x7E
+#define CPLD_WP_PROBE_7F_REG              0x7F
+
 #if 0
 /* bit definition for register value */
 enum CPLD_QSFP_PORT_STATUS_BITS {
@@ -162,7 +168,7 @@ enum CPLD_QSFP_LED_BITS {
     CPLD_QSFP_LED_CHAN_2_YELLOW_BIT,
     CPLD_QSFP_LED_CHAN_3_GREEN_BIT,
     CPLD_QSFP_LED_CHAN_3_YELLOW_BIT,
-    
+
 };
 enum CPLD_QSFP_LED_BLINK_BITS {
     CPLD_QSFP_LED_BLINK_X_CHAN0_BIT,
@@ -353,4 +359,3 @@ extern int apollo_cpld_get_sfp_port_config_val(void);
 extern int apollo_cpld_set_sfp_port_config_val(u8 reg_val);
 extern u8 fp_port_to_phy_port(u8 fp_port);
 #endif
-

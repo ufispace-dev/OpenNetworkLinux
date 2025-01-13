@@ -5,7 +5,6 @@ from ctypes import c_int, sizeof
 import os
 import sys
 import commands
-import subprocess
 import time
 import fcntl
 import yaml
@@ -187,7 +186,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         for port, config in port_eeprom.items():
             self.new_i2c_device(config["driver"], 0x50, config["bus"])
             port_name = data[config["type"]][port]["port_name"]
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, config["bus"]), shell=True)
+            self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(config["bus"]), port_name)
 
     def init_gpio(self, gpio_max):
         # init GPIO sysfs
@@ -245,11 +244,43 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
+
+    def update_pci_device(self, driver, device, action):
+        driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
+
+        if os.path.exists(driver_path):
+            try:
+                with open(driver_path, "w") as file:
+                    file.write(device)
+            except Exception as e:
+                print("Open file failed, error: {}".format(e))
+
+    def init_i2c_bus_order(self):
+        device_actions = [
+            #driver_name   bus_address     action
+            ("i801_smbus", "0000:00:1f.4", "unbind"),
+            ("ismt_smbus", "0000:00:12.0", "unbind"),
+            ("i801_smbus", "0000:00:1f.4", "bind"),
+            ("ismt_smbus", "0000:00:12.0", "bind"),
+        ]
+
+        # Iterate over the list and call modify_device for each tuple
+        for driver_name, bus_address, action in device_actions:
+            self.update_pci_device(driver_name, bus_address, action)
+
     def baseconfig(self):
 
         # load default kernel driver
-        os.system("rmmod i2c_ismt")
-        os.system("rmmod i2c_i801")
+        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")

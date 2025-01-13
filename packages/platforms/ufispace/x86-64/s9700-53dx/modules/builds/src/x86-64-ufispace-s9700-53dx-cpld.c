@@ -160,7 +160,24 @@ enum apollo_cpld_sysfs_attributes {
     CPLD_RETIMER_INTR,
 
     //BSP DEBUG
-    BSP_DEBUG
+    BSP_DEBUG,
+
+    //CPLD Write Protect
+    CPLD_WRITE_PROTECT,
+    CPLD_QSFP_WP_EVT_0_1,
+    CPLD_QSFP_WP_EVT_2_3,
+    CPLD_QSFP_WP_EVT_4_5,
+    CPLD_QSFP_WP_EVT_6_7,
+    CPLD_QSFP_WP_EVT_8_9,
+    CPLD_QSFP_WP_EVT_10_11,
+    CPLD_QSFP_WP_EVT_12,
+    CPLD_QSFPDD_WP_EVT_0_1,
+    CPLD_QSFPDD_WP_EVT_2_3,
+    CPLD_QSFPDD_WP_EVT_4_5,
+    CPLD_QSFPDD_WP_EVT_6_7,
+    CPLD_QSFPDD_WP_EVT_8_9,
+    CPLD_WP_PROBE_7E,
+    CPLD_WP_PROBE_7F,
 };
 
 enum bsp_log_types {
@@ -262,12 +279,27 @@ static ssize_t write_qsfpdd_led(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
 static ssize_t write_system_led(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
+//PSU
 static ssize_t read_psu_status(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t read_gbox_intr(struct device *dev,
                 struct device_attribute *da, char *buf);
 static ssize_t read_retimer_intr(struct device *dev,
                 struct device_attribute *da, char *buf);
+//Write Protect
+static ssize_t read_write_protect(struct device *dev,
+                struct device_attribute *da, char *buf);
+static ssize_t write_write_protect(struct device *dev,
+        struct device_attribute *da, const char *buf, size_t count);
+static ssize_t read_qsfp_wp_evt(struct device *dev,
+                struct device_attribute *da, char *buf);
+static ssize_t read_qsfpdd_wp_evt(struct device *dev,
+                struct device_attribute *da, char *buf);
+static ssize_t read_wp_probe(struct device *dev,
+                struct device_attribute *da, char *buf);
+static int apollo_cpld_read(u8 cpld_idx, u8 reg);
+static int apollo_cpld_write(u8 cpld_idx, u8 reg, u8 value);
+
 static LIST_HEAD(cpld_client_list);  /* client list for cpld */
 static struct mutex list_lock;  /* mutex for client list */
 
@@ -506,6 +538,45 @@ static SENSOR_DEVICE_ATTR(cpld_retimer_intr, S_IRUGO,
 		read_retimer_intr, NULL, CPLD_RETIMER_INTR);
 static SENSOR_DEVICE_ATTR(bsp_debug, S_IWUSR | S_IRUGO, read_bsp_callback, write_bsp_callback, BSP_DEBUG);
 
+//Write Protect register
+static SENSOR_DEVICE_ATTR(cpld_write_protect, S_IWUSR | S_IRUGO,
+                read_write_protect, write_write_protect,
+                CPLD_WRITE_PROTECT);
+
+//WP Event for QSFP
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_0_1, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_0_1);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_2_3, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_2_3);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_4_5, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_4_5);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_6_7, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_6_7);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_8_9, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_8_9);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_10_11, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_10_11);
+static SENSOR_DEVICE_ATTR(cpld_qsfp_wp_evt_12, S_IRUGO,
+                read_qsfp_wp_evt, NULL, CPLD_QSFP_WP_EVT_12);
+
+//WP Event for QSFPDD
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_wp_evt_0_1, S_IRUGO,
+                read_qsfpdd_wp_evt, NULL, CPLD_QSFPDD_WP_EVT_0_1);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_wp_evt_2_3, S_IRUGO,
+                read_qsfpdd_wp_evt, NULL, CPLD_QSFPDD_WP_EVT_2_3);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_wp_evt_4_5, S_IRUGO,
+                read_qsfpdd_wp_evt, NULL, CPLD_QSFPDD_WP_EVT_4_5);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_wp_evt_6_7, S_IRUGO,
+                read_qsfpdd_wp_evt, NULL, CPLD_QSFPDD_WP_EVT_6_7);
+static SENSOR_DEVICE_ATTR(cpld_qsfpdd_wp_evt_8_9, S_IRUGO,
+                read_qsfpdd_wp_evt, NULL, CPLD_QSFPDD_WP_EVT_8_9);
+
+//WP Event Probe 7E/7F
+static SENSOR_DEVICE_ATTR(cpld_wp_probe_7e, S_IRUGO,
+                read_wp_probe, NULL, CPLD_WP_PROBE_7E);
+static SENSOR_DEVICE_ATTR(cpld_wp_probe_7f, S_IRUGO,
+                read_wp_probe, NULL, CPLD_WP_PROBE_7F);
+
 /* define support attributes of cpldx , total 5 */
 /* cpld 1 */
 static struct attribute *apollo_cpld1_attributes[] = {
@@ -560,6 +631,15 @@ static struct attribute *apollo_cpld1_attributes[] = {
     &sensor_dev_attr_cpld_gbox_intr_1.dev_attr.attr,
     &sensor_dev_attr_cpld_retimer_intr.dev_attr.attr,
     &sensor_dev_attr_bsp_debug.dev_attr.attr,
+    &sensor_dev_attr_cpld_write_protect.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_0_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_2_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_4_5.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_6_7.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_8_9.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_10_11.dev_attr.attr,
+    &sensor_dev_attr_cpld_wp_probe_7e.dev_attr.attr,
+    &sensor_dev_attr_cpld_wp_probe_7f.dev_attr.attr,
     NULL
 };
 
@@ -598,6 +678,15 @@ static struct attribute *apollo_cpld23_attributes[] = {
     &sensor_dev_attr_cpld_qsfp_port_config_10.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_11.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfp_port_config_12.dev_attr.attr,
+    &sensor_dev_attr_cpld_write_protect.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_0_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_2_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_4_5.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_6_7.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_8_9.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_10_11.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_12.dev_attr.attr,
+    &sensor_dev_attr_cpld_wp_probe_7f.dev_attr.attr,
     NULL
 };
 
@@ -622,6 +711,11 @@ static struct attribute *apollo_cpld4_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_port_config_0.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_1.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_port_config_2.dev_attr.attr,
+    &sensor_dev_attr_cpld_write_protect.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfp_wp_evt_0_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_0_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_2_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_wp_probe_7f.dev_attr.attr,
     NULL
 };
 
@@ -668,6 +762,13 @@ static struct attribute *apollo_cpld5_attributes[] = {
     &sensor_dev_attr_cpld_qsfpdd_led_11.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_12.dev_attr.attr,
     &sensor_dev_attr_cpld_qsfpdd_led_13.dev_attr.attr,
+    &sensor_dev_attr_cpld_write_protect.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_0_1.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_2_3.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_4_5.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_6_7.dev_attr.attr,
+    &sensor_dev_attr_cpld_qsfpdd_wp_evt_8_9.dev_attr.attr,
+    &sensor_dev_attr_cpld_wp_probe_7f.dev_attr.attr,
     NULL
 };
 
@@ -1128,6 +1229,8 @@ static ssize_t write_qsfp_port_config(struct device *dev,
             (attr->index - CPLD_QSFP_PORT_CONFIG_0);
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        DEBUG_PRINT("cpld[%d], port_idx[%d], reg[0x%02x], val[0x%02x]",
+                		data->index, (attr->index - CPLD_QSFP_PORT_CONFIG_0), reg, reg_val);
     }
     return count;
 }
@@ -1146,11 +1249,11 @@ static ssize_t read_qsfpdd_port_status(struct device *dev,
 
     if (attr->index >= CPLD_QSFPDD_PORT_STATUS_0 &&
         attr->index <= CPLD_QSFPDD_PORT_STATUS_10) {
-	if (data->index == cpld4) {
-	    reg_base = CPLD4_QSFPDD_PORT_STATUS_BASE_REG;
-	} else {
-	    reg_base = CPLD_QSFPDD_PORT_STATUS_BASE_REG;
-	}
+        if (data->index == cpld4) {
+            reg_base = CPLD4_QSFPDD_PORT_STATUS_BASE_REG;
+        } else {
+            reg_base = CPLD_QSFPDD_PORT_STATUS_BASE_REG;
+        }
         reg = reg_base + (attr->index - CPLD_QSFPDD_PORT_STATUS_0);
         I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
         if (reg_val < 0)
@@ -1174,11 +1277,11 @@ static ssize_t read_qsfpdd_port_config(struct device *dev,
 
     if (attr->index >= CPLD_QSFPDD_PORT_CONFIG_0 &&
         attr->index <= CPLD_QSFPDD_PORT_CONFIG_10) {
-	if (data->index == cpld4) {
-	    reg_base = CPLD4_QSFPDD_PORT_CONFIG_BASE_REG;
-	} else {
-	    reg_base = CPLD_QSFPDD_PORT_CONFIG_BASE_REG;
-	}
+        if (data->index == cpld4) {
+            reg_base = CPLD4_QSFPDD_PORT_CONFIG_BASE_REG;
+        } else {
+            reg_base = CPLD_QSFPDD_PORT_CONFIG_BASE_REG;
+        }
         reg = reg_base + (attr->index - CPLD_QSFPDD_PORT_CONFIG_0);
         I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
         if (reg_val < 0)
@@ -1206,14 +1309,16 @@ static ssize_t write_qsfpdd_port_config(struct device *dev,
 
     if (attr->index >= CPLD_QSFPDD_PORT_CONFIG_0 &&
         attr->index <= CPLD_QSFPDD_PORT_CONFIG_10) {
-	if (data->index == cpld4) {
-	    reg_base = CPLD4_QSFPDD_PORT_CONFIG_BASE_REG;
-	} else {
-	    reg_base = CPLD_QSFPDD_PORT_CONFIG_BASE_REG;
-	}
+        if (data->index == cpld4) {
+            reg_base = CPLD4_QSFPDD_PORT_CONFIG_BASE_REG;
+        } else {
+            reg_base = CPLD_QSFPDD_PORT_CONFIG_BASE_REG;
+        }
         reg = reg_base + (attr->index - CPLD_QSFPDD_PORT_CONFIG_0);
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
                     client, reg, reg_val);
+        DEBUG_PRINT("cpld[%d], port_idx[%d], reg[0x%02x], val[0x%02x]",
+        		data->index, (attr->index - CPLD_QSFPDD_PORT_CONFIG_0), reg, reg_val);
     }
     return count;
 }
@@ -1604,7 +1709,7 @@ static ssize_t read_qsfpdd_led(struct device *dev,
 
     if (attr->index >= CPLD_QSFPDD_LED_0 &&
         attr->index <= CPLD_QSFPDD_LED_13) {
-	port_index = attr->index - CPLD_QSFPDD_LED_0;
+        port_index = attr->index - CPLD_QSFPDD_LED_0;
         reg = reg_base + port_index/2;
 
         I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
@@ -1631,7 +1736,7 @@ static ssize_t write_qsfpdd_led(struct device *dev,
 
     if (attr->index >= CPLD_QSFPDD_LED_0 &&
         attr->index <= CPLD_QSFPDD_LED_13) {
-	port_index = attr->index - CPLD_QSFPDD_LED_0;
+        port_index = attr->index - CPLD_QSFPDD_LED_0;
         reg = CPLD_QSFPDD_LED_BASE_REG + port_index/2;
 
         I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
@@ -1805,9 +1910,15 @@ static void apollo_cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
-static int apollo_cpld_probe(struct i2c_client *client,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
+static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -1856,7 +1967,7 @@ static int apollo_cpld_probe(struct i2c_client *client,
             data->index);
 #endif
 
-              data->index = dev_id->driver_data;
+    data->index = dev_id->driver_data;
 
     /* register sysfs hooks for different cpld group */
     dev_info(&client->dev, "probe cpld with index %d\n", data->index);
@@ -1867,11 +1978,11 @@ static int apollo_cpld_probe(struct i2c_client *client,
         break;
     case cpld2:
     case cpld3:
-    	  status = sysfs_create_group(&client->dev.kobj,
+        status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld23_group);
         break;
     case cpld4:
-    	  status = sysfs_create_group(&client->dev.kobj,
+        status = sysfs_create_group(&client->dev.kobj,
                     &apollo_cpld4_group);
         break;
     case cpld5:
@@ -1892,17 +2003,16 @@ static int apollo_cpld_probe(struct i2c_client *client,
 
     return 0;
 exit:
-    //sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
     switch (data->index) {
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &apollo_cpld1_group);
         break;
     case cpld2:
     case cpld3:
-    	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
+        sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
         break;
     case cpld4:
-    	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld4_group);
+        sysfs_remove_group(&client->dev.kobj, &apollo_cpld4_group);
         break;
     case cpld5:
         sysfs_remove_group(&client->dev.kobj, &apollo_cpld5_group);
@@ -1915,9 +2025,9 @@ exit:
 
 /* cpld drvier remove */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-static int apollo_cpld_remove(struct i2c_client *client)
+static int cpld_remove(struct i2c_client *client)
 #else
-static void apollo_cpld_remove(struct i2c_client *client)
+static void cpld_remove(struct i2c_client *client)
 #endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
@@ -1928,10 +2038,10 @@ static void apollo_cpld_remove(struct i2c_client *client)
         break;
     case cpld2:
     case cpld3:
-    	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
+        sysfs_remove_group(&client->dev.kobj, &apollo_cpld23_group);
         break;
     case cpld4:
-    	  sysfs_remove_group(&client->dev.kobj, &apollo_cpld4_group);
+        sysfs_remove_group(&client->dev.kobj, &apollo_cpld4_group);
         break;
     case cpld5:
         sysfs_remove_group(&client->dev.kobj, &apollo_cpld5_group);
@@ -1939,6 +2049,7 @@ static void apollo_cpld_remove(struct i2c_client *client)
     }
 
     apollo_cpld_remove_client(client);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
 #endif
@@ -1951,8 +2062,8 @@ static struct i2c_driver apollo_cpld_driver = {
     .driver = {
         .name = "x86_64_ufispace_s9700_53dx_cpld",
     },
-    .probe = apollo_cpld_probe,
-    .remove = apollo_cpld_remove,
+    .probe = cpld_probe,
+    .remove = cpld_remove,
     .id_table = apollo_cpld_id,
     .address_list = cpld_i2c_addr,
 };
@@ -2122,6 +2233,140 @@ int apollo_cpld_set_sfp_port_config_val(u8 reg_val)
 }
 //EXPORT_SYMBOL(apollo_cpld_set_sfp_port_config_val);
 
+/* provide write protect register read */
+static ssize_t read_write_protect(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    u8 reg;
+    int reg_val;
+
+    if (attr->index == CPLD_WRITE_PROTECT) {
+        reg = CPLD_WRITE_PROTECT_REG;
+        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
+        if (reg_val < 0)
+            return -1;
+
+        DEBUG_PRINT("[%s] [CPLD %d] attr->index=%d, reg=0x%02x, reg_val=0x%02x", __func__, data->index, attr->index, reg, reg_val);
+        return sprintf(buf, "0x%02x\n", reg_val);
+    }
+    return -1;
+}
+
+/* provide write protect register write */
+static ssize_t write_write_protect(struct device *dev,
+                    struct device_attribute *da,
+                    const char *buf,
+                    size_t count)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    u8 reg, reg_val;
+    int ret;
+
+    if (kstrtou8(buf, 0, &reg_val) < 0)
+        return -EINVAL;
+
+    if (attr->index == CPLD_WRITE_PROTECT) {
+        reg = CPLD_WRITE_PROTECT_REG;
+        I2C_WRITE_BYTE_DATA(ret, &data->access_lock,
+                    client, reg, reg_val);
+
+        DEBUG_PRINT("[%s] [CPLD %d] attr->index=%d, reg=0x%02x, reg_val=0x%02x", __func__, data->index, attr->index, reg, reg_val);
+    }
+    return count;
+}
+
+/* provide qsfp write protect event register read */
+static ssize_t read_qsfp_wp_evt(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    u8 reg;
+    u8 reg_base;
+    int reg_val;
+
+    if (attr->index >= CPLD_QSFP_WP_EVT_0_1 &&
+        attr->index <= CPLD_QSFP_WP_EVT_12) {
+
+        reg_base = CPLD_WP_EVT_BASE_REG;
+
+        reg = reg_base + (attr->index - CPLD_QSFP_WP_EVT_0_1);
+        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
+        if (reg_val < 0)
+            return -1;
+
+        DEBUG_PRINT("[%s] [CPLD %d] attr->index=%d, reg=0x%02x, reg_val=0x%02x", __func__, data->index, attr->index, reg, reg_val);
+        return sprintf(buf, "0x%02x\n", reg_val);
+    }
+    return -1;
+}
+
+/* provide qsfpdd write protect event register read */
+static ssize_t read_qsfpdd_wp_evt(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    u8 reg;
+    u8 reg_base;
+    int reg_val;
+
+    if (attr->index >= CPLD_QSFPDD_WP_EVT_0_1 &&
+        attr->index <= CPLD_QSFPDD_WP_EVT_8_9) {
+        if (data->index == cpld4) {
+            reg_base = CPLD4_QSFPDD_WP_EVT_BASE_REG;
+        } else {
+            reg_base = CPLD_WP_EVT_BASE_REG;
+        }
+        reg = reg_base + (attr->index - CPLD_QSFPDD_WP_EVT_0_1);
+
+        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
+        if (reg_val < 0)
+            return -1;
+
+        DEBUG_PRINT("[%s] [CPLD %d] attr->index=%d, reg=0x%02x, reg_val=0x%02x", __func__, data->index, attr->index, reg, reg_val);
+        return sprintf(buf, "0x%02x\n", reg_val);
+    }
+    return -1;
+}
+
+/* provide write protect probe register read */
+static ssize_t read_wp_probe(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    u8 reg;
+    u8 reg_base;
+    int reg_val;
+
+    if (attr->index >= CPLD_WP_PROBE_7E &&
+        attr->index <= CPLD_WP_PROBE_7F) {
+        reg_base = CPLD_WP_PROBE_7E_REG;
+
+        reg = reg_base + (attr->index - CPLD_WP_PROBE_7E);
+        I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
+        if (reg_val < 0)
+            return -1;
+
+        DEBUG_PRINT("[%s] [CPLD %d] attr->index=%d, reg=0x%02x, reg_val=0x%02x", __func__, data->index, attr->index, reg, reg_val);
+        return sprintf(buf, "0x%02x\n", reg_val);
+    }
+    return -1;
+}
+
 static int __init apollo_cpld_init(void)
 {
     mutex_init(&list_lock);
@@ -2139,4 +2384,3 @@ MODULE_LICENSE("GPL");
 
 module_init(apollo_cpld_init);
 module_exit(apollo_cpld_exit);
-

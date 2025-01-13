@@ -931,6 +931,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
             if (IS_SFP(port)) {
                 *rv = 1;
             }
+            break;
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             *rv = 1;

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="2.0.0"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -50,6 +50,8 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # Sysfs
 SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc"
@@ -101,18 +103,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _dd_read_byte {
@@ -1334,20 +1347,39 @@ function _show_beacon_led_sysfs {
     _banner "Show Beacon LED"
 
     if [[ $MODEL_NAME == *"NCP3"* ]]; then
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+            # Left LED
         for ((i=15;i>=9;i--))
         do
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_lled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_lled}"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_led}"
         done
 
         # Right LED
         for ((i=7;i>=1;i--))
         do
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_led}"
+            done
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            # Left LED
+            for ((i=1;i<=7;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
         done
+
+            # Right LED
+            for ((i=9;i<=15;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
+            done
+        fi
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -1355,7 +1387,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_beacon_led_sysfs
     fi
 }

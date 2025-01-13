@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -117,7 +116,7 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 25
                 port_name = data["QSFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init QSFPDD FAB EEPROM
         for bus in range(41, 55):
@@ -126,7 +125,7 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 25
                 port_name = data["QSFPDD"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
     def init_sfp_eeprom(self):
         port = 0
@@ -142,7 +141,7 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus + 7
                 port_name = data["SFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -170,11 +169,13 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def get_gpio_max(self):
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
-            self.bsp_pr("Use default GPIO MAX value 511\n".format(status, output, cmd), self.LEVEL_ERR);
+        cmd = ["cat", "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"]
+        output = ""
+        try:
+            output = subprocess.check_output(cmd)
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}, output={}, cmd={}\n".format(e, output, ' '.join(cmd)), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO MAX value 511\n")
             output="511"
 
         gpio_max = int(output, 10)
@@ -207,14 +208,26 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             return False
 
     def config_sfp_mux(self, val):
-        cmd = "echo {} > /sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl".format(val)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("enable_sfp_mux() failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+        self._write("/sys/bus/i2c/devices/1-0031/cpld_sfp_mux_ctrl", val)
+
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
 
     def baseconfig(self):
 
+        # init interrupt handler for IRQ 16
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
+
         # load default kernel driver
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -294,9 +307,9 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
             self.new_i2c_device("s9600_30dx_cpld" + str(i+1), addr, 1)
 
         # enable event ctrl
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
+        self._write("/sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", 1)
 
         # set sfp mux to I2C_LAN
         self.config_sfp_mux(self.SFP_MUX_I2C_LAN)

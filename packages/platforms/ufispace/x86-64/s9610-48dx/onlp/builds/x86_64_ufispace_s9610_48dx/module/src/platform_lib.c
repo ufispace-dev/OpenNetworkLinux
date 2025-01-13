@@ -274,8 +274,7 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
         if(new_time > last_time) {
             if((new_time - last_time) > cache_time) {
                 bmc_cache_expired = 1;
-            }
-            else {
+            } else {
                 bmc_cache_expired = 0;
             }
         } else if(new_time == last_time) {
@@ -381,8 +380,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             token = NULL;
 
             //parse line into fields
-            while ((token = strsep (&line_ptr, seps)) != NULL) {
-                sscanf (token, "%[^\n]", line_fields[i++]);
+            while ((token = strsep(&line_ptr, seps)) != NULL) {
+                snprintf(line_fields[i], sizeof(line_fields[i]), "%s", token);
+                line_fields[i][strcspn(line_fields[i], "\n")] = 0;
+                i++;
             }
 
             //save bmc_cache from fields
@@ -491,11 +492,11 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, IPMITOOL_CMD_TIMEOUT, fru->bmc_fru_id, fields, fru->cache_files);
             int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
-                int rv = 0;
-                if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
+                int ret = 0;
+                if ((ret=system(ipmi_cmd)) != ONLP_STATUS_OK) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
-                            __func__, retry, ipmi_cmd, rv);
+                            __func__, retry, ipmi_cmd, ret);
                         rv = ONLP_STATUS_E_INTERNAL;
                         goto done;
                     } else {
@@ -510,31 +511,39 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
         //read fru from cache file and save to bmc_fru_cache
         FILE *fp = NULL;
         fp = fopen (fru->cache_files, "r");
-        while(1) {
-            char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+        char line[BMC_FRU_LINE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_LINE_SIZE, fp) != NULL) {
+            char *line_ptr = line;
+            char *key = NULL;
+            char *val = NULL;
+
+            key = strsep(&line_ptr, ":");
+            if ((val = strsep(&line_ptr, ":")) != NULL) {
+                val[strcspn(val, "\n")] = 0;
+            }
+
+            if(strlen(key) == 0 || strlen(val) == 0) {
                 break;
             }
 
             if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
                 memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
-                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
                 memset(fru->name.val, '\0', sizeof(fru->name.val));
-                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
                 memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
-                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_SERIAL) == 0) {
                 memset(fru->serial.val, '\0', sizeof(fru->serial.val));
-                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%s", val);
             }
 
         }
@@ -544,22 +553,22 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
 
         //Check output is correct
         if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
-                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
     }
 

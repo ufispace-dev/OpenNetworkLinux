@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.2"
+TS_VERSION="2.0.0"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -51,6 +51,8 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # Sysfs
 SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9705_48d_lpc"
@@ -102,18 +104,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _check_env {
@@ -294,10 +307,15 @@ function _show_board_info {
 
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
+    
+    if [ "${MODEL_NAME}" == "NCP1-1" ] || [ "${MODEL_NAME}" == "NCP2-1" ]; then
+        _echo "[Board Type/Rev Reg Raw ]: ${board_info}"
+        _echo "[Board Type and Revision]: ${model_name} ${hw_rev} ${build_rev}"
+    elif [ "${model_name}" == "NCF" ]; then
     _echo "[Board Type/Rev Reg Raw  (BOT)]: ${board_info}"
     _echo "[Board Type and Revision (BOT)]: ${model_name} ${hw_rev} ${build_rev}"
 
-    if [ "${model_name}" == "NCF" ]; then
+    
         if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
             _echo "[Board Type/Rev Reg Raw  (TOP)]: (Bypass)"
             _echo "[Board Type and Revision (TOP)]: (Bypass)"
@@ -380,7 +398,6 @@ function _cpld_version_i2c {
 
     _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} "
     _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#01000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))"
-
 
     if [ "${MODEL_NAME}" == "NCF" ]; then
         # MB CPLD NCF
@@ -869,8 +886,8 @@ function _show_sys_devices {
     _banner "Show System Devices"
 
     _echo "[Command]: ls /sys/class/gpio/"
-    ret=($(ls /sys/class/gpio/))
-    _echo "#${ret[*]}"
+    ret=`ls -al /sys/class/gpio/`
+    _echo "${ret}"
 
     local file_path="/sys/kernel/debug/gpio"
     if [ -f "${file_path}" ]; then
@@ -881,13 +898,13 @@ function _show_sys_devices {
 
     _echo ""
     _echo "[Command]: ls /sys/bus/i2c/devices/"
-    ret=($(ls /sys/bus/i2c/devices/))
-    _echo "#${ret[*]}"
+    ret=`ls -al /sys/bus/i2c/devices/`
+    _echo "${ret}"
 
     _echo ""
-    _echo "[Command]: ls /dev/"
-    ret=($(ls /dev/))
-    _echo "#${ret[*]}"
+    _echo "[Command]: ls -al /dev/"
+    ret=`ls -al /dev/`
+    _echo "${ret}"
 }
 
 function _show_sys_eeprom_i2c {
@@ -1719,10 +1736,17 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0031" "0032" "0033")
 
         # CPLD to CPU Interrupt
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
         _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
         _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-8))/value"
         cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
         cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-8))/value ${LOG_REDIRECT}")
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+7))/value"
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+12))/value ${LOG_REDIRECT}")
+            cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+7))/value ${LOG_REDIRECT}")
+        fi
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD34 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo ""
@@ -1771,6 +1795,8 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0039" "003a" "003b" "003c")
 
         # CPLD to CPU Interrupt
+
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
         _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
         _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
         _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-5))/value"
@@ -1779,6 +1805,16 @@ function _show_cpld_interrupt_sysfs {
         cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
         cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-5))/value ${LOG_REDIRECT}")
         cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-6))/value ${LOG_REDIRECT}")
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+11))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+10))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+9))/value"
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+12))/value ${LOG_REDIRECT}")
+            cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+11))/value ${LOG_REDIRECT}")
+            cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+10))/value ${LOG_REDIRECT}")
+            cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+9))/value ${LOG_REDIRECT}")
+        fi
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD3  to CPU INT (L)]: ${cpld3_to_cpu_interrupt_l}"
         _echo "[CPLD4  to CPU INT (L)]: ${cpld4_to_cpu_interrupt_l}"
@@ -1834,8 +1870,18 @@ function _show_cpld_interrupt_sysfs {
         cpld_addr_array=("0030" "0031" "0032")
 
         # CPLD to CPU Interrupt
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
         cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
         cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+11))/value"
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+12))/value ${LOG_REDIRECT}")
+            cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+11))/value ${LOG_REDIRECT}")
+        fi
+
         _echo "[CPLD12 to CPU INT (L)]: ${cpld12_to_cpu_interrupt_l}"
         _echo "[CPLD3  to CPU INT (L)]: ${cpld3_to_cpu_interrupt_l}"
         _echo ""
@@ -1886,7 +1932,7 @@ function _show_cpld_interrupt_sysfs {
 }
 
 function _show_cpld_interrupt {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_cpld_interrupt_sysfs
     fi
 }
@@ -1928,6 +1974,8 @@ function _show_beacon_led_sysfs {
         beacon_led=$(eval "cat /sys/bus/i2c/devices/2-0033/cpld_beacon ${LOG_REDIRECT}")
         _echo "[Beacon LED]: ${beacon_led}"
     elif [ "${MODEL_NAME}" == "NCP1-1" ] || [ "${MODEL_NAME}" == "NCP2-1" ]; then
+        if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+            # Left LED
         for ((i=31;i>=25;i--))
         do
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
@@ -1942,6 +1990,23 @@ function _show_beacon_led_sysfs {
             beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
             _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
         done
+        elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
+            # Left LED
+            for ((i=16;i<=22;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
+            done
+
+            # Right LED
+            for ((i=24;i<=30;i++))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+i))/value"
+                beacon_led=$(eval "cat /sys/class/gpio/gpio$((GPIO_BASE+i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_BASE+i))]: ${beacon_led}"
+            done
+        fi
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -1949,7 +2014,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_beacon_led_sysfs
     fi
 }

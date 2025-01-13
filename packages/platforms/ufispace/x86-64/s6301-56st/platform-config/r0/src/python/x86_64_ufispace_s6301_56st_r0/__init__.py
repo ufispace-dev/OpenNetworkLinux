@@ -110,11 +110,31 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
 
         return gpio_max
 
+    def update_pci_device(self, driver, device, action):
+        driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
+
+        if os.path.exists(driver_path):
+            with open(driver_path, "w") as file:
+                file.write(device)
+
+
+    def init_i2c_bus_order(self):
+        device_actions = [
+            #driver_name   bus_address     action
+            ("i801_smbus", "0000:00:1f.4", "unbind"),
+            ("ismt_smbus", "0000:00:12.0", "unbind"),
+            ("i801_smbus", "0000:00:1f.4", "bind"),
+            ("ismt_smbus", "0000:00:12.0", "bind")
+        ]
+
+        # Iterate over the list and call modify_device for each tuple
+        for driver_name, bus_address, action in device_actions:
+            self.update_pci_device(driver_name, bus_address, action)
+
     def baseconfig(self):
 
         # load default kernel driver
-        os.system("rmmod i2c_ismt")
-        os.system("rmmod i2c_i801")
+        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")
@@ -344,7 +364,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         for bus in range(bus_start, bus_end):
             self.new_i2c_device('optoe2', 0x50, bus)
             # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            os.system("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus))
             port = port + 1
 
         # init PSU(0/1) EEPROM devices

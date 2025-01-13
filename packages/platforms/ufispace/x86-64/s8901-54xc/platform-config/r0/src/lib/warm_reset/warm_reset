@@ -1,0 +1,215 @@
+#!/bin/bash
+
+### bsp
+VER="0.0.1-bsp"
+
+function _ioget {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
+function _ioset {
+    local reg=$1
+    local val=$(printf "%02x" $(($2)))
+    printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
+}
+
+### warm_reset.sh
+
+if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
+    #echo "Please set UFI_RESET_TOOL_PATH"
+    #exit 1
+    export UFI_RESET_TOOL_PATH=$(pwd)
+fi
+
+silence=0
+
+help()
+{
+    echo ""
+    echo "== Utility for reset operation (Version ${VER}) =="
+    echo "Format: ${0} <target|help|version> [<silent>]"
+    echo "  target:"
+    echo "    mac  : Reset MAC"
+    echo "  version: Show script version"
+    echo "  silent(optional): Don't display reset result"
+    echo ""
+}
+
+show_ver()
+{
+    echo "== Utility for reset operation (Version ${VER}) =="
+}
+
+print_log()
+{
+    if [ ${silence} -ne 1 ]; then
+        printf "${1}"
+    fi
+}
+
+get_pcie_status()
+{
+    case "${1}" in
+    "mac")
+        echo "RP Status 00:0b.0:"
+        lspci -vvv -s 00:0b.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "MAC Status %s:00.0:\n" $(setpci -s 00:0b.0 0x19.b)
+        lspci -vvv -s $(setpci -s 00:0b.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        ;;
+    *)
+        echo "Invalid Parameters"
+        help
+        ;;
+    esac
+}
+
+remove_kmod()
+{
+    case "${1}" in
+    "mac")
+        kmod_cnt=`lsmod | grep bde | wc -l`
+        if [ ${kmod_cnt} -eq 2 ]; then
+            rmmod linux_user_bde
+            rmmod linux_kernel_bde
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+remove_dev()
+{
+    case "${1}" in
+    "mac")
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0b.0 0x19.b)\:00.0/remove
+        sleep 1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        help
+        ;;
+    esac
+}
+
+set_2nd_bus_reset()
+{
+    case "${1}" in
+    "mac")
+        if [ ${2} -eq 1 ]; then
+            #setpci -s 64:03.0 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s 00:0b.0 BRIDGE_CONTROL)
+            setpci -s 00:0b.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            sleep 1
+        else
+            #setpci -s 64:03.0 0x3e.b
+            #sleep 0.1
+            bc=$(setpci -s 00:0b.0 BRIDGE_CONTROL)
+            setpci -s 00:0b.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            sleep 1
+        fi
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+reset_mac()
+{
+    print_log "Reset MAC...\n"
+    print_log "==============================\n"
+
+    print_log "Before MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    remove_kmod mac
+
+    print_log "Remove MAC from PCIe bus......"
+    remove_dev mac
+    sleep 1
+    print_log "done\n"
+
+    # set secondary bus reset to 1 before MAC reset
+    set_2nd_bus_reset mac 1
+
+    # reset MAC
+    print_log "Reset Assertion......"
+    val=$(_ioget 0x740 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    _ioset 0x740 $(printf "0x%02x" $(("$val" & 0xFE)))
+    sleep 2
+    print_log "done\n"
+
+    # unreset MAC
+    print_log "Reset Deassertion......"
+    val=$(_ioget 0x740 | awk -F' ' '{print $NF}')
+    sleep 0.1
+    _ioset 0x740 $(printf "0x%02x" $(("$val" | 0x01)))
+    sleep 2
+    print_log "done\n"
+
+    # set secondary bus reset to 0 after MAC reset
+    set_2nd_bus_reset mac 0
+
+    print_log "Rescan PCIe bus......"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 1
+    print_log "done\n"
+
+    print_log "Check MAC status......"
+    mac_cnt=`lspci | grep "Broadcom" | wc -l`
+    if [ ${mac_cnt} -ne 1 ]; then
+        print_log "fail: After reset, 1 MACs should be exist!\n"
+        lspci | grep Broadcom
+        exit 2
+    else
+        print_log "done\n"
+    fi
+
+    print_log "After MAC Warm Reset ...\n"
+    get_pcie_status mac
+
+    print_log "==============================\n"
+    print_log "Reset MAC Done\n\n"
+}
+
+main()
+{
+    case ${2} in
+    1)
+        silence=1
+        ;;
+    *)
+        silence=0
+        ;;
+    esac
+
+    case ${1} in
+    "mac")
+        show_ver
+        reset_mac
+        ;;
+    "help")
+        help
+        ;;
+    "version")
+        show_ver
+        ;;
+    *)
+        print_log "\n"
+        print_log "Invalid parameters"
+        help
+        exit 1
+        ;;
+    esac
+}
+
+main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
+
+exit 0

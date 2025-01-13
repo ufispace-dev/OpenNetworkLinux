@@ -367,9 +367,29 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
             with open(path, "w") as f:
                 f.write("{}".format(en))
 
+    def update_pci_device(self, driver, device, action):
+        driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
+
+        if os.path.exists(driver_path):
+            with open(driver_path, "w") as file:
+                file.write(device)
+
+
+    def init_i2c_bus_order(self):
+        device_actions = [
+            #driver_name   bus_address     action
+            ("i801_smbus", "0000:00:1f.4", "unbind"),
+            ("ismt_smbus", "0000:00:0f.0", "unbind"),
+            ("i801_smbus", "0000:00:1f.4", "bind"),
+            ("ismt_smbus", "0000:00:0f.0", "bind")
+        ]
+
+        # Iterate over the list and call modify_device for each tuple
+        for driver_name, bus_address, action in device_actions:
+            self.update_pci_device(driver_name, bus_address, action)
+
     def baseconfig(self):
-        os.system("modprobe -r i2c_ismt")
-        os.system("modprobe -r i2c_i801")
+        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         self.insmod("i2c-ismt", False)
         os.system("modprobe i2c_ismt")

@@ -27,20 +27,23 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
-    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
 #define BSP_LOG_W(fmt, args...) \
-    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
+    _bsp_log (LOG_WRITE, KERN_INFO "%s:%s[%d]: " fmt "\n", \
             __FILE__, __func__, __LINE__, ##args)
-#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\r\n", ##args)
+#define BSP_PR(level, fmt, args...) _bsp_log (LOG_SYS, level "[BSP]" fmt "\n", ##args)
 
 #define DRIVER_NAME "x86_64_ufispace_s9705_48d_lpc"
 
 /* LPC Base Address */
+#define REG_BASE_BDE_CONFIG               0x500
 #define REG_BASE_CPU                      0x600
 #define REG_BASE_MB                       0x700
+#define REG_BASE_I2C_ALERT                0xF000
 
 /* CPU CPLD Register */
 #define REG_CPU_CPLD_VERSION              (REG_BASE_CPU + 0x00)
@@ -51,7 +54,17 @@
 #define REG_CPU_CTRL_2                    (REG_BASE_CPU + 0x0B)
 
 /* MB CPLD Register */
+#define REG_MB_BRD_ID                     (REG_BASE_MB + 0x00)
 #define REG_MB_CPLD1_VERSION              (REG_BASE_MB + 0x02)
+#define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x45)
+#define REG_MB_RESET_CTRL_2               (REG_BASE_MB + 0x4D)
+
+
+//I2C Alert
+#define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x00)
+#define REG_ALERT_DISABLE                 (REG_BASE_I2C_ALERT + 0x11)
+
+#define REG_ALERT_GPIO                    (REG_BASE_BDE_CONFIG + 0x01)
 
 /* MAC Temp Register */
 #define REG_TEMP_RAMON_PM0_T              (REG_BASE_MB + 0x60)
@@ -78,8 +91,17 @@ enum lpc_sysfs_attributes {
 	ATT_CPU_BIOS_BOOT_ROM,
     ATT_CPU_MUX_RESET,
     /* MB CPLD */
+    ATT_MB_BRD_ID,
     ATT_MB_CPLD1_VERSION,
     ATT_MB_CPLD1_VERSION_H,
+    ATT_MB_MUX_CTRL,
+    ATT_MB_RESET_CTRL_2,
+
+    //I2C Alert
+    ATT_ALERT_STATUS,
+    ATT_ALERT_DISABLE,
+    ATT_ALERT_GPIO,
+
     //BSP
     ATT_BSP_VERSION,
     ATT_BSP_DEBUG,
@@ -87,6 +109,7 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
     /* MAC TEMP */
     ATT_TEMP_RAMON_PM0_T,
     ATT_TEMP_RAMON_PM1_T,
@@ -257,9 +280,9 @@ static ssize_t write_lpc_reg(u16 reg, u8 mask, const char *buf, size_t count)
 /* get bsp value */
 static ssize_t read_bsp(char *buf, char *str)
 {
-	ssize_t len=0;
+    ssize_t len=0;
 
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     len=sprintf(buf, "%s", str);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -271,7 +294,7 @@ static ssize_t read_bsp(char *buf, char *str)
 /* set bsp value */
 static ssize_t write_bsp(const char *buf, char *str, size_t str_len, size_t count)
 {
-	mutex_lock(&lpc_data->access_lock);
+    mutex_lock(&lpc_data->access_lock);
     snprintf(str, str_len, "%s", buf);
     mutex_unlock(&lpc_data->access_lock);
 
@@ -288,7 +311,28 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t read_gpio_base(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d\n", -1);
+#else
+        return sprintf(buf, "%d\n", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -344,7 +388,7 @@ static ssize_t write_cpu_mux_reset(struct device *dev,
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val & 0b11111110);
             outb((reg_val | 0b00000001), REG_CPU_CTRL_2);
             mdelay(500);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val | 0b00000001);            
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_2, reg_val | 0b00000001);
             cpu_mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
         } else {
@@ -383,6 +427,16 @@ static ssize_t read_lpc_callback(struct device *dev,
     u8 mask = MASK_ALL;
 
     switch (attr->index) {
+        //MB CPLD
+        case ATT_MB_BRD_ID:
+            reg = REG_MB_BRD_ID;
+            break;
+        case ATT_MB_MUX_CTRL:
+            reg = REG_MB_MUX_CTRL;
+            break;
+        case ATT_MB_RESET_CTRL_2:
+            reg = REG_MB_RESET_CTRL_2;
+            break;
         //MAC Temp
         case ATT_TEMP_RAMON_PM0_T:
             reg = REG_TEMP_RAMON_PM0_T;
@@ -408,11 +462,21 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_TEMP_RAMON_PM3_B:
             reg = REG_TEMP_RAMON_PM3_B;
             break;
+        //I2C Alert
+        case ATT_ALERT_STATUS:
+            reg = REG_ALERT_STATUS;
+            break;
+        case ATT_ALERT_DISABLE:
+            reg = REG_ALERT_DISABLE;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
+            break;
         //BSP
         case ATT_BSP_REG:
             if (kstrtou16(bsp_reg, 0, &reg) < 0)
                 return -EINVAL;
-            break;            
+            break;
         default:
             return -EINVAL;
     }
@@ -428,6 +492,22 @@ static ssize_t write_lpc_callback(struct device *dev,
     u8 mask = MASK_ALL;
 
     switch (attr->index) {
+        //MB CPLD
+        case ATT_MB_MUX_CTRL:
+            reg = REG_MB_MUX_CTRL;
+            break;
+        case ATT_MB_RESET_CTRL_2:
+            reg = REG_MB_RESET_CTRL_2;
+            break;
+        case ATT_ALERT_STATUS:
+            reg = REG_ALERT_STATUS;
+            break;
+        case ATT_ALERT_DISABLE:
+            reg = REG_ALERT_DISABLE;
+            break;
+        case ATT_ALERT_GPIO:
+            reg = REG_ALERT_GPIO;
+            break;
         //MAC Temp
         case ATT_TEMP_RAMON_PM0_T:
             reg = REG_TEMP_RAMON_PM0_T;
@@ -553,16 +633,24 @@ static SENSOR_DEVICE_ATTR(boot_rom,         S_IRUGO, read_cpu_bios_boot_rom, NUL
 static SENSOR_DEVICE_ATTR(mux_reset,        S_IRUGO | S_IWUSR, read_cpu_mux_reset_callback, write_cpu_mux_reset, ATT_CPU_MUX_RESET);
 
 /* SENSOR_DEVICE_ATTR - MB */
+static SENSOR_DEVICE_ATTR(board_id, S_IRUGO, read_lpc_callback, write_lpc_callback, ATT_MB_BRD_ID);
 static SENSOR_DEVICE_ATTR(mb_cpld1_version, S_IRUGO, read_mb_cpld1_version, NULL, ATT_MB_CPLD1_VERSION);
 static SENSOR_DEVICE_ATTR(mb_cpld1_version_h, S_IRUGO, read_mb_cpld1_version_h, NULL, ATT_MB_CPLD1_VERSION_H);
+static SENSOR_DEVICE_ATTR(mux_ctrl, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_MB_MUX_CTRL);
+static SENSOR_DEVICE_ATTR(reset_ctrl_2, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_MB_RESET_CTRL_2);
 
+//SENSOR_DEVICE_ATTR - I2C Alert
+static SENSOR_DEVICE_ATTR(alert_status,  S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_ALERT_STATUS);
+static SENSOR_DEVICE_ATTR(alert_disable, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_ALERT_DISABLE);
+static SENSOR_DEVICE_ATTR(alert_gpio,    S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_ALERT_GPIO);
 //SENSOR_DEVICE_ATTR - BSP
 static SENSOR_DEVICE_ATTR(bsp_version, S_IRUGO | S_IWUSR,  read_bsp_callback, write_bsp_callback, ATT_BSP_VERSION);
 static SENSOR_DEVICE_ATTR(bsp_debug,   S_IRUGO | S_IWUSR,  read_bsp_callback, write_bsp_callback, ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR(bsp_pr_info, S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR(bsp_pr_err , S_IWUSR, NULL, write_bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,     S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
-static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max,  NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_base,   S_IRUGO, read_gpio_base, NULL, ATT_BSP_GPIO_BASE);
 
 /* SENSOR_DEVICE_ATTR - MAC Temp */
 static SENSOR_DEVICE_ATTR(temp_ramon_pm0_t, S_IRUGO | S_IWUSR, read_lpc_callback, write_lpc_callback, ATT_TEMP_RAMON_PM0_T);
@@ -577,7 +665,16 @@ static SENSOR_DEVICE_ATTR(temp_ramon_pm3_b, S_IRUGO | S_IWUSR, read_lpc_callback
 static struct attribute *cpu_cpld_attrs[] = {
     &sensor_dev_attr_cpu_cpld_version.dev_attr.attr,
     &sensor_dev_attr_cpu_cpld_version_h.dev_attr.attr,
+    &sensor_dev_attr_mux_ctrl.dev_attr.attr,
+    &sensor_dev_attr_reset_ctrl_2.dev_attr.attr,
     &sensor_dev_attr_mux_reset.dev_attr.attr,
+    NULL,
+};
+
+static struct attribute *mb_cpld_attrs[] = {
+    &sensor_dev_attr_board_id.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld1_version.dev_attr.attr,
+    &sensor_dev_attr_mb_cpld1_version_h.dev_attr.attr,
     NULL,
 };
 
@@ -586,9 +683,10 @@ static struct attribute *bios_attrs[] = {
     NULL,
 };
 
-static struct attribute *mb_cpld_attrs[] = {
-    &sensor_dev_attr_mb_cpld1_version.dev_attr.attr,
-    &sensor_dev_attr_mb_cpld1_version_h.dev_attr.attr,
+static struct attribute *i2c_alert_attrs[] = {
+    &sensor_dev_attr_alert_status.dev_attr.attr,
+    &sensor_dev_attr_alert_disable.dev_attr.attr,
+    &sensor_dev_attr_alert_gpio.dev_attr.attr,
     NULL,
 };
 
@@ -599,6 +697,7 @@ static struct attribute *bsp_attrs[] = {
     &sensor_dev_attr_bsp_pr_err.dev_attr.attr,
     &sensor_dev_attr_bsp_reg.dev_attr.attr,
     &sensor_dev_attr_bsp_gpio_max.dev_attr.attr,
+    &sensor_dev_attr_bsp_gpio_base.dev_attr.attr,
     NULL,
 };
 
@@ -615,8 +714,13 @@ static struct attribute *mac_temp_attrs[] = {
 };
 
 static struct attribute_group cpu_cpld_attr_grp = {
-	.name = "cpu_cpld",
+    .name = "cpu_cpld",
     .attrs = cpu_cpld_attrs,
+};
+
+static struct attribute_group mb_cpld_attr_grp = {
+	.name = "mb_cpld",
+    .attrs = mb_cpld_attrs,
 };
 
 static struct attribute_group bios_attr_grp = {
@@ -624,9 +728,9 @@ static struct attribute_group bios_attr_grp = {
     .attrs = bios_attrs,
 };
 
-static struct attribute_group mb_cpld_attr_grp = {
-	.name = "mb_cpld",
-    .attrs = mb_cpld_attrs,
+static struct attribute_group i2c_alert_attr_grp = {
+    .name = "i2c_alert",
+    .attrs = i2c_alert_attrs,
 };
 
 static struct attribute_group bsp_attr_grp = {
@@ -648,13 +752,15 @@ static struct platform_device lpc_dev = {
     .name           = DRIVER_NAME,
     .id             = -1,
     .dev = {
-           .release = lpc_dev_release,
+        .release = lpc_dev_release,
     }
 };
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int ret = 0;
+    int i = 0, grp_num = 6;
+    int err[6] = {0};
+    struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s), GFP_KERNEL);
     if (!lpc_data)
@@ -662,54 +768,84 @@ static int lpc_drv_probe(struct platform_device *pdev)
 
     mutex_init(&lpc_data->access_lock);
 
-    ret = sysfs_create_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-    if (ret) {
-        printk(KERN_ERR "Cannot create sysfs for group %s\n", cpu_cpld_attr_grp.name);
-        return ret;
+    for (i=0; i<grp_num; ++i) {
+        switch (i) {
+            case 0:
+                grp = &cpu_cpld_attr_grp;
+                break;
+            case 1:
+                grp = &mb_cpld_attr_grp;
+                break;
+            case 2:
+                grp = &bios_attr_grp;
+                break;
+            case 3:
+                grp = &i2c_alert_attr_grp;
+                break;
+            case 4:
+                grp = &bsp_attr_grp;
+                break;
+            case 5:
+                grp = &mac_temp_attr_grp;
+                break;
+            default:
+                break;
+        }
+
+        err[i] = sysfs_create_group(&pdev->dev.kobj, grp);
+        if (err[i]) {
+            printk(KERN_ERR "Cannot create sysfs for group %s\n", grp->name);
+            goto exit;
+        } else {
+            continue;
+        }
     }
 
-    ret = sysfs_create_group(&pdev->dev.kobj, &bios_attr_grp);
-    if (ret) {
-        printk(KERN_ERR "Cannot create sysfs for group %s\n", bios_attr_grp.name);
-        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-        return ret;
-    }
+    return 0;
 
-    ret = sysfs_create_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
-    if (ret) {
-        printk(KERN_ERR "Cannot create sysfs for group %s\n", mb_cpld_attr_grp.name);
-        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
-        return ret;
-    }
+exit:
+    for (i=0; i<grp_num; ++i) {
+        switch (i) {
+            case 0:
+                grp = &cpu_cpld_attr_grp;
+                break;
+            case 1:
+                grp = &mb_cpld_attr_grp;
+                break;
+            case 2:
+                grp = &bios_attr_grp;
+                break;
+            case 3:
+                grp = &i2c_alert_attr_grp;
+                break;
+            case 4:
+                grp = &bsp_attr_grp;
+                break;
+            case 5:
+                grp = &mac_temp_attr_grp;
+                break;
+            default:
+                break;
+        }
 
-    ret = sysfs_create_group(&pdev->dev.kobj, &bsp_attr_grp);
-    if (ret) {
-        printk(KERN_ERR "Cannot create sysfs for group %s\n", bsp_attr_grp.name);
-        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
-        return ret;
+        sysfs_remove_group(&pdev->dev.kobj, grp);
+        if (!err[i]) {
+            //remove previous successful cases
+            continue;
+        } else {
+            //remove first failed case, then return
+            return err[i];
+        }
     }
-
-    ret = sysfs_create_group(&pdev->dev.kobj, &mac_temp_attr_grp);
-    if (ret) {
-        printk(KERN_ERR "Cannot create sysfs for group %s\n", mac_temp_attr_grp.name);
-        sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
-        sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
-        return ret;
-    }
-
-    return ret;
+    return 0;
 }
 
 static int lpc_drv_remove(struct platform_device *pdev)
 {
     sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
-    sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mac_temp_attr_grp);
 
@@ -724,7 +860,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int ret = 0;
 
@@ -744,7 +880,7 @@ int lpc_init(void)
     return ret;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);
