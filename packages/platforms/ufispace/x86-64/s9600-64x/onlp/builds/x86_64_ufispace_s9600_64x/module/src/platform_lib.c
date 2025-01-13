@@ -970,6 +970,30 @@ int bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", id);
         return rc;
     }
+    if (id >= THERMAL_ID_PSU0 && id <= THERMAL_ID_PSU1) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (id) {
+            case THERMAL_ID_PSU0:
+                psu_id = ONLP_PSU_0;
+                break;
+            case THERMAL_ID_PSU1:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(psu_present_get(&pw_present, psu_id));
+
+        //update psu fan presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_THERMAL_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_THERMAL_STATUS_PRESENT;
+            return ONLP_STATUS_OK;
+        }
+    }
     info->mcelsius = (int) (data*1000);
 
     return rc;

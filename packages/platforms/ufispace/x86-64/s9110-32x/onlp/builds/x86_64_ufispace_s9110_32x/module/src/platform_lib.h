@@ -57,6 +57,8 @@
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
 #define SYSFS_CPLD1                 SYSFS_DEVICES "2-0030/"
 #define SYSFS_CPLD2                 SYSFS_DEVICES "2-0031/"
+#define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"LPC_BSP_FMT"bsp_pr_info"
 
 /* Thermal threshold */
 #define THERMAL_WARNING_DEFAULT          77
@@ -233,6 +235,27 @@ enum bmc_attr_id {
     BMC_ATTR_ID_INVALID,
 };
 
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_I210,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
+
 /* oem_id */
 enum bmc_oem_id {
     BMC_OEM_IDX_FAN_0_F_DIR,
@@ -392,6 +415,12 @@ typedef struct temp_thld_s
     int shutdown;
 }temp_thld_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int exec_cmd(char *cmd, char* out, int size);
 
 int read_file_hex(int* value, const char* fmt, ...);
@@ -423,4 +452,5 @@ int get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int get_board_version(board_t *board);
 int get_thermal_thld(int thermal_local_id, temp_thld_t *temp_thld);
 int get_gpio_max(int *gpio_max);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

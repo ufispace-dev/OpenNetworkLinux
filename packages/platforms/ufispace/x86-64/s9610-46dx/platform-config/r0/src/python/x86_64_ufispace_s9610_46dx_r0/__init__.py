@@ -207,13 +207,15 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             # get dev_class
             port = bus - 25
             dev_class_sysfs_path = "/sys/bus/i2c/devices/{}-0050/dev_class".format(bus)
-            dev_class_str = subprocess.check_output("cat {}".format(dev_class_sysfs_path), shell=True)
+            cmd = ["cat", dev_class_sysfs_path]
+            dev_class_str = subprocess.check_output(cmd)
             dev_class = int(dev_class_str, 10)
             # get module type
             if self.ufi_port_present_get(port) == 1:
-                type_str = subprocess.check_output(
-                    "dd if=/sys/bus/i2c/devices/{}-0050/eeprom bs=1 count=1 skip=0 status=none | hexdump -n 1 -e '1/1 \"%02x\"'"
-                    .format(bus), shell=True)
+                cmd = ["dd", "if=/sys/bus/i2c/devices/{}-0050/eeprom".format(bus), "bs=1", "count=1", "skip=0", "status=none"]
+                output = subprocess.check_output(cmd)
+                hex_str = unpack('B', output)[0]
+                type_str = "{:02x}".format(hex_str)
                 if type_str == "": #i2c maybe stuck
                     self.check_i2c_status()
                     continue
@@ -243,7 +245,7 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 25
                 port_name = data["QSFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init QSFPDD NIF EEPROM
         for bus in range(65, 71):
@@ -252,7 +254,7 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 25
                 port_name = data["QSFPDD"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init SFPDD NIF EEPROM
         for bus in range(73, 77):
@@ -261,7 +263,7 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 27
                 port_name = data["SFPDD"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init SFP+ EEPROM
         for bus in range(77, 81):
@@ -270,7 +272,7 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 27
                 port_name = data["SFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -297,9 +299,42 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
+
+    def update_pci_device(self, driver, device, action):
+        driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
+
+        if os.path.exists(driver_path):
+            try:
+                with open(driver_path, "w") as file:
+                    file.write(device)
+            except Exception as e:
+                print("Open file failed, error: {}".format(e))
+
+    def init_i2c_bus_order(self):
+        device_actions = [
+            #driver_name   bus_address     action
+            ("i801_smbus", "0000:00:1f.4", "unbind"),
+            ("ismt_smbus", "0000:00:0f.0", "unbind"),
+            ("i801_smbus", "0000:00:1f.4", "bind")
+        ]
+
+        # Iterate over the list and call modify_device for each tuple
+        for driver_name, bus_address, action in device_actions:
+            self.update_pci_device(driver_name, bus_address, action)
+
     def baseconfig(self):
 
         # load default kernel driver
+        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -385,7 +420,8 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
         rov_reg_array=( 0x77, 0x6f, 0x5b, 0x5f, 0x63, 0x67, 0x6b, 0x73 )
 
         #get rov from cpld
-        reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr), shell=True)
+        cmd = ["cat", "/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr)]
+        reg_val_str = subprocess.check_output(cmd)
         reg_val = int(reg_val_str, 16)
         msg("/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov={}".format(cpld_bus, cpld_addr, reg_val_str))
 
@@ -398,10 +434,10 @@ class OnlPlatform_x86_64_ufispace_s9610_46dx_r0(OnlPlatformUfiSpace):
             os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
 
         # enable event ctrl
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0033/cpld_evt_ctrl", shell=True)
+        self._write("/sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0033/cpld_evt_ctrl", 1)
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

@@ -61,7 +61,7 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="28x25 + 2x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.1.0'
+    BSP_VERSION='1.1.1'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_LPC="/sys/devices/platform/x86_64_ufispace_s9510_30xc_lpc"
@@ -255,11 +255,33 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
     def disable_bmc_watchdog(self):
         os.system("ipmitool mc watchdog off")
 
+    def update_pci_device(self, driver, device, action):
+        driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
+
+        if os.path.exists(driver_path):
+            try:
+                with open(driver_path, "w") as file:
+                    file.write(device)
+            except Exception as e:
+                print("Open file failed, error: {}".format(e))
+
+    def init_i2c_bus_order(self):
+        device_actions = [
+            #driver_name   bus_address     action
+            ("i801_smbus", "0000:00:1f.4", "unbind"),
+            ("ismt_smbus", "0000:00:12.0", "unbind"),
+            ("i801_smbus", "0000:00:1f.4", "bind"),
+            ("ismt_smbus", "0000:00:12.0", "bind"),
+        ]
+
+        # Iterate over the list and call modify_device for each tuple
+        for driver_name, bus_address, action in device_actions:
+            self.update_pci_device(driver_name, bus_address, action)
+
     def baseconfig(self):
 
         # load default kernel driver
-        os.system("rmmod i2c_ismt")
-        os.system("rmmod i2c_i801")
+        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")

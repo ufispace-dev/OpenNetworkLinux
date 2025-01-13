@@ -146,8 +146,8 @@ class OnlPlatform_x86_64_ufispace_s9301_32db_r0(OnlPlatformUfiSpace):
         # init interrupt handler for IRQ 16
         self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
 
-        os.system("modprobe -r i2c_ismt 2>/dev/null")
-        os.system("modprobe -r i2c_i801 2>/dev/null")
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
         # load default kernel driver
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")

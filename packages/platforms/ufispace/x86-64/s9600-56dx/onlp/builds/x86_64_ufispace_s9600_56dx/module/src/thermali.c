@@ -25,6 +25,8 @@
 #include <onlp/platformi/thermali.h>
 #include "platform_lib.h"
 
+extern int ufi_psu_present_get(int id, int *psu_present);
+
 #define THERMAL_SHUTDOWN_DEFAULT  105000
 #define THERMAL_ERROR_DEFAULT         95000
 #define THERMAL_WARNING_DEFAULT     77000
@@ -147,6 +149,32 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t* info, int id)
 
     if(bmc_attr_id == BMC_ATTR_ID_MAX) {
         return ONLP_STATUS_E_PARAM;
+    }
+
+    //check presence for PSU 0-1 TEMP1
+    if (id >= ONLP_THERMAL_PSU_0 && id <= ONLP_THERMAL_PSU_1) {
+        //check presence for psu
+        int pw_present, psu_id;
+
+        switch (id) {
+            case ONLP_THERMAL_PSU_0:
+                psu_id = ONLP_PSU_0;
+                break;
+            case ONLP_THERMAL_PSU_1:
+                psu_id = ONLP_PSU_1;
+                break;
+            default:
+                return ONLP_STATUS_E_INVALID;
+        }
+        ONLP_TRY(ufi_psu_present_get(psu_id, &pw_present));
+
+        //update psu fan presence by psu presence status
+        if(pw_present == 1) {
+            info->status |= ONLP_THERMAL_STATUS_PRESENT;
+        } else {
+            info->status &= ~ONLP_THERMAL_STATUS_PRESENT;
+            return ONLP_STATUS_OK;
+        }
     }
 
     ONLP_TRY(bmc_sensor_read(bmc_attr_id, THERMAL_SENSOR, &data));

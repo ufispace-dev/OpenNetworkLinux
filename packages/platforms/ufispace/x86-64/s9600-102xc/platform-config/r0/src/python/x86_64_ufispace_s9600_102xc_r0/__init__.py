@@ -61,7 +61,7 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="96x25 + 6x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.1.0'
+    BSP_VERSION='1.1.1'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_1"
@@ -378,7 +378,12 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # init interrupt handler for IRQ 16
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
+
         # load default kernel driver
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")

@@ -182,11 +182,10 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     ONLP_TRY(ufi_get_board_version(&board));
 
     //Get BIOS version
-    char tmp_str[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
-    ONLP_TRY(onlp_file_read((uint8_t*)&tmp_str, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_BIOS_VER));
+    ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_BIOS_VER));
 
     // Remove '\n'
-    sscanf (tmp_str, "%[^\n]", bios_out);
+    bios_out[strcspn(bios_out, "\n")] = 0;
 
     // Detect bmc status
     if(bmc_check_alive() != ONLP_STATUS_OK) {

@@ -4,7 +4,7 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.2-bsp"
+VER="0.0.3-bsp"
 silence=0
 MAC_RP="15:05.0"
 OP2_0_RP="15:04.0"
@@ -115,13 +115,13 @@ set_2nd_bus_reset()
             #sleep 0.1
             bc=$(setpci -s ${MAC_RP} BRIDGE_CONTROL)
             setpci -s ${MAC_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-            sleep 0.1
+            sleep 1
         else
             #setpci -s ${MAC_RP} 0x3e.b
             #sleep 0.1
             bc=$(setpci -s ${MAC_RP} BRIDGE_CONTROL)
             setpci -s ${MAC_RP} BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-            sleep 0.1
+            sleep 1
         fi
         ;;
     "op2")

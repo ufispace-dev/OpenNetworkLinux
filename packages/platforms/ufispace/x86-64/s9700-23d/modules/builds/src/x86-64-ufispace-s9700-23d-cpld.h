@@ -63,16 +63,16 @@ enum LED_GREEN {
 
 
 /* CPLD registers */
-#define CPLD_BOARD_TYPE_REG               0x00
-#define CPLD_EXT_BOARD_TYPE_REG           0x01
-#define CPLD_VERSION_REG                  0x02
-#define CPLD_ID_REG                       0x03
+#define CPLD_BOARD_TYPE_REG                   0x00
+#define CPLD_EXT_BOARD_TYPE_REG               0x01
+#define CPLD_VERSION_REG                      0x02
+#define CPLD_ID_REG                           0x03
 #define CPLD_QSFPDD_NIF_PORT_STATUS_BASE_REG  0x20
 #define CPLD_QSFPDD_NIF_PORT_CONFIG_BASE_REG  0x30
 #define CPLD2_QSFPDD_FAB_PORT_STATUS_BASE_REG 0x2A
 #define CPLD2_QSFPDD_FAB_PORT_CONFIG_BASE_REG 0x3A
-#define CPLD3_QSFPDD_FAB_PORT_STATUS_BASE_REG  0x20
-#define CPLD3_QSFPDD_FAB_PORT_CONFIG_BASE_REG  0x30
+#define CPLD3_QSFPDD_FAB_PORT_STATUS_BASE_REG 0x20
+#define CPLD3_QSFPDD_FAB_PORT_CONFIG_BASE_REG 0x30
 #define CPLD_INTERRUPT_REG                    0x40
 #define CPLD_QSFPDD_FAB_LED_BASE_REG          0x80
 #define CPLD_QSFP_PORT_STATUS_BASE_REG    0x20
@@ -93,6 +93,12 @@ enum LED_GREEN {
 #define CPLD_QSFP_LED_BASE_REG            0x80
 #define CPLD_QSFP_LED_BLINK_BASE_REG      0x90
 #define CPLD_PSU_STATUS_BASE_REG          0x44
+
+#define CPLD_WRITE_PROTECT_REG            0x71
+#define CPLD_QSFPDD_WP_EVT_BASE_REG       0x78
+#define CPLD2_QSFPDD_WP_EVT_BASE_REG      0x7D
+#define CPLD_WP_PROBE_7E_REG              0x7E
+#define CPLD_WP_PROBE_7F_REG              0x7F
 
 #if 0
 /* bit definition for register value */
@@ -159,7 +165,7 @@ enum CPLD_QSFP_LED_BITS {
     CPLD_QSFP_LED_CHAN_2_YELLOW_BIT,
     CPLD_QSFP_LED_CHAN_3_GREEN_BIT,
     CPLD_QSFP_LED_CHAN_3_YELLOW_BIT,
-    
+
 };
 enum CPLD_QSFP_LED_BLINK_BITS {
     CPLD_QSFP_LED_BLINK_X_CHAN0_BIT,
@@ -350,4 +356,3 @@ extern int apollo_cpld_get_sfp_port_config_val(void);
 extern int apollo_cpld_set_sfp_port_config_val(u8 reg_val);
 extern u8 fp_port_to_phy_port(u8 fp_port);
 #endif
-
