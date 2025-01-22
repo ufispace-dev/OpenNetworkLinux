@@ -24,8 +24,8 @@ Multistrap:
     noauth: true
     explicitsuite: false
     unpack: true
-    debootstrap: Debian-Local Local-All Local-Arch ONL-Local
-    aptsources: Debian ONL
+    debootstrap: Debian-Local Local-All Local-Arch
+    aptsources: Debian
 
   Debian:
     packages: *Packages
