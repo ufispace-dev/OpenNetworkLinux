@@ -24,8 +24,8 @@ Multistrap:
     noauth: true
     explicitsuite: false
     unpack: true
-    debootstrap: Debian-Local Local-All Local-Arch ONL-Local Docker
-    aptsources: Debian ONL
+    debootstrap: Debian-Local Local-All Local-Arch Docker
+    aptsources: Debian
 
   Debian:
     packages: *Packages
@@ -63,7 +63,7 @@ Multistrap:
 
   Docker:
     packages: *Packages
-    source: http://${APT_CACHE}apt.opennetlinux.org/debian
+    # source: http://${APT_CACHE}apt.opennetlinux.org/debian
     source: https://download.docker.com/linux/debian/
     suite: stretch
     omitdebsrc: true
