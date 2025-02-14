@@ -61,6 +61,8 @@
 #define SYSFS_CPLD2                 SYSFS_DEVICES "1-0031/"
 #define SYSFS_CPLD3                 SYSFS_DEVICES "1-0032/"
 #define SYSFS_FPGA                  SYSFS_DEVICES "1-0037/"
+#define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"LPC_BSP_FMT"bsp_pr_info"
 
 #define PSU_STATUS_ABS              0
 #define PSU_STATUS_PRES             1
@@ -205,6 +207,27 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU1_POUT,
     BMC_ATTR_ID_LAST = BMC_ATTR_ID_PSU1_POUT,
     BMC_ATTR_ID_INVALID
+};
+
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_I210,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
 };
 
 /* oem_id */
@@ -440,6 +463,12 @@ typedef struct fpga_ctrl_s
     fpga_ctrl_3_t fpga_ctrl_3;
 } fpga_ctrl_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int read_ioport(int addr, int *reg_val);
 
 int exec_cmd(char *cmd, char* out, int size);
@@ -469,4 +498,5 @@ int get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int get_board_version(board_t *board);
 int get_gpio_max(int *gpio_max);
 int trim_whitespace(char *str);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

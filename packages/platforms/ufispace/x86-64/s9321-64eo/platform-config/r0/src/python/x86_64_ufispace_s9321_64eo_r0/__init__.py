@@ -463,6 +463,10 @@ class OnlPlatform_x86_64_ufispace_s9321_64eo_r0(OnlPlatformUfiSpace):
         # Management port for Beta is the MAC, and the MDIO is bound to the CPU
         #                 for Pvt is the MAC, and the MDIO is bound to the it
         if board['hw_rev'] <= 2:
+            self.bsp_pr("Init ice")
+            self.insmod("intel_auxiliary", False)
+            self.insmod("ice")
+
             # init bcm82399
             self.bsp_pr("Init bcm82399")
             os.system("timeout 120s {} init -s 25G".format(self.PATH_EPDM_CLI))
