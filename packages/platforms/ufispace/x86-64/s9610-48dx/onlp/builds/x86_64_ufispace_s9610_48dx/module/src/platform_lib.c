@@ -33,6 +33,21 @@
 const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32, 0x33};
 const int CPLD_I2C_BUS[] = {1, 1, 1, 1};
 
+/*                                   ALL UNIT1*/
+static const char *mac_unit_str[] = {"", ""};
+//static const char *phy_unit_str[] = {"", ""};
+//static const char *mux_unit_str[] = {"", ""};
+//static const char *op2_unit_str[] = {"", ""};
+static const warm_reset_data_t warm_reset_data[] = {
+//                     unit_max | dev | unit
+    [WARM_RESET_ALL] = {-1,      "all", NULL},
+    [WARM_RESET_MAC] = {MAC_MAX, "mac", mac_unit_str},
+    [WARM_RESET_PHY] = {-1,      "phy", NULL},
+    [WARM_RESET_MUX] = {-1,      "mux", NULL},
+    [WARM_RESET_OP2] = {-1,      "op2", NULL},
+    [WARM_RESET_GB]  = {-1,      NULL, NULL}, //not support
+};
+
 bmc_info_t bmc_cache[] =
 {
     [BMC_ATTR_ID_TEMP_ENV_CPU] = {"TEMP_ENV_CPU", 0},
@@ -285,8 +300,7 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
         if(new_time > last_time) {
             if((new_time - last_time) > cache_time) {
                 bmc_cache_expired = 1;
-            }
-            else {
+            } else {
                 bmc_cache_expired = 0;
             }
         } else if(new_time == last_time) {
@@ -392,8 +406,10 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             token = NULL;
 
             //parse line into fields
-            while ((token = strsep (&line_ptr, seps)) != NULL) {
-                sscanf (token, "%[^\n]", line_fields[i++]);
+            while ((token = strsep(&line_ptr, seps)) != NULL) {
+                snprintf(line_fields[i], sizeof(line_fields[i]), "%s", token);
+                line_fields[i][strcspn(line_fields[i], "\n")] = 0;
+                i++;
             }
 
             //save bmc_cache from fields
@@ -502,11 +518,11 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_FRU_CACHE_SET, IPMITOOL_CMD_TIMEOUT, fru->bmc_fru_id, fields, fru->cache_files);
             int retry = 0, retry_max = 2;
             for (retry = 0; retry < retry_max; ++retry) {
-                int rv = 0;
-                if ((rv=system(ipmi_cmd)) != ONLP_STATUS_OK) {
+                int ret = 0;
+                if ((ret=system(ipmi_cmd)) != ONLP_STATUS_OK) {
                     if (retry == retry_max-1) {
                         AIM_LOG_ERROR("%s() write bmc fru cache failed, retry=%d, cmd=%s, ret=%d",
-                            __func__, retry, ipmi_cmd, rv);
+                            __func__, retry, ipmi_cmd, ret);
                         rv = ONLP_STATUS_E_INTERNAL;
                         goto done;
                     } else {
@@ -521,31 +537,39 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
         //read fru from cache file and save to bmc_fru_cache
         FILE *fp = NULL;
         fp = fopen (fru->cache_files, "r");
-        while(1) {
-            char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if(fscanf(fp ,"%[^:]:%s\n", key, val) != 2) {
+        char line[BMC_FRU_LINE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_LINE_SIZE, fp) != NULL) {
+            char *line_ptr = line;
+            char *key = NULL;
+            char *val = NULL;
+
+            key = strsep(&line_ptr, ":");
+            if ((val = strsep(&line_ptr, ":")) != NULL) {
+                val[strcspn(val, "\n")] = 0;
+            }
+
+            if(strlen(key) == 0 || strlen(val) == 0) {
                 break;
             }
 
             if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
                 memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
-                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
                 memset(fru->name.val, '\0', sizeof(fru->name.val));
-                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
                 memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
-                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_SERIAL) == 0) {
                 memset(fru->serial.val, '\0', sizeof(fru->serial.val));
-                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%s", val);
             }
 
         }
@@ -555,22 +579,22 @@ int bmc_fru_read(int local_id, bmc_fru_t *data, int type)
 
         //Check output is correct
         if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
-                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%s", COMM_STR_NOT_AVAILABLE);
         }
     }
 
@@ -688,4 +712,197 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     else
         reg_val = reg_val | (1 << bit);
     return reg_val;
+}
+
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *sku_id, int *build_id)
+{
+    if (rev_id == NULL || sku_id == NULL || build_id == NULL) {
+        AIM_LOG_ERROR("rev_sku, rev_hw or rev_build is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(rev_id, LPC_CPU_FMT"cpu_rev_sku"));
+    ONLP_TRY(file_read_hex(sku_id, LPC_CPU_FMT"cpu_rev_hw"));
+    ONLP_TRY(file_read_hex(build_id, LPC_CPU_FMT"cpu_rev_build"));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief read mac hbm power status
+ * @param[out] pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_read_hbm_pwr_ctrl(int *pwr_ctrl)
+{
+    int pwr_func = 0;
+
+    if (pwr_ctrl == NULL) {
+        AIM_LOG_ERROR("pwr_ctrl is NULL pointer");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(&pwr_func, SYSFS_HBM_PWR_FUNC));
+    if (pwr_func == 0) {
+        AIM_LOG_ERROR("HBM PWR FUNCTION is not supported.");
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    ONLP_TRY(file_read_hex(pwr_ctrl, SYSFS_HBM_PWR_CTRL));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief write mac hbm power status
+ * @param pwr_ctrl The value of power status (0: power off, 1: power on)
+ */
+int ufi_write_hbm_pwr_ctrl(int pwr_ctrl)
+{
+    int pwr_func = 0;
+
+    if (pwr_ctrl < 0 || pwr_ctrl > 1) {
+        AIM_LOG_ERROR("Invalid pwr_ctrl value %d, it should be 0 or 1.", pwr_ctrl);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    ONLP_TRY(file_read_hex(&pwr_func, SYSFS_HBM_PWR_FUNC));
+    if (pwr_func == 0) {
+        AIM_LOG_ERROR("HBM PWR FUNCTION is not supported.");
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    ONLP_TRY(onlp_file_write_int(pwr_ctrl, SYSFS_HBM_PWR_CTRL));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief warm reset for mac, phy, mux and op2
+ * @param unit_id The warm reset device unit id
+ * @param reset_dev The warm reset device id
+ * @param ret return value.
+ */
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
+{
+    char cmd_buf[256] = {0};
+    char dev_unit_buf[32] = {0};
+    const warm_reset_data_t *data = NULL;
+    int ret = 0;
+
+    if (reset_dev >= WARM_RESET_MAX) {
+        AIM_LOG_ERROR("%s() dev_id(%d) out of range.", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(access(WARM_RESET_PATH, F_OK) == -1) {
+        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, WARM_RESET_PATH);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (warm_reset_data[reset_dev].warm_reset_dev_str == NULL) {
+        AIM_LOG_ERROR("%s() reset_dev not support, reset_dev=%d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    data = &warm_reset_data[reset_dev];
+
+    if (data != NULL && data->warm_reset_dev_str != NULL) {
+        snprintf(dev_unit_buf, sizeof(dev_unit_buf), "%s", data->warm_reset_dev_str);
+        if (data->unit_str != NULL && unit_id < data->unit_max) {  // assuming unit_max is defined
+            snprintf(dev_unit_buf + strlen(dev_unit_buf), sizeof(dev_unit_buf) - strlen(dev_unit_buf),
+                     " %s", data->unit_str[unit_id]);
+        }
+        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, dev_unit_buf);
+        AIM_LOG_INFO("%s() info, warm reset cmd=%s", __func__, cmd_buf); //TODO
+        ret = system(cmd_buf);
+    } else {
+        AIM_LOG_ERROR("%s() error, invalid reset_dev %d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (ret != 0) {
+        AIM_LOG_ERROR("%s() error, please check dmesg error output.", __func__);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+
+    return ret;
+}
+
+/**
+ * @brief read cpld register
+ * @param cpld_id The CPLD id (CPLD_1 - CPLD_3)
+ * @param reg The CPLD register to read (0x00-0xff)
+ * @param[out] reg_val The value of register (0x00-0xff)
+ */
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val)
+{
+    char cmd[1024] = {0};
+    char cmd_output[8] = {0};
+
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d - %d.", CPLD_1, CPLD_3);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0xff) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val == NULL) {
+        AIM_LOG_ERROR("reg_val is null");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //init cmd
+    snprintf(cmd, sizeof(cmd), CMD_I2C_GET, CPLD_I2C_BUS[cpld_id], CPLD_BASE_ADDR[cpld_id], reg);
+
+    //read cpld reg
+    if (exec_cmd(cmd, cmd_output, sizeof(cmd_output)) < 0) {
+            AIM_LOG_ERROR("read cpld reg failed, cmd=%s\n", cmd);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    *reg_val = (uint8_t) strtol(cmd_output, NULL, 16);
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief write cpld register
+ * @param cpld_id The CPLD id (CPLD_1 - CPLD_3)
+ * @param reg The CPLD register to write (0x00-0xff)
+ * @param reg_val The value to write (0x00-0xff)
+ */
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val)
+{
+    char cmd[1024] = {0};
+    char cmd_output[8] = {0};
+
+    if (cpld_id < CPLD_1 || cpld_id >= CPLD_MAX) {
+        AIM_LOG_ERROR("Invalid cpld_id, it should be %d - %d.", CPLD_1, CPLD_3);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (reg < 0x0 || reg > 0xff) {
+        AIM_LOG_ERROR("Invalid reg addr, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(reg_val < 0x0 || reg_val > 0xff) {
+        AIM_LOG_ERROR("Invalid reg value, it should be 0x0 - 0xFF.");
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    //init cmd
+    snprintf(cmd, sizeof(cmd), CMD_I2C_SET, CPLD_I2C_BUS[cpld_id], CPLD_BASE_ADDR[cpld_id], reg, reg_val);
+
+    //write cpld reg
+    if (exec_cmd(cmd, cmd_output, sizeof(cmd_output)) < 0) {
+            AIM_LOG_ERROR("write cpld reg failed, cmd=%s\n", cmd);
+            return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
 }

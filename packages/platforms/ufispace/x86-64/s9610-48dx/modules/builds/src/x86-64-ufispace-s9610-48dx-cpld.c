@@ -30,6 +30,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s9610-48dx-cpld.h"
 
 #ifdef DEBUG
@@ -1743,9 +1744,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -1846,7 +1853,11 @@ exit:
 }
 
 /* cpld drvier remove */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int cpld_remove(struct i2c_client *client)
+#else
+static void cpld_remove(struct i2c_client *client)
+#endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
@@ -1866,7 +1877,10 @@ static int cpld_remove(struct i2c_client *client)
     }
 
     cpld_remove_client(client);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 MODULE_DEVICE_TABLE(i2c, cpld_id);

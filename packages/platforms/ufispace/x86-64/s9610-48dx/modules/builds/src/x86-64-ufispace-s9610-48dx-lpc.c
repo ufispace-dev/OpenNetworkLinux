@@ -27,6 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -141,6 +142,8 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
+
     //Thermal
     ATT_TEMP_MAC0_PVT2,
     ATT_TEMP_MAC0_PVT3,
@@ -401,7 +404,28 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t read_gpio_base(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d\n", -1);
+#else
+        return sprintf(buf, "%d\n", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -730,6 +754,7 @@ static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
 static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_base,   S_IRUGO, read_gpio_base, NULL, ATT_BSP_GPIO_BASE);
 
 //SENSOR_DEVICE_ATTR - Thermal
 static _SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt2,  lpc_callback, ATT_TEMP_MAC0_PVT2);
@@ -799,6 +824,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_reg),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_gpio_base),
     NULL,
 };
 
@@ -970,7 +996,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
@@ -993,7 +1019,7 @@ int lpc_init(void)
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);

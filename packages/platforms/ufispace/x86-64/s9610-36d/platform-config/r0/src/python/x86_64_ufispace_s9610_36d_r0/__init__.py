@@ -264,6 +264,9 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # init interrupt handler for IRQ 16
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
+
         # load default kernel driver
         os.system("modprobe -r i2c_i801")
         self.insmod("i2c-smbus", False)

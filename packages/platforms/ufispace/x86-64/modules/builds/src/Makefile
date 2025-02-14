@@ -1,6 +1,7 @@
 obj-m += x86-64-ufispace-eeprom-mb.o
 obj-m += x86-64-ufispace-sys-eeprom.o
 obj-m += x86-64-ufispace-optoe.o
+obj-m += x86-64-ufispace-irq-handler.o
 
 KVERSION := $(shell echo $(KERNELVERSION) | cut -d "." -f 1,2)
 KVERSION_MAJOR := $(shell echo $(KERNELVERSION) | cut -d "." -f 1)
@@ -47,6 +48,7 @@ else ifeq ($(KVERSION), 6.8)
     #$(info CONFIG_ICE=m
     #$(info CONFIG_I2C_I801=m)
     #$(info CONFIG_I2C_SMBUS=m)
+    #$(info ONFIG_I40E=m)
     obj-m += i2c-smbus.o
 
 else

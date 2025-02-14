@@ -30,6 +30,14 @@
 #include <onlplib/i2c.h>
 #include "x86_64_ufispace_s9610_48dx_log.h"
 #define SYSFS_PLTM                   "/sys/devices/platform/"
+#define ONLP_TRY(_expr)                                                 \
+    do {                                                                \
+        int _rv = (_expr);                                              \
+        if(ONLP_FAILURE(_rv)) {                                         \
+            AIM_LOG_ERROR("%s returned %{onlp_status}", #_expr, _rv);   \
+            return _rv;                                                 \
+        }                                                               \
+    } while(0)
 
 #define POID_0 0
 #define I2C_BUS(_bus) (_bus)
@@ -50,10 +58,15 @@
 #define SYS_FMT_OFFSET       SYSFS_DEVICES "%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     SYSFS_PLTM "coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    SYSFS_PLTM "coretemp.0/"
-
+#define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc/bsp/"
+#define LPC_CPU_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc/cpu_cpld/"
+#define SYSFS_HBM_PWR_CTRL          SYSFS_CPLD1 "cpld_hbm_pwr_ctrl"
+#define SYSFS_HBM_PWR_FUNC          SYSFS_CPLD1 "cpld_hbm_pwr_func"
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
 #define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
 #define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 //[BMC] 2.23
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_ENV_CPU "\
@@ -118,6 +131,10 @@
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
 extern const int CPLD_I2C_BUS[CPLD_MAX];
 
+/* I2C Get/Set command*/
+#define CMD_I2C_GET "i2cget -f -y %d %d %d"
+#define CMD_I2C_SET "i2cset -f -y %d %d %d %d"
+
 /* BMC CMD */
 #define FAN_CACHE_TIME          10
 #define PSU_CACHE_TIME          30
@@ -128,8 +145,34 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 #define TMP_PSU_TYPE "/tmp/psu_type_%d"
 #define CMD_CREATE_PSU_TYPE "touch " TMP_PSU_TYPE
 
-enum sensor
-{
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" OUTPUT_REDIRECT_ERR OUTPUT_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum cpld_id_e {
+  CPLD_1,
+  CPLD_2,
+  CPLD_3,
+  CPLD_4
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC_MAX
+};
+
+enum sensor {
     FAN_SENSOR = 0,
     PSU_SENSOR,
     THERMAL_SENSOR,
@@ -291,6 +334,12 @@ typedef struct board_s
     int build_id;
 }board_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int read_ioport(int addr, int *reg_val);
 
 int exec_cmd(char *cmd, char* out, int size);
@@ -314,5 +363,11 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 
 int ufi_get_board_version(board_t *board);
+int ufi_get_cpu_hw_rev_id(int *rev_id, int *sku_id, int *build_id);
+
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+
+int ufi_read_cpld_reg(int cpld_id, uint8_t reg, uint8_t *reg_val);
+int ufi_write_cpld_reg(int cpld_id, uint8_t reg, uint8_t reg_val);
 
 #endif  /* __PLATFORM_LIB_H__ */
