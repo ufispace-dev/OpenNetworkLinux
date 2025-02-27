@@ -31,6 +31,7 @@
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/types.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s9701-82dc-cpld.h"
 
 #ifdef DEBUG
@@ -1658,9 +1659,15 @@ static void s9701_cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
-static int s9701_cpld_probe(struct i2c_client *client,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
+static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -1759,7 +1766,11 @@ exit:
 }
 
 /* cpld drvier remove */
-static int s9701_cpld_remove(struct i2c_client *client)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+static int cpld_remove(struct i2c_client *client)
+#else
+static void cpld_remove(struct i2c_client *client)
+#endif
 {
     struct cpld_data *data = i2c_get_clientdata(client);
 
@@ -1779,7 +1790,9 @@ static int s9701_cpld_remove(struct i2c_client *client)
     }
 
     s9701_cpld_remove_client(client);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
+#endif
 }
 
 MODULE_DEVICE_TABLE(i2c, s9701_cpld_id);
@@ -1789,8 +1802,8 @@ static struct i2c_driver s9701_cpld_driver = {
     .driver = {
         .name = "x86_64_ufispace_s9701_82dc_cpld",
     },
-    .probe = s9701_cpld_probe,
-    .remove = s9701_cpld_remove,
+    .probe = cpld_probe,
+    .remove = cpld_remove,
     .id_table = s9701_cpld_id,
     .address_list = cpld_i2c_addr,
 };

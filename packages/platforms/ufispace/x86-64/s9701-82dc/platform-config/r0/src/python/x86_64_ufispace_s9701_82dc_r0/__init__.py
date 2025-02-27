@@ -5,9 +5,7 @@ from ctypes import c_int, sizeof
 import os
 import sys
 import subprocess
-import time
 import fcntl
-import commands
 
 
 def msg(s, fatal=False):
@@ -36,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -93,13 +91,13 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
                                         self.ROV_I2C_ADDR,
                                         self.ROV_CONFIG_REG,
                                         self.ROV_CONFIG[rov_stamp])
-        retcode, output = commands.getstatusoutput(cmd)
-        if retcode != 0:
-            mgs("set_macrov_config failed, cmd={}, output={}\n".format(cmd, output))
-            return False
-        else:
-            msg("set_mac_rov_config addr=0x{:02X}, rov_stamp=0x{:02X}, rov_voltage={}\n".
-                format(self.ROV_I2C_ADDR, rov_stamp, self.vid_to_volt_str(self.ROV_CONFIG[rov_stamp])))
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("set_mac_rov_config failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
+
+        msg("set_mac_rov_config addr=0x{:02X}, rov_stamp=0x{:02X}, rov_voltage={}\n".
+            format(self.ROV_I2C_ADDR, rov_stamp, self.vid_to_volt_str(self.ROV_CONFIG[rov_stamp])))
         return True
 
     def check_bmc_enable(self):
@@ -131,7 +129,7 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         self.new_i2c_devices(
             [
                 #  on cpu board
-                ('mb_eeprom', 0x57, 0),
+                ('sys_eeprom', 0x57, 0),
             ]
         )
 
@@ -181,6 +179,9 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -215,6 +216,22 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        # init interrupt handler for IRQ 16
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})        
+
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
+        # load default kernel driver
+        self.insmod("i2c-smbus", False)
+        os.system("modprobe i2c_i801")
+        os.system("modprobe i2c_dev")
+        os.system("modprobe gpio_pca953x")
+        os.system("modprobe i2c_mux_pca954x")
+        os.system("modprobe coretemp")
+        os.system("modprobe lm75")
+        os.system("modprobe ipmi_devintf")
+        os.system("modprobe ipmi_si")
+
         # lpc driver
         self.insmod("x86-64-ufispace-s9701-82dc-lpc")
 
@@ -228,7 +245,6 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         os.system("echo %d > /etc/onl/bmc_en" % bmc_enable)
 
         self.bsp_pr("Init i2c");
-        # initialize I210 I2C bus 0 #
         # init PCA9548
         i2c_muxs = [
             ('pca9548', 0x75, 0),
@@ -252,10 +268,10 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
         #init idle state on mux
         self.init_i2c_mux_idle_state(i2c_muxs)
 
-        self.insmod("x86-64-ufispace-eeprom-mb")
+        self.bsp_pr("Init eeprom")
+        self.insmod("x86-64-ufispace-sys-eeprom")
         self.insmod("x86-64-ufispace-optoe")
 
-        self.bsp_pr("Init eeprom");
         # init eeprom
         self.init_eeprom()
 
@@ -275,14 +291,19 @@ class OnlPlatform_x86_64_ufispace_s9701_82dc_r0(OnlPlatformUfiSpace):
 
         self.enable_ipmi_maintenance_mode()
 
-        #disable watchdog
-        self.disable_watchdog()
+        # disable bmc watchdog
+        self.disable_bmc_watchdog()
 
         self.bsp_pr("Init bcm82752");
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
-        self.insmod("i40e")
+        self.insmod("intel_auxiliary", False)
+        self.insmod("i40e", False)
+        os.system("modprobe i40e")
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9701-82dc-r0/onl/epdm_cli init")
+
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
 
         self.bsp_pr("Init done");
         return True
