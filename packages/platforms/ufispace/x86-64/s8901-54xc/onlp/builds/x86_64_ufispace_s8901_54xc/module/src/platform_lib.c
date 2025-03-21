@@ -794,3 +794,20 @@ int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
 
     return ret;
 }
+
+/**
+ * @brief Get the port base number.
+ * @param base_num get the base number 0 or 1, default is 0.
+ */
+int ufi_port_base_get(int *base_num) {
+    board_t board = {0};
+    ONLP_TRY(ufi_get_board_version(&board));
+
+    if(board.ext_id == 5) {
+        *base_num = 1;
+    } else {
+        *base_num = 0;
+    }
+
+    return ONLP_STATUS_OK;
+}

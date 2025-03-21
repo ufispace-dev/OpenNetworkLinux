@@ -164,7 +164,7 @@ int psu_fw_ver_get(char* fw_ver, int size, int local_id)
     ONLP_TRY(psu_pwgood_get(&pw_good, local_id));
 
     if(!pw_good) {
-        strncpy(fw_ver, "not available", size);
+        snprintf(fw_ver, (size_t )size, "%s", "not available");
         return ONLP_STATUS_OK;
     }
 
@@ -208,7 +208,7 @@ int psu_fw_ver_get(char* fw_ver, int size, int local_id)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    strncpy(fw_ver, (char *) (buffer+1), len);
+    snprintf(fw_ver, (size_t )len, "%s", (buffer+1));
     return ONLP_STATUS_OK;
 }
 
@@ -252,7 +252,7 @@ int ucd_fw_ver_get(char* fw_ver, int size)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    strncpy(fw_ver, (char *) (buffer+1), len);
+    snprintf(fw_ver, (size_t )len, "%s", (buffer+1));
     return ONLP_STATUS_OK;
 }
 
@@ -348,29 +348,29 @@ int psu_fru_get(psu_fru_t* fru, int i2c_bus, int i2c_addr)
     // check hw revision
     hw_rev_id = get_hw_rev_id();
     if(hw_rev_id <= HW_REV_ALPHA) {
-        strcpy(fru->vendor, "not supported");
-        strcpy(fru->model, "not supported");
-        strcpy(fru->part_num, "not supported");
-        strcpy(fru->serial, "not supported");
+        snprintf(fru->vendor, sizeof(fru->vendor), "%s", "not supported");
+        snprintf(fru->model, sizeof(fru->model), "%s", "not supported");
+        snprintf(fru->part_num, sizeof(fru->part_num), "%s", "not supported");
+        snprintf(fru->serial, sizeof(fru->serial), "%s", "not supported");
         goto SKIP_EEPROM_PARSER;
     }
 
     // read psu eeprom
     _rv = onlp_file_read(data, sizeof(data), &data_len, SYS_FMT, i2c_bus, i2c_addr, SYS_EEPROM);
     if(ONLP_FAILURE(_rv)) {
-        strcpy(fru->vendor, "not available");
-        strcpy(fru->model, "not available");
-        strcpy(fru->part_num, "not available");
-        strcpy(fru->serial, "not available");
+        snprintf(fru->vendor, sizeof(fru->vendor), "%s", "not supported");
+        snprintf(fru->model, sizeof(fru->model), "%s", "not supported");
+        snprintf(fru->part_num, sizeof(fru->part_num), "%s", "not supported");
+        snprintf(fru->serial, sizeof(fru->serial), "%s", "not supported");
         goto SKIP_EEPROM_PARSER;
     }
 
     // check if dummy content
     if(data[0] == 0xff) {
-        strcpy(fru->vendor, "not available");
-        strcpy(fru->model, "not available");
-        strcpy(fru->part_num, "not available");
-        strcpy(fru->serial, "not available");
+        snprintf(fru->vendor, sizeof(fru->vendor), "%s", "not supported");
+        snprintf(fru->model, sizeof(fru->model), "%s", "not supported");
+        snprintf(fru->part_num, sizeof(fru->part_num), "%s", "not supported");
+        snprintf(fru->serial, sizeof(fru->serial), "%s", "not supported");
         goto SKIP_EEPROM_PARSER;
     }
 
@@ -434,8 +434,8 @@ int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
     }
 
     // get fan fru
-    strcpy(info->model, "not supported");
-    strcpy(info->serial, "not supported");
+    snprintf(info->model, sizeof(info->model), "%s", "not supported");
+    snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
 
     /* check psu status */
     ONLP_TRY(psu_present_get(&psu_present, psu_id));
@@ -484,7 +484,7 @@ int psu_vout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     int v_value = 0;
     int n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     double dvalue;
     memset(result, 0, sizeof(result));
 
@@ -503,7 +503,7 @@ int psu_vout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp)
-            snprintf(result, sizeof(result), "%d.%04d", v_value/temp, ((v_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", v_value/temp, ((v_value%temp)*10000)/temp);
     } else {
         snprintf(result, sizeof(result), "%d", (v_value*(1<<n_value)));
     }
@@ -523,7 +523,7 @@ int psu_vin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     memset(result, 0, sizeof(result));
     double dvalue;
 
@@ -539,11 +539,11 @@ int psu_vin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -561,7 +561,7 @@ int psu_iout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     memset(result, 0, sizeof(result));
     double dvalue;
 
@@ -577,11 +577,11 @@ int psu_iout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -599,7 +599,7 @@ int psu_iin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     memset(result, 0, sizeof(result));
     double dvalue;
 
@@ -615,11 +615,11 @@ int psu_iin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -637,7 +637,7 @@ int psu_pout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     memset(result, 0, sizeof(result));
     double dvalue;
 
@@ -653,11 +653,11 @@ int psu_pout_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -675,7 +675,7 @@ int psu_pin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
     unsigned int y_value = 0;
     unsigned char n_value = 0;
     unsigned int temp = 0;
-    char result[32];
+    char result[32] = {0};
     memset(result, 0, sizeof(result));
     double dvalue;
 
@@ -691,11 +691,11 @@ int psu_pin_get(onlp_psu_info_t* info, int i2c_bus, int i2c_addr)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -728,8 +728,8 @@ int psu_status_info_get(int local_id, onlp_psu_info_t *info)
 
     /* Get psu fru from eeprom */
     ONLP_TRY(psu_fru_get(&fru, i2c_bus, eeprom_i2c_addr));
-    strcpy(info->model, fru.part_num);
-    strcpy(info->serial, fru.serial);
+    snprintf(info->model, sizeof(info->model), "%s", fru.part_num);
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial);
     /* Get PSU type */
     ONLP_TRY(get_psu_type(&psu_type, &fru));
     if(psu_type == ONLP_PSU_TYPE_AC) {

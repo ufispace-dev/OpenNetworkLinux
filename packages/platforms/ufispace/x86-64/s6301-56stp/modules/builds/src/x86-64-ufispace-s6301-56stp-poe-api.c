@@ -479,7 +479,7 @@ s32 ufi_poe_PowerShow(struct device *dev, u32 lport, u8 *buf)
     portPowerInfo.power = BYTE_SWAP_16BIT(portPowerInfo.power);                                  /* walt */
     portPowerInfo.cur = BYTE_SWAP_16BIT(portPowerInfo.cur);
 
-    sprintf(buf, "Port %-2d \nVoltage = %-2d.%-3d V\nCurrent = %-2d.%-3d A\nPower = %d.%d W\n",
+    snprintf(buf, OUT_BUF_SIZE, "Port %-2d \nVoltage = %-2d.%-3d V\nCurrent = %-2d.%-3d A\nPower = %d.%d W\n",
             lport, portPowerInfo.vol / 1000, portPowerInfo.vol % 1000,
             portPowerInfo.cur / 1000, portPowerInfo.cur % 1000,
             portPowerInfo.power / 10, portPowerInfo.power % 10);
@@ -521,7 +521,8 @@ s32 ufi_poe_DynamicPowerShow(struct device *dev, u32 lport, u8 *buf)
     portInfo.power = BYTE_SWAP_16BIT(portInfo.power);                                  /* walt */
     portInfo.cur = BYTE_SWAP_16BIT(portInfo.cur);
 
-    sprintf(buf, "Port %d : %d.%dV %d.%03dA %d.%dW\r\n", lport, portInfo.vol / 1000, portInfo.vol % 1000,
+
+    snprintf(buf, OUT_BUF_SIZE, "Port %d : %d.%dV %d.%03dA %d.%dW\r\n", lport, portInfo.vol / 1000, portInfo.vol % 1000,
             portInfo.cur / 1000, portInfo.cur % 1000, portInfo.power / 10, portInfo.power % 10);
     return ret;
 }
@@ -591,7 +592,7 @@ s32 ufi_poe_TemperatureShow(struct device *dev, u32 lport, u8 *buf)
     ufi_poe_TemperatureRead(dev, lport, &tempValue);
 
     tempValue = ((tempValue - 120) * (-125) + 12500) / 100;
-    sprintf(buf, "Port %2d : Temperature %d oC \n", lport, tempValue);
+    snprintf(buf, OUT_BUF_SIZE, "Port %2d : Temperature %d oC \n", lport, tempValue);
     return E_TYPE_SUCCESS;
 }
 
@@ -1418,31 +1419,26 @@ s32 ufi_poe_PortConfigShow(struct device *dev, u32 lport, u8 *buf)
     {
         if (0 <= poePortExtInfo.powerMode && poePortExtInfo.powerMode <= 3)
         {
-            sprintf(buf, "powerMode: %s\n", g_power_mode[poePortExtInfo.powerMode]);
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "powerMode: %s\n", g_power_mode[poePortExtInfo.powerMode]);
         }
         else
         {
-            sprintf(buf, "powerMode: unknown\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "powerMode: unknown\n");
         }
         if (0 <= poePortExtInfo.violateType && poePortExtInfo.violateType <= 2)
         {
-            sprintf(tmp, "violateType: %s\n", g_violation_type[poePortExtInfo.violateType]);
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "violateType: %s\n", g_violation_type[poePortExtInfo.violateType]);
         }
         else
         {
-            sprintf(tmp, "violateType: unknow\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "violateType: unknown\n");
         }
-        strcat(buf, tmp);
-        sprintf(tmp, "maxPower: 0x%x\n", poePortExtInfo.maxPower);
-        strcat(buf, tmp);
-        sprintf(tmp, "priority: %d\n", poePortExtInfo.priority);
-        strcat(buf, tmp);
-        sprintf(tmp, "phyPort: %x\n", poePortExtInfo.phyPort);
-        strcat(buf, tmp);
-        sprintf(tmp, "fourPairPowerUpMode: %x\n", poePortExtInfo.fourPairPowerUpMode);
-        strcat(buf, tmp);
-        sprintf(tmp, "dynamicPowerLimit: %x\n", poePortExtInfo.dynamicPowerLimit);
-        strcat(buf, tmp);
+
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "maxPower: 0x%x\n", poePortExtInfo.maxPower);
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "priority: %d\n", poePortExtInfo.priority);
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "phyPort: %x\n", poePortExtInfo.phyPort);
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "fourPairPowerUpMode: %x\n", poePortExtInfo.fourPairPowerUpMode);
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "dynamicPowerLimit: %x\n", poePortExtInfo.dynamicPowerLimit);
     }
     return ret;
 }
@@ -1885,89 +1881,86 @@ s32 ufi_poe_SystemStatus(struct device *dev, char *buf)
         return E_TYPE_FAILED;
     }
 
-    sprintf(buf, "Mode: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "Mode: ");
     switch (sysInfo.mode)
     {
     case 2:
-        strcat(buf, "Automatic\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Automatic\n");
         break;
     case 0:
-        strcat(buf, "Semiautomatic\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Semiautomatic\n");
         break;
     default:
-        strcat(buf, "Unknown\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Unknown\n");
         break;
     }
 
-    snprintf(temp, sizeof(temp), "Maximun Ports: %d\n", sysInfo.maxPort);
-    strcat(buf, temp);
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "Maximun Ports: %d\n", sysInfo.maxPort);
 
-    strcat(buf, "Devide ID: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Devide ID: ");
     switch (BYTE_SWAP_16BIT(sysInfo.deviceId))
     {
     case 0xE011:
-        strcat(buf, "BCM59011\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "BCM59011\n");
         break;
     case 0xE121:
-        strcat(buf, "BCM59121\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "BCM59121\n");
         break;
     case 0xE131:
-        strcat(buf, "BCM59131\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "BCM59131\n");
         break;
     case 0xE1FF:
-        strcat(buf, "Generic\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Generic\n");
         break;
     default:
-        strcat(buf, "Unknown\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Unknown\n");
         break;
     }
 
-    snprintf(temp, sizeof(temp), "SW Version: %x.%x.%x.%x\n", ((sysInfo.swVersion) >> 4),
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "SW Version: %x.%x.%x.%x\n", ((sysInfo.swVersion) >> 4),
              ((sysInfo.swVersion) & 0x0F), ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
-    strcat(buf, temp);
 
-    strcat(buf, "MCU Type: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "MCU Type: ");
     switch (sysInfo.eepromStatus)
     {
     case 0:
-        strcat(buf, "ST Micro ST32F100\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "ST Micro ST32F100\n");
         break;
     case 1:
-        strcat(buf, "Nuvoton M0516\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Nuvoton M0516\n");
         break;
     case 5:
-        strcat(buf, "Nuvoton M0518\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Nuvoton M0518\n");
         break;
     case 6:
-        strcat(buf, "Nuvoton NUC029ZPoE\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Nuvoton NUC029ZPoE\n");
         break;
     default:
-        strcat(buf, "Unknown\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Unknown\n");
         break;
     }
 
-    strcat(buf, "System status:\n");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "System status:\n");
 
     switch (CHECK_BIT(sysInfo.systemStatus, 0))
     {
     case 0:
-        strcat(buf, "    - Configuration is saved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Configuration is saved\n");
         break;
     case 1:
-        strcat(buf, "    - Configuration is dirty\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Configuration is dirty\n");
         break;
     default:
-
         break;
     }
 
     switch (CHECK_BIT(sysInfo.systemStatus, 1))
     {
     case 0:
-        strcat(buf, "    - No system reset before\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - No system reset before\n");
         break;
     case 1:
-        strcat(buf, "    - System reset happened\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - System reset happened\n");
         break;
     default:
         break;
@@ -1976,10 +1969,10 @@ s32 ufi_poe_SystemStatus(struct device *dev, char *buf)
     switch (CHECK_BIT(sysInfo.systemStatus, 2))
     {
     case 0:
-        strcat(buf, "    - Global Disable pin is deasserted\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Global Disable pin is deasserted\n");
         break;
     case 1:
-        strcat(buf, "    - Global Disable pin is asserted\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Global Disable pin is asserted\n");
         break;
     default:
         break;
@@ -1988,10 +1981,10 @@ s32 ufi_poe_SystemStatus(struct device *dev, char *buf)
     switch (CHECK_BIT(sysInfo.systemStatus, 3))
     {
     case 0:
-        strcat(buf, "    - Port map is not present\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Port map is not present\n");
         break;
     case 1:
-        strcat(buf, "    - Port map is present\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Port map is present\n");
         break;
     default:
         break;
@@ -2037,106 +2030,107 @@ s32 ufi_poe_PortStatus(struct device *dev, u8 lport, char *buf)
         dev_err(dev, "Get port status fail\n");
         return -1;
     }
-    sprintf(buf, "Port: %d\n", lport);
 
-    strcat(buf, "    - Status: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "Port: %d\n", lport);
+
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Status: ");
 
     switch (poePortInfo.status)
     {
     case 0:
-        strcat(buf, "Disabled\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Disabled\n");
         break;
     case 1:
-        strcat(buf, "Searching\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Searching\n");
         break;
     case 2:
-        strcat(buf, "Delivering power\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Delivering power\n");
         break;
     case 3:
-        strcat(buf, "Test mode\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Test mode\n");
         break;
     case 4:
-        strcat(buf, "Fault\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Fault\n");
         break;
     case 5:
-        strcat(buf, "Other fault\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Other fault\n");
         break;
     case 6:
-        strcat(buf, "Requesting power\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Requesting power\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
     switch (poePortInfo.status)
     {
     case E_BCM_POE_SEARCH:
-        strcat(buf, "    - Error type: ");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Error type: ");
         switch (poePortInfo.errorType)
         {
         case 0:
-            strcat(buf, "Unknown\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Unknown\n");
             break;
         case 1:
-            strcat(buf, "Short circuit\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Short circuit\n");
             break;
         case 2:
-            strcat(buf, "High cappacitor\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "High cappacitor\n");
             break;
         case 3:
-            strcat(buf, "Rlow\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Rlow\n");
             break;
         case 4:
-            strcat(buf, "Reserved\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
             break;
         case 5:
-            strcat(buf, "Rhigh\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Rhigh\n");
             break;
         case 6:
-            strcat(buf, "Open circuit\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Open circuit\n");
             break;
         case 7:
-            strcat(buf, "FET failture\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "FET failture\n");
             break;
         default:
-            strcat(buf, "Reserved\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
             break;
         }
         break;
     case E_BCM_POE_FAULT:
     case E_BCM_POE_OTHER_FAULT:
-        strcat(buf, "    - Error type: ");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Error type: ");
         switch (poePortInfo.errorType)
         {
         case 0:
-            strcat(buf, "None\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "None\n");
             break;
         case 1:
-            strcat(buf, "MPS absent\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "MPS absent\n");
             break;
         case 2:
-            strcat(buf, "Short\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Short\n");
             break;
         case 3:
-            strcat(buf, "Overload\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Overload\n");
             break;
         case 4:
-            strcat(buf, "Power denied\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Power denied\n");
             break;
         case 5:
-            strcat(buf, "Thermal shutdown\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Thermal shutdown\n");
             break;
         case 6:
-            strcat(buf, "Startup failture\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Startup failture\n");
             break;
         case 7:
-            strcat(buf, "UVLO\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "UVLO\n");
             break;
         case 8:
-            strcat(buf, "OVLO\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "OVLO\n");
             break;
         default:
-            strcat(buf, "Reserved\n");
+            snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
             break;
         }
         break;
@@ -2144,137 +2138,136 @@ s32 ufi_poe_PortStatus(struct device *dev, u8 lport, char *buf)
         break;
     }
 
-    strcat(buf, "    - PD class: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - PD class: ");
     switch (poePortInfo.pdClassInfo)
     {
 
     case 0:
-        strcat(buf, "0\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "0\n");
         break;
     case 1:
-        strcat(buf, "1\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "1\n");
         break;
     case 2:
-        strcat(buf, "2\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "2\n");
         break;
     case 3:
-        strcat(buf, "3\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "3\n");
         break;
     case 4:
-        strcat(buf, "4\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "4\n");
         break;
     case 5:
-        strcat(buf, "5\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "5\n");
         break;
     case 6:
-        strcat(buf, "6\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "6\n");
         break;
     case 7:
-        strcat(buf, "7\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "7\n");
         break;
     case 8:
-        strcat(buf, "8\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "8\n");
         break;
     case 0xE:
-        strcat(buf, "Mismatch\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Mismatch\n");
         break;
     case 0xF:
-        strcat(buf, "Over current\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Over current\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
 
-    strcat(buf, "    - Remote power device type: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Remote power device type: ");
     switch (poePortInfo.remotePdType)
     {
     case 0:
-        strcat(buf, "PD none\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "PD none\n");
         break;
     case 1:
-        strcat(buf, "IEEE PD\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "IEEE PD\n");
         break;
     case 2:
-        strcat(buf, "Pre-standard PD\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Pre-standard PD\n");
         break;
     case 3:
-        strcat(buf, "Extended detection range PD\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Extended detection range PD\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
 
-    sprintf(temp, "    - MPSS status: %x\n", poePortInfo.turnOffOrNot);
-    strcat(buf, temp);
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "    - MPSS status: %x\n", poePortInfo.turnOffOrNot);
 
-    strcat(buf, "    - Port powered mode: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Port powered mode: ");
     switch (poePortInfo.portPowerMode)
     {
     case 0:
-        strcat(buf, "Low power(15w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Low power(15w)\n");
         break;
     case 1:
-        strcat(buf, "High power(30w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "High power(30w)\n");
         break;
     case 2:
-        strcat(buf, "Four-pair(30w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Four-pair(30w)\n");
         break;
     case 3:
-        strcat(buf, "Four-pair(60w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Four-pair(60w)\n");
         break;
     case 4:
-        strcat(buf, "Four-pair(15w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Four-pair(15w)\n");
         break;
     case 5:
-        strcat(buf, "Four-pair(90w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Four-pair(90w)\n");
         break;
     case 6:
-        strcat(buf, "Two-pair(45w)\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Two-pair(45w)\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
 
-    strcat(buf, "    - Powered channels: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Powered channels: ");
     switch (poePortInfo.remotePdType)
     {
     case 0:
-        strcat(buf, "Both are not powered\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Both are not powered\n");
         break;
     case 1:
-        strcat(buf, "Primary channel is powered\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Primary channel is powered\n");
         break;
     case 2:
-        strcat(buf, "Alternative channel is powered\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Alternative channel is powered\n");
         break;
     case 3:
-        strcat(buf, "Both channels are powered\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Both channels are powered\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
 
-    strcat(buf, "    - Connection check: ");
+    snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "    - Connection check: ");
     switch (poePortInfo.remotePdType)
     {
     case 0:
-        strcat(buf, "None\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "None\n");
         break;
     case 1:
-        strcat(buf, "Shared PD interface with the primary\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Shared PD interface with the primary\n");
         break;
     case 2:
-        strcat(buf, "Separate PD interface\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Separate PD interface\n");
         break;
     case 3:
-        strcat(buf, "Unknown\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Unknown\n");
         break;
     default:
-        strcat(buf, "Reserved\n");
+        snprintf(buf + strlen(buf), OUT_BUF_SIZE - strlen(buf), "%s", "Reserved\n");
         break;
     }
 
@@ -2436,7 +2429,7 @@ s32 ufi_poe_init(struct device *dev)
     }
 
     /* show PoE software version */
-    sprintf((u8 *)g_poefwversion, "%x.%x.%x.%x", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
+    snprintf((u8 *)g_poefwversion, OUT_BUF_SIZE, "%x.%x.%x.%x", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
             ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
     dev_info(dev, "PoE software version %s, device id 0x%x\n", g_poefwversion, BYTE_SWAP_16BIT(sysInfo.deviceId));
     ;
@@ -2722,7 +2715,7 @@ s32 ufi_poe_GetPseSWVersion(struct device *dev, char *buf)
         return E_TYPE_FAILED;
     }
 
-    sprintf(buf, "%x.%x.%x.%x\n", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
+    snprintf(buf, OUT_BUF_SIZE, "%x.%x.%x.%x\n", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
             ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
 
     return E_TYPE_SUCCESS;
@@ -2764,19 +2757,19 @@ s32 ufi_poe_GetPseHWVersion(struct device *dev, char *buf)
     switch (sysInfo.eepromStatus)
     {
     case 0:
-        sprintf(buf, "ST Micro ST32F100\n");
+        snprintf(buf, OUT_BUF_SIZE, "ST Micro ST32F100\n");
         break;
     case 1:
-        sprintf(buf, "Nuvoton M0516\n");
+        snprintf(buf, OUT_BUF_SIZE, "Nuvoton M0516\n");
         break;
     case 5:
-        sprintf(buf, "Nuvoton M0518\n");
+        snprintf(buf, OUT_BUF_SIZE, "Nuvoton M0518\n");
         break;
     case 6:
-        sprintf(buf, "Nuvoton NUC029ZPoE\n");
+        snprintf(buf, OUT_BUF_SIZE, "Nuvoton NUC029ZPoE\n");
         break;
     default:
-        sprintf(buf, "Unknown\n");
+        snprintf(buf, OUT_BUF_SIZE, "Unknown\n");
         break;
     }
 

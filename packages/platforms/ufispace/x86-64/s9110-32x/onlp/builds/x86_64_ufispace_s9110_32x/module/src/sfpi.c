@@ -143,6 +143,21 @@ static const port_attr_t port_attr[] = {
 #define VALIDATE_PORT(p) { if (IS_PORT_INVALID(p)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (IS_PORT_INVALID(p) || !IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
+static int base_num_g = -1;
+
+static int update_port_base(void) {
+    int rv  = ONLP_STATUS_OK;
+    if(base_num_g == -1) {
+        rv = ufi_port_base_get(&base_num_g);
+    }
+    return rv;
+}
+
+static int xfr_label_logical_port(int label_port, int *logical_port) {
+    *logical_port = label_port - base_num_g;
+    return ONLP_STATUS_OK;
+}
+
 static int get_port_sysfs(cpld_attr_idx_t idx, char** str)
 {
     if(str == NULL)
@@ -238,7 +253,7 @@ static int get_bit(int attr, unsigned int bit_stream, uint8_t *bit)
     return rv;
 }
 
-static int xfr_ctrl_to_sysfs(int port, onlp_sfp_control_t control , char **sysfs, int *attr)
+static int xfr_ctrl_to_sysfs(int logical_port, onlp_sfp_control_t control , char **sysfs, int *attr)
 {
     int rv  = ONLP_STATUS_OK;
 
@@ -250,32 +265,32 @@ static int xfr_ctrl_to_sysfs(int port, onlp_sfp_control_t control , char **sysfs
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                rv = get_port_sysfs(port_attr[port].reset, sysfs);
-                *attr = port_attr[port].reset;
+                rv = get_port_sysfs(port_attr[logical_port].reset, sysfs);
+                *attr = port_attr[logical_port].reset;
                 break;
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                rv = get_port_sysfs(port_attr[port].rxlos, sysfs);
-                *attr = port_attr[port].rxlos;
+                rv = get_port_sysfs(port_attr[logical_port].rxlos, sysfs);
+                *attr = port_attr[logical_port].rxlos;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                rv = get_port_sysfs(port_attr[port].txfault, sysfs);
-                *attr = port_attr[port].txfault;
+                rv = get_port_sysfs(port_attr[logical_port].txfault, sysfs);
+                *attr = port_attr[logical_port].txfault;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                rv = get_port_sysfs(port_attr[port].txdis, sysfs);
-                *attr = port_attr[port].txdis;
+                rv = get_port_sysfs(port_attr[logical_port].txdis, sysfs);
+                *attr = port_attr[logical_port].txdis;
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                rv = get_port_sysfs(port_attr[port].lpmode, sysfs);
-                *attr = port_attr[port].lpmode;
+                rv = get_port_sysfs(port_attr[logical_port].lpmode, sysfs);
+                *attr = port_attr[logical_port].lpmode;
                 break;
             }
         default:
@@ -291,11 +306,11 @@ static int xfr_ctrl_to_sysfs(int port, onlp_sfp_control_t control , char **sysfs
     return ONLP_STATUS_OK;
 }
 
-static int xfr_port_to_eeprom_bus(int port)
+static int xfr_port_to_eeprom_bus(int logical_port)
 {
     int bus = -1;
 
-    bus=port_attr[port].eeprom_bus;
+    bus=port_attr[logical_port].eeprom_bus;
     return bus;
 }
 
@@ -305,6 +320,7 @@ static int xfr_port_to_eeprom_bus(int port)
 int onlp_sfpi_init(void)
 {
     init_lock();
+    update_port_base();
     return ONLP_STATUS_OK;
 }
 
@@ -314,8 +330,12 @@ int onlp_sfpi_init(void)
  */
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
+    ONLP_TRY(update_port_base());
     int p;
-    for(p = 0; p < PORT_NUM; p++) {
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
+
+    for(p = start_port; p < end_port; p++) {
         AIM_BITMAP_SET(bmap, p);
     }
     return ONLP_STATUS_OK;
@@ -330,14 +350,17 @@ int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
  */
 int onlp_sfpi_is_present(int port)
 {
+    ONLP_TRY(update_port_base());
     int status=ONLP_STATUS_OK;
     int abs = 0, present = 0;
     char *sysfs = NULL;
     uint8_t bit = 0;
 
-    VALIDATE_PORT(port);
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
 
-    ONLP_TRY(get_port_sysfs(port_attr[port].abs, &sysfs));
+    VALIDATE_PORT(logical_port);
+    ONLP_TRY(get_port_sysfs(port_attr[logical_port].abs, &sysfs));
 
     if ((status = read_file_hex(&abs, sysfs)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s",
@@ -346,7 +369,7 @@ int onlp_sfpi_is_present(int port)
         return status;
     }
 
-    ONLP_TRY(get_bit(port_attr[port].abs, port_attr[port].cpld_bit, &bit));
+    ONLP_TRY(get_bit(port_attr[logical_port].abs, port_attr[logical_port].cpld_bit, &bit));
     present = (get_bit_value(abs, bit) == 0) ? 1:0;
 
     return present;
@@ -358,10 +381,14 @@ int onlp_sfpi_is_present(int port)
  */
 int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
+    ONLP_TRY(update_port_base());
     int p = 0;
     int rc = 0;
 
-    for (p = 0; p < PORT_NUM; p++) {
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
+
+    for (p = start_port; p < end_port; p++) {
         if ((rc = onlp_sfpi_is_present(p)) < 0) {
             return rc;
         }
@@ -377,10 +404,19 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
+    ONLP_TRY(update_port_base());
     int i=0, value=0;
 
-    for(i = 0; i < PORT_NUM; i++) {
-        if(IS_SFP(i)) {
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
+
+    for(i = start_port; i < end_port; i++) {
+        int logical_port = 0;
+        if(xfr_label_logical_port(i, &logical_port) != ONLP_STATUS_OK) {
+            continue;
+        }
+
+        if(IS_SFP(logical_port)) {
             if(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value) != ONLP_STATUS_OK) {
                 AIM_BITMAP_MOD(dst, i, 0);  //set default value for port which has no cap
             } else {
@@ -401,12 +437,15 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
+    ONLP_TRY(update_port_base());
     int size = 0, bus = 0, rc = 0;
 
-    VALIDATE_PORT(port);
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
 
     memset(data, 0, 256);
-    bus = xfr_port_to_eeprom_bus(port);
+    bus = xfr_port_to_eeprom_bus(logical_port);
 
     if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
@@ -432,9 +471,14 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
  */
 int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
-    VALIDATE_PORT(port);
+
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
     int rc = 0;
-    int bus = xfr_port_to_eeprom_bus(port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -452,9 +496,13 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
  */
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
 {
-    VALIDATE_PORT(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
     int rc = 0;
-    int bus = xfr_port_to_eeprom_bus(port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -476,9 +524,13 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
  */
 int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
-    VALIDATE_PORT(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
     int rc = 0;
-    int bus = xfr_port_to_eeprom_bus(port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if(onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -496,9 +548,13 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
  */
 int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
 {
-    VALIDATE_PORT(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
     int rc = 0;
-    int bus = xfr_port_to_eeprom_bus(port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if(onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -520,8 +576,12 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
  */
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
-    VALIDATE_PORT(port);
-    int bus = xfr_port_to_eeprom_bus(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -541,9 +601,13 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
  */
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
 {
-    VALIDATE_PORT(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
     int rc = 0;
-    int bus = xfr_port_to_eeprom_bus(port);
+    int bus = xfr_port_to_eeprom_bus(logical_port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -565,15 +629,19 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
  */
 int onlp_sfpi_dom_read(int port, uint8_t data[256])
 {
+    ONLP_TRY(update_port_base());
     char eeprom_path[512];
     FILE* fp;
     int bus = 0;
+
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
 
     //sfp dom is on 0x51 (2nd 256 bytes)
     //qsfp dom is on lower page 0x00
     //qsfpdd 2.0 dom is on lower page 0x00
     //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
-    VALIDATE_SFP_PORT(port);
+    VALIDATE_SFP_PORT(logical_port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
@@ -584,7 +652,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     memset(eeprom_path, 0, sizeof(eeprom_path));
 
     //set eeprom_path
-    bus = xfr_port_to_eeprom_bus(port);
+    bus = xfr_port_to_eeprom_bus(logical_port);
     snprintf(eeprom_path, sizeof(eeprom_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
 
     //read eeprom
@@ -635,7 +703,10 @@ int onlp_sfpi_post_insert(int port, sff_info_t* info)
  */
 int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
 {
-    VALIDATE_PORT(port);
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
 
     //set unsupported as default value
     *rv=0;
@@ -644,14 +715,14 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
         case ONLP_SFP_CONTROL_LP_MODE:
-            if (IS_QSFPX(port)) {
+            if (IS_QSFPX(logical_port)) {
                 *rv = 1;
             }
             break;
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
-            if (IS_SFP(port)) {
+            if (IS_SFP(logical_port)) {
                 *rv = 1;
             }
             break;
@@ -671,20 +742,24 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
  */
 int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
+    ONLP_TRY(update_port_base());
     int rc = 0;
     int reg_val = 0;
     char *sysfs = NULL;
     uint8_t bit = 0;
     int attr = 0;
 
-    VALIDATE_PORT(port);
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
 
     //check control is valid for this port
     switch(control)
     {
         case ONLP_SFP_CONTROL_RESET:
             {
-                if (IS_QSFPX(port)) {
+                if (IS_QSFPX(logical_port)) {
                     //reverse value
                     value = (value == 0) ? 1:0;
                 } else {
@@ -694,7 +769,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                if (IS_SFP(port)) {
+                if (IS_SFP(logical_port)) {
                     break;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
@@ -702,7 +777,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                if (IS_QSFPX(port)) {
+                if (IS_QSFPX(logical_port)) {
                     break;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
@@ -713,7 +788,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     }
 
     //get sysfs
-    ONLP_TRY(xfr_ctrl_to_sysfs(port, control, &sysfs, &attr));
+    ONLP_TRY(xfr_ctrl_to_sysfs(logical_port, control, &sysfs, &attr));
 
     //read reg_val
     if (read_file_hex(&reg_val, sysfs) < 0) {
@@ -723,7 +798,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 
     //update reg_val
     //0 is normal, 1 is reset, reverse value to fit our platform
-    ONLP_TRY(get_bit(attr, port_attr[port].cpld_bit, &bit));
+    ONLP_TRY(get_bit(attr, port_attr[logical_port].cpld_bit, &bit));
     reg_val = operate_bit(reg_val, bit, value);
 
     //write reg_val
@@ -745,16 +820,20 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
  */
 int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
+    ONLP_TRY(update_port_base());
     int rc;
     int reg_val = 0;
     char *sysfs = NULL;
     uint8_t bit = 0;
     int attr = 0;
 
-    VALIDATE_PORT(port);
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
 
     //get sysfs
-    ONLP_TRY(xfr_ctrl_to_sysfs(port, control, &sysfs, &attr));
+    ONLP_TRY(xfr_ctrl_to_sysfs(logical_port, control, &sysfs, &attr));
 
 
     //read gpio value
@@ -764,7 +843,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
         return rc;
     }
 
-    ONLP_TRY(get_bit(attr, port_attr[port].cpld_bit, &bit));
+    ONLP_TRY(get_bit(attr, port_attr[logical_port].cpld_bit, &bit));
     *value = get_bit_value(reg_val, bit);
 
     //reverse bit

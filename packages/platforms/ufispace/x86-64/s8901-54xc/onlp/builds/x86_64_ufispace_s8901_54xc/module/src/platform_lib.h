@@ -367,5 +367,5 @@ uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
 int ufi_get_board_version(board_t *board);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
-
+int ufi_port_base_get(int *base_num);
 #endif  /* __PLATFORM_LIB_H__ */

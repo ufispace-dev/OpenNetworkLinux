@@ -76,6 +76,8 @@
         }                                                               \
     } while(0)
 #define POID_0                  0
+#define COMM_STR_NOT_SUPPORTED "not supported"
+#define COMM_STR_NOT_AVAILABLE "not available"
 /* SYSFS */
 #define SYS_DEV                 "/sys/bus/i2c/devices/"
 #define CPLD1_SYSFS_PATH        SYS_DEV "2-0030"
@@ -85,6 +87,15 @@
 #define LPC_CPU_CPLD_PATH       LPC_PATH "/cpu_cpld"
 #define LPC_MB_CPLD_PATH        LPC_PATH "/mb_cpld"
 #define LPC_BSP_PATH            LPC_PATH "/bsp/"
+#define LPC_CPU_CPLD_VERSION_ATTR   "cpu_cpld_version"
+#define LPC_CPU_CPLD_BUILD_ATTR     "cpu_cpld_build"
+#define LPC_CPU_CPLD_VER_H_ATTR     "cpu_cpld_version_h"
+#define LPC_MB_SKUID_ATTR           "board_sku_id"
+#define LPC_MB_HWID_ATTR            "board_hw_id"
+#define LPC_MB_IDTYPE_ATTR          "board_id_type"
+#define LPC_MB_BUILDID_ATTR         "board_build_id"
+#define LPC_MB_DEPHID_ATTR          "board_deph_id"
+#define MB_CPLD_VER_H_ATTR          "cpld_version_h"
 
 /* FAN DIR */
 #define FAN_DIR_B2F             1
@@ -125,6 +136,38 @@ typedef struct warm_reset_data_s {
     const char *warm_reset_dev_str;
     const char **unit_str;
 } warm_reset_data_t;
+
+typedef struct board_s {
+    int sku_id;
+    int hw_build;
+    int deph_id;
+    int hw_rev;
+    int ext_id;
+    int id_type;
+}board_t;
+
+enum brd_hw_rev
+{
+    HW_REV_NONE      = -1,
+    HW_REV_PROTO     = 0x0,
+    HW_REV_ALPHA     = 0x1,
+    HW_REV_BETA      = 0x2,
+    HW_REV_PVT       = 0x3,
+    HW_REV_MAX       = 0x4,
+};
+
+enum brd_hw_build
+{
+    HW_BUILD_NONE    = -1,
+    HW_BUILD_1       = 0x0,
+    HW_BUILD_2       = 0x1,
+    HW_BUILD_3       = 0x2,
+    HW_BUILD_4       = 0x3,
+    HW_BUILD_5       = 0x4,
+    HW_BUILD_6       = 0x5,
+    HW_BUILD_7       = 0x6,
+    HW_BUILD_8       = 0x7,
+};
 
 /* Thermal definitions*/
 enum onlp_thermal_id {
@@ -197,6 +240,20 @@ enum onlp_fan_id {
     ONLP_FAN_MAX      = ONLP_PSU1_FAN1+1,
 };
 
+/* fru_id */
+enum bmc_fru_id {
+    BMC_FRU_IDX_ONLP_PSU_0,
+    BMC_FRU_IDX_ONLP_PSU_1,
+    BMC_FRU_IDX_FAN_TRAY_0,
+    BMC_FRU_IDX_FAN_TRAY_1,
+    BMC_FRU_IDX_FAN_TRAY_2,
+    BMC_FRU_IDX_FAN_TRAY_3,
+    BMC_FRU_IDX_FAN_TRAY_4,
+    BMC_FRU_IDX_FAN_TRAY_5,
+    BMC_FRU_IDX_MAX,
+    BMC_FRU_IDX_INVALID = -1,
+};
+
 #define ONLP_FAN_COUNT ONLP_FAN_MAX /*include "reserved"*/
 
 
@@ -246,13 +303,18 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_IOUT      = 39,
     BMC_ATTR_ID_PSU0_STBVOUT   = 40,
     BMC_ATTR_ID_PSU0_STBIOUT   = 41,
-    BMC_ATTR_ID_PSU1_VIN       = 42,
-    BMC_ATTR_ID_PSU1_VOUT      = 43,
-    BMC_ATTR_ID_PSU1_IIN       = 44,
-    BMC_ATTR_ID_PSU1_IOUT      = 45,
-    BMC_ATTR_ID_PSU1_STBVOUT   = 46,
-    BMC_ATTR_ID_PSU1_STBIOUT   = 47,
-    BMC_ATTR_ID_MAX            = 48,
+    BMC_ATTR_ID_PSU0_PIN       = 42,
+    BMC_ATTR_ID_PSU0_POUT      = 43,    
+    BMC_ATTR_ID_PSU1_VIN       = 44,
+    BMC_ATTR_ID_PSU1_VOUT      = 45,
+    BMC_ATTR_ID_PSU1_IIN       = 46,
+    BMC_ATTR_ID_PSU1_IOUT      = 47,
+    BMC_ATTR_ID_PSU1_STBVOUT   = 48,
+    BMC_ATTR_ID_PSU1_STBIOUT   = 49,
+    BMC_ATTR_ID_PSU1_PIN       = 50,
+    BMC_ATTR_ID_PSU1_POUT      = 51,
+    BMC_ATTR_ID_MAX            = 52,
+    BMC_ATTR_ID_INVALID        = -1,
 };
 
 enum sensor {
@@ -302,7 +364,8 @@ int bmc_check_alive(void);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_fan_dir_read(int bmc_cache_index, float *data);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
-int bmc_fru_read(int local_id, bmc_fru_t *data);
+int bmc_fru_read(int fru_id, bmc_fru_t *data);
+int get_board_version(board_t *board);
 int read_ioport(int addr, int *reg_val);
 int exec_cmd(char *cmd, char* out, int size);
 int file_read_hex(int* value, const char* fmt, ...);

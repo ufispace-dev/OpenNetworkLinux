@@ -2,110 +2,164 @@
 SFP:
   0:
     port_name: 0
+    port_name_1_base: 1
   1:
     port_name: 1
+    port_name_1_base: 2
   2:
     port_name: 2
+    port_name_1_base: 3
   3:
     port_name: 3
+    port_name_1_base: 4
   4:
     port_name: 4
+    port_name_1_base: 5
   5:
     port_name: 5
+    port_name_1_base: 6
   6:
     port_name: 6
+    port_name_1_base: 7
   7:
     port_name: 7
+    port_name_1_base: 8
   8:
     port_name: 8
+    port_name_1_base: 9
   9:
     port_name: 9
+    port_name_1_base: 10
   10:
     port_name: 10
+    port_name_1_base: 11
   11:
     port_name: 11
+    port_name_1_base: 12
   12:
     port_name: 12
+    port_name_1_base: 13
   13:
     port_name: 13
+    port_name_1_base: 14
   14:
     port_name: 14
+    port_name_1_base: 15
   15:
     port_name: 15
+    port_name_1_base: 16
   16:
     port_name: 16
+    port_name_1_base: 17
   17:
     port_name: 17
+    port_name_1_base: 18
   18:
     port_name: 18
+    port_name_1_base: 19
   19:
     port_name: 19
+    port_name_1_base: 20
   20:
     port_name: 20
+    port_name_1_base: 21
   21:
     port_name: 21
+    port_name_1_base: 22
   22:
     port_name: 22
+    port_name_1_base: 23
   23:
     port_name: 23
+    port_name_1_base: 24
   24:
     port_name: 24
+    port_name_1_base: 25
   25:
     port_name: 25
+    port_name_1_base: 26
   26:
     port_name: 26
+    port_name_1_base: 27
   27:
     port_name: 27
+    port_name_1_base: 28
   28:
     port_name: 28
+    port_name_1_base: 29
   29:
     port_name: 29
+    port_name_1_base: 30
   30:
     port_name: 30
+    port_name_1_base: 31
   31:
     port_name: 31
+    port_name_1_base: 32
   32:
     port_name: 32
+    port_name_1_base: 33
   33:
     port_name: 33
+    port_name_1_base: 34
   34:
     port_name: 34
+    port_name_1_base: 35
   35:
     port_name: 35
+    port_name_1_base: 36
   36:
     port_name: 36
+    port_name_1_base: 37
   37:
     port_name: 37
+    port_name_1_base: 38
   38:
     port_name: 38
+    port_name_1_base: 39
   39:
     port_name: 39
+    port_name_1_base: 40
   40:
     port_name: 40
+    port_name_1_base: 41
   41:
     port_name: 41
+    port_name_1_base: 42
   42:
     port_name: 42
+    port_name_1_base: 43
   43:
     port_name: 43
+    port_name_1_base: 44
   44:
     port_name: 44
+    port_name_1_base: 45
   45:
     port_name: 45
+    port_name_1_base: 46
   46:
     port_name: 46
+    port_name_1_base: 47
   47:
-    port_name: 47        
+    port_name: 47
+    port_name_1_base: 48
 QSFP:
   48:
     port_name: 48
+    port_name_1_base: 49
   49:
     port_name: 49
+    port_name_1_base: 50
   50:
     port_name: 50
+    port_name_1_base: 51
   51:
     port_name: 51
+    port_name_1_base: 52
   52:
     port_name: 52
+    port_name_1_base: 53
   53:
     port_name: 53
+    port_name_1_base: 54
