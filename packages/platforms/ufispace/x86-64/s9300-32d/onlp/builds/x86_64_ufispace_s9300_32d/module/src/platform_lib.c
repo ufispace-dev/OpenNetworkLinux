@@ -91,12 +91,16 @@ const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
                                 " PSU0_IOUT"\
                                 " PSU0_STBVOUT"\
                                 " PSU0_STBIOUT"\
+                                " PSU0_PIN"\
+                                " PSU0_POUT"\
                                 " PSU1_VIN"\
                                 " PSU1_VOUT"\
                                 " PSU1_IIN"\
                                 " PSU1_IOUT"\
                                 " PSU1_STBVOUT"\
                                 " PSU1_STBIOUT"\
+                                " PSU1_PIN"\
+                                " PSU1_POUT"\
                                 " > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define CPLD_ID_SYSFS_PATH      CPLD1_SYSFS_PATH "/cpld_id"
@@ -147,17 +151,21 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_PSU0_IOUT]      = {"PSU0_IOUT"      , 0},
     [BMC_ATTR_ID_PSU0_STBVOUT]   = {"PSU0_STBVOUT"   , 0},
     [BMC_ATTR_ID_PSU0_STBIOUT]   = {"PSU0_STBIOUT"   , 0},
+    [BMC_ATTR_ID_PSU0_PIN]       = {"PSU0_PIN"       , 0},
+    [BMC_ATTR_ID_PSU0_POUT]      = {"PSU0_POUT"      , 0},    
     [BMC_ATTR_ID_PSU1_VIN]       = {"PSU1_VIN"       , 0},
     [BMC_ATTR_ID_PSU1_VOUT]      = {"PSU1_VOUT"      , 0},
     [BMC_ATTR_ID_PSU1_IIN]       = {"PSU1_IIN"       , 0},
     [BMC_ATTR_ID_PSU1_IOUT]      = {"PSU1_IOUT"      , 0},
     [BMC_ATTR_ID_PSU1_STBVOUT]   = {"PSU1_STBVOUT"   , 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT]   = {"PSU1_STBIOUT"   , 0}
+    [BMC_ATTR_ID_PSU1_STBIOUT]   = {"PSU1_STBIOUT"   , 0},
+    [BMC_ATTR_ID_PSU1_PIN]       = {"PSU1_PIN"       , 0},
+    [BMC_ATTR_ID_PSU1_POUT]      = {"PSU1_POUT"      , 0},     
 };
 
 static bmc_fru_t bmc_fru_cache[] =
 {
-    [ONLP_PSU0] = {
+    [BMC_FRU_IDX_ONLP_PSU_0] = {
         .bmc_fru_id = 1,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_1",
@@ -167,7 +175,7 @@ static bmc_fru_t bmc_fru_cache[] =
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
 
     },
-    [ONLP_PSU1] = {
+    [BMC_FRU_IDX_ONLP_PSU_1] = {
         .bmc_fru_id = 2,
         .init_done = 0,
         .cache_files = "/tmp/bmc_fru_cache_2",
@@ -176,6 +184,60 @@ static bmc_fru_t bmc_fru_cache[] =
         .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
         .serial   = {BMC_FRU_KEY_SERIAL       ,""},
     },
+    [BMC_FRU_IDX_FAN_TRAY_0] = {
+        .bmc_fru_id = 3,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_3",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_1] = {
+        .bmc_fru_id = 4,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_4",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_2] = {
+        .bmc_fru_id = 5,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_5",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_3] = {
+        .bmc_fru_id = 6,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_6",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_4] = {
+        .bmc_fru_id = 7,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_7",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    },
+    [BMC_FRU_IDX_FAN_TRAY_5] = {
+        .bmc_fru_id = 8,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_8",
+        .vendor   = {BMC_FRU_KEY_MANUF        ,""},
+        .name     = {BMC_FRU_KEY_NAME         ,""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER  ,""},
+        .serial   = {BMC_FRU_KEY_SERIAL       ,""},
+    }
 };
 
 static const warm_reset_data_t warm_reset_data[] = {
@@ -540,10 +602,10 @@ exit:
 
 /**
  * @brief bmc fru read
- * @param local_id The psu local id
- * @param[out] data The psu fru information.
+ * @param fru_id The fru id
+ * @param data [out] The fru information.
  */
-int bmc_fru_read(int local_id, bmc_fru_t *data)
+int bmc_fru_read(int fru_id, bmc_fru_t *data)
 {
     struct timeval new_tv;
     char ipmi_cmd[1024] = {0};
@@ -554,11 +616,15 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
     long file_last_time = 0;
     int rv = ONLP_STATUS_OK;
 
-    if((local_id != ONLP_PSU0 && local_id != ONLP_PSU1)  || (data == NULL)) {
+    if((data == NULL)) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    bmc_fru_t *fru = &bmc_fru_cache[local_id];
+    if(fru_id >= BMC_FRU_IDX_MAX) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    bmc_fru_t *fru = &bmc_fru_cache[fru_id];
 
     ONLP_LOCK();
 
@@ -645,14 +711,20 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         fru->init_done = 1;
 
         //Check output is correct
-        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ||
-            strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-            AIM_LOG_ERROR("unable to read some fru info from BMC, fru id=%d, vendor=%s, product name=%s, part_num=%s, serial=%s",
-                local_id, fru->vendor.val, fru->name.val, fru->part_num.val, fru->serial.val);
-            rv = ONLP_STATUS_E_INTERNAL;
-            goto exit;
+        if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
+                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+        if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+        if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+        }
+
+        if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
+                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
         }
     }
 
@@ -661,6 +733,34 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
 
 exit:
     ONLP_UNLOCK();
+    return rv;
+}
+
+/**
+ * @brief Get board version
+ * @param board [out] board data struct
+ */
+int get_board_version(board_t *board)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(board == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    //Get HW Version
+    if(file_read_hex(&board->hw_rev, LPC_MB_CPLD_PATH "/" LPC_MB_HWID_ATTR) != ONLP_STATUS_OK ||
+       file_read_hex(&board->deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPHID_ATTR) != ONLP_STATUS_OK ||
+       file_read_hex(&board->hw_build, LPC_MB_CPLD_PATH "/" LPC_MB_BUILDID_ATTR) != ONLP_STATUS_OK ||
+       file_read_hex(&board->sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKUID_ATTR) != ONLP_STATUS_OK)
+    {
+        board->hw_rev = 0;
+        board->deph_id = 0;
+        board->hw_build = 0;
+        board->sku_id = 0;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+
     return rv;
 }
 

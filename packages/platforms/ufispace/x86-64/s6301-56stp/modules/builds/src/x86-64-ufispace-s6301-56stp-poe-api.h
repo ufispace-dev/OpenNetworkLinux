@@ -99,6 +99,9 @@
 /* CPLD reg */
 #define CPLD_REG_MISC_CNTL 0x64
 
+/* output buffer size */
+#define OUT_BUF_SIZE 512
+
 /*=========================================================================
  *
  *      Type and Structure Definition Segment

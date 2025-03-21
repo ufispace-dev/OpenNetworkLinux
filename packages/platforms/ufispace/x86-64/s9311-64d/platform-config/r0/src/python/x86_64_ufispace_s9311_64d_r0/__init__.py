@@ -389,6 +389,9 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
             self.update_pci_device(driver_name, bus_address, action)
 
     def baseconfig(self):
+        # init interrupt handler for IRQ 17
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 17})
+
         self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         self.insmod("i2c-ismt", False)

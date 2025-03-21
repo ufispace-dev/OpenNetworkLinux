@@ -359,6 +359,7 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
+    hw_ext_name_array=("S8901-54XC" "S7801-54XS-9B1B" "S7801-56CS" "S8901-54XC-2B1A" "S7801-54XS" "S8901-54XC Port 1 BASE")
     model_id_array=($((2#11111111)))
     model_name_array=("S8901-54XC")
 
@@ -408,10 +409,26 @@ function _show_board_info {
        exit 1
     fi
 
+    hw_ext_id=`${IOGET} 0x706`
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        hw_ext_id=`echo ${hw_ext_id} | awk -F" " '{print $NF}'`
+        hw_ext_id=$(((hw_ext_id & 2#00000111) >> 0))
+    else
+        _echo "Get extended id failed ($ret), Exit!!"
+        exit $ret
+    fi
+    hw_ext_name=${hw_ext_name_array[${hw_ext_id}]}
+
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
-    _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
-    _echo "[Board Type and Revision]: ${model_name} ${deph_name} ${hw_rev} ${build_rev}"
+    HW_EXT=${hw_ext_id}
+    _echo "[CPLD 0x0/0x1/0x6 Reg Raw ]: ${model_id} ${board_rev_id} ${hw_ext_id}"
+    _echo "[Board Type               ]: ${model_name}"
+    _echo "[Extended ID              ]: ${hw_ext_name}"
+    _echo "[Design Phase             ]: ${deph_name}"
+    _echo "[Hardware Revision        ]: ${hw_rev}"
+    _echo "[BUILD_ID                 ]: ${build_rev}"
 }
 
 function _bios_version {

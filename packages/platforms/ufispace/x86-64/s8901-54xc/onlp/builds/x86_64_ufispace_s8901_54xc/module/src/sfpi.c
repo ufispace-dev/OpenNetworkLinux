@@ -20,7 +20,7 @@
  ************************************************************
  *
  * SFP Platform Implementation Interface.
- * 
+ *
  ***********************************************************/
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
@@ -65,70 +65,85 @@ const char sysfs_attr_suffix[][8] = {"0_7", "8_15", "16_23", "24_31", "32_39", "
 #define EEPROM_ADDR (0x50)
 #define EEPROM_BASE_BUS (26)
 
-static int ufi_port_to_cpld_addr(int port)
+static int ufi_port_to_cpld_addr(int logical_port)
 {
     return CPLD_BASE_ADDR[1];
 }
 
-static int ufi_port_to_sysfs_attr_offset(int port)
+static int ufi_port_to_sysfs_attr_offset(int logical_port)
 {
-    return port/8;
+    return logical_port/8;
 }
 
-static int ufi_port_to_bit_offset(int port)
-{   
-    return port % 8;
-}
-
-static int ufi_port_to_eeprom_bus(int port)
+static int ufi_port_to_bit_offset(int logical_port)
 {
-    return EEPROM_BASE_BUS + port;
+    return logical_port % 8;
 }
 
-static int ufi_port_to_cpld_bus(int port)
+static int ufi_port_to_eeprom_bus(int logical_port)
+{
+    return EEPROM_BASE_BUS + logical_port;
+}
+
+static int ufi_port_to_cpld_bus(int logical_port)
 {
     int bus = -1;
-    
-    if (port < PORT_NUM) {
+
+    if (logical_port < PORT_NUM) {
         bus =  CPLD_I2C_BUS;
     } else { //unknown ports
-        AIM_LOG_ERROR("unknown ports, port=%d\n", port);
-        check_and_do_i2c_mux_reset(port);
+        AIM_LOG_ERROR("unknown ports, logical_port=%d\n", logical_port);
+        check_and_do_i2c_mux_reset(logical_port);
         return ONLP_STATUS_E_PARAM;
     }
-    
+
     return bus;
 }
 
-static int ufi_port_present_get(int port, int *pres_val)
-{     
+static int ufi_port_present_get(int logical_port, int *pres_val)
+{
     int reg_val = 0, rc = 0;
     int cpld_bus = 0, cpld_addr = 0, attr_offset = 0;
     char *sysfs_port_present = NULL;
-       
-    //get cpld bus, cpld addr and sysfs_attr_offset
-    cpld_bus = ufi_port_to_cpld_bus(port);
-    cpld_addr = ufi_port_to_cpld_addr(port);
-    attr_offset = ufi_port_to_sysfs_attr_offset(port);
 
-    if (IS_SFP(port)) {
+    //get cpld bus, cpld addr and sysfs_attr_offset
+    cpld_bus = ufi_port_to_cpld_bus(logical_port);
+    cpld_addr = ufi_port_to_cpld_addr(logical_port);
+    attr_offset = ufi_port_to_sysfs_attr_offset(logical_port);
+
+    if (IS_SFP(logical_port)) {
         sysfs_port_present = SYSFS_SFP_PRESENT;
-    }	else if (IS_QSFP(port)) {
+    }	else if (IS_QSFP(logical_port)) {
         sysfs_port_present = SYSFS_QSFP_PRESENT;
     } else {
         return ONLP_STATUS_E_PARAM;
     }
-    
+
     //read register
     if ((rc = file_read_hex(&reg_val, SYS_FMT_OFFSET, cpld_bus, cpld_addr, sysfs_port_present, sysfs_attr_suffix[attr_offset])) < 0) {
         AIM_LOG_ERROR("Unable to read sysfs %s", sysfs_port_present);
         AIM_LOG_ERROR(SYS_FMT_OFFSET, cpld_bus, cpld_addr, sysfs_port_present, sysfs_attr_suffix[attr_offset]);
-        check_and_do_i2c_mux_reset(port);
+        check_and_do_i2c_mux_reset(logical_port);
         return rc;
     }
-   
-    *pres_val = !((reg_val >> ufi_port_to_bit_offset(port)) & 0x1);
-    
+
+    *pres_val = !((reg_val >> ufi_port_to_bit_offset(logical_port)) & 0x1);
+
+    return ONLP_STATUS_OK;
+}
+
+static int base_num_g = -1;
+
+static int update_port_base(void) {
+    int rv  = ONLP_STATUS_OK;
+    if(base_num_g == -1) {
+        rv = ufi_port_base_get(&base_num_g);
+    }
+    return rv;
+}
+
+static int xfr_label_logical_port(int label_port, int *logical_port) {
+    *logical_port = label_port - base_num_g;
     return ONLP_STATUS_OK;
 }
 
@@ -136,8 +151,9 @@ static int ufi_port_present_get(int port, int *pres_val)
  * @brief Initialize the SFPI subsystem.
  */
 int onlp_sfpi_init(void)
-{  
+{
     lock_init();
+    update_port_base();
     return ONLP_STATUS_OK;
 }
 
@@ -147,13 +163,16 @@ int onlp_sfpi_init(void)
  */
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
+	ONLP_TRY(update_port_base());
     int p = 0;
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
 
     AIM_BITMAP_CLR_ALL(bmap);
-    for(p = 0; p < PORT_NUM; p++) {
+    for(p = start_port; p < end_port; p++) {
         AIM_BITMAP_SET(bmap, p);
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -166,10 +185,14 @@ int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
  */
 int onlp_sfpi_is_present(int port)
 {
+    ONLP_TRY(update_port_base());
     int status = ONLP_STATUS_OK;
 
-    VALIDATE_PORT(port);
-    ONLP_TRY(ufi_port_present_get(port, &status));
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+    ONLP_TRY(ufi_port_present_get(logical_port, &status));
 
     return status;
 }
@@ -180,11 +203,15 @@ int onlp_sfpi_is_present(int port)
  */
 int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
+    ONLP_TRY(update_port_base());
     int p = 0;
     int ret = 0;
 
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
+
     AIM_BITMAP_CLR_ALL(dst);
-    for (p = 0; p < PORT_NUM; p++) {
+    for (p = start_port; p < end_port; p++) {
         ret = onlp_sfpi_is_present(p);
         AIM_BITMAP_MOD(dst, p, ret);
     }
@@ -198,17 +225,26 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 {
+    ONLP_TRY(update_port_base());
     int i = 0, value = 0;
 
-    for(i = 0; i < PORT_NUM; i++) {
-        if (IS_SFP(i)) {
+    int start_port = 0 + base_num_g;
+    int end_port = start_port + PORT_NUM;
+
+    for(i = start_port; i < end_port; i++) {
+        int logical_port = 0;
+        if(xfr_label_logical_port(i, &logical_port) != ONLP_STATUS_OK) {
+            continue;
+        }
+
+        if (IS_SFP(logical_port)) {
             ONLP_TRY(onlp_sfpi_control_get(i, ONLP_SFP_CONTROL_RX_LOS, &value));
             AIM_BITMAP_MOD(dst, i, value);
         } else {
             AIM_BITMAP_MOD(dst, i, 0);
         }
     }
-	
+
     return ONLP_STATUS_OK;
 }
 
@@ -221,20 +257,24 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
  */
 int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, int size)
 {
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
     int bus = -1;
-    VALIDATE_PORT(port);
-    
+    VALIDATE_PORT(logical_port);
+
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent. \n", port);
         return ONLP_STATUS_OK;
     }
 
-    bus = ufi_port_to_eeprom_bus(port);
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if (onlp_i2c_block_read(bus, devaddr, addr, size, rdata, ONLP_I2C_F_FORCE) < 0) {
         check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
-	
+
     return ONLP_STATUS_OK;
 }
 
@@ -242,22 +282,26 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
  * @brief Write to an address on the given SFP port's bus.
  */
 int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, int size)
-{    
+{
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int bus = -1;
 
-    VALIDATE_PORT(port);
-    
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("port module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-        
-    bus = ufi_port_to_eeprom_bus(port);
+
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if ((rc=onlp_i2c_write(bus, devaddr, addr, size, data, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
-    
+
     return rc;
 }
 
@@ -269,21 +313,25 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
  */
 int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
 {
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int bus = -1;
 
-    VALIDATE_PORT(port);
-    
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
-    bus = ufi_port_to_eeprom_bus(port);
+
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if ((rc=onlp_i2c_readb(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
-    }    
-    
+    }
+
     return rc;
 }
 
@@ -291,22 +339,26 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
  * @brief Write a byte to an address on the given SFP port's bus.
  */
 int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
-{    
+{
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int bus = -1;
 
-    VALIDATE_PORT(port);
-    
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
-    bus = ufi_port_to_eeprom_bus(port);
+
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if ((rc=onlp_i2c_writeb(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
-    
+
     return rc;
 }
 
@@ -319,23 +371,26 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
  */
 int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
 {
-    
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int bus = -1;
-
-    VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
-    bus = ufi_port_to_eeprom_bus(port);
+
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if ((rc=onlp_i2c_readw(bus, devaddr, addr, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
-    
-    return rc;    
+
+    return rc;
 }
 
 /**
@@ -343,22 +398,25 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
  */
 int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value)
 {
-    
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int bus = -1;
-
-    VALIDATE_PORT(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
-    bus = ufi_port_to_eeprom_bus(port);
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if ((rc=onlp_i2c_writew(bus, devaddr, addr, value, ONLP_I2C_F_FORCE)) < 0) {
         check_and_do_i2c_mux_reset(port);
     }
-    
+
     return rc;
 }
 
@@ -384,26 +442,29 @@ int onlp_sfpi_post_insert(int port, sff_info_t* info)
  */
 int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
 {
-    VALIDATE_PORT(port);
-    
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
+
     //set unsupported as default value
     *rv = 0;
-    
+
     switch (control) {
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
-        case ONLP_SFP_CONTROL_LP_MODE:            
-            if (IS_QSFP(port)) {
+        case ONLP_SFP_CONTROL_LP_MODE:
+            if (IS_QSFP(logical_port)) {
                 *rv = 1;
             }
-            break;        
+            break;
         case ONLP_SFP_CONTROL_RX_LOS:
-        case ONLP_SFP_CONTROL_TX_FAULT:    
-        case ONLP_SFP_CONTROL_TX_DISABLE:        
-            if (IS_SFP(port)) {
+        case ONLP_SFP_CONTROL_TX_FAULT:
+        case ONLP_SFP_CONTROL_TX_DISABLE:
+            if (IS_SFP(logical_port)) {
                 *rv = 1;
             }
-            break;        
+            break;
         default:
             *rv = 0;
             break;
@@ -420,24 +481,27 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
  */
 int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 {
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int reg_val = 0;
     int bus = 0;
-    int cpld_addr = 0;    
+    int cpld_addr = 0;
     int attr_offset = 0, bit_offset = 0;
     char *sysfs_attr = NULL;
 
-    VALIDATE_PORT(port);
-    
-    bus = ufi_port_to_cpld_bus(port);
-    cpld_addr = ufi_port_to_cpld_addr(port);
-    attr_offset = ufi_port_to_sysfs_attr_offset(port);
+    bus = ufi_port_to_cpld_bus(logical_port);
+    cpld_addr = ufi_port_to_cpld_addr(logical_port);
+    attr_offset = ufi_port_to_sysfs_attr_offset(logical_port);
 
     switch(control)
         {
         case ONLP_SFP_CONTROL_RESET:
             {
-                if (IS_QSFP(port)) {
+                if (IS_QSFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_QSFP_RESET;
 
@@ -447,10 +511,10 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
                 break;
-            }        
+            }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                if (IS_SFP(port)) {
+                if (IS_SFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_SFP_TX_DISABLE;
                 } else {
@@ -460,14 +524,14 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                if (IS_QSFP(port)) {
+                if (IS_QSFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr =SYSFS_QSFP_LPMODE;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
                 }
                 break;
-            }                
+            }
         default:
             return ONLP_STATUS_E_UNSUPPORTED;
         }
@@ -480,7 +544,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
 
     //update reg_val
     //0 is normal, 1 is reset, reverse value to fit our platform
-    bit_offset = ufi_port_to_bit_offset(port);
+    bit_offset = ufi_port_to_bit_offset(logical_port);
     reg_val = ufi_bit_operation(reg_val, bit_offset, value);
 
     //write reg_val
@@ -503,25 +567,28 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
  */
 int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
 {
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
+
     int rc = 0;
     int reg_val = 0, reg_mask = 0;
     int bus = 0;
-    int cpld_addr = 0;    
+    int cpld_addr = 0;
     int attr_offset = 0, bit_offset = 0;
     int negate_value = 0;
     char *sysfs_attr = NULL;
 
-    VALIDATE_PORT(port);
-    
-    bus = ufi_port_to_cpld_bus(port);
-    cpld_addr = ufi_port_to_cpld_addr(port);
-    attr_offset = ufi_port_to_sysfs_attr_offset(port);
-	
+    bus = ufi_port_to_cpld_bus(logical_port);
+    cpld_addr = ufi_port_to_cpld_addr(logical_port);
+    attr_offset = ufi_port_to_sysfs_attr_offset(logical_port);
+
     switch(control)
         {
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                if (IS_QSFP(port)) {
+                if (IS_QSFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_QSFP_RESET;
 
@@ -534,7 +601,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                if (IS_SFP(port)) {
+                if (IS_SFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_SFP_RX_LOS;
 
@@ -548,7 +615,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                if (IS_SFP(port)) {
+                if (IS_SFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_SFP_TX_FAULT;
 
@@ -559,10 +626,10 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     return ONLP_STATUS_E_PARAM;
                 }
                 break;
-            }        
+            }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                if (IS_SFP(port)) {
+                if (IS_SFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_SFP_TX_DISABLE;
 
@@ -576,10 +643,10 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                if (IS_QSFP(port)) {
+                if (IS_QSFP(logical_port)) {
                     //config sysfs_attr
                     sysfs_attr = SYSFS_QSFP_LPMODE;
-                    
+
                     //read bit value
                     //0 is normal, 1 is low power
                     negate_value = 0;
@@ -587,29 +654,29 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     return ONLP_STATUS_E_PARAM;
                 }
                 break;
-            }                
+            }
         default:
             return ONLP_STATUS_E_PARAM;
         }
-   
+
     //read reg_val
     if (file_read_hex(&reg_val, SYS_FMT_OFFSET, bus, cpld_addr, sysfs_attr, sysfs_attr_suffix[attr_offset]) < 0) {
         check_and_do_i2c_mux_reset(port);
         return ONLP_STATUS_E_INTERNAL;
     }
-    
-    //read bit value    
-    bit_offset = ufi_port_to_bit_offset(port);
+
+    //read bit value
+    bit_offset = ufi_port_to_bit_offset(logical_port);
     reg_mask = 1 << bit_offset;
     *value = ufi_mask_shift(reg_val, reg_mask);
 
-    //negate value if needed	
+    //negate value if needed
     if (negate_value == 1) {
 	    *value = !(*value);
     }
-    
-    rc = ONLP_STATUS_OK;  
-					
+
+    rc = ONLP_STATUS_OK;
+
     return rc;
 }
 
@@ -676,10 +743,14 @@ int onlp_sfpi_ioctl(int port, va_list vargs)
  * @param data Receives the SFP data.
  */
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
-{   
+{
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_PORT(logical_port);
+
     int size = 0, expect_size = 256, bus = 0, rc = 0;
-    VALIDATE_PORT(port);
-    
+
     memset(data, 0, expect_size);
 
     if (onlp_sfpi_is_present(port) != 1) {
@@ -687,11 +758,11 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         return ONLP_STATUS_OK;
     }
 
-    bus = ufi_port_to_eeprom_bus(port);
+    bus = ufi_port_to_eeprom_bus(logical_port);
     if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
         AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
-        
+
         check_and_do_i2c_mux_reset(port);
         return rc;
     }
@@ -700,7 +771,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         AIM_LOG_ERROR("Unable to read eeprom from port(%d), size is different!", port);
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -711,6 +782,11 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
  */
 int onlp_sfpi_dom_read(int port, uint8_t data[256])
 {
+    ONLP_TRY(update_port_base());
+    int logical_port = 0;
+    ONLP_TRY(xfr_label_logical_port(port, &logical_port));
+    VALIDATE_SFP_PORT(logical_port);
+
     char eeprom_path[512];
     FILE* fp = NULL;
     int bus = 0;
@@ -719,18 +795,17 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     //qsfp dom is on lower page 0x00
     //qsfpdd 2.0 dom is on lower page 0x00
     //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
-    VALIDATE_SFP_PORT(port);
-    
+
     if (onlp_sfpi_is_present(port) !=  1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
-    
+
     memset(data, 0, 256);
     memset(eeprom_path, 0, sizeof(eeprom_path));
 
     //set eeprom_path
-    bus = ufi_port_to_eeprom_bus(port);
+    bus = ufi_port_to_eeprom_bus(logical_port);
     snprintf(eeprom_path, sizeof(eeprom_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
 
     //read eeprom

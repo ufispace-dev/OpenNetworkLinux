@@ -5,7 +5,6 @@ from ctypes import c_int, sizeof
 import os
 import sys
 import subprocess
-import time
 import fcntl
 import yaml
 
@@ -333,6 +332,9 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
             self.update_pci_device(driver_name, bus_address, action)
 
     def baseconfig(self):
+
+        # init interrupt handler for IRQ 17
+        self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 17})
 
         # load default kernel driver
         self.init_i2c_bus_order()

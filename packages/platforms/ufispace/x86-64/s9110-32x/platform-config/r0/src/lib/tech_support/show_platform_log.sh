@@ -344,7 +344,7 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
-    hw_ext_name_array=("S9110-32X")
+    hw_ext_name_array=("S9110-32X" "S9110-32X Port 1 BASE")
     model_id_array=($((2#11111100)))
     model_name_array=("S9110-32X")
 

@@ -66,17 +66,6 @@
  *            |----[12] ONLP_FAN6_R
  */
 
-/* SYSFS */
-#define LPC_CPU_CPLD_VERSION_ATTR   "cpu_cpld_version"
-#define LPC_CPU_CPLD_BUILD_ATTR     "cpu_cpld_build"
-#define LPC_CPU_CPLD_VER_H_ATTR     "cpu_cpld_version_h"
-#define LPC_MB_SKUID_ATTR           "board_sku_id"
-#define LPC_MB_HWID_ATTR            "board_hw_id"
-#define LPC_MB_IDTYPE_ATTR          "board_id_type"
-#define LPC_MB_BUILDID_ATTR         "board_build_id"
-#define LPC_MB_DEPHID_ATTR          "board_deph_id"
-#define MB_CPLD_VER_H_ATTR          "cpld_version_h"
-
 static onlp_oid_t __onlp_oid_info[] = {
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
     ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_ENV),

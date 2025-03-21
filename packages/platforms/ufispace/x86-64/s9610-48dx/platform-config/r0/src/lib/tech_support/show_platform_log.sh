@@ -8,7 +8,7 @@ TRUE=0
 FALSE=1
 
 # Device Serial Number
-SN=$(dmidecode -t 3 | grep "Serial Number" | cut -d : -f 2 | xargs)
+SN=$(dmidecode -s chassis-serial-number)
 if [ ! $? -eq 0 ]; then
     SN=""
 elif [[ $SN = *" "* ]]; then
@@ -27,17 +27,14 @@ LOG_FOLDER_PATH=""
 LOG_FILE_PATH=""
 LOG_FAST=${FALSE}
 
-
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
-
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IOGET="${SCRIPTPATH}/ioget"
 
 # LOG_FILE_ENABLE=1: Log all the platform info to log files (${LOG_FILE_NAME})
 # LOG_FILE_ENABLE=0: Print all the platform info in console
@@ -54,10 +51,16 @@ LOG_REDIRECT=""
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
 
+# Sysfs
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc"
+
 # Execution Time
 start_time=$(date +%s)
 end_time=0
 elapsed_time=0
+
+# Options
+OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
@@ -99,7 +102,7 @@ function _show_ts_version {
 
 function _update_gpio_max {
     _banner "Update GPIO MAX"
-    local sysfs="/sys/devices/platform/x86_64_ufispace_s9610_48dx_lpc/bsp/bsp_gpio_max"
+    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
 
     GPIO_MAX=$(cat ${sysfs})
     if [ $? -eq 1 ]; then
@@ -112,15 +115,13 @@ function _update_gpio_max {
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 }
 
+function _dd_read_byte {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
 function _check_env {
     #_banner "Check Environment"
-
-    # check utility
-    if [ ! -f "${IOGET}" ]; then
-        echo "Error!!! ioget(${IOGET}) file not found!!! Exit!!!"
-        echo "Please update the ioget file path in script or put the ioget under ${IOGET}."
-        exit 1
-    fi
 
     # check basic commands
     cmd_array=("ipmitool" "lsusb" "dmidecode")
@@ -164,6 +165,19 @@ function _check_filepath {
     fi
 }
 
+function _check_dirpath {
+    dirpath=$1
+    if [ -z "${dirpath}" ]; then
+        _echo "ERROR, the ipnut string is empty!!!"
+        return ${FALSE}
+    elif [ ! -d "$dirpath" ]; then
+        _echo "ERROR: No such directory: ${dirpath}"
+        return ${FALSE}
+    else
+        return ${TRUE}
+    fi
+}
+
 function _check_i2c_device {
     i2c_addr=$1
 
@@ -186,9 +200,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    i2c_bus_0=$(eval "i2cdetect -y 0 ${LOG_REDIRECT} | grep UU")
-    ret=$?
-    if [ $ret -eq 0 ] && [ ! -z "${i2c_bus_0}" ] ; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -275,24 +288,22 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    model_id_array=($((2#00011110)) $((2#00011111)))
-    model_name_array=("Large EMUX w/o OP2", "Large EMUX w/ OP2")
+    model_id_array=($((2#00011110)) $((2#00011111)) $((2#00101110)))
+    model_name_array=("Large EMUX w/o OP2", "Large EMUX w/ OP2", "Large EMUX 46P w/ OP2")
     model_name=""
 
-    model_id=`${IOGET} 0xE00`
+    model_id=$(_dd_read_byte 0xE00)
     ret=$?
     if [ $ret -eq 0 ]; then
-        model_id=`echo ${model_id} | awk -F" " '{print $NF}'`
         model_id=$((model_id))
     else
         _echo "Get board model id failed ($ret), Exit!!"
         exit $ret
     fi
 
-    board_rev_id=`${IOGET} 0xE01`
+    board_rev_id=$(_dd_read_byte 0xE01)
     ret=$?
     if [ $ret -eq 0 ]; then
-        board_rev_id=`echo ${board_rev_id} | awk -F" " '{print $NF}'`
         board_rev_id=$((board_rev_id))
     else
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
@@ -340,10 +351,7 @@ function _bios_version {
     _banner "Show BIOS Version"
 
     bios_ver=$(eval "cat /sys/class/dmi/id/bios_version ${LOG_REDIRECT}")
-    bios_boot_rom=`${IOGET} 0x602`
-    if [ $? -eq 0 ]; then
-        bios_boot_rom=`echo ${bios_boot_rom} | awk -F" " '{print $NF}'`
-    fi
+    bios_boot_rom=$(_dd_read_byte 0x602)
 
     _echo "[BIOS Vesion  ]: ${bios_ver}"
     _echo "[BIOS Boot ROM]: ${bios_boot_rom}"
@@ -362,23 +370,24 @@ function _bmc_version {
 }
 
 function _cpld_version_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show CPLD Version (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_info=$(_dd_read_byte 0x600)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD version info failed ($ret), Exit!!"
         exit $ret
     fi
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
+    cpu_cpld_build=$(_dd_read_byte 0x6e0)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD build info failed ($ret), Exit!!"
         exit $ret
     fi
@@ -434,7 +443,7 @@ function _cpld_version_sysfs {
     _banner "Show CPLD Version (Sysfs)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_info=$(_dd_read_byte 0x600)
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
@@ -443,7 +452,7 @@ function _cpld_version_sysfs {
         exit $ret
     fi
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
+    cpu_cpld_build=$(_dd_read_byte 0x6e0)
     ret=$?
     if [ $ret -eq 0 ]; then
         cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
@@ -537,6 +546,11 @@ function _show_i2c_mux_devices {
 }
 
 function _show_i2c_tree_bus_mux_i2c {
+    if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
+        _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
+        return
+    fi
+
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
@@ -667,30 +681,30 @@ function _show_sys_devices {
     _echo "${ret}"
 }
 
-function _show_cpu_eeprom_i2c {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_i2c {
+    _banner "Show System EEPROM"
 
     #first read return empty content
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
     #second read return correct content
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom_sysfs {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_sysfs {
+    _banner "Show System EEPROM"
 
-    cpu_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    sys_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom {
+function _show_sys_eeprom {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_cpu_eeprom_sysfs
+        _show_sys_eeprom_sysfs
     else
-        _show_cpu_eeprom_i2c
+        _show_sys_eeprom_i2c
     fi
 }
 
@@ -1214,11 +1228,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x700" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0x700
@@ -1229,11 +1244,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x800" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
     base=0xE00
@@ -1244,20 +1260,60 @@ function _show_ioport {
 
     while [ "${reg}" != "0xF00" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
 
-    ret=$(eval "${IOGET} 0x501 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf000 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
-    _echo "${ret}"
+    reg="0x501"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf000"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf011"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
 
+}
+
+function _show_cpld_reg_sysfs {
+    _banner "Show CPLD Register"
+
+    if [[ $MODEL_NAME == *"Large EMUX"* ]]; then
+        _check_dirpath "/sys/bus/i2c/devices/1-0030"
+        reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
+        _echo "[CPLD 1 Register]:"
+        _echo "${reg_dump}"
+
+        _check_dirpath "/sys/bus/i2c/devices/1-0031"
+        reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
+        _echo "[CPLD 2 Register]:"
+        _echo "${reg_dump}"
+
+        _check_dirpath "/sys/bus/i2c/devices/1-0032"
+        reg_dump=$(eval "i2cdump -f -y 1 0x32 ${LOG_REDIRECT}")
+        _echo "[CPLD 3 Register]:"
+        _echo "${reg_dump}"
+
+        _check_dirpath "/sys/bus/i2c/devices/1-0033"
+        reg_dump=$(eval "i2cdump -f -y 1 0x33 ${LOG_REDIRECT}")
+        _echo "[CPLD 4 Register]:"
+        _echo "${reg_dump}"
+
+    else
+        _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+        exit 1
+    fi
+}
+
+function _show_cpld_reg {
+    if [ "${BSP_INIT_FLAG}" == "1" ] ; then
+        _show_cpld_reg_sysfs
+    fi
 }
 
 function _show_onlpdump {
@@ -1820,8 +1876,9 @@ usage() {
     local f=$(basename "$0")
     echo ""
     echo "Usage:"
-    echo "    $f [-d D_DIR] [-i identifier] [-v]"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
     echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
     echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
     echo "  -i                insert an identifier in the log file name"
     echo "  -v                show tech support script version"
@@ -1833,13 +1890,16 @@ usage() {
 }
 
 function _getopts {
-    local OPTSTRING=":d:fi:v"
+    local OPTSTRING=":bd:fi:sv"
     # default log dir
     local log_folder_root="/tmp/log"
     local identifier=$SN
 
     while getopts ${OPTSTRING} opt; do
         case ${opt} in
+            b)
+              OPT_BYPASS_I2C_COMMAND=${TRUE}
+              ;;
             d)
               log_folder_root=${OPTARG}
               ;;
@@ -1878,7 +1938,7 @@ function _main {
     _show_i2c_tree
     _show_i2c_device_info
     _show_sys_devices
-    _show_cpu_eeprom
+    _show_sys_eeprom
     _show_psu_status_cpld
     _show_rov
     _show_nif_port_status

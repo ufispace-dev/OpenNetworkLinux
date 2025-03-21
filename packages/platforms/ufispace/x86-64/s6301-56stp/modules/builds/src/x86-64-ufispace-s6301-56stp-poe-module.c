@@ -341,7 +341,7 @@ static int _config_poe_log(u8 log_type)
 static ssize_t read_poe_callback(struct device *dev,
                                  struct device_attribute *da, char *buf)
 {
-    char out[512];
+    char out[OUT_BUF_SIZE] = {0};
     u32 u32_out;
     ssize_t ret = E_TYPE_SUCCESS;
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
@@ -440,7 +440,7 @@ static ssize_t read_poe_callback(struct device *dev,
 static ssize_t read_poe_port_callback(struct device *dev,
                                       struct device_attribute *da, char *buf)
 {
-    char out[512];
+    char out[OUT_BUF_SIZE] = {0};
     u32 u32_out;
     int port_num, attr_type;
     ssize_t ret = E_TYPE_SUCCESS;

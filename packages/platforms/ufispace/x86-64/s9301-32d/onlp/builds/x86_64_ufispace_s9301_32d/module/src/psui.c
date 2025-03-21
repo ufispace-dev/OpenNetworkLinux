@@ -57,6 +57,22 @@
 #define PSU0_PWGOOD_MASK    0b00000001
 #define PSU1_PWGOOD_MASK    0b00000010
 
+typedef struct
+{
+    char *sysfs;
+    int abs_mask;
+    int pg_mask;
+    int fru_id;
+    int attr_vin;
+    int attr_vout;
+    int attr_iin;
+    int attr_iout;
+    int attr_pin;
+    int attr_pout;
+    int attr_stbvout;
+    int attr_stbiout;
+} psu_node_t;
+
 static onlp_psu_info_t psu_info[] =
 {
     { }, /* Not used */
@@ -76,6 +92,46 @@ static psu_support_info_t psu_support_list[] =
     {"ACBEL", "R1BD2132B-OHAA", ONLP_PSU_TYPE_DC48},
 };
 
+static int get_node(int local_id, psu_node_t* node)
+{
+    if(node == NULL)
+        return ONLP_STATUS_E_PARAM;
+
+    switch(local_id) {
+        case ONLP_PSU0:
+            node->sysfs =  CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR;
+            node->abs_mask = PSU0_PRESENT_MASK;
+            node->pg_mask = PSU0_PWGOOD_MASK;
+            node->fru_id = BMC_FRU_IDX_ONLP_PSU_0;
+            node->attr_vin = BMC_ATTR_ID_PSU0_VIN;
+            node->attr_vout = BMC_ATTR_ID_PSU0_VOUT;
+            node->attr_iin = BMC_ATTR_ID_PSU0_IIN;
+            node->attr_iout = BMC_ATTR_ID_PSU0_IOUT;
+            node->attr_pin = BMC_ATTR_ID_PSU0_PIN;
+            node->attr_pout = BMC_ATTR_ID_PSU0_POUT;
+            node->attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
+            node->attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
+            break;
+        case ONLP_PSU1:
+            node->sysfs =  CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR;
+            node->abs_mask = PSU1_PRESENT_MASK;
+            node->pg_mask = PSU1_PWGOOD_MASK;
+            node->fru_id = BMC_FRU_IDX_ONLP_PSU_1;
+            node->attr_vin = BMC_ATTR_ID_PSU1_VIN;
+            node->attr_vout = BMC_ATTR_ID_PSU1_VOUT;
+            node->attr_iin = BMC_ATTR_ID_PSU1_IIN;
+            node->attr_iout = BMC_ATTR_ID_PSU1_IOUT;
+            node->attr_pin = BMC_ATTR_ID_PSU1_PIN;
+            node->attr_pout = BMC_ATTR_ID_PSU1_POUT;
+            node->attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
+            node->attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
+            break;
+        default:
+            return ONLP_STATUS_E_PARAM;
+    }
+    return ONLP_STATUS_OK;
+}
+
 /**
  * @brief Get PSU Present Status
  * @param local_id: psu id
@@ -86,20 +142,17 @@ static psu_support_info_t psu_support_list[] =
 int get_psui_present_status(int local_id, int *status)
 {
     int psu_reg_value = 0;
-    int psu_presence = 0;
+    psu_node_t node = {0};
 
-    if(local_id == ONLP_PSU0) {
-        ONLP_TRY(file_read_hex(&psu_reg_value, CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR));
-        psu_presence = (psu_reg_value & PSU0_PRESENT_MASK) ? 0 : 1;
-    } else if(local_id == ONLP_PSU1) {
-        ONLP_TRY(file_read_hex(&psu_reg_value, CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR));
-        psu_presence = (psu_reg_value & PSU1_PRESENT_MASK) ? 0 : 1;
-    } else {
-        AIM_LOG_ERROR("unknown psu id (%d), func=%s\n", local_id, __FUNCTION__);
-        return ONLP_STATUS_E_PARAM;
+    if(status == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
     }
 
-    *status = psu_presence;
+    ONLP_TRY(get_node(local_id, &node));
+
+    ONLP_TRY(file_read_hex(&psu_reg_value, node.sysfs));
+
+    *status = (psu_reg_value & node.abs_mask) ? 0 : 1;
 
     return ONLP_STATUS_OK;
 }
@@ -114,20 +167,17 @@ int get_psui_present_status(int local_id, int *status)
 static int get_psui_pwgood_status(int local_id, int *status)
 {
     int psu_reg_value = 0;
-    int psu_pwgood = 0;
+    psu_node_t node = {0};
 
-    if(local_id == ONLP_PSU0) {
-        ONLP_TRY(file_read_hex(&psu_reg_value, CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR));
-        psu_pwgood = (psu_reg_value & PSU0_PWGOOD_MASK) ? 1 : 0;
-    } else if(local_id == ONLP_PSU1) {
-        ONLP_TRY(file_read_hex(&psu_reg_value, CPLD1_SYSFS_PATH"/"PSU_STATUS_ATTR));
-        psu_pwgood = (psu_reg_value & PSU1_PWGOOD_MASK) ? 1 : 0;
-    } else {
-        AIM_LOG_ERROR("unknown psu id (%d), func=%s\n", local_id, __FUNCTION__);
-        return ONLP_STATUS_E_PARAM;
+    if(status == NULL) {
+        return ONLP_STATUS_E_INTERNAL;
     }
 
-    *status = psu_pwgood;
+    ONLP_TRY(get_node(local_id, &node));
+
+    ONLP_TRY(file_read_hex(&psu_reg_value, node.sysfs));
+
+    *status = (psu_reg_value & node.pg_mask) ? 1 : 0;
 
     return ONLP_STATUS_OK;
 }
@@ -142,15 +192,18 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 {
     bmc_fru_t *fru = NULL;
     bmc_fru_t fru_tmp = {0};
+    psu_node_t node = {0};
     int i, max;
 
     if(psu_type == NULL) {
         return ONLP_STATUS_E_INTERNAL;
     }
 
+    ONLP_TRY(get_node(local_id, &node));
+
     if(fru_in == NULL) {
         fru = &fru_tmp;
-        ONLP_TRY(bmc_fru_read(local_id, fru));
+        ONLP_TRY(bmc_fru_read(node.fru_id, fru));
     } else {
         fru = fru_in;
     }
@@ -178,13 +231,16 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
  * @param id The PSU Local ID
  * @param[out] info Receives the PSU information (model and serial).
  */
-static int update_psui_fru_info(int id, onlp_psu_info_t* info)
+static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
 {
     bmc_fru_t fru = {0};
+    psu_node_t node = {0};
     int psu_type = ONLP_PSU_TYPE_AC;
 
+    ONLP_TRY(get_node(local_id, &node));
+
     //read fru data
-    ONLP_TRY(bmc_fru_read(id, &fru));
+    ONLP_TRY(bmc_fru_read(node.fru_id, &fru));
 
     //update FRU model
     memset(info->model, 0, sizeof(info->model));
@@ -201,7 +257,8 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
     snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
     //update FRU type
-    ONLP_TRY(get_psu_type(id, &psu_type, &fru));
+    ONLP_TRY(get_psu_type(local_id, &psu_type, &fru));
+
     if(psu_type == ONLP_PSU_TYPE_AC) {
         info->caps |= ONLP_PSU_CAPS_AC;
         info->caps &= ~ONLP_PSU_CAPS_DC48;
@@ -222,71 +279,64 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
 {
     int stbmvout, stbmiout;
     float data;
-    int attr_id_vin = -1, attr_id_vout = -1;
-    int attr_id_iin = -1, attr_id_iout = -1;
-    int attr_id_svout = -1, attr_id_siout = -1;
-    //int pw_present;
+    psu_node_t node = {0};
 
     if((info->status & ONLP_PSU_STATUS_PRESENT) == 0) {
         //not present, do nothing
         return ONLP_STATUS_OK;
     }
 
-    if(local_id == ONLP_PSU0) {
-        attr_id_vin   = BMC_ATTR_ID_PSU0_VIN;
-        attr_id_vout  = BMC_ATTR_ID_PSU0_VOUT;
-        attr_id_iin   = BMC_ATTR_ID_PSU0_IIN;
-        attr_id_iout  = BMC_ATTR_ID_PSU0_IOUT;
-        attr_id_svout = BMC_ATTR_ID_PSU0_STBVOUT;
-        attr_id_siout = BMC_ATTR_ID_PSU0_STBIOUT;
-    } else if(local_id == ONLP_PSU1) {
-        attr_id_vin   = BMC_ATTR_ID_PSU1_VIN;
-        attr_id_vout  = BMC_ATTR_ID_PSU1_VOUT;
-        attr_id_iin   = BMC_ATTR_ID_PSU1_IIN;
-        attr_id_iout  = BMC_ATTR_ID_PSU1_IOUT;
-        attr_id_svout = BMC_ATTR_ID_PSU1_STBVOUT;
-        attr_id_siout = BMC_ATTR_ID_PSU1_STBIOUT;
-    } else {
-        AIM_LOG_ERROR("unknown PSU_ID (%d), func=%s\n", local_id, __FUNCTION__);
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(get_node(local_id, &node));
 
     /* Get power vin status */
-    ONLP_TRY(bmc_sensor_read(attr_id_vin, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_vin, PSU_SENSOR, &data));
     info->mvin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VIN;
 
     /* Get power vout status */
-    ONLP_TRY(bmc_sensor_read(attr_id_vout, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_vout, PSU_SENSOR, &data));
     info->mvout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_VOUT;
 
     /* Get power iin status */
-    ONLP_TRY(bmc_sensor_read(attr_id_iin, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_iin, PSU_SENSOR, &data));
     info->miin = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IIN;
 
     /* Get power iout status */
-    ONLP_TRY(bmc_sensor_read(attr_id_iout, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_iout, PSU_SENSOR, &data));
     info->miout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IOUT;
 
     /* Get standby power vout */
-    ONLP_TRY(bmc_sensor_read(attr_id_svout, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_stbvout, PSU_SENSOR, &data));
+    (void) stbmvout;
     stbmvout = (int) (data*1000);
 
     /* Get standby power iout */
-    ONLP_TRY(bmc_sensor_read(attr_id_siout, PSU_SENSOR, &data));
+    ONLP_TRY(bmc_sensor_read(node.attr_stbiout, PSU_SENSOR, &data));
+    (void) stbmiout;
     stbmiout = (int) (data*1000);
 
-    /* Get power in and out */
-    info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
-    info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
+    /* Get power in and out */    
+    ONLP_TRY(bmc_sensor_read(node.attr_pin, PSU_SENSOR, &data));
+    if(data != 0) {
+        info->mpin = (int) (data*1000);
+    } else {
+        info->mpin = info->miin * info->mvin / 1000;
+    }
+    info->caps |= ONLP_PSU_CAPS_PIN;
+
+    ONLP_TRY(bmc_sensor_read(node.attr_pout, PSU_SENSOR, &data));
+    if(data != 0) {
+        info->mpout = (int) (data*1000);
+    } else {
+        info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
+    }
+    info->caps |= ONLP_PSU_CAPS_POUT;
 
     /* Update FRU (model/serial) */
     ONLP_TRY(update_psui_fru_info(local_id, info));
-
 
     return ONLP_STATUS_OK;
 }
@@ -333,20 +383,20 @@ int onlp_psui_info_get(onlp_oid_t id, onlp_psu_info_t* info)
  * @param id The PSU OID.
  * @param rv [out] Receives the operational status.
  */
-int onlp_psui_status_get(onlp_oid_t id, uint32_t* status)
+int onlp_psui_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id = ONLP_OID_ID_GET(id);
     int psu_presence = 0, psu_pwgood = 0;
 
     /* clear psui status */
-    *status = 0;
+    *rv = 0;
 
     /* get psu present status */
     ONLP_TRY(get_psui_present_status(local_id, &psu_presence));
     if(psu_presence == 0) {
-        *status |= ONLP_PSU_STATUS_UNPLUGGED;
+        *rv |= ONLP_PSU_STATUS_UNPLUGGED;
     } else if(psu_presence == 1) {
-        *status |= ONLP_PSU_STATUS_PRESENT;
+        *rv |= ONLP_PSU_STATUS_PRESENT;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -354,9 +404,9 @@ int onlp_psui_status_get(onlp_oid_t id, uint32_t* status)
     /* get psu power good status */
     ONLP_TRY(get_psui_pwgood_status(local_id, &psu_pwgood));
     if(psu_pwgood == 0) {
-        *status |= ONLP_PSU_STATUS_FAILED;
+        *rv |= ONLP_PSU_STATUS_FAILED;
     } else if(psu_pwgood == 1) {
-        *status &= ~ONLP_PSU_STATUS_FAILED;
+        *rv &= ~ONLP_PSU_STATUS_FAILED;
     } else {
         return ONLP_STATUS_E_INTERNAL;
     }

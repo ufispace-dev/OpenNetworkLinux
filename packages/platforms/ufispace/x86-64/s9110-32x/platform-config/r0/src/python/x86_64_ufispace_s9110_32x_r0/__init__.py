@@ -192,7 +192,7 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
 
         self.new_i2c_devices(cpld)
 
-    def init_eeprom(self):
+    def init_eeprom(self, board):
         data = None
         port_eeprom = {
             0: {"type": "QSFP"  , "bus": 18, "driver": "optoe1"},
@@ -237,7 +237,10 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
         for port, config in port_eeprom.items():
             addr=0x50
             self.new_i2c_device(config["driver"], addr, config["bus"])
-            port_name = data[config["type"]][port]["port_name"]
+            if board.get('ext_id') == 1:
+                port_name = data[config["type"]][port]["port_name_1_base"]
+            else:
+                port_name = data[config["type"]][port]["port_name"]
             sysfs=self.PATH_SYS_I2C_DEV_ATTR.format( config["bus"], addr, "port_name")
             subprocess.call("echo {} > {}".format(port_name, sysfs), shell=True)
 
@@ -372,7 +375,7 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
         # init EEPROM
         self.bsp_pr("Init port eeprom")
         self.insmod("optoe")
-        self.init_eeprom()
+        self.init_eeprom(board)
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

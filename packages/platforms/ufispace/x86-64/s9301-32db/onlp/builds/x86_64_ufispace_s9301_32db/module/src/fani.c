@@ -63,14 +63,15 @@
         0,                                      \
         0,                                      \
         ONLP_FAN_MODE_INVALID,                  \
+        COMM_STR_NOT_SUPPORTED,                 \
+        COMM_STR_NOT_SUPPORTED,                 \
     }
 #define FAN_FRONT_MAX_RPM   36200
 #define FAN_REAR_MAX_RPM    32000
 #define PSU_FAN_MAX_RPM     27000
-/* if FAN_DIR_EN is defined , support fan driection detect */
-#define FAN_DIR_EN 1
 
-static onlp_fan_info_t fan_info[] = {
+static onlp_fan_info_t fan_info[] =
+{
     { }, /* Not used */
     CHASSIS_INFO(ONLP_FAN1_F    , "CHASSIS FAN 0 FRONT"),
     CHASSIS_INFO(ONLP_FAN1_R    , "CHASSIS FAN 0 REAR"),
@@ -88,22 +89,200 @@ static onlp_fan_info_t fan_info[] = {
     CHASSIS_INFO(ONLP_PSU1_FAN1 , "PSU 1 FAN"),
 };
 
-static bool fan_fru_supported = false;
+#define IS_FANTRAY(_node)  (_node.type == TYPE_FANTRAY)
+#define IS_PSU(_node)      (_node.type == TYPE_PSU)
 
-static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
+typedef struct 
 {
-    int result = ONLP_STATUS_OK;
+    int present;
+    int rpm;
+    int dir;
+    int fru_id;
+    int type;
+    int parent;
+    //FAN or PSU AC
+    int max_rpm1;
+    //PSU DC
+    int max_rpm2;
+} fan_node_t;
 
-    if(fan_fru_supported) {
-        /* Get fan fru info */
-        if(result != ONLP_STATUS_OK) {
-            snprintf(info->model, sizeof(info->model), "%s", "not available");
-            snprintf(info->serial, sizeof(info->serial), "%s", "not available");
-        }
-    } else {
-        snprintf(info->model, sizeof(info->model), "%s", "not supported");
-        snprintf(info->serial, sizeof(info->serial), "%s", "not supported");
+typedef enum fan_type_e 
+{
+    TYPE_FANTRAY = 0,
+    TYPE_PSU,
+} fan_type_t;
+
+static int get_node(int local_id, fan_node_t *node)
+{
+    if(node == NULL)
+        return ONLP_STATUS_E_PARAM;
+
+    switch(local_id) {
+        case ONLP_FAN1_F:
+            node->present = BMC_ATTR_ID_FAN0_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN0_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN0_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_0;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN1_R:
+            node->present = BMC_ATTR_ID_FAN0_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN0_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN0_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_0;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_FAN2_F:
+            node->present = BMC_ATTR_ID_FAN1_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN1_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN1_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_1;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN2_R:
+            node->present = BMC_ATTR_ID_FAN1_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN1_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN1_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_1;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_FAN3_F:
+            node->present = BMC_ATTR_ID_FAN2_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN2_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN2_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_2;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN3_R:
+            node->present = BMC_ATTR_ID_FAN2_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN2_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN2_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_2;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_FAN4_F:
+            node->present = BMC_ATTR_ID_FAN3_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN3_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN3_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_3;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN4_R:
+            node->present = BMC_ATTR_ID_FAN3_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN3_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN3_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_3;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_FAN5_F:
+            node->present = BMC_ATTR_ID_FAN4_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN4_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN4_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_4;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN5_R:
+            node->present = BMC_ATTR_ID_FAN4_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN4_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN4_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_4;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_FAN6_F:
+            node->present = BMC_ATTR_ID_FAN5_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN5_RPM_F;
+            node->dir = BMC_ATTR_ID_FAN5_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_5;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_FRONT_MAX_RPM;
+           break;
+        case ONLP_FAN6_R:
+            node->present = BMC_ATTR_ID_FAN5_PSNT_L;
+            node->rpm = BMC_ATTR_ID_FAN5_RPM_R;
+            node->dir = BMC_ATTR_ID_FAN5_DIR;
+            node->fru_id = BMC_FRU_IDX_FAN_TRAY_5;
+            node->type = TYPE_FANTRAY;
+            node->max_rpm1 = FAN_REAR_MAX_RPM;
+           break;
+        case ONLP_PSU0_FAN1:
+            node->present = BMC_ATTR_ID_INVALID;
+            node->rpm = BMC_ATTR_ID_PSU0_FAN1;
+            node->dir = BMC_ATTR_ID_PSU0_FAN1_DIR;
+            node->fru_id = BMC_FRU_IDX_INVALID;
+            node->type = TYPE_PSU;
+            node->parent = ONLP_PSU0;
+            node->max_rpm1 = PSU_FAN_MAX_RPM;
+            node->max_rpm2 = PSU_FAN_MAX_RPM;
+           break;
+        case ONLP_PSU1_FAN1:
+            node->present = BMC_ATTR_ID_INVALID;
+            node->rpm = BMC_ATTR_ID_PSU1_FAN1;
+            node->dir = BMC_ATTR_ID_PSU1_FAN1_DIR;
+            node->fru_id = BMC_FRU_IDX_INVALID;
+            node->type = TYPE_PSU;
+            node->parent = ONLP_PSU1;
+            node->max_rpm1 = PSU_FAN_MAX_RPM;
+            node->max_rpm2 = PSU_FAN_MAX_RPM;
+           break;
+        default:
+            return ONLP_STATUS_E_PARAM;
     }
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Check if fan FRU is supported
+ */
+static int is_fru_sup(void) {
+
+    board_t board = {0};
+    ONLP_TRY(get_board_version(&board));
+    if(board.hw_rev >= HW_REV_PVT && board.hw_build >= HW_BUILD_1) {
+        return ONLP_STATUS_OK;
+    } else {
+        return ONLP_STATUS_E_UNSUPPORTED;
+    }
+}
+
+/**
+ * @brief Update the information of Model and Serial from FAN EEPROM
+ * @param local_id The FAN Local ID
+ * @param[out] info Receives the FAN information (model and serial).
+ */
+static int update_fru_info(int local_id, onlp_fan_info_t* info)
+{
+    bmc_fru_t fru = {0};
+    fan_node_t node = {0};
+
+    ONLP_TRY(get_node(local_id, &node));
+    if(node.fru_id == BMC_FRU_IDX_INVALID) {
+        return ONLP_STATUS_OK;
+    }
+
+    if(is_fru_sup() != ONLP_STATUS_OK) {
+        return ONLP_STATUS_OK;
+    }
+
+    //read fru data
+    ONLP_TRY(bmc_fru_read(node.fru_id, &fru));
+
+    //update FRU model
+    memset(info->model, 0, sizeof(info->model));
+    snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
+
+    //update FRU serial
+    memset(info->serial, 0, sizeof(info->serial));
+    snprintf(info->serial, sizeof(info->serial), "%s", fru.serial.val);
 
     return ONLP_STATUS_OK;
 }
@@ -118,80 +297,22 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
     int ret = ONLP_STATUS_OK;
     int rpm = 0, percentage = 0;
     float data = 0;
-    int sys_max_fan_speed = 0;
     int max_fan_speed = 0;
-    int attr_id = -1;
+    int rpm_attr_id = -1;
+    fan_node_t node = {0};
 
     if((info->status & ONLP_FAN_STATUS_PRESENT) == 0) {
         //not present, do nothing
         return ONLP_STATUS_OK;
-    }
+    }  
 
+    ONLP_TRY(get_node(local_id, &node));
     /* set bmc attr id */
-    if(local_id == ONLP_FAN1_F) {
-        attr_id = BMC_ATTR_ID_FAN0_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN1_R) {
-        attr_id = BMC_ATTR_ID_FAN0_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN2_F) {
-        attr_id = BMC_ATTR_ID_FAN1_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN2_R) {
-        attr_id = BMC_ATTR_ID_FAN1_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN3_F) {
-        attr_id = BMC_ATTR_ID_FAN2_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN3_R) {
-        attr_id = BMC_ATTR_ID_FAN2_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN4_F) {
-        attr_id = BMC_ATTR_ID_FAN3_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN4_R) {
-        attr_id = BMC_ATTR_ID_FAN3_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN5_F) {
-        attr_id = BMC_ATTR_ID_FAN4_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN5_R) {
-        attr_id = BMC_ATTR_ID_FAN4_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN6_F) {
-        attr_id = BMC_ATTR_ID_FAN5_RPM_F;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_FAN6_R) {
-        attr_id = BMC_ATTR_ID_FAN5_RPM_R;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else if(local_id == ONLP_PSU0_FAN1) {
-        attr_id = BMC_ATTR_ID_PSU0_FAN1;
-        sys_max_fan_speed = FAN_FRONT_MAX_RPM;
-
-    } else if(local_id == ONLP_PSU1_FAN1) {
-        attr_id = BMC_ATTR_ID_PSU1_FAN1;
-        sys_max_fan_speed = FAN_REAR_MAX_RPM;
-
-    } else {
-        AIM_LOG_ERROR("unknown id, func=%s, local_id=%d\n", __FUNCTION__, local_id);
-        return ONLP_STATUS_E_PARAM;
-
-    }
+    rpm_attr_id = node.rpm;
+    max_fan_speed = node.max_rpm1;
 
     /* get fan rpm from BMC */
-    ret = bmc_sensor_read(attr_id, FAN_SENSOR, &data);
+    ret = bmc_sensor_read(rpm_attr_id, FAN_SENSOR, &data);
     if(ret != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("unable to read sensor info from BMC, sensor=%d\n", local_id);
         return ONLP_STATUS_E_INTERNAL;
@@ -201,19 +322,10 @@ static int update_fani_info(int local_id, onlp_fan_info_t* info)
 
     //set rpm field
     info->rpm = rpm;
-
-    if(local_id >= ONLP_FAN1_F && local_id <= ONLP_FAN6_R) {
-        percentage = (info->rpm * 100) / sys_max_fan_speed;
-        percentage = (percentage > 100) ? 100 : percentage;
-        info->percentage = percentage;
-        info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-    } else if(local_id >= ONLP_PSU0_FAN1 && local_id <= ONLP_PSU1_FAN1) {
-        max_fan_speed = PSU_FAN_MAX_RPM;
-        percentage = (info->rpm * 100) / max_fan_speed;
-        percentage = (percentage > 100) ? 100 : percentage;
-        info->percentage = percentage;
-        info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
-    }
+    percentage = (info->rpm * 100) / max_fan_speed;
+    percentage = (percentage > 100) ? 100 : percentage;
+    info->percentage = percentage;
+    info->status |= (rpm == 0) ? ONLP_FAN_STATUS_FAILED : 0;
 
     return ONLP_STATUS_OK;
 }
@@ -252,7 +364,7 @@ int onlp_fani_info_get(onlp_oid_t id, onlp_fan_info_t* info)
     }
 
     //update fan fru info
-    ONLP_TRY(ufi_fan_fru_update(local_id, info));
+    ONLP_TRY(update_fru_info(local_id, info));
     return ONLP_STATUS_OK;
 }
 
@@ -269,57 +381,17 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
     int fan_presence = 0;
     int psu_presence = 0;
     float data = 0;
-    int attr_id_presence = -1;
-#ifdef FAN_DIR_EN
-    int attr_id_direction = -1;
     int dir = 0;
-#endif
+    fan_node_t node = {0};
 
     /* clear FAN status */
     *status = 0;
 
-    if(local_id >= ONLP_FAN1_F && local_id <= ONLP_FAN6_R) {
-        *status = 0;
+    ONLP_TRY(get_node(local_id, &node));
 
-        /* set bmc attr id */
-        if(local_id == ONLP_FAN1_F || local_id == ONLP_FAN1_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN0_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN0_DIR;
-#endif
-        } else if(local_id == ONLP_FAN2_F || local_id == ONLP_FAN2_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN1_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN1_DIR;
-#endif
-        } else if(local_id == ONLP_FAN3_F || local_id == ONLP_FAN3_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN2_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN2_DIR;
-#endif
-        } else if(local_id == ONLP_FAN4_F || local_id == ONLP_FAN4_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN3_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN3_DIR;
-#endif
-        } else if(local_id == ONLP_FAN5_F || local_id == ONLP_FAN5_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN4_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN4_DIR;
-#endif
-        } else if(local_id == ONLP_FAN6_F || local_id == ONLP_FAN6_R) {
-            attr_id_presence = BMC_ATTR_ID_FAN5_PSNT_L;
-#ifdef FAN_DIR_EN
-            attr_id_direction = BMC_ATTR_ID_FAN5_DIR;
-#endif
-        } else {
-            AIM_LOG_ERROR("unknown id, func=%s, local_id=%d\n", __FUNCTION__, local_id);
-            return ONLP_STATUS_E_INTERNAL;
-
-        }
-
+    if(IS_FANTRAY(node)) {
         /* get fan present status from BMC */
-        ONLP_TRY(bmc_sensor_read(attr_id_presence, FAN_SENSOR, &data));
+        ONLP_TRY(bmc_sensor_read(node.present, FAN_SENSOR, &data));
 
         fan_presence = (int)data;
         if(fan_presence == 1) {
@@ -329,12 +401,9 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
             *status &= ~ONLP_FAN_STATUS_PRESENT;
         }
 
-    } else if(local_id == ONLP_PSU0_FAN1) {
-#ifdef FAN_DIR_EN
-        attr_id_direction = BMC_ATTR_ID_PSU0_FAN1_DIR;
-#endif
-        /* get psu0 fan present status */
-        ONLP_TRY(get_psui_present_status(ONLP_PSU0, &psu_presence));
+    } else if(IS_PSU(node)) {
+        /* get psu fan present status */
+        ONLP_TRY(get_psui_present_status(node.parent, &psu_presence));
         if(psu_presence == 0) {
             *status &= ~ONLP_FAN_STATUS_PRESENT;
         } else if(psu_presence == 1) {
@@ -342,28 +411,13 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         } else {
             return ONLP_STATUS_E_INTERNAL;
         }
-    } else if(local_id == ONLP_PSU1_FAN1) {
-#ifdef FAN_DIR_EN
-        attr_id_direction = BMC_ATTR_ID_PSU1_FAN1_DIR;
-#endif
-        /* get psu1 fan present status */
-        ONLP_TRY(get_psui_present_status(ONLP_PSU1, &psu_presence));
-        if(psu_presence == 0) {
-            *status &= ~ONLP_FAN_STATUS_PRESENT;
-        } else if(psu_presence == 1) {
-            *status |= ONLP_FAN_STATUS_PRESENT;
-        } else {
-            return ONLP_STATUS_E_INTERNAL;
-        }
-
     } else {
         AIM_LOG_ERROR("unknown fan id (%d), func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
     }
 
-#ifdef FAN_DIR_EN
     /* get fan direction status from BMC */
-    ONLP_TRY(bmc_fan_dir_read(attr_id_direction, &data));
+    ONLP_TRY(bmc_fan_dir_read(node.dir, &data));
 
     dir = (int)data;
     if(dir == FAN_DIR_B2F) {
@@ -375,7 +429,6 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* status)
         *status |= ONLP_FAN_STATUS_F2B;
         *status &= ~ONLP_FAN_STATUS_B2F;
     }
-#endif
 
     return ONLP_STATUS_OK;
 }
