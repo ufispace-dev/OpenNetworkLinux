@@ -3198,7 +3198,8 @@ s32 ufi_poe_GetPortPowerLimit(struct device *dev, u8 lport, u32 *power_limit)
 
     if (poePortExtInfo.maxPower != 0)
     {
-        *power_limit = (u32)(poePortExtInfo.maxPower / 10 * 2);
+        // +5 to ensure rounding instead of truncation
+        *power_limit = (u32)((poePortExtInfo.maxPower * 2 + 5) / 10);
     }
     else
     {

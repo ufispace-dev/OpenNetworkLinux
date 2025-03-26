@@ -378,7 +378,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56stp_r0(OnlPlatformUfiSpace):
         for bus in range(bus_start, bus_end):
             self.new_i2c_device('optoe2', 0x50, bus)
             # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            os.system("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus))
             port = port + 1
 
         # init PSU(0/1) EEPROM devices

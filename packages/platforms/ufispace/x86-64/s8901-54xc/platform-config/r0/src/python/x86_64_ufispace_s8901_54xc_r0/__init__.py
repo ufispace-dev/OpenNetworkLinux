@@ -72,6 +72,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc"
     SYSFS_SYSTEM_LED="/sys/bus/i2c/devices/2-0030/cpld_system_led_sys"
+    SYSFS_LPC_GRP_MB_CPLD=SYSFS_LPC+"/mb_cpld"
     SYSTEM_LED_GREEN=0b00001001
     FS_PLTM_CFG="/lib/platform-config/current/onl"
     PORT_CFG=FS_PLTM_CFG + "/port_config.yml"
@@ -116,6 +117,29 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         else:
             msg("Warning: bsp_pr sysfs does not exist\n")
 
+    def get_board_version(self):
+        board = {}
+        board_attrs = {
+            "hw_rev"  : {"sysfs": self.SYSFS_LPC_GRP_MB_CPLD+"/board_hw_id"},
+            "deph_id" : {"sysfs": self.SYSFS_LPC_GRP_MB_CPLD+"/board_deph_id"},
+            "hw_build": {"sysfs": self.SYSFS_LPC_GRP_MB_CPLD+"/board_build_id"},
+            "ext_id"  : {"sysfs": self.SYSFS_LPC_GRP_MB_CPLD+"/board_ext_id"},
+        }
+
+        for key, val in board_attrs.items():
+            cmd = "cat {}".format(val["sysfs"])
+            output = ""
+            try:
+                output = subprocess.check_output(cmd.split())
+            except Exception as e:
+                self.bsp_pr("get_board_version() failed, exception={}\n".format(e), self.LEVEL_ERR)
+                self.bsp_pr("Use default output value 1\n", self.LEVEL_ERR)
+                output="1"
+
+            board[key] = int(output, 10)
+
+        return board
+
     def init_sys_eeprom(self):
         addr_sys_eeprom = 0x53
         bus_sys_eeprom = 5
@@ -132,7 +156,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
             ]
         )
 
-    def init_port_eeprom(self):
+    def init_port_eeprom(self, board):
         port = 0
         data = None
         ports_info = {
@@ -163,8 +187,11 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
                 # update port_name
                 if data is not None:
                     # get front panel port from bus
-                    port = bus - port_base
-                    port_name = data[port_type][port]["port_name"]
+                    port = bus - port_base                    
+                    if board.get('ext_id') == 5:
+                        port_name = data[port_type][port]["port_name_1_base"]
+                    else:
+                        port_name = data[port_type][port]["port_name"]
                     subprocess.call("echo {} > /sys/bus/i2c/devices/{}-{:0>4x}/port_name".format(port_name, bus, addr_eeprom), shell=True)
 
     def init_gpio(self):
@@ -325,6 +352,9 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         # lpc driver
         self.insmod(self.DRIVER[DriverType.LPC])
 
+        # get board version
+        board = self.get_board_version()
+
         # initialize I2C bus 0
         # i2c_i801 is built-in
         # add i2c_ismt
@@ -348,7 +378,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         self.init_sys_eeprom()
 
         # init port EEPROM
-        self.init_port_eeprom()
+        self.init_port_eeprom(board)
 
         # init GPIO sysfs
         self.init_gpio()
