@@ -6,7 +6,7 @@ if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.2-bsp"
 silence=0
 
 help()
@@ -22,6 +22,17 @@ help()
     echo "  version: Show script version"
     echo "  silent(optional): Don't display reset result"
     echo ""
+}
+
+function _ioget {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
+
+function _ioset {
+    local reg=$1
+    local val=$(printf "%02x" $(($2)))
+    printf "\x${val}" | dd of="/dev/port" bs=1 seek=$((reg)) count=1 conv=notrunc 2>/dev/null
 }
 
 show_ver()
@@ -171,29 +182,21 @@ reset_mac()
 
     # reset MAC
     print_log "Reset Assertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" & 0xFE)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xFE)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xFE)))
     sleep 2
     print_log "done\n"
 
     # unreset MAC
     print_log "Reset Deassertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" | 0x01)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" | 0x01)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" | 0x01)))
     sleep 2
     print_log "done\n"
 
@@ -227,16 +230,9 @@ reset_op2()
     print_log "Reset OP2...\n"
     print_log "==============================\n"
     #Check model name
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
-    sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x00 | awk -F' ' '{print $NF}')
-    hex_val=$(printf "%d" "${val}")
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
-    sleep 0.1
+    hex_val=$(_ioget 0xe00)
     #wo/ OP2 version, skip
-    if [ ${hex_val} -eq $(printf "%d" "0x03") ]; then
+    if [ $(printf "%d" "$hex_val") -eq $(printf "%d" "0x03") ]; then
         print_log "wo/OP2, skip\n"
         return 1
     fi
@@ -256,29 +252,21 @@ reset_op2()
 
     # reset OP2
     print_log "Reset Assertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" & 0xDF)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xDF)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xDF)))
     sleep 2
     print_log "done\n"
 
     # unreset OP2
     print_log "Reset Deassertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe40 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe40)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x40 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(("$val" | 0x20)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe40 $(printf "0x%02x" $(("$val" | 0x20)))
+    _ioset 0xe40 $(printf "0x%02x" $(("$val" | 0x20)))
     sleep 2
     print_log "done\n"
 
@@ -314,29 +302,21 @@ reset_phy()
 
     # reset BCM82752
     print_log "Reset Assertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe48 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe48)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x48 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x48 $(printf "0x%02x" $(("$val" & 0xfe)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe48 $(printf "0x%02x" $(("$val" & 0xfe)))
+    _ioset 0xe48 $(printf "0x%02x" $(("$val" & 0xfe)))
     sleep 2
     print_log "done\n"
 
     # unreset BCM82752
     print_log "Reset Deassertion......"
-    #i2cset -y 0 0x75 0x1
-    bus_num_check "0x1"
+    #val=$(ioget 0xe48 | awk -F' ' '{print $NF}')
+    val=$(_ioget 0xe48)
     sleep 0.1
-    val=$(i2cget -y ${i2c_bus_f} 0x30 0x48 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    i2cset -y ${i2c_bus_f} 0x30 0x48 $(printf "0x%02x" $(("$val" | 0x01)))
-    sleep 0.1
-    #i2cset -y 0 0x75 0x0
-    bus_num_check "0x0"
+    #ioset 0xe48 $(printf "0x%02x" $(("$val" | 0x01)))
+    _ioset 0xe48 $(printf "0x%02x" $(("$val" | 0x01)))
     sleep 2
     print_log "done\n"
 
