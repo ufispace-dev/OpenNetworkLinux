@@ -123,7 +123,13 @@ static int get_platform_info(onlp_platform_info_t* pi)
     ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld5_ver, ONLP_CONFIG_INFO_STR_MAX -1, &len, SYSFS_CPLD5_VER_H));
 
     pi->cpld_versions = aim_fstrdup(
-       "CPU_CPLD='%s';MB_CPLD1='%s';MB_CPLD2='%s';MB_CPLD3='%s';MB_CPLD4='%s';MB_CPLD5='%s'",
+        "\n"
+        "[CPU CPLD] %s\n"
+        "[MB CPLD1] %s\n"
+        "[MB CPLD2] %s\n"
+        "[MB CPLD3] %s\n"
+        "[MB CPLD4] %s\n"
+        "[MB CPLD5] %s\n",
         cpu_cpld_ver,
         mb_cpld1_ver,
         mb_cpld2_ver,
@@ -175,7 +181,10 @@ static int get_platform_info(onlp_platform_info_t* pi)
     }
 
     pi->other_versions = aim_fstrdup(
-        "BIOS='%s';BMC='%d.%d.%d';MU='%s (%s)'",
+        "\n"
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);

@@ -61,8 +61,7 @@
 #define SYS_LPC_BSP                 SYSFS_LPC"bsp/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 

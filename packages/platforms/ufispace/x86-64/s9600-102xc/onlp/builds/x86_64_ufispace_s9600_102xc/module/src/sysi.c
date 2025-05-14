@@ -186,19 +186,9 @@ static int get_platform_info(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[SKU ID] %d\n"
-        "[HW ID] %d\n"
-        "[BUILD ID] %d\n"
-        "[ID TYPE] %d\n"
-        "[DEPH ID] %d\n"
         "[BIOS] %s\n"
         "[BMC] %d.%d.%d\n"
         "[MU] %s (%s)\n",
-        board.sku_id,
-        board.hw_rev,
-        board.hw_build,
-        board.id_type,
-        board.deph_id,
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);

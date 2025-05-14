@@ -795,8 +795,6 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     uint8_t cpu_cpld_ver_h[32];
     uint8_t mb_cpld_ver_h[CPLD_MAX][16];
     int data_len = 0;
-    int mb_cpld1_addr = CPLD_REG_BASE + BRD_ID_REG;
-    int mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
 
     char mu_ver[128], mu_result[128];
     char path_onie_folder[] = "/mnt/onie-boot/onie";
@@ -846,14 +844,6 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
         mb_cpld_ver_h[3],
         mb_cpld_ver_h[4]);
 
-    //Get HW Build Version
-    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-
-    mb_cpld1_hw_rev = ((mb_cpld1_board_type_rev) & 0x03);
-    //FIXME: check build_rev bits
-    //mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
-    mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
-
     //Get BIOS version
     ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
@@ -886,13 +876,9 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[HW   ] %d\n"
-        "[BUILD] %d\n"
-        "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n"
-        "[MU   ] %s (%s)\n",
-        mb_cpld1_hw_rev,
-        mb_cpld1_build_rev,
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);

@@ -56,51 +56,7 @@ const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
 #define CMD_BMC_PSU_FAN_DIR     "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool raw 0x3c 0x30 0x0 | xargs"IPMITOOL_REDIRECT_ERR
 #define CMD_BMC_FAN_DIR_CACHE   CMD_BMC_FAN_TRAY_DIR" > "BMC_FANDIR_CACHE";"CMD_BMC_PSU_FAN_DIR" >> "BMC_FANDIR_CACHE
 //[BMC] 2.5.0
-#define CMD_BMC_SENSOR_CACHE    "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool sdr -c get "\
-                                " TEMP_CPU_PECI"\
-                                " TEMP_CPU_ENV"\
-                                " TEMP_CPU_ENV_2"\
-                                " TEMP_MAC_ENV"\
-                                " TEMP_CAGE"\
-                                " TEMP_PSU_CONN"\
-                                " PSU0_TEMP"\
-                                " PSU1_TEMP"\
-                                " FAN0_RPM_F"\
-                                " FAN0_RPM_R"\
-                                " FAN1_RPM_F"\
-                                " FAN1_RPM_R"\
-                                " FAN2_RPM_F"\
-                                " FAN2_RPM_R"\
-                                " FAN3_RPM_F"\
-                                " FAN3_RPM_R"\
-                                " FAN4_RPM_F"\
-                                " FAN4_RPM_R"\
-                                " FAN5_RPM_F"\
-                                " FAN5_RPM_R"\
-                                " PSU0_FAN1"\
-                                " PSU1_FAN1"\
-                                " FAN0_PSNT_L"\
-                                " FAN1_PSNT_L"\
-                                " FAN2_PSNT_L"\
-                                " FAN3_PSNT_L"\
-                                " FAN4_PSNT_L"\
-                                " FAN5_PSNT_L"\
-                                " PSU0_VIN"\
-                                " PSU0_VOUT"\
-                                " PSU0_IIN"\
-                                " PSU0_IOUT"\
-                                " PSU0_STBVOUT"\
-                                " PSU0_STBIOUT"\
-                                " PSU0_PIN"\
-                                " PSU0_POUT"\
-                                " PSU1_VIN"\
-                                " PSU1_VOUT"\
-                                " PSU1_IIN"\
-                                " PSU1_IOUT"\
-                                " PSU1_STBVOUT"\
-                                " PSU1_STBIOUT"\
-                                " PSU1_PIN"\
-                                " PSU1_POUT"\
+#define CMD_BMC_SENSOR_CACHE    "timeout "IPMITOOL_CMD_TIMEOUT" ipmitool sdr -c get %s"\
                                 " > "BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define CPLD_ID_SYSFS_PATH      CPLD1_SYSFS_PATH "/cpld_id"
@@ -109,58 +65,58 @@ const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
 /* BMC Cached String (mapping with ipmitool sensors) */
 bmc_info_t bmc_cache[] =
 {
-    [BMC_ATTR_ID_TEMP_CPU_PECI]  = {"TEMP_CPU_PECI"  , 0},
-    [BMC_ATTR_ID_TEMP_CPU_ENV]   = {"TEMP_CPU_ENV"   , 0},
-    [BMC_ATTR_ID_TEMP_CPU_ENV_2] = {"TEMP_CPU_ENV_2" , 0},
-    [BMC_ATTR_ID_TEMP_MAC_ENV]   = {"TEMP_MAC_ENV"   , 0},
-    [BMC_ATTR_ID_TEMP_CAGE]      = {"TEMP_CAGE"      , 0},
-    [BMC_ATTR_ID_TEMP_PSU_CONN]  = {"TEMP_PSU_CONN"  , 0},
-    [BMC_ATTR_ID_PSU0_TEMP]      = {"PSU0_TEMP"      , 0},
-    [BMC_ATTR_ID_PSU1_TEMP]      = {"PSU1_TEMP"      , 0},
-    [BMC_ATTR_ID_FAN0_RPM_F]     = {"FAN0_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN0_RPM_R]     = {"FAN0_RPM_R"     , 0},
-    [BMC_ATTR_ID_FAN1_RPM_F]     = {"FAN1_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN1_RPM_R]     = {"FAN1_RPM_R"     , 0},
-    [BMC_ATTR_ID_FAN2_RPM_F]     = {"FAN2_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN2_RPM_R]     = {"FAN2_RPM_R"     , 0},
-    [BMC_ATTR_ID_FAN3_RPM_F]     = {"FAN3_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN3_RPM_R]     = {"FAN3_RPM_R"     , 0},
-    [BMC_ATTR_ID_FAN4_RPM_F]     = {"FAN4_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN4_RPM_R]     = {"FAN4_RPM_R"     , 0},
-    [BMC_ATTR_ID_FAN5_RPM_F]     = {"FAN5_RPM_F"     , 0},
-    [BMC_ATTR_ID_FAN5_RPM_R]     = {"FAN5_RPM_R"     , 0},
-    [BMC_ATTR_ID_PSU0_FAN1]      = {"PSU0_FAN1"      , 0},
-    [BMC_ATTR_ID_PSU1_FAN1]      = {"PSU1_FAN1"      , 0},
-    [BMC_ATTR_ID_FAN0_PSNT_L]    = {"FAN0_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN1_PSNT_L]    = {"FAN1_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN2_PSNT_L]    = {"FAN2_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN3_PSNT_L]    = {"FAN3_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN4_PSNT_L]    = {"FAN4_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN5_PSNT_L]    = {"FAN5_PSNT_L"    , 0},
-    [BMC_ATTR_ID_FAN0_DIR]       = {"FAN0_DIR"       , 0},
-    [BMC_ATTR_ID_FAN1_DIR]       = {"FAN1_DIR"       , 0},
-    [BMC_ATTR_ID_FAN2_DIR]       = {"FAN2_DIR"       , 0},
-    [BMC_ATTR_ID_FAN3_DIR]       = {"FAN3_DIR"       , 0},
-    [BMC_ATTR_ID_FAN4_DIR]       = {"FAN4_DIR"       , 0},
-    [BMC_ATTR_ID_FAN5_DIR]       = {"FAN5_DIR"       , 0},
-    [BMC_ATTR_ID_PSU0_FAN1_DIR]  = {"PSU0_FAN1_DIR"  , 0},
-    [BMC_ATTR_ID_PSU1_FAN1_DIR]  = {"PSU1_FAN1_DIR"  , 0},
-    [BMC_ATTR_ID_PSU0_VIN]       = {"PSU0_VIN"       , 0},
-    [BMC_ATTR_ID_PSU0_VOUT]      = {"PSU0_VOUT"      , 0},
-    [BMC_ATTR_ID_PSU0_IIN]       = {"PSU0_IIN"       , 0},
-    [BMC_ATTR_ID_PSU0_IOUT]      = {"PSU0_IOUT"      , 0},
-    [BMC_ATTR_ID_PSU0_STBVOUT]   = {"PSU0_STBVOUT"   , 0},
-    [BMC_ATTR_ID_PSU0_STBIOUT]   = {"PSU0_STBIOUT"   , 0},
-    [BMC_ATTR_ID_PSU0_PIN]       = {"PSU0_PIN"       , 0},
-    [BMC_ATTR_ID_PSU0_POUT]      = {"PSU0_POUT"      , 0},    
-    [BMC_ATTR_ID_PSU1_VIN]       = {"PSU1_VIN"       , 0},
-    [BMC_ATTR_ID_PSU1_VOUT]      = {"PSU1_VOUT"      , 0},
-    [BMC_ATTR_ID_PSU1_IIN]       = {"PSU1_IIN"       , 0},
-    [BMC_ATTR_ID_PSU1_IOUT]      = {"PSU1_IOUT"      , 0},
-    [BMC_ATTR_ID_PSU1_STBVOUT]   = {"PSU1_STBVOUT"   , 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT]   = {"PSU1_STBIOUT"   , 0},
-    [BMC_ATTR_ID_PSU1_PIN]       = {"PSU1_PIN"       , 0},
-    [BMC_ATTR_ID_PSU1_POUT]      = {"PSU1_POUT"      , 0},     
+    [BMC_ATTR_ID_TEMP_CPU_PECI]  = {HW_PLAT_ALL, "TEMP_CPU_PECI"  , 0},
+    [BMC_ATTR_ID_TEMP_CPU_ENV]   = {HW_PLAT_ALL, "TEMP_CPU_ENV"   , 0},
+    [BMC_ATTR_ID_TEMP_CPU_ENV_2] = {HW_PLAT_ALL, "TEMP_CPU_ENV_2" , 0},
+    [BMC_ATTR_ID_TEMP_MAC_ENV]   = {HW_PLAT_ALL, "TEMP_MAC_ENV"   , 0},
+    [BMC_ATTR_ID_TEMP_CAGE]      = {HW_PLAT_ALL, "TEMP_CAGE"      , 0},
+    [BMC_ATTR_ID_TEMP_PSU_CONN]  = {HW_PLAT_ALL, "TEMP_PSU_CONN"  , 0},
+    [BMC_ATTR_ID_PSU0_TEMP]      = {HW_PLAT_ALL, "PSU0_TEMP"      , 0},
+    [BMC_ATTR_ID_PSU1_TEMP]      = {HW_PLAT_ALL, "PSU1_TEMP"      , 0},
+    [BMC_ATTR_ID_FAN0_RPM_F]     = {HW_PLAT_ALL, "FAN0_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN0_RPM_R]     = {HW_PLAT_ALL, "FAN0_RPM_R"     , 0},
+    [BMC_ATTR_ID_FAN1_RPM_F]     = {HW_PLAT_ALL, "FAN1_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN1_RPM_R]     = {HW_PLAT_ALL, "FAN1_RPM_R"     , 0},
+    [BMC_ATTR_ID_FAN2_RPM_F]     = {HW_PLAT_ALL, "FAN2_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN2_RPM_R]     = {HW_PLAT_ALL, "FAN2_RPM_R"     , 0},
+    [BMC_ATTR_ID_FAN3_RPM_F]     = {HW_PLAT_ALL, "FAN3_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN3_RPM_R]     = {HW_PLAT_ALL, "FAN3_RPM_R"     , 0},
+    [BMC_ATTR_ID_FAN4_RPM_F]     = {HW_PLAT_ALL, "FAN4_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN4_RPM_R]     = {HW_PLAT_ALL, "FAN4_RPM_R"     , 0},
+    [BMC_ATTR_ID_FAN5_RPM_F]     = {HW_PLAT_ALL, "FAN5_RPM_F"     , 0},
+    [BMC_ATTR_ID_FAN5_RPM_R]     = {HW_PLAT_ALL, "FAN5_RPM_R"     , 0},
+    [BMC_ATTR_ID_PSU0_FAN1]      = {HW_PLAT_ALL, "PSU0_FAN1"      , 0},
+    [BMC_ATTR_ID_PSU1_FAN1]      = {HW_PLAT_ALL, "PSU1_FAN1"      , 0},
+    [BMC_ATTR_ID_FAN0_PSNT_L]    = {HW_PLAT_ALL, "FAN0_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN1_PSNT_L]    = {HW_PLAT_ALL, "FAN1_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN2_PSNT_L]    = {HW_PLAT_ALL, "FAN2_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN3_PSNT_L]    = {HW_PLAT_ALL, "FAN3_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN4_PSNT_L]    = {HW_PLAT_ALL, "FAN4_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN5_PSNT_L]    = {HW_PLAT_ALL, "FAN5_PSNT_L"    , 0},
+    [BMC_ATTR_ID_FAN0_DIR]       = {HW_PLAT_NONE, "FAN0_DIR"       , 0},
+    [BMC_ATTR_ID_FAN1_DIR]       = {HW_PLAT_NONE, "FAN1_DIR"       , 0},
+    [BMC_ATTR_ID_FAN2_DIR]       = {HW_PLAT_NONE, "FAN2_DIR"       , 0},
+    [BMC_ATTR_ID_FAN3_DIR]       = {HW_PLAT_NONE, "FAN3_DIR"       , 0},
+    [BMC_ATTR_ID_FAN4_DIR]       = {HW_PLAT_NONE, "FAN4_DIR"       , 0},
+    [BMC_ATTR_ID_FAN5_DIR]       = {HW_PLAT_NONE, "FAN5_DIR"       , 0},
+    [BMC_ATTR_ID_PSU0_FAN1_DIR]  = {HW_PLAT_NONE, "PSU0_FAN1_DIR"  , 0},
+    [BMC_ATTR_ID_PSU1_FAN1_DIR]  = {HW_PLAT_NONE, "PSU1_FAN1_DIR"  , 0},
+    [BMC_ATTR_ID_PSU0_VIN]       = {HW_PLAT_ALL, "PSU0_VIN"       , 0},
+    [BMC_ATTR_ID_PSU0_VOUT]      = {HW_PLAT_ALL, "PSU0_VOUT"      , 0},
+    [BMC_ATTR_ID_PSU0_IIN]       = {HW_PLAT_ALL, "PSU0_IIN"       , 0},
+    [BMC_ATTR_ID_PSU0_IOUT]      = {HW_PLAT_ALL, "PSU0_IOUT"      , 0},
+    [BMC_ATTR_ID_PSU0_STBVOUT]   = {HW_PLAT_ALL, "PSU0_STBVOUT"   , 0},
+    [BMC_ATTR_ID_PSU0_STBIOUT]   = {HW_PLAT_ALL, "PSU0_STBIOUT"   , 0},
+    [BMC_ATTR_ID_PSU0_PIN]       = {HW_PLAT_PVT, "PSU0_PIN"       , 0},
+    [BMC_ATTR_ID_PSU0_POUT]      = {HW_PLAT_PVT, "PSU0_POUT"      , 0},    
+    [BMC_ATTR_ID_PSU1_VIN]       = {HW_PLAT_ALL, "PSU1_VIN"       , 0},
+    [BMC_ATTR_ID_PSU1_VOUT]      = {HW_PLAT_ALL, "PSU1_VOUT"      , 0},
+    [BMC_ATTR_ID_PSU1_IIN]       = {HW_PLAT_ALL, "PSU1_IIN"       , 0},
+    [BMC_ATTR_ID_PSU1_IOUT]      = {HW_PLAT_ALL, "PSU1_IOUT"      , 0},
+    [BMC_ATTR_ID_PSU1_STBVOUT]   = {HW_PLAT_ALL, "PSU1_STBVOUT"   , 0},
+    [BMC_ATTR_ID_PSU1_STBIOUT]   = {HW_PLAT_ALL, "PSU1_STBIOUT"   , 0},
+    [BMC_ATTR_ID_PSU1_PIN]       = {HW_PLAT_PVT, "PSU1_PIN"       , 0},
+    [BMC_ATTR_ID_PSU1_POUT]      = {HW_PLAT_PVT, "PSU1_POUT"      , 0},     
 };
 
 static bmc_fru_t bmc_fru_cache[] =
@@ -467,7 +423,7 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 {
     struct timeval new_tv;
     FILE *fp = NULL;
-    char ipmi_cmd[1024] = {0};
+    char ipmi_cmd[2048] = {0};
     int rv = ONLP_STATUS_OK;
     int dev_num = 0;
     int cache_time = 0;
@@ -498,6 +454,9 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
             break;
     }
 
+    board_t board = {0};
+    ONLP_TRY(get_board_version(&board));
+
     ONLP_LOCK();
 
     if(check_file_exist(BMC_SENSOR_CACHE, &file_last_time)) {
@@ -525,7 +484,33 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 goto exit;
             }
             // get data from bmc
-            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
+            char bmc_token[1024] = {0};
+            int i = 0;
+            int plat = 0;
+            // get hw rev for platform
+            if (board.hw_rev == BRD_PROTO)
+                plat = HW_PLAT_PROTO;
+            else if (board.hw_rev == BRD_ALPHA)
+                plat = HW_PLAT_ALPHA;
+            else if (board.hw_rev == BRD_BETA)
+                plat = HW_PLAT_BETA;
+            else if (board.hw_rev == BRD_PVT)
+                plat = HW_PLAT_PVT;
+            else
+                plat = HW_PLAT_PVT;
+            // get all sensor tokens
+            for (i = BMC_ATTR_ID_START; i < BMC_ATTR_ID_MAX; i++)
+            {
+                if (bmc_cache[i].plat & plat)
+                {
+                    char tmp_str[1024] = {0};
+                    int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0 ? (sizeof(bmc_token) - strlen(bmc_token) - 1) : 0;
+                    snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
+                    snprintf(bmc_token + strlen(bmc_token), copy_size, "%s", tmp_str);
+                }
+            }
+            
+            snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE, bmc_token);
             for (retry = 0; retry < retry_max; ++retry) {
                 if ((rv=system(ipmi_cmd)) != 0) {
                     if (retry == retry_max-1) {

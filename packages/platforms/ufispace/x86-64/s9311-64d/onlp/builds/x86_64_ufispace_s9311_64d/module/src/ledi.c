@@ -290,7 +290,7 @@ static int get_node(int local_id, led_node_t *node)
         node->color_obj[2].val = VALUE_0000_1000;
         node->color_obj[2].mode = ONLP_LED_MODE_BLUE;
         node->color_obj[3].val = VALUE_0000_1100;
-        node->color_obj[3].mode = ONLP_LED_MODE_BLUE_BLINKING;       
+        node->color_obj[3].mode = ONLP_LED_MODE_BLUE_BLINKING;
         node->color_obj[4].val = node->color_obj[2].val;
         node->color_obj[4].mode = ONLP_LED_MODE_ON;
         node->color_obj[5].val = REG_INVALID;

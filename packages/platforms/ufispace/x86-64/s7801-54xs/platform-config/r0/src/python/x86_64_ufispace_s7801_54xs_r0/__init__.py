@@ -182,18 +182,51 @@ class OnlPlatform_x86_64_ufispace_s7801_54xs_r0(OnlPlatformUfiSpace):
 
         #get gpio_max
         gpio_max = self.get_gpio_max()
+        #get gpio_base
+        gpio_base = self.get_gpio_base()
+        is_gpio_base = False
 
-        # init all GPIO direction to "in"
-        gpio_dir = ["in"] * (gpio_max+1)
+        if gpio_base >= 0 :
+            base = gpio_base
+            is_gpio_base = True
+        elif gpio_max >= 0:
+            base = gpio_max
+            is_gpio_base = False
+        else:
+            self.bsp_pr("invalid gpio_max {} and gpio_base {}, bsp init stopped".format(gpio_max, gpio_base), self.LEVEL_ERR)
+            exit(1)
 
-        # init GPIO direction to output high
-        for i in range(gpio_max-95, gpio_max+1):
-            gpio_dir[i] = "high"
+        if is_gpio_base:
+            # export GPIO and configure direction
+            for i in range(base, base+96):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+                os.system("echo high > /sys/class/gpio/gpio{}/direction".format(i))
+        else:
+            # init all GPIO direction to "in"
+            gpio_dir = ["in"] * (gpio_max+1)
 
-        # export GPIO and configure direction
-        for i in range(gpio_max-95, gpio_max+1):
-            os.system("echo {} > /sys/class/gpio/export".format(i))
-            os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i], i))
+            # init GPIO direction to output high
+            for i in range(gpio_max-95, gpio_max+1):
+                gpio_dir[i] = "high"
+            # export GPIO and configure direction
+            for i in range(base-95, base+1):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+                os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i],i))
+
+    def get_gpio_base(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc/bsp/bsp_gpio_base"
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("get_gpio_base() failed, exception={}".format(e), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO Base value -1", self.LEVEL_ERR)
+            output="-1"
+
+        gpio_base = int(output, 10)
+        self.bsp_pr("GPIO Base: {}".format(gpio_base))
+
+        return gpio_base
 
     def init_cpld(self):
         bus = 2

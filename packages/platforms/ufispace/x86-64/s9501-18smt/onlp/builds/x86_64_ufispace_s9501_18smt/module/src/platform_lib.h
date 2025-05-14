@@ -49,19 +49,23 @@
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_DEV                     "/sys/bus/i2c/devices/"
+#define SYSFS_PLTM                  "/sys/devices/platform/"
+#define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9501_18smt_lpc/"
 #define SYS_HWMON_PREFIX            "/sys/class/hwmon/hwmon%d/"
 #define SYS_DEV_BUS_ADDR_PREFIX     "/sys/bus/i2c/devices/%d-%04x/"
 #define SYS_GPIO_VAL                "/sys/class/gpio/gpio%d/value"
 #define SYS_EEPROM_PATH             "/sys/bus/i2c/devices/1-0057/eeprom"
 #define SYS_EEPROM_SIZE 512
+#define LPC_BSP_FMT                 SYSFS_LPC "bsp/"
 
 #define BMC_EN_FILE_PATH            "/etc/onl/bmc_en"
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       OUTPUT_REDIRECT_ERR
+#define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 
 #define CMD_BIOS_VER                "dmidecode -s bios-version | tail -1 | tr -d '\r\n'"
-#define CMD_BMC_VER_1               "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1               "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2               "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3               "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'`))"
 //[BMC] 4.10
@@ -207,7 +211,7 @@
 /* BMC CMD */
 #define BMC_CACHE_EN            1
 #define BMC_CACHE_CYCLE         30
-#define BMC_CMD_SDR_SIZE        ONLP_CONFIG_INFO_STR_MAX
+#define BMC_CMD_SDR_SIZE        128
 #define BMC_TOKEN_SIZE          20
 
 #define FAN_CACHE_TIME          5

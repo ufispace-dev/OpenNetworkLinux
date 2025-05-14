@@ -93,14 +93,21 @@ u8 RespBuffer[I2C_MSG_LEN];
  */
 void ufi_poe_halInsertCheckSum(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
 {
+    u8 *data = (u8 *)pCmd;
+    u8 checksum = 0;
+    int i;
+
     if (pCmd->command != BCM_POE_TYPE_COM_IMAGE_UPGRADE)
     {
         pCmd->seqNo = seqNo++;
     }
-    pCmd->checksum = pCmd->command + pCmd->seqNo + pCmd->data1 +
-                     pCmd->data2 + pCmd->data3 + pCmd->data4 +
-                     pCmd->data5 + pCmd->data6 + pCmd->data7 +
-                     pCmd->data8 + pCmd->data9;
+
+    for (i = 0; i < sizeof(BCM_POE_TYPE_PKTBUF_I2C_T) - 1; i++)
+    {
+        checksum += data[i];
+    }
+
+    pCmd->checksum = checksum;
 }
 
 /*--------------------------------------------------------------------------
@@ -128,17 +135,16 @@ void ufi_poe_halInsertCheckSum(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
 
 bool ufi_poe_halCheckSumCmp(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
 {
-    u8 ck;
-    ck = pCmd->command + pCmd->seqNo + pCmd->data1 +
-         pCmd->data2 + pCmd->data3 + pCmd->data4 +
-         pCmd->data5 + pCmd->data6 + pCmd->data7 +
-         pCmd->data8 + pCmd->data9;
+    u8 *data = (u8 *)pCmd;
+    u8 checksum = 0;
+    int i;
 
-    if (ck == pCmd->checksum)
+    for (i = 0; i < sizeof(BCM_POE_TYPE_PKTBUF_I2C_T) - 1; i++)
     {
-        return true;
+        checksum += data[i];
     }
-    return false;
+   
+    return checksum == pCmd->checksum;
 }
 
 /*--------------------------------------------------------------------------

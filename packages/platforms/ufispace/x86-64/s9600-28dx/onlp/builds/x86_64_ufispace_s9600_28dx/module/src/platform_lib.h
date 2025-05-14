@@ -49,11 +49,17 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%s"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYSFS_PLTM                  "/sys/devices/platform/"
+#define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9600_28dx_lpc/"
+#define LPC_BSP_FMT                 SYSFS_LPC "bsp/"
+#define LPC_CPU_FMT                 SYSFS_LPC "cpu_cpld/"
+#define LPC_MB_FMT                 SYSFS_LPC "mb_cpld/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
-
+#define IPMITOOL_REDIRECT_ERR       OUTPUT_REDIRECT_ERR
+#define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 //[BMC] 2.11
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "TEMP_ENV_OCXO "\
@@ -105,7 +111,7 @@
                           " > %s"
 
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9600_28dx_lpc/mb_cpld/mux_reset"
+#define MUX_RESET_PATH          LPC_MB_FMT "/mux_reset"
 
 /* SYS */
 #define CPLD_MAX      3  //Number of MB CPLD

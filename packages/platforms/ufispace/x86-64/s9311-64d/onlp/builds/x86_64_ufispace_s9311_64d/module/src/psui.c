@@ -284,7 +284,7 @@ static int update_info(int local_id, onlp_psu_info_t *info)
 {
     int pw_present, pw_good;
     int stbmvout = 0, stbmiout = 0;
-    float data;
+    bmc_info_t bmc_data = {0};
     psu_node_t node = {0};
     ONLP_TRY(get_node(local_id, &node));
     *info = psu_info[local_id];
@@ -317,10 +317,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power vin status */
         if (node.attr_vin != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_vin, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_vin, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->mvin = (int)(data * 1000);
+                info->mvin = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_VIN;
             }
         }
@@ -328,10 +328,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power vout status */
         if (node.attr_vout != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_vout, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_vout, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->mvout = (int)(data * 1000);
+                info->mvout = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_VOUT;
             }
         }
@@ -339,10 +339,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power iin status */
         if (node.attr_iin != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_iin, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_iin, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->miin = (int)(data * 1000);
+                info->miin = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_IIN;
             }
         }
@@ -350,10 +350,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power iout status */
         if (node.attr_iout != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_iout, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_iout, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->miout = (int)(data * 1000);
+                info->miout = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_IOUT;
             }
         }
@@ -361,10 +361,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power in */
         if (node.attr_pin != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_pin, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_pin, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->mpin = (int)(data * 1000);
+                info->mpin = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_PIN;
             }
         }
@@ -372,10 +372,10 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get power out */
         if (node.attr_pout != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_pout, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_pout, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
-                info->mpout = (int)(data * 1000);
+                info->mpout = (int)(bmc_data.data * 1000);
                 info->caps |= ONLP_PSU_CAPS_POUT;
             }
         }
@@ -383,30 +383,30 @@ static int update_info(int local_id, onlp_psu_info_t *info)
         /* Get standby power vout */
         if (node.attr_stbvout != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_stbvout, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_stbvout, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
                 /*
                  *  This feature is reserved for future use and serves no purpose here.
                  *  To avoid compiler warnings about unused variables, I added this workaround.
                  */
                 (void)stbmvout;
-                stbmvout = (int)(data * 1000);
+                stbmvout = (int)(bmc_data.data * 1000);
             }
         }
 
         /* Get standby power iout */
         if (node.attr_stbiout != BMC_ATTR_ID_INVALID)
         {
-            ONLP_TRY(read_bmc_sensor(node.attr_stbiout, PSU_SENSOR, &data));
-            if (BMC_ATTR_INVALID_VAL != (int)(data))
+            ONLP_TRY(read_bmc_sensor(node.attr_stbiout, PSU_SENSOR, &bmc_data));
+            if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
             {
                 /*
                  *  This feature is reserved for future use and serves no purpose here.
                  *  To avoid compiler warnings about unused variables, I added this workaround.
                  */
                 (void)stbmiout;
-                stbmiout = (int)(data * 1000);
+                stbmiout = (int)(bmc_data.data * 1000);
             }
         }
 

@@ -71,6 +71,15 @@
 #define CPU_PKG_CORE_TEMP_SYS_ID "1"
 
 /* BMC attr */
+//[BMC] 3.3 TBD
+#define BMC_ATTR_NAME_TEMP_PSU_FRONT "TEMP_PSU_FRONT"
+#define BMC_ATTR_NAME_TEMP_BMC_AMBIENT "TEMP_BMC_AMBIENT"
+#define BMC_ATTR_NAME_TEMP_COME_FRONT "TEMP_COME_FRONT"
+#define BMC_ATTR_NAME_TEMP_AIR_REAR "TEMP_AIR_REAR"
+#define BMC_ATTR_NAME_TEMP_PWRBD_REAR "TEMP_PWRBD_REAR"
+#define BMC_ATTR_NAME_TEMP_AIR_FRONT "TEMP_AIR_FRONT"
+#define BMC_ATTR_NAME_TEMP_MAC_REAR "TEMP_MAC_REAR"
+#define BMC_ATTR_NAME_TEMP_MAC_FRONT "TEMP_MAC_FRONT"
 //[BMC] 2.21
 #define BMC_ATTR_NAME_TEMP_MAC_ENV_1 "TEMP_MAC_ENV_1"
 #define BMC_ATTR_NAME_TEMP_MAC_ENV_2 "TEMP_MAC_ENV_2"
@@ -191,10 +200,18 @@ enum sensor
 enum bmc_attr_id
 {
     BMC_ATTR_ID_START = 0,
-    BMC_ATTR_ID_TEMP_MAC_ENV_1 = BMC_ATTR_ID_START,
+    BMC_ATTR_ID_TEMP_PSU_FRONT = BMC_ATTR_ID_START,
+    BMC_ATTR_ID_TEMP_BMC_AMBIENT,
+    BMC_ATTR_ID_TEMP_COME_FRONT,
+    BMC_ATTR_ID_TEMP_AIR_REAR,
+    BMC_ATTR_ID_TEMP_PWRBD_REAR,
+    BMC_ATTR_ID_TEMP_AIR_FRONT,
+    BMC_ATTR_ID_TEMP_MAC_REAR,
+    BMC_ATTR_ID_TEMP_MAC_FRONT,
+    BMC_ATTR_ID_TEMP_CPU_PECI,
+    BMC_ATTR_ID_TEMP_MAC_ENV_1,
     BMC_ATTR_ID_TEMP_MAC_ENV_2,
     BMC_ATTR_ID_TEMP_PSU_ENV,
-    BMC_ATTR_ID_TEMP_CPU_PECI,
     BMC_ATTR_ID_PSU0_TEMP1,
     BMC_ATTR_ID_PSU1_TEMP1,
     BMC_ATTR_ID_FAN0_RPM_F,
@@ -295,10 +312,18 @@ enum onlp_psu_id
 enum onlp_thermal_id
 {
     ONLP_THERMAL_CPU_PKG = 1,
+    ONLP_THERMAL_PSU_FRONT,
+    ONLP_THERMAL_BMC_AMBIENT,
+    ONLP_THERMAL_COME_FRONT,
+    ONLP_THERMAL_AIR_REAR,
+    ONLP_THERMAL_PWRBD_REAR,
+    ONLP_THERMAL_AIR_FRONT,
+    ONLP_THERMAL_MAC_REAR,
+    ONLP_THERMAL_MAC_FRONT,
+    ONLP_THERMAL_CPU_PECI,
     ONLP_THERMAL_MAC_ENV_1,
     ONLP_THERMAL_MAC_ENV_2,
     ONLP_THERMAL_PSU_ENV,
-    ONLP_THERMAL_CPU_PECI,
     ONLP_THERMAL_PSU0_TEMP1,
     ONLP_THERMAL_PSU1_TEMP1,
     ONLP_THERMAL_MAX,
@@ -344,6 +369,12 @@ typedef struct bmc_info_s
     char name[20];
     int data_type;
     float data;
+    float lower_non_crit;
+    float lower_crit;
+    float lower_non_recov;
+    float upper_non_crit;
+    float upper_crit;
+    float upper_non_recov;
 } bmc_info_t;
 
 typedef struct bmc_fru_attr_s
@@ -487,7 +518,7 @@ int vread_file_hex(int *value, const char *fmt, va_list vargs);
 void init_lock();
 
 int check_bmc_alive(void);
-int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data);
+int read_bmc_sensor(int bmc_cache_index, int sensor_type, bmc_info_t *data);
 int read_bmc_fru(int fru_id, bmc_fru_t *data);
 int read_bmc_oem(int bmc_oem_id, int *data);
 
@@ -503,6 +534,7 @@ int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int get_board_version(board_t *board);
 int get_gpio_max(int *gpio_max);
+int get_gpio_base(int *gpio_base);
 int trim_whitespace(char *str);
 
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);

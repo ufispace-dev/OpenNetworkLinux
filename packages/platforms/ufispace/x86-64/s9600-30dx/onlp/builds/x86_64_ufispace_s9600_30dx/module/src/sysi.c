@@ -22,6 +22,7 @@
  * ONLP System Platform Interface.
  *
  ***********************************************************/
+#include <unistd.h>
 #include <onlp/platformi/sysi.h>
 #include "platform_lib.h"
 
@@ -61,7 +62,7 @@
 #define SYSFS_CPU_CPLD_VER SYSFS_LPC "cpu_cpld/cpu_cpld_version_h"
 #define SYSFS_MB_CPLD_VER SYSFS_DEVICES "%d-%04x/cpld_version_h"
 
-#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
@@ -70,7 +71,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     char cpu_cpld_ver_out[ONLP_CONFIG_INFO_STR_MAX];
     char mb_cpld_ver_out[CPLD_MAX][ONLP_CONFIG_INFO_STR_MAX];
     int i = 0, len = 0;
-    board_t board = {0};
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = "";
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
 
@@ -99,9 +99,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         mb_cpld_ver_out[1],
         mb_cpld_ver_out[2]);
 
-    //Get HW Version
-    ONLP_TRY(ufi_get_board_version(&board));
-
     //Get BIOS version
     ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_BIOS_VER));
 
@@ -124,16 +121,36 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    char mu_ver[128] = {'\0'}, mu_result[128] = {'\0'};
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256] = {'\0'};
+
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[HW   ] %d\n"
-        "[BUILD] %d\n"
-        "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n",
-        board.hw_id,
-        board.build_id,
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_out,
-        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }

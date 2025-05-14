@@ -4,7 +4,7 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
+import subprocess
 import time
 import fcntl
 import yaml
@@ -34,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -61,7 +61,7 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="24x25 + 2x100 + 2x400"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.26'
+    PATH_SYS_GPIO = "/sys/class/gpio"
 
     def check_bmc_enable(self):
         return 1
@@ -118,6 +118,12 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             if os.path.exists(sysfs_idle_state):
                 with open(sysfs_idle_state, 'w') as f:
                     f.write(str(IDLE_STATE_DISCONNECT))
+
+    def disable_watchdog(self):
+        sysfs_watchdog = "/dev/watchdog"
+
+        if os.path.exists(sysfs_watchdog):
+            os.remove(sysfs_watchdog)
 
     def init_mux(self, bus_i801, bus_ismt, hw_rev_id):
         # Alpha
@@ -188,8 +194,202 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             port_name = data[config["type"]][port]["port_name"]
             self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(config["bus"]), port_name)
 
-    def init_gpio(self, gpio_max):
-        # init GPIO sysfs
+    def init_gpio(self, gpio_max, gpio_base, board=None):
+        gpio_map = {
+            511:{'offset': {"max": 0  , "base": 15 }, 'dir': 'in'   , 'desc': "SKU_ID3"},
+            510:{'offset': {"max": 1  , "base": 14 }, 'dir': 'in'   , 'desc': "SKU_ID2"},
+            509:{'offset': {"max": 2  , "base": 13 }, 'dir': 'in'   , 'desc': "SKU_ID1"},
+            508:{'offset': {"max": 3  , "base": 12 }, 'dir': 'in'   , 'desc': "SKU_ID0"},
+            507:{'offset': {"max": 4  , "base": 11 }, 'dir': 'in'   , 'desc': "HW_REV_ID0"},
+            506:{'offset': {"max": 5  , "base": 10 }, 'dir': 'in'   , 'desc': "HW_REV_ID1"},
+            505:{'offset': {"max": 6  , "base": 9  }, 'dir': 'in'   , 'desc': "BUILD_ID0"},
+            504:{'offset': {"max": 7  , "base": 8  }, 'dir': 'in'   , 'desc': "BUILD_ID1"},
+            503:{'offset': {"max": 8  , "base": 7  }, 'dir': 'in'   , 'desc': "RSVD_ID"},
+            502:{'offset': {"max": 9  , "base": 6  }, 'dir': 'in'   , 'desc': "REV_ID2"},
+            501:{'offset': {"max": 10 , "base": 5  }, 'dir': 'in'   , 'desc': "REV_ID1"},
+            500:{'offset': {"max": 11 , "base": 4  }, 'dir': 'in'   , 'desc': "REV_ID0"},
+            499:{'offset': {"max": 12 , "base": 3  }, 'dir': 'in'   , 'desc': "DEPH_ID"},
+            498:{'offset': {"max": 13 , "base": 2  }, 'dir': 'in'   , 'desc': "MAC_VCORE_ROV2"},
+            497:{'offset': {"max": 14 , "base": 1  }, 'dir': 'in'   , 'desc': "MAC_VCORE_ROV1"},
+            496:{'offset': {"max": 15 , "base": 0  }, 'dir': 'in'   , 'desc': "MAC_VCORE_ROV0"},
+            495:{'offset': {"max": 16 , "base": 31 }, 'dir': 'high' , 'desc': "QSFP56_P01_RST_N"},
+            494:{'offset': {"max": 17 , "base": 30 }, 'dir': 'high' , 'desc': "QSFP56_P02_RST_N"},
+            493:{'offset': {"max": 18 , "base": 29 }, 'dir': 'high' , 'desc': "QSFP28_P03_RST_N"},
+            492:{'offset': {"max": 19 , "base": 28 }, 'dir': 'high' , 'desc': "QSFP28_P04_RST_N"},
+            491:{'offset': {"max": 20 , "base": 27 }, 'dir': 'low'  , 'desc': "QSFP56_P01_LPMODE"},
+            490:{'offset': {"max": 21 , "base": 26 }, 'dir': 'low'  , 'desc': "QSFP56_P02_LPMODE"},
+            489:{'offset': {"max": 22 , "base": 25 }, 'dir': 'low'  , 'desc': "QSFP28_P03_LPMODE"},
+            488:{'offset': {"max": 23 , "base": 24 }, 'dir': 'low'  , 'desc': "QSFP28_P04_LPMODE"},
+            487:{'offset': {"max": 24 , "base": 23 }, 'dir': 'in'   , 'desc': "QSFP56_P01_PRSNT_N"},
+            486:{'offset': {"max": 25 , "base": 22 }, 'dir': 'in'   , 'desc': "QSFP56_P02_PRSNT_N"},
+            485:{'offset': {"max": 26 , "base": 21 }, 'dir': 'in'   , 'desc': "QSFP28_P03_PRSNT_N"},
+            484:{'offset': {"max": 27 , "base": 20 }, 'dir': 'in'   , 'desc': "QSFP28_P04_PRSNT_N"},
+            483:{'offset': {"max": 28 , "base": 19 }, 'dir': 'in'   , 'desc': "QSFP56_P01_INT_N"},
+            482:{'offset': {"max": 29 , "base": 18 }, 'dir': 'in'   , 'desc': "QSFP56_P02_INT_N"},
+            481:{'offset': {"max": 30 , "base": 17 }, 'dir': 'in'   , 'desc': "QSFP28_P03_INT_N"},
+            480:{'offset': {"max": 31 , "base": 16 }, 'dir': 'in'   , 'desc': "QSFP28_P04_INT_N"},
+            479:{'offset': {"max": 32 , "base": 47 }, 'dir': 'low'  , 'desc': "SFP28_P13_TX_DIS"},
+            478:{'offset': {"max": 33 , "base": 46 }, 'dir': 'low'  , 'desc': "SFP28_P14_TX_DIS"},
+            477:{'offset': {"max": 34 , "base": 45 }, 'dir': 'low'  , 'desc': "SFP28_P15_TX_DIS"},
+            476:{'offset': {"max": 35 , "base": 44 }, 'dir': 'low'  , 'desc': "SFP28_P16_TX_DIS"},
+            475:{'offset': {"max": 36 , "base": 43 }, 'dir': 'low'  , 'desc': "SFP28_P17_TX_DIS"},
+            474:{'offset': {"max": 37 , "base": 42 }, 'dir': 'low'  , 'desc': "SFP28_P18_TX_DIS"},
+            473:{'offset': {"max": 38 , "base": 41 }, 'dir': 'low'  , 'desc': "SFP28_P19_TX_DIS"},
+            472:{'offset': {"max": 39 , "base": 40 }, 'dir': 'low'  , 'desc': "SFP28_P20_TX_DIS"},
+            471:{'offset': {"max": 40 , "base": 39 }, 'dir': 'low'  , 'desc': "SFP28_P05_TX_DIS"},
+            470:{'offset': {"max": 41 , "base": 38 }, 'dir': 'low'  , 'desc': "SFP28_P06_TX_DIS"},
+            469:{'offset': {"max": 42 , "base": 37 }, 'dir': 'low'  , 'desc': "SFP28_P07_TX_DIS"},
+            468:{'offset': {"max": 43 , "base": 36 }, 'dir': 'low'  , 'desc': "SFP28_P08_TX_DIS"},
+            467:{'offset': {"max": 44 , "base": 35 }, 'dir': 'low'  , 'desc': "SFP28_P09_TX_DIS"},
+            466:{'offset': {"max": 45 , "base": 34 }, 'dir': 'low'  , 'desc': "SFP28_P10_TX_DIS"},
+            465:{'offset': {"max": 46 , "base": 33 }, 'dir': 'low'  , 'desc': "SFP28_P11_TX_DIS"},
+            464:{'offset': {"max": 47 , "base": 32 }, 'dir': 'low'  , 'desc': "SFP28_P12_TX_DIS"},
+            463:{'offset': {"max": 48 , "base": 63 }, 'dir': 'in'   , 'desc': "NI"},
+            462:{'offset': {"max": 49 , "base": 62 }, 'dir': 'in'   , 'desc': "NI"},
+            461:{'offset': {"max": 50 , "base": 61 }, 'dir': 'in'   , 'desc': "NI"},
+            460:{'offset': {"max": 51 , "base": 60 }, 'dir': 'in'   , 'desc': "NI"},
+            459:{'offset': {"max": 52 , "base": 59 }, 'dir': 'in'   , 'desc': "NI"},
+            458:{'offset': {"max": 53 , "base": 58 }, 'dir': 'in'   , 'desc': "NI"},
+            457:{'offset': {"max": 54 , "base": 57 }, 'dir': 'in'   , 'desc': "NI"},
+            456:{'offset': {"max": 55 , "base": 56 }, 'dir': 'in'   , 'desc': "NI"},
+            455:{'offset': {"max": 56 , "base": 55 }, 'dir': 'low'  , 'desc': "SFP28_P21_TX_DIS"},
+            454:{'offset': {"max": 57 , "base": 54 }, 'dir': 'low'  , 'desc': "SFP28_P22_TX_DIS"},
+            453:{'offset': {"max": 58 , "base": 53 }, 'dir': 'low'  , 'desc': "SFP28_P23_TX_DIS"},
+            452:{'offset': {"max": 59 , "base": 52 }, 'dir': 'low'  , 'desc': "SFP28_P24_TX_DIS"},
+            451:{'offset': {"max": 60 , "base": 51 }, 'dir': 'low'  , 'desc': "SFP28_P25_TX_DIS"},
+            450:{'offset': {"max": 61 , "base": 50 }, 'dir': 'low'  , 'desc': "SFP28_P26_TX_DIS"},
+            449:{'offset': {"max": 62 , "base": 49 }, 'dir': 'low'  , 'desc': "SFP28_P27_TX_DIS"},
+            448:{'offset': {"max": 63 , "base": 48 }, 'dir': 'low'  , 'desc': "SFP28_P28_TX_DIS"},
+            447:{'offset': {"max": 64 , "base": 79 }, 'dir': 'in'   , 'desc': "SFP28_P13_TX_FLT"},
+            446:{'offset': {"max": 65 , "base": 78 }, 'dir': 'in'   , 'desc': "SFP28_P14_TX_FLT"},
+            445:{'offset': {"max": 66 , "base": 77 }, 'dir': 'in'   , 'desc': "SFP28_P15_TX_FLT"},
+            444:{'offset': {"max": 67 , "base": 76 }, 'dir': 'in'   , 'desc': "SFP28_P16_TX_FLT"},
+            443:{'offset': {"max": 68 , "base": 75 }, 'dir': 'in'   , 'desc': "SFP28_P17_TX_FLT"},
+            442:{'offset': {"max": 69 , "base": 74 }, 'dir': 'in'   , 'desc': "SFP28_P18_TX_FLT"},
+            441:{'offset': {"max": 70 , "base": 73 }, 'dir': 'in'   , 'desc': "SFP28_P19_TX_FLT"},
+            440:{'offset': {"max": 71 , "base": 72 }, 'dir': 'in'   , 'desc': "SFP28_P20_TX_FLT"},
+            439:{'offset': {"max": 72 , "base": 71 }, 'dir': 'in'   , 'desc': "SFP28_P05_TX_FLT"},
+            438:{'offset': {"max": 73 , "base": 70 }, 'dir': 'in'   , 'desc': "SFP28_P06_TX_FLT"},
+            437:{'offset': {"max": 74 , "base": 69 }, 'dir': 'in'   , 'desc': "SFP28_P07_TX_FLT"},
+            436:{'offset': {"max": 75 , "base": 68 }, 'dir': 'in'   , 'desc': "SFP28_P08_TX_FLT"},
+            435:{'offset': {"max": 76 , "base": 67 }, 'dir': 'in'   , 'desc': "SFP28_P09_TX_FLT"},
+            434:{'offset': {"max": 77 , "base": 66 }, 'dir': 'in'   , 'desc': "SFP28_P10_TX_FLT"},
+            433:{'offset': {"max": 78 , "base": 65 }, 'dir': 'in'   , 'desc': "SFP28_P11_TX_FLT"},
+            432:{'offset': {"max": 79 , "base": 64 }, 'dir': 'in'   , 'desc': "SFP28_P12_TX_FLT"},
+            431:{'offset': {"max": 80 , "base": 95 }, 'dir': 'in'   , 'desc': "NI"},
+            430:{'offset': {"max": 81 , "base": 94 }, 'dir': 'in'   , 'desc': "NI"},
+            429:{'offset': {"max": 82 , "base": 93 }, 'dir': 'in'   , 'desc': "NI"},
+            428:{'offset': {"max": 83 , "base": 92 }, 'dir': 'in'   , 'desc': "NI"},
+            427:{'offset': {"max": 84 , "base": 91 }, 'dir': 'in'   , 'desc': "NI"},
+            426:{'offset': {"max": 85 , "base": 90 }, 'dir': 'in'   , 'desc': "NI"},
+            425:{'offset': {"max": 86 , "base": 89 }, 'dir': 'in'   , 'desc': "NI"},
+            424:{'offset': {"max": 87 , "base": 88 }, 'dir': 'in'   , 'desc': "NI"},
+            423:{'offset': {"max": 88 , "base": 87 }, 'dir': 'in'   , 'desc': "SFP28_P21_TX_FLT"},
+            422:{'offset': {"max": 89 , "base": 86 }, 'dir': 'in'   , 'desc': "SFP28_P22_TX_FLT"},
+            421:{'offset': {"max": 90 , "base": 85 }, 'dir': 'in'   , 'desc': "SFP28_P23_TX_FLT"},
+            420:{'offset': {"max": 91 , "base": 84 }, 'dir': 'in'   , 'desc': "SFP28_P24_TX_FLT"},
+            419:{'offset': {"max": 92 , "base": 83 }, 'dir': 'in'   , 'desc': "SFP28_P25_TX_FLT"},
+            418:{'offset': {"max": 93 , "base": 82 }, 'dir': 'in'   , 'desc': "SFP28_P26_TX_FLT"},
+            417:{'offset': {"max": 94 , "base": 81 }, 'dir': 'in'   , 'desc': "SFP28_P27_TX_FLT"},
+            416:{'offset': {"max": 95 , "base": 80 }, 'dir': 'in'   , 'desc': "SFP28_P28_TX_FLT"},
+            415:{'offset': {"max": 96 , "base": 111}, 'dir': 'high' , 'desc': "SFP28_P13_RATE_SEL"},
+            414:{'offset': {"max": 97 , "base": 110}, 'dir': 'high' , 'desc': "SFP28_P14_RATE_SEL"},
+            413:{'offset': {"max": 98 , "base": 109}, 'dir': 'high' , 'desc': "SFP28_P15_RATE_SEL"},
+            412:{'offset': {"max": 99 , "base": 108}, 'dir': 'high' , 'desc': "SFP28_P16_RATE_SEL"},
+            411:{'offset': {"max": 100, "base": 107}, 'dir': 'high' , 'desc': "SFP28_P17_RATE_SEL"},
+            410:{'offset': {"max": 101, "base": 106}, 'dir': 'high' , 'desc': "SFP28_P18_RATE_SEL"},
+            409:{'offset': {"max": 102, "base": 105}, 'dir': 'high' , 'desc': "SFP28_P19_RATE_SEL"},
+            408:{'offset': {"max": 103, "base": 104}, 'dir': 'high' , 'desc': "SFP28_P20_RATE_SEL"},
+            407:{'offset': {"max": 104, "base": 103}, 'dir': 'high' , 'desc': "SFP28_P05_RATE_SEL"},
+            406:{'offset': {"max": 105, "base": 102}, 'dir': 'high' , 'desc': "SFP28_P06_RATE_SEL"},
+            405:{'offset': {"max": 106, "base": 101}, 'dir': 'high' , 'desc': "SFP28_P07_RATE_SEL"},
+            404:{'offset': {"max": 107, "base": 100}, 'dir': 'high' , 'desc': "SFP28_P08_RATE_SEL"},
+            403:{'offset': {"max": 108, "base": 99 }, 'dir': 'high' , 'desc': "SFP28_P09_RATE_SEL"},
+            402:{'offset': {"max": 109, "base": 98 }, 'dir': 'high' , 'desc': "SFP28_P10_RATE_SEL"},
+            401:{'offset': {"max": 110, "base": 97 }, 'dir': 'high' , 'desc': "SFP28_P11_RATE_SEL"},
+            400:{'offset': {"max": 111, "base": 96 }, 'dir': 'high' , 'desc': "SFP28_P12_RATE_SEL"},
+            399:{'offset': {"max": 112, "base": 127}, 'dir': 'in'   , 'desc': "RST_I2C_MUX8_N"},
+            398:{'offset': {"max": 113, "base": 126}, 'dir': 'in'   , 'desc': "RST_I2C_MUX7_N"},
+            397:{'offset': {"max": 114, "base": 125}, 'dir': 'in'   , 'desc': "UART_MUX_SEL"},
+            396:{'offset': {"max": 115, "base": 124}, 'dir': 'in'   , 'desc': "NI"},
+            395:{'offset': {"max": 116, "base": 123}, 'dir': 'low'  , 'desc': "LED_DD_P01_G"},
+            394:{'offset': {"max": 117, "base": 122}, 'dir': 'low'  , 'desc': "LED_DD_P01_Y"},
+            393:{'offset': {"max": 118, "base": 121}, 'dir': 'low'  , 'desc': "LED_DD_P02_G"},
+            392:{'offset': {"max": 119, "base": 120}, 'dir': 'low'  , 'desc': "LED_DD_P02_Y"},
+            391:{'offset': {"max": 120, "base": 119}, 'dir': 'high' , 'desc': "SFP28_P21_RATE_SEL"},
+            390:{'offset': {"max": 121, "base": 118}, 'dir': 'high' , 'desc': "SFP28_P22_RATE_SEL"},
+            389:{'offset': {"max": 122, "base": 117}, 'dir': 'high' , 'desc': "SFP28_P23_RATE_SEL"},
+            388:{'offset': {"max": 123, "base": 116}, 'dir': 'high' , 'desc': "SFP28_P24_RATE_SEL"},
+            387:{'offset': {"max": 124, "base": 115}, 'dir': 'high' , 'desc': "SFP28_P25_RATE_SEL"},
+            386:{'offset': {"max": 125, "base": 114}, 'dir': 'high' , 'desc': "SFP28_P26_RATE_SEL"},
+            385:{'offset': {"max": 126, "base": 113}, 'dir': 'high' , 'desc': "SFP28_P27_RATE_SEL"},
+            384:{'offset': {"max": 127, "base": 112}, 'dir': 'high' , 'desc': "SFP28_P28_RATE_SEL"},
+            383:{'offset': {"max": 128, "base": 143}, 'dir': 'in'   , 'desc': "SFP28_P13_MOD_ABS"},
+            382:{'offset': {"max": 129, "base": 142}, 'dir': 'in'   , 'desc': "SFP28_P14_MOD_ABS"},
+            381:{'offset': {"max": 130, "base": 141}, 'dir': 'in'   , 'desc': "SFP28_P15_MOD_ABS"},
+            380:{'offset': {"max": 131, "base": 140}, 'dir': 'in'   , 'desc': "SFP28_P16_MOD_ABS"},
+            379:{'offset': {"max": 132, "base": 139}, 'dir': 'in'   , 'desc': "SFP28_P17_MOD_ABS"},
+            378:{'offset': {"max": 133, "base": 138}, 'dir': 'in'   , 'desc': "SFP28_P18_MOD_ABS"},
+            377:{'offset': {"max": 134, "base": 137}, 'dir': 'in'   , 'desc': "SFP28_P19_MOD_ABS"},
+            376:{'offset': {"max": 135, "base": 136}, 'dir': 'in'   , 'desc': "SFP28_P20_MOD_ABS"},
+            375:{'offset': {"max": 136, "base": 135}, 'dir': 'in'   , 'desc': "SFP28_P05_MOD_ABS"},
+            374:{'offset': {"max": 137, "base": 134}, 'dir': 'in'   , 'desc': "SFP28_P06_MOD_ABS"},
+            373:{'offset': {"max": 138, "base": 133}, 'dir': 'in'   , 'desc': "SFP28_P07_MOD_ABS"},
+            372:{'offset': {"max": 139, "base": 132}, 'dir': 'in'   , 'desc': "SFP28_P08_MOD_ABS"},
+            371:{'offset': {"max": 140, "base": 131}, 'dir': 'in'   , 'desc': "SFP28_P09_MOD_ABS"},
+            370:{'offset': {"max": 141, "base": 130}, 'dir': 'in'   , 'desc': "SFP28_P10_MOD_ABS"},
+            369:{'offset': {"max": 142, "base": 129}, 'dir': 'in'   , 'desc': "SFP28_P11_MOD_ABS"},
+            368:{'offset': {"max": 143, "base": 128}, 'dir': 'in'   , 'desc': "SFP28_P12_MOD_ABS"},
+            367:{'offset': {"max": 144, "base": 159}, 'dir': 'in'   , 'desc': "NI"},
+            366:{'offset': {"max": 145, "base": 158}, 'dir': 'in'   , 'desc': "NI"},
+            365:{'offset': {"max": 146, "base": 157}, 'dir': 'in'   , 'desc': "NI"},
+            364:{'offset': {"max": 147, "base": 156}, 'dir': 'in'   , 'desc': "NI"},
+            363:{'offset': {"max": 148, "base": 155}, 'dir': 'in'   , 'desc': "NI"},
+            362:{'offset': {"max": 149, "base": 154}, 'dir': 'in'   , 'desc': "NI"},
+            361:{'offset': {"max": 150, "base": 153}, 'dir': 'in'   , 'desc': "NI"},
+            360:{'offset': {"max": 151, "base": 152}, 'dir': 'in'   , 'desc': "NI"},
+            359:{'offset': {"max": 152, "base": 151}, 'dir': 'in'   , 'desc': "SFP28_P21_MOD_ABS"},
+            358:{'offset': {"max": 153, "base": 150}, 'dir': 'in'   , 'desc': "SFP28_P22_MOD_ABS"},
+            357:{'offset': {"max": 154, "base": 149}, 'dir': 'in'   , 'desc': "SFP28_P23_MOD_ABS"},
+            356:{'offset': {"max": 155, "base": 148}, 'dir': 'in'   , 'desc': "SFP28_P24_MOD_ABS"},
+            355:{'offset': {"max": 156, "base": 147}, 'dir': 'in'   , 'desc': "SFP28_P25_MOD_ABS"},
+            354:{'offset': {"max": 157, "base": 146}, 'dir': 'in'   , 'desc': "SFP28_P26_MOD_ABS"},
+            353:{'offset': {"max": 158, "base": 145}, 'dir': 'in'   , 'desc': "SFP28_P27_MOD_ABS"},
+            352:{'offset': {"max": 159, "base": 144}, 'dir': 'in'   , 'desc': "SFP28_P28_MOD_ABS"},
+            351:{'offset': {"max": 160, "base": 175}, 'dir': 'in'   , 'desc': "SFP28_P13_RX_LOS"},
+            350:{'offset': {"max": 161, "base": 174}, 'dir': 'in'   , 'desc': "SFP28_P14_RX_LOS"},
+            349:{'offset': {"max": 162, "base": 173}, 'dir': 'in'   , 'desc': "SFP28_P15_RX_LOS"},
+            348:{'offset': {"max": 163, "base": 172}, 'dir': 'in'   , 'desc': "SFP28_P16_RX_LOS"},
+            347:{'offset': {"max": 164, "base": 171}, 'dir': 'in'   , 'desc': "SFP28_P17_RX_LOS"},
+            346:{'offset': {"max": 165, "base": 170}, 'dir': 'in'   , 'desc': "SFP28_P18_RX_LOS"},
+            345:{'offset': {"max": 166, "base": 169}, 'dir': 'in'   , 'desc': "SFP28_P19_RX_LOS"},
+            344:{'offset': {"max": 167, "base": 168}, 'dir': 'in'   , 'desc': "SFP28_P20_RX_LOS"},
+            343:{'offset': {"max": 168, "base": 167}, 'dir': 'in'   , 'desc': "SFP28_P05_RX_LOS"},
+            342:{'offset': {"max": 169, "base": 166}, 'dir': 'in'   , 'desc': "SFP28_P06_RX_LOS"},
+            341:{'offset': {"max": 170, "base": 165}, 'dir': 'in'   , 'desc': "SFP28_P07_RX_LOS"},
+            340:{'offset': {"max": 171, "base": 164}, 'dir': 'in'   , 'desc': "SFP28_P08_RX_LOS"},
+            339:{'offset': {"max": 172, "base": 163}, 'dir': 'in'   , 'desc': "SFP28_P09_RX_LOS"},
+            338:{'offset': {"max": 173, "base": 162}, 'dir': 'in'   , 'desc': "SFP28_P10_RX_LOS"},
+            337:{'offset': {"max": 174, "base": 161}, 'dir': 'in'   , 'desc': "SFP28_P11_RX_LOS"},
+            336:{'offset': {"max": 175, "base": 160}, 'dir': 'in'   , 'desc': "SFP28_P12_RX_LOS"},
+            335:{'offset': {"max": 176, "base": 191}, 'dir': 'in'   , 'desc': "NI"},
+            334:{'offset': {"max": 177, "base": 190}, 'dir': 'in'   , 'desc': "NI"},
+            333:{'offset': {"max": 178, "base": 189}, 'dir': 'in'   , 'desc': "NI"},
+            332:{'offset': {"max": 179, "base": 188}, 'dir': 'in'   , 'desc': "NI"},
+            331:{'offset': {"max": 180, "base": 187}, 'dir': 'in'   , 'desc': "NI"},
+            330:{'offset': {"max": 181, "base": 186}, 'dir': 'in'   , 'desc': "NI"},
+            329:{'offset': {"max": 182, "base": 185}, 'dir': 'in'   , 'desc': "NI"},
+            328:{'offset': {"max": 183, "base": 184}, 'dir': 'in'   , 'desc': "NI"},
+            327:{'offset': {"max": 184, "base": 183}, 'dir': 'in'   , 'desc': "SFP28_P21_RX_LOS"},
+            326:{'offset': {"max": 185, "base": 182}, 'dir': 'in'   , 'desc': "SFP28_P22_RX_LOS"},
+            325:{'offset': {"max": 186, "base": 181}, 'dir': 'in'   , 'desc': "SFP28_P23_RX_LOS"},
+            324:{'offset': {"max": 187, "base": 180}, 'dir': 'in'   , 'desc': "SFP28_P24_RX_LOS"},
+            323:{'offset': {"max": 188, "base": 179}, 'dir': 'in'   , 'desc': "SFP28_P25_RX_LOS"},
+            322:{'offset': {"max": 189, "base": 178}, 'dir': 'in'   , 'desc': "SFP28_P26_RX_LOS"},
+            321:{'offset': {"max": 190, "base": 177}, 'dir': 'in'   , 'desc': "SFP28_P27_RX_LOS"},
+            320:{'offset': {"max": 191, "base": 176}, 'dir': 'in'   , 'desc': "SFP28_P28_RX_LOS"},
+        }
+
         self.new_i2c_devices(
             [
                 ('pca9535', 0x20, 4), #9535_IO_EXP_01 (9535_BOARD_ID)
@@ -207,28 +407,14 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
             ]
         )
 
-        gpio_min = gpio_max - 191
-        gpio_tnumber = (gpio_max + 1)
-        # init all GPIO direction to "in"
-        gpio_dir = ["in"] * gpio_tnumber
-
-        # init GPIO direction to output low
-        for off in range(-20, -24, -1) + \
-                 range(-32, -48, -1) + \
-                 range(-56, -64, -1) + \
-                 range(-116, -120, -1):
-            gpio_dir[gpio_max + off] = "low"
-
-        # init GPIO direction to output high
-        for off in range(-16, -20, -1) + \
-                 range(-96, -112, -1) + \
-                 range(-120, -128, -1):
-            gpio_dir[gpio_max + off] = "high"
-
-        # export GPIO and configure direction
-        for i in range(gpio_min, gpio_tnumber):
-            os.system("echo {} > /sys/class/gpio/export".format(i))
-            os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i], i))
+        for _, conf in gpio_map.items():
+            if gpio_max < 0:
+                gpio_num = gpio_base + conf['offset'].get("base")
+            else:
+                gpio_num = gpio_max - conf['offset'].get("max")
+            gpio_dir = conf['dir']
+            os.system("echo {} > {}/export".format(gpio_num, self.PATH_SYS_GPIO))
+            os.system("echo {}   > {}/gpio{}/direction".format(gpio_dir, self.PATH_SYS_GPIO, gpio_num))
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -293,31 +479,37 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
         #lpc driver
         self.insmod("x86-64-ufispace-s9510-28dc-lpc")
 
-        # version setting
-        self.bsp_pr("BSP version {}".format(self.BSP_VERSION));
-        bsp_version_path="/sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_version"
-        if os.path.exists(bsp_version_path):
-            with open(bsp_version_path, "w") as f:
-                f.write(self.BSP_VERSION)
-
         # get hardware revision
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/mb_cpld/board_hw_id"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
             output="1"
 
         hw_rev_id = int(output, 10)
 
         # get gpio max
         cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_gpio_max"
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR);
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
 
         gpio_max = int(output, 10)
         self.bsp_pr("GPIO MAX: {}".format(gpio_max));
+
+        # get gpio base
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9510_28dc_lpc/bsp/bsp_gpio_base"
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio base failed, exception={}".format(e), self.LEVEL_ERR)
+            output="512"
+
+        gpio_base = int(output, 10)
+        self.bsp_pr("GPIO BASE: {}".format(gpio_base));
 
         ########### initialize I2C bus 0 ###########
         # i2c_i801 is built-in
@@ -358,13 +550,14 @@ class OnlPlatform_x86_64_ufispace_s9510_28dc_r0(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         self.bsp_pr("Init gpio");
-        self.init_gpio(gpio_max)
+        self.init_gpio(gpio_max, gpio_base)
 
-        #enable ipmi maintenance mode
+        # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
 
-        # disable bmc watchdog
+        # disable watchdog
         self.disable_bmc_watchdog()
+        self.disable_watchdog()
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

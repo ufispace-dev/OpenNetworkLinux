@@ -98,45 +98,51 @@ PortTypeDictEntry port_type_dict[] = {
 typedef struct
 {
     int abs_gpin;
+    int abs_gpin_b;
     int lpmode_gpin;
+    int lpmode_gpin_b;
     int reset_gpin;
+    int reset_gpin_b;
     int rxlos_gpin;
+    int rxlos_gpin_b;
     int txfault_gpin;
+    int txfault_gpin_b;
     int txdis_gpin;
+    int txdis_gpin_b;
     int eeprom_bus;
     int port_type;
 } port_attr_t;
 
 static const port_attr_t port_attr[] = {
-/*  port  abs   lpmode reset rxlos txfault txdis eeprom type */
-    [0] ={24   ,20    ,16  ,-1   ,-1     ,-1   ,13    ,TYPE_QSFPDD},
-    [1] ={25   ,21    ,17  ,-1   ,-1     ,-1   ,12    ,TYPE_QSFPDD},
-    [2] ={26   ,22    ,18  ,-1   ,-1     ,-1   ,11    ,TYPE_QSFP  },
-    [3] ={27   ,23    ,19  ,-1   ,-1     ,-1   ,10    ,TYPE_QSFP  },
-    [4] ={136  ,-1    ,-1  ,168  ,72     ,40   ,14    ,TYPE_SFP   },
-    [5] ={137  ,-1    ,-1  ,169  ,73     ,41   ,15    ,TYPE_SFP   },
-    [6] ={138  ,-1    ,-1  ,170  ,74     ,42   ,16    ,TYPE_SFP   },
-    [7] ={139  ,-1    ,-1  ,171  ,75     ,43   ,17    ,TYPE_SFP   },
-    [8] ={140  ,-1    ,-1  ,172  ,76     ,44   ,18    ,TYPE_SFP   },
-    [9] ={141  ,-1    ,-1  ,173  ,77     ,45   ,19    ,TYPE_SFP   },
-    [10]={142  ,-1    ,-1  ,174  ,78     ,46   ,20    ,TYPE_SFP   },
-    [11]={143  ,-1    ,-1  ,175  ,79     ,47   ,21    ,TYPE_SFP   },
-    [12]={128  ,-1    ,-1  ,160  ,64     ,32   ,22    ,TYPE_SFP   },
-    [13]={129  ,-1    ,-1  ,161  ,65     ,33   ,23    ,TYPE_SFP   },
-    [14]={130  ,-1    ,-1  ,162  ,66     ,34   ,24    ,TYPE_SFP   },
-    [15]={131  ,-1    ,-1  ,163  ,67     ,35   ,25    ,TYPE_SFP   },
-    [16]={132  ,-1    ,-1  ,164  ,68     ,36   ,26    ,TYPE_SFP   },
-    [17]={133  ,-1    ,-1  ,165  ,69     ,37   ,27    ,TYPE_SFP   },
-    [18]={134  ,-1    ,-1  ,166  ,70     ,38   ,28    ,TYPE_SFP   },
-    [19]={135  ,-1    ,-1  ,167  ,71     ,39   ,29    ,TYPE_SFP   },
-    [20]={152  ,-1    ,-1  ,184  ,88     ,56   ,30    ,TYPE_SFP   },
-    [21]={153  ,-1    ,-1  ,185  ,89     ,57   ,31    ,TYPE_SFP   },
-    [22]={154  ,-1    ,-1  ,186  ,90     ,58   ,32    ,TYPE_SFP   },
-    [23]={155  ,-1    ,-1  ,187  ,91     ,59   ,33    ,TYPE_SFP   },
-    [24]={156  ,-1    ,-1  ,188  ,92     ,60   ,34    ,TYPE_SFP   },
-    [25]={157  ,-1    ,-1  ,189  ,93     ,61   ,35    ,TYPE_SFP   },
-    [26]={158  ,-1    ,-1  ,190  ,94     ,62   ,36    ,TYPE_SFP   },
-    [27]={159  ,-1    ,-1  ,191  ,95     ,63   ,37    ,TYPE_SFP   },
+/*  port  abs       lpmode  reset   rxlos     txfault txdis   eeprom  type */
+    [0] ={24 , 23 , 20, 27, 16 ,31, -1 , -1 , -1, -1, -1, -1, 13    , TYPE_QSFPDD},
+    [1] ={25 , 22 , 21, 26, 17 ,30, -1 , -1 , -1, -1, -1, -1, 12    , TYPE_QSFPDD},
+    [2] ={26 , 21 , 22, 25, 18 ,29, -1 , -1 , -1, -1, -1, -1, 11    , TYPE_QSFP  },
+    [3] ={27 , 20 , 23, 24, 19 ,28, -1 , -1 , -1, -1, -1, -1, 10    , TYPE_QSFP  },
+    [4] ={136, 135, -1, -1, -1 ,-1, 168, 167, 72, 71, 40, 39, 14    , TYPE_SFP   },
+    [5] ={137, 134, -1, -1, -1 ,-1, 169, 166, 73, 70, 41, 38, 15    , TYPE_SFP   },
+    [6] ={138, 133, -1, -1, -1 ,-1, 170, 165, 74, 69, 42, 37, 16    , TYPE_SFP   },
+    [7] ={139, 132, -1, -1, -1 ,-1, 171, 164, 75, 68, 43, 36, 17    , TYPE_SFP   },
+    [8] ={140, 131, -1, -1, -1 ,-1, 172, 163, 76, 67, 44, 35, 18    , TYPE_SFP   },
+    [9] ={141, 130, -1, -1, -1 ,-1, 173, 162, 77, 66, 45, 34, 19    , TYPE_SFP   },
+    [10]={142, 129, -1, -1, -1 ,-1, 174, 161, 78, 65, 46, 33, 20    , TYPE_SFP   },
+    [11]={143, 128, -1, -1, -1 ,-1, 175, 160, 79, 64, 47, 32, 21    , TYPE_SFP   },
+    [12]={128, 143, -1, -1, -1 ,-1, 160, 175, 64, 79, 32, 47, 22    , TYPE_SFP   },
+    [13]={129, 142, -1, -1, -1 ,-1, 161, 174, 65, 78, 33, 46, 23    , TYPE_SFP   },
+    [14]={130, 141, -1, -1, -1 ,-1, 162, 173, 66, 77, 34, 45, 24    , TYPE_SFP   },
+    [15]={131, 140, -1, -1, -1 ,-1, 163, 172, 67, 76, 35, 44, 25    , TYPE_SFP   },
+    [16]={132, 139, -1, -1, -1 ,-1, 164, 171, 68, 75, 36, 43, 26    , TYPE_SFP   },
+    [17]={133, 138, -1, -1, -1 ,-1, 165, 170, 69, 74, 37, 42, 27    , TYPE_SFP   },
+    [18]={134, 137, -1, -1, -1 ,-1, 166, 169, 70, 73, 38, 41, 28    , TYPE_SFP   },
+    [19]={135, 136, -1, -1, -1 ,-1, 167, 168, 71, 72, 39, 40, 29    , TYPE_SFP   },
+    [20]={152, 151, -1, -1, -1 ,-1, 184, 183, 88, 87, 56, 55, 30    , TYPE_SFP   },
+    [21]={153, 150, -1, -1, -1 ,-1, 185, 182, 89, 86, 57, 54, 31    , TYPE_SFP   },
+    [22]={154, 149, -1, -1, -1 ,-1, 186, 181, 90, 85, 58, 53, 32    , TYPE_SFP   },
+    [23]={155, 148, -1, -1, -1 ,-1, 187, 180, 91, 84, 59, 52, 33    , TYPE_SFP   },
+    [24]={156, 147, -1, -1, -1 ,-1, 188, 179, 92, 83, 60, 51, 34    , TYPE_SFP   },
+    [25]={157, 146, -1, -1, -1 ,-1, 189, 178, 93, 82, 61, 50, 35    , TYPE_SFP   },
+    [26]={158, 145, -1, -1, -1 ,-1, 190, 177, 94, 81, 62, 49, 36    , TYPE_SFP   },
+    [27]={159, 144, -1, -1, -1 ,-1, 191, 176, 95, 80, 63, 48, 37    , TYPE_SFP   },
 };
 
 #define IS_PORT_INVALID(_port)  (_port < 0) || (_port >= PORT_NUM)
@@ -148,39 +154,54 @@ static const port_attr_t port_attr[] = {
 #define VALIDATE_PORT(p) { if (IS_PORT_INVALID(p)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (IS_PORT_INVALID(p) || !IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
+static int gpio_max = -1;
+static int gpio_base = -1;
+
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
-    int gpio_max = 0;
     int gpio_num = -1;
-
-    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
 
     switch(control)
     {
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                gpio_num = gpio_max - port_attr[port].reset_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].reset_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].reset_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                gpio_num = gpio_max - port_attr[port].rxlos_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].rxlos_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].rxlos_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                gpio_num = gpio_max - port_attr[port].txfault_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].txfault_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].txfault_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                gpio_num = gpio_max - port_attr[port].txdis_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].txdis_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].txdis_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                gpio_num = gpio_max - port_attr[port].lpmode_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].lpmode_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].lpmode_gpin;
                 break;
             }
         default:
@@ -580,6 +601,8 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
 int onlp_sfpi_init(void)
 {
     lock_init();
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+    ONLP_TRY(ufi_get_gpio_base(&gpio_base));
     return ONLP_STATUS_OK;
 }
 
@@ -607,14 +630,14 @@ int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
     int abs = 0, present = 0;
-    int gpio_max = 0;
 
     VALIDATE_PORT(port);
 
-    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
-
     //set gpio_num by port
-    gpio_num = gpio_max - port_attr[port].abs_gpin;
+    if(gpio_max < 0)
+        gpio_num = gpio_base + port_attr[port].abs_gpin_b;
+    else 
+        gpio_num = gpio_max - port_attr[port].abs_gpin;
 
     if ((status = file_read_hex(&abs, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",

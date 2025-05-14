@@ -4,7 +4,6 @@ from struct import *
 from ctypes import c_int, sizeof
 import os
 import sys
-import commands
 import subprocess
 import time
 import fcntl
@@ -35,7 +34,7 @@ class IPMI_Ioctl(object):
         devnodes=["/dev/ipmi0", "/dev/ipmi/0", "/dev/ipmidev/0"]
         for dev in devnodes:
             try:
-                self.ipmidev = open(dev, 'rw')
+                self.ipmidev = open(dev, 'r+')
                 break
             except Exception as e:
                 print("open file {} failed, error: {}".format(dev, e))
@@ -62,7 +61,6 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="96x25 + 6x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.0.0'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_1"
@@ -113,12 +111,6 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
         else:
             msg("Warning: bsp logging sys is not exist\n")
 
-    def config_bsp_ver(self, bsp_ver):
-        bsp_version_path=self.PATH_LPC_GRP_BSP+"/bsp_version"
-        if os.path.exists(bsp_version_path):
-            with open(bsp_version_path, "w") as f:
-                f.write(bsp_ver)
-
     def get_board_version(self):
         board = {}
         board_attrs = {
@@ -129,9 +121,10 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
 
         for key, val in board_attrs.items():
             cmd = "cat {}".format(val["sysfs"])
-            status, output = commands.getstatusoutput(cmd)
-            if status != 0:
-                self.bsp_pr("Get hwr rev id from LPC failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+            try:
+                output = subprocess.check_output(cmd.split())
+            except Exception as e:
+                self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
                 output="1"
             board[key] = int(output, 10)
 
@@ -139,9 +132,10 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
 
     def get_gpio_max(self):
         cmd = "cat {}/bsp_gpio_max".format(self.PATH_LPC_GRP_BSP)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio max failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
 
         gpio_max = int(output, 10)
@@ -150,9 +144,10 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
 
     def get_gpio_base(self):
         cmd = "cat {}/bsp_gpio_base".format(self.PATH_LPC_GRP_BSP)
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            self.bsp_pr("Get gpio base failed, status={}, output={}, cmd={}\n".format(status, output, cmd), self.LEVEL_ERR)
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio base failed, exception={}".format(e), self.LEVEL_ERR)
             output="512"
 
         gpio_base = int(output, 10)
@@ -439,10 +434,6 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
 
         #lpc driver
         self.insmod("x86-64-ufispace-s9601-102xc-lpc")
-
-        # version setting
-        self.bsp_pr("BSP version {}".format(self.BSP_VERSION))
-        self.config_bsp_ver(self.BSP_VERSION)
 
         gpio_max = self.get_gpio_max()
         self.bsp_pr("GPIO MAX: {}".format(gpio_max))

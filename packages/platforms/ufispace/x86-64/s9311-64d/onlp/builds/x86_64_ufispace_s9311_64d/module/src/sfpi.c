@@ -944,7 +944,7 @@ static int get_node(int port, port_node_t *node)
         node->rxlos_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_rx_los_0";
         node->txfault_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_tx_fault_0";
         node->txdis_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_tx_dis_0";
-        if (board.hw_rev == BRD_ALPHA) 
+        if (board.hw_rev == BRD_ALPHA)
         {
             node->eeprom_bus = 15;
         }
@@ -963,14 +963,14 @@ static int get_node(int port, port_node_t *node)
         node->rxlos_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_rx_los_1";
         node->txfault_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_tx_fault_1";
         node->txdis_sysfs = SYSFS_CPLD1 "cpld_mgmt_port_tx_dis_1";
-        if (board.hw_rev == BRD_ALPHA) 
+        if (board.hw_rev == BRD_ALPHA)
         {
             node->eeprom_bus = 16;
         }
         else
         {
             node->eeprom_bus = 51;
-        }        
+        }
         node->port_type = TYPE_MGMT;
         node->cpld_bit = 0;
         node->ctrl_addr = 0x6000;
@@ -1187,7 +1187,7 @@ static uint32_t fpga_read_dword(uint32_t addr)
         return 0;
     }
 
-    data = *(uint32_t *)(mmap_base + (addr & (PAGE_MASK)));
+    data = *(uint32_t *)((char *)mmap_base + (addr & PAGE_MASK));
 
     if (DEBUG_FPGA_READ)
     {
@@ -2067,9 +2067,9 @@ static int ufi_cmis_txdisable_status_get(int port, int *status)
 
     ONLP_TRY(get_node(port, &node));
 
-    //Check module present
-    if (onlp_sfpi_is_present(port) !=  1)
-	{
+    // Check module present
+    if (onlp_sfpi_is_present(port) != 1)
+    {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -2133,9 +2133,9 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
 
     ONLP_TRY(get_node(port, &node));
 
-    //Check module present
-    if (onlp_sfpi_is_present(port) !=  1)
-	{
+    // Check module present
+    if (onlp_sfpi_is_present(port) != 1)
+    {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -2695,7 +2695,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         {
             // reverse value
             value = (value == 0) ? 1 : 0;
-			op_type = OP_SYSFS;
+            op_type = OP_SYSFS;
         }
         else
         {

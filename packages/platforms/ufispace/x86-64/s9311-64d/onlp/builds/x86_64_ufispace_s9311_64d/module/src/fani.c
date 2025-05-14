@@ -25,7 +25,7 @@
 #include <onlp/platformi/fani.h>
 #include "platform_lib.h"
 
-#define FAN_DIR_EN 0
+#define FAN_DIR_EN (get_hw_rev_id() >= BRD_BETA)
 #define FAN_STATUS ONLP_FAN_STATUS_PRESENT | ONLP_FAN_STATUS_F2B
 #define FAN_CAPS ONLP_FAN_CAPS_GET_RPM | ONLP_FAN_CAPS_GET_PERCENTAGE
 #define SYS_FAN_FRONT_MAX_RPM 12000
@@ -325,7 +325,7 @@ static int get_node(int local_id, fan_node_t *node)
             node->dir = BMC_OEM_IDX_FAN_3_F_DIR;
             break;
         case ONLP_FAN_3_R:
-            node->dir = BMC_OEM_IDX_FAN_3_F_DIR;
+            node->dir = BMC_OEM_IDX_FAN_3_R_DIR;
             break;
         case ONLP_PSU_0_FAN:
             node->dir = BMC_OEM_IDX_PSU_0_FAN_DIR;
@@ -448,7 +448,7 @@ static int update_fru_info(int local_id, onlp_fan_info_t *info)
 static int get_bmc_fan_info(int local_id, onlp_fan_info_t *info)
 {
     int rpm = 0, percentage = 0;
-    float data = 0;
+    bmc_info_t bmc_data = {0};
     int presence;
     int dir = BMC_FAN_DIR_UNK;
     fan_node_t node = {0};
@@ -458,8 +458,8 @@ static int get_bmc_fan_info(int local_id, onlp_fan_info_t *info)
     /* present */
     if (IS_FANTRAY(node))
     {
-        ONLP_TRY(read_bmc_sensor(node.present, FAN_SENSOR, &data));
-        presence = (int)data;
+        ONLP_TRY(read_bmc_sensor(node.present, FAN_SENSOR, &bmc_data));
+        presence = (int)bmc_data.data;
         if (presence == BMC_ATTR_STATUS_PRES)
         {
             info->status |= ONLP_FAN_STATUS_PRESENT;
@@ -486,7 +486,7 @@ static int get_bmc_fan_info(int local_id, onlp_fan_info_t *info)
         return ONLP_STATUS_E_INVALID;
     }
 
-    /* Not support fan dir read */
+    /* support fan dir read after beta */
     if (FAN_DIR_EN)
     {
         /* direction */
@@ -524,8 +524,8 @@ static int get_bmc_fan_info(int local_id, onlp_fan_info_t *info)
     {
         // get fan rpm
         int bmc_attr = node.rpm;
-        ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &data));
-        rpm = (int)data;
+        ONLP_TRY(read_bmc_sensor(bmc_attr, FAN_SENSOR, &bmc_data));
+        rpm = (int)bmc_data.data;
 
         if (rpm == BMC_ATTR_INVALID_VAL)
         {

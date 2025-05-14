@@ -45,7 +45,7 @@
 #define LPC_CPU_CPLD_VER_ATTR   "cpu_cpld_version_h"
 #define SYSFS_BIOS_VER          "/sys/class/dmi/id/bios_version"
 /* CMD */
-#define CMD_BMC_VER_1           "expr `ipmitool mc info" IPMITOOL_REDIRECT_FIRST_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1           "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2           "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3           "echo $((`ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
@@ -118,7 +118,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     uint8_t mb_cpld_ver_h[CPLD_MAX][16];
     uint8_t bios_ver_h[32];
     char bmc_ver[3][16];
-    int sku_id, hw_id, id_type, build_id, deph_id;
     int data_len;
     int i;
     int size;
@@ -167,13 +166,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         mb_cpld_ver_h[2],
         mb_cpld_ver_h[3]);
 
-    //get HW Build Version
-    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKU_ID_ATTR));
-    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH "/" LPC_MB_HW_ID_ATTR));
-    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH "/" LPC_MB_ID_TYPE_ATTR));
-    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH "/" LPC_MB_BUILD_ID_ATTR));
-    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPH_ID_ATTR));
-
     // Detect bmc status
     if(bmc_check_alive() != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
@@ -209,15 +201,9 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[SKU ID] %d\n"
-        "[HW ID] %d\n"
-        "[BUILD ID] %d\n"
-        "[ID TYPE] %d\n"
-        "[DEPH ID] %d\n"
         "[BIOS] %s\n"
         "[BMC] %d.%d.%d\n"
         "[MU] %s (%s)\n",
-        sku_id, hw_id, build_id, id_type, deph_id,
         bios_ver_h,
         atoi(bmc_ver[0]), atoi(bmc_ver[1]), atoi(bmc_ver[2]),
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);

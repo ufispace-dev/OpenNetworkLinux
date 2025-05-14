@@ -64,11 +64,9 @@
 #define SYS_CPU_CORETEMP_PREFIX2    SYSFS_PLTM "coretemp.0/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYSFS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_ERR         " 2>>"SYSFS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_INFO        " 1>>"SYSFS_LPC_BSP"bsp_pr_info"
-
 
 //[BMC] 1.02
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\

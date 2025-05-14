@@ -25,18 +25,18 @@
 #include <onlp/platformi/thermali.h>
 #include "platform_lib.h"
 
-#define MILLI(cel)         (cel * 1000)
-#define IS_SYSFS(_node)    (_node.type == TYPE_THRM_ATTR_GENERAL_SYSFS || _node.type == TYPE_THRM_ATTR_PSU_SYSFS || TYPE_THRM_ATTR_CPU_SYSFS)
-#define IS_BMC(_node)      (_node.type == TYPE_THRM_ATTR_GENERAL_BMC || _node.type == TYPE_THRM_ATTR_PSU_BMC)
-#define IS_GENERAL(_node)  (_node.type == TYPE_THRM_ATTR_GENERAL_SYSFS || _node.type == TYPE_THRM_ATTR_GENERAL_BMC)
-#define IS_CPU(_node)      (_node.type == TYPE_THRM_ATTR_CPU_SYSFS)
-#define IS_PSU(_node)      (_node.type == TYPE_THRM_ATTR_PSU_SYSFS || _node.type == TYPE_THRM_ATTR_PSU_BMC)
+#define MILLI(cel) (cel * 1000)
+#define IS_SYSFS(_node) (_node.type == TYPE_THRM_ATTR_GENERAL_SYSFS || _node.type == TYPE_THRM_ATTR_PSU_SYSFS || TYPE_THRM_ATTR_CPU_SYSFS)
+#define IS_BMC(_node) (_node.type == TYPE_THRM_ATTR_GENERAL_BMC || _node.type == TYPE_THRM_ATTR_PSU_BMC)
+#define IS_GENERAL(_node) (_node.type == TYPE_THRM_ATTR_GENERAL_SYSFS || _node.type == TYPE_THRM_ATTR_GENERAL_BMC)
+#define IS_CPU(_node) (_node.type == TYPE_THRM_ATTR_CPU_SYSFS)
+#define IS_PSU(_node) (_node.type == TYPE_THRM_ATTR_PSU_SYSFS || _node.type == TYPE_THRM_ATTR_PSU_BMC)
 
 /* Thermal threshold */
-#define THERMAL_WARNING_DEFAULT               77
-#define THERMAL_ERROR_DEFAULT                 95
-#define THERMAL_SHUTDOWN_DEFAULT              105
-#define THERMAL_STATE_NOT_SUPPORT             -273
+#define THERMAL_WARNING_DEFAULT 77
+#define THERMAL_ERROR_DEFAULT 95
+#define THERMAL_SHUTDOWN_DEFAULT 105
+#define THERMAL_STATE_NOT_SUPPORT -273
 
 typedef struct
 {
@@ -49,7 +49,8 @@ typedef struct
     int shutdown;
 } thrm_node_t;
 
-typedef enum thrm_attr_type_e {
+typedef enum thrm_attr_type_e
+{
     TYPE_THRM_ATTR_UNNKOW = 0,
     TYPE_THRM_ATTR_GENERAL_SYSFS,
     TYPE_THRM_ATTR_GENERAL_BMC,
@@ -64,6 +65,70 @@ static onlp_thermal_info_t thermal_info[] = {
     {.hdr = {
          .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
          .description = "CPU Package",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU_FRONT),
+         .description = "TEMP_PSU_FRON",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_BMC_AMBIENT),
+         .description = "TEMP_BMC_AMBIENT",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_COME_FRONT),
+         .description = "TEMP_COME_FRONT",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_AIR_REAR),
+         .description = "TEMP_AIR_REAR",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PWRBD_REAR),
+         .description = "TEMP_PWRBD_REAR",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_AIR_FRONT),
+         .description = "TEMP_AIR_FRONT",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_REAR),
+         .description = "TEMP_MAC_REAR",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_FRONT),
+         .description = "TEMP_MAC_FRONT",
+         .poid = POID_0,
+     },
+     .status = ONLP_THERMAL_STATUS_PRESENT,
+     .caps = (ONLP_THERMAL_CAPS_ALL)},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
+         .description = "TEMP_CPU_PECI",
          .poid = POID_0,
      },
      .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -90,13 +155,6 @@ static onlp_thermal_info_t thermal_info[] = {
      .status = ONLP_THERMAL_STATUS_PRESENT,
      .caps = (ONLP_THERMAL_CAPS_ALL)},
     {.hdr = {
-         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PECI),
-         .description = "TEMP_CPU_PECI",
-         .poid = POID_0,
-     },
-     .status = ONLP_THERMAL_STATUS_PRESENT,
-     .caps = (ONLP_THERMAL_CAPS_ALL)},
-    {.hdr = {
          .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0_TEMP1),
          .description = "PSU 0 THERMAL 1",
          .poid = POID_0,
@@ -112,64 +170,80 @@ static onlp_thermal_info_t thermal_info[] = {
      .caps = (ONLP_THERMAL_CAPS_ALL)},
 };
 
-static int get_node(int local_id, thrm_node_t *node) {
-    if(node == NULL)
+static int get_node(int local_id, thrm_node_t *node)
+{
+    if (node == NULL)
         return ONLP_STATUS_E_PARAM;
 
-    switch(local_id) {
-        case ONLP_THERMAL_CPU_PKG:
-            node->type = TYPE_THRM_ATTR_CPU_SYSFS;
-            node->temp_idx = 1;
-            node->warning  = THERMAL_WARNING_DEFAULT;
-            node->error    = THERMAL_ERROR_DEFAULT;
-            node->shutdown = THERMAL_SHUTDOWN_DEFAULT;
-            break;
-        case ONLP_THERMAL_MAC_ENV_1:
-            node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV_1;
-            node->warning = 80;
-            node->error = 85;
-            node->shutdown = 90;
-            break;
-        case ONLP_THERMAL_MAC_ENV_2:
-            node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV_2;
-            node->warning = 80;
-            node->error = 85;
-            node->shutdown = 90;
-            break;
-        case ONLP_THERMAL_PSU_ENV:
-            node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_PSU_ENV;
-            node->warning = 80;
-            node->error = 85;
-            node->shutdown = 90;
-            break;
-        case ONLP_THERMAL_CPU_PECI:
-            node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_CPU_PECI;
-            node->warning  = 85;
-            node->error = 90;
-            node->shutdown = 100;
-            break;
-        case ONLP_THERMAL_PSU0_TEMP1:
-            node->type = TYPE_THRM_ATTR_PSU_BMC;
-            node->bmc = BMC_ATTR_ID_PSU0_TEMP1;
-            node->parent = ONLP_PSU_0;
-            node->warning  = 65;
-            node->error    = 70;
-            node->shutdown = 75;
-            break;
-        case ONLP_THERMAL_PSU1_TEMP1:
-            node->type = TYPE_THRM_ATTR_PSU_BMC;
-            node->bmc = BMC_ATTR_ID_PSU1_TEMP1;
-            node->parent = ONLP_PSU_1;
-            node->warning  = 65;
-            node->error    = 70;
-            node->shutdown = 75;
-            break;
-        default:
-             return ONLP_STATUS_E_PARAM;
+    switch (local_id)
+    {
+    case ONLP_THERMAL_CPU_PKG:
+        node->type = TYPE_THRM_ATTR_CPU_SYSFS;
+        node->temp_idx = 1;
+        node->warning = THERMAL_WARNING_DEFAULT;
+        node->error = THERMAL_ERROR_DEFAULT;
+        node->shutdown = THERMAL_SHUTDOWN_DEFAULT;
+        break;
+    case ONLP_THERMAL_PSU_FRONT:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_PSU_FRONT;
+        break;
+    case ONLP_THERMAL_BMC_AMBIENT:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_BMC_AMBIENT;
+        break;
+    case ONLP_THERMAL_COME_FRONT:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_COME_FRONT;
+        break;
+    case ONLP_THERMAL_AIR_REAR:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_AIR_REAR;
+        break;
+    case ONLP_THERMAL_PWRBD_REAR:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_PWRBD_REAR;
+        break;
+    case ONLP_THERMAL_AIR_FRONT:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_AIR_FRONT;
+        break;
+    case ONLP_THERMAL_MAC_REAR:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_MAC_REAR;
+        break;
+    case ONLP_THERMAL_MAC_FRONT:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_MAC_FRONT;
+        break;
+    case ONLP_THERMAL_CPU_PECI:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_CPU_PECI;
+        break;
+    case ONLP_THERMAL_MAC_ENV_1:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV_1;
+        break;
+    case ONLP_THERMAL_MAC_ENV_2:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV_2;
+        break;
+    case ONLP_THERMAL_PSU_ENV:
+        node->type = TYPE_THRM_ATTR_GENERAL_BMC;
+        node->bmc = BMC_ATTR_ID_TEMP_PSU_ENV;
+        break;
+    case ONLP_THERMAL_PSU0_TEMP1:
+        node->type = TYPE_THRM_ATTR_PSU_BMC;
+        node->bmc = BMC_ATTR_ID_PSU0_TEMP1;
+        node->parent = ONLP_PSU_0;
+        break;
+    case ONLP_THERMAL_PSU1_TEMP1:
+        node->type = TYPE_THRM_ATTR_PSU_BMC;
+        node->bmc = BMC_ATTR_ID_PSU1_TEMP1;
+        node->parent = ONLP_PSU_1;
+        break;
+    default:
+        return ONLP_STATUS_E_PARAM;
     }
 
     return ONLP_STATUS_OK;
@@ -183,32 +257,43 @@ static int get_node(int local_id, thrm_node_t *node) {
 static int get_thermal_local_id(int id, int *local_id)
 {
     int tmp_id;
-    if(local_id == NULL) {
+    if (local_id == NULL)
+    {
         return ONLP_STATUS_E_PARAM;
     }
 
-    if(!ONLP_OID_IS_THERMAL(id)) {
+    if (!ONLP_OID_IS_THERMAL(id))
+    {
         return ONLP_STATUS_E_INVALID;
     }
 
     tmp_id = ONLP_OID_ID_GET(id);
-    switch (tmp_id) {
-        case ONLP_THERMAL_CPU_PKG:
-        case ONLP_THERMAL_MAC_ENV_1:
-        case ONLP_THERMAL_MAC_ENV_2:
-        case ONLP_THERMAL_PSU_ENV:
-        case ONLP_THERMAL_CPU_PECI:
-        case ONLP_THERMAL_PSU0_TEMP1:
-        case ONLP_THERMAL_PSU1_TEMP1:
-            *local_id = tmp_id;
-            return ONLP_STATUS_OK;
-        default:
-            return ONLP_STATUS_E_INVALID;
+    switch (tmp_id)
+    {
+    case ONLP_THERMAL_CPU_PKG:
+    case ONLP_THERMAL_PSU_FRONT:
+    case ONLP_THERMAL_BMC_AMBIENT:
+    case ONLP_THERMAL_COME_FRONT:
+    case ONLP_THERMAL_AIR_REAR:
+    case ONLP_THERMAL_PWRBD_REAR:
+    case ONLP_THERMAL_AIR_FRONT:
+    case ONLP_THERMAL_MAC_REAR:
+    case ONLP_THERMAL_MAC_FRONT:
+    case ONLP_THERMAL_CPU_PECI:
+    case ONLP_THERMAL_MAC_ENV_1:
+    case ONLP_THERMAL_MAC_ENV_2:
+    case ONLP_THERMAL_PSU_ENV:
+    case ONLP_THERMAL_PSU0_TEMP1:
+    case ONLP_THERMAL_PSU1_TEMP1:
+        *local_id = tmp_id;
+        return ONLP_STATUS_OK;
+    default:
+        return ONLP_STATUS_E_INVALID;
     }
     return ONLP_STATUS_E_INVALID;
 }
 
-static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t* info)
+static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t *info)
 {
     int rv = 0;
     thrm_node_t node = {0};
@@ -223,14 +308,17 @@ static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t* info)
     info->status |= ONLP_THERMAL_STATUS_PRESENT;
 
     /* contents */
-    if(info->status & ONLP_THERMAL_STATUS_PRESENT) {
+    if (info->status & ONLP_THERMAL_STATUS_PRESENT)
+    {
         rv = onlp_file_read_int(&info->mcelsius,
                                 SYS_CPU_CORETEMP_PREFIX "temp%d_input", node.temp_idx);
 
-        if(rv < 0) {
+        if (rv < 0)
+        {
             rv = onlp_file_read_int(&info->mcelsius,
-                                SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", node.temp_idx);
-            if(rv < 0) {
+                                    SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", node.temp_idx);
+            if (rv < 0)
+            {
                 return rv;
             }
         }
@@ -239,42 +327,84 @@ static int get_cpu_thermal_info(int local_id, onlp_thermal_info_t* info)
     return ONLP_STATUS_OK;
 }
 
-static int get_bmc_thermal_info(int local_id, onlp_thermal_info_t* info)
+static int get_bmc_thermal_info(int local_id, onlp_thermal_info_t *info)
 {
-    float data = 0;
+    bmc_info_t bmc_data = {0};
     *info = thermal_info[local_id];
     thrm_node_t node = {0};
     ONLP_TRY(get_node(local_id, &node));
-    info->thresholds.warning =  MILLI(node.warning);
-    info->thresholds.error =  MILLI(node.error);
-    info->thresholds.shutdown =  MILLI(node.shutdown);
 
     /* present */
-    if(IS_GENERAL(node)) {
+    if (IS_GENERAL(node))
+    {
         info->status |= ONLP_THERMAL_STATUS_PRESENT;
-    } else if(IS_PSU(node)) {
+    }
+    else if (IS_PSU(node))
+    {
         int psu_present = 0;
         ONLP_TRY(get_psu_present_status(node.parent, &psu_present));
-        if (psu_present == PSU_STATUS_PRES) {
+        if (psu_present == PSU_STATUS_PRES)
+        {
             info->status |= ONLP_THERMAL_STATUS_PRESENT;
-        } else {
+        }
+        else
+        {
             info->status &= ~ONLP_THERMAL_STATUS_PRESENT;
         }
-    } else {
+    }
+    else
+    {
         return ONLP_STATUS_E_PARAM;
     }
 
     /* contents */
-    if(info->status & ONLP_THERMAL_STATUS_PRESENT) {
+    if (info->status & ONLP_THERMAL_STATUS_PRESENT)
+    {
         int bmc_attr = node.bmc;
-        ONLP_TRY(read_bmc_sensor(bmc_attr, THERMAL_SENSOR, &data));
+        ONLP_TRY(read_bmc_sensor(bmc_attr, THERMAL_SENSOR, &bmc_data));
 
-        if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.data))
+        {
             info->status &= ~ONLP_THERMAL_STATUS_FAILED;
-            info->mcelsius = (int) (data*1000);
-        }else{
+            info->mcelsius = (int)(bmc_data.data * 1000);
+        }
+        else
+        {
             info->status |= ONLP_THERMAL_STATUS_FAILED;
             info->mcelsius = 0;
+        }
+
+        if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.upper_non_crit))
+        {
+            info->caps |= ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD;
+            info->thresholds.warning = (int)(bmc_data.upper_non_crit * 1000);
+        }
+        else
+        {
+            info->caps &= ~ONLP_THERMAL_CAPS_GET_WARNING_THRESHOLD;
+            info->thresholds.warning = 0;
+        }
+
+        if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.upper_crit))
+        {
+            info->caps |= ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD;
+            info->thresholds.error = (int)(bmc_data.upper_crit * 1000);
+        }
+        else
+        {
+            info->caps &= ~ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD;
+            info->thresholds.error = 0;
+        }
+
+        if (BMC_ATTR_INVALID_VAL != (int)(bmc_data.upper_non_recov))
+        {
+            info->caps |= ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD;
+            info->thresholds.shutdown = (int)(bmc_data.upper_non_recov * 1000);
+        }
+        else
+        {
+            info->caps &= ~ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD;
+            info->thresholds.shutdown = 0;
         }
     }
     return ONLP_STATUS_OK;
@@ -294,12 +424,13 @@ int onlp_thermali_init(void)
  * @param id The Thermal OID
  * @param rv [out] Receives the thermal information.
  */
-int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
+int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t *rv)
 {
     int local_id;
     thrm_node_t node = {0};
 
-    if(rv == NULL) {
+    if (rv == NULL)
+    {
         return ONLP_STATUS_E_PARAM;
     }
 
@@ -307,7 +438,7 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
     ONLP_TRY(get_node(local_id, &node));
 
     /* update info  */
-    if(IS_CPU(node))
+    if (IS_CPU(node))
         ONLP_TRY(get_cpu_thermal_info(local_id, rv));
     else
         ONLP_TRY(get_bmc_thermal_info(local_id, rv));
@@ -320,17 +451,17 @@ int onlp_thermali_info_get(onlp_oid_t id, onlp_thermal_info_t* rv)
  * @param id The thermal oid.
  * @param rv [out] Receives the operational status.
  */
-int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
+int onlp_thermali_status_get(onlp_oid_t id, uint32_t *rv)
 {
 
     int local_id;
-    onlp_thermal_info_t info ={0};
+    onlp_thermal_info_t info = {0};
     thrm_node_t node = {0};
 
     ONLP_TRY(get_thermal_local_id(id, &local_id));
     ONLP_TRY(get_node(local_id, &node));
 
-    if(IS_CPU(node))
+    if (IS_CPU(node))
         ONLP_TRY(get_cpu_thermal_info(local_id, &info));
     else
         ONLP_TRY(get_bmc_thermal_info(local_id, &info));
@@ -345,7 +476,7 @@ int onlp_thermali_status_get(onlp_oid_t id, uint32_t* rv)
  * @param id The thermal oid.
  * @param rv [out] Receives the header.
  */
-int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
+int onlp_thermali_hdr_get(onlp_oid_t id, onlp_oid_hdr_t *rv)
 {
     int local_id;
 

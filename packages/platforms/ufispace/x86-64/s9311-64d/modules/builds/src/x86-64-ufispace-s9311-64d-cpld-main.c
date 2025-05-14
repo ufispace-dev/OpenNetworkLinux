@@ -1669,7 +1669,7 @@ static ssize_t led_store(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     led_node_t node = {0};
     int status = LED_COLOR_DARK;
-    short int val;
+    short int val = 0;
     int found = 0;
     int i = 0;
 

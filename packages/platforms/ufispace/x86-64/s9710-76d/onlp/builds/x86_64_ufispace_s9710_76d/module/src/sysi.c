@@ -69,7 +69,7 @@
 #define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/cpu_cpld_version_h"
 #define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
 
-#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
@@ -77,7 +77,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     char cpu_cpld_ver_out[ONLP_CONFIG_INFO_STR_MAX];
     char mb_cpld_ver_out[CPLD_MAX][ONLP_CONFIG_INFO_STR_MAX];
-    int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
     int i = 0, len = 0;
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = "";
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
@@ -122,12 +121,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         mb_cpld_ver_out[3],
         mb_cpld_ver_out[4]);
 
-    //Get HW Build Version
-    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-
-    mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 0 & 0x03));
-    mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
-
     //Get BIOS version
     ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_BIOS_VER));
 
@@ -166,13 +159,9 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[HW   ] %d\n"
-        "[BUILD] %d\n"
-        "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n"
-        "[MU   ] %s (%s)\n",
-        mb_cpld1_hw_rev,
-        mb_cpld1_build_rev,
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);

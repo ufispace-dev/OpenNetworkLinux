@@ -22,6 +22,7 @@
  * ONLP System Platform Interface.
  *
  ***********************************************************/
+#include <unistd.h>
 #include <onlp/platformi/sysi.h>
 #include "platform_lib.h"
 
@@ -165,7 +166,6 @@ static onlp_oid_t __onlp_oid_info_premium[] = {
 
 static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 {
-    board_t board = {0};
     int len = 0;
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
     char bmc_out1[8] = {0}, bmc_out2[8] = {0}, bmc_out3[8] = {0};
@@ -177,9 +177,6 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
     pi->cpld_versions = aim_fstrdup(
         "\n"
         "[MB CPLD] %s\n", mb_cpld_ver);
-
-    //Get HW Version
-    ONLP_TRY(ufi_get_board_version(&board));
 
     //Get BIOS version
     ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_BIOS_VER));
@@ -201,16 +198,36 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    char mu_ver[128] = {'\0'}, mu_result[128] = {'\0'};
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256] = {'\0'};
+
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[HW   ] %d\n"
-        "[BUILD] %d\n"
-        "[BIOS ] %s\n"
-        "[BMC  ] %d.%d.%d\n",
-        board.hw_rev,
-        board.hw_build,
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_out,
-        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+        atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }
