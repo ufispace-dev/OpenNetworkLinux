@@ -1,7 +1,7 @@
 /*
  * A i2c cpld driver for the ufispace_s7801_54xs
  *
- * Copyright (C) 2017-2022 UfiSpace Technology Corporation.
+ * Copyright (C) 2025 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>
  *
  * Based on ad7414.c
@@ -1245,9 +1245,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="2.0.0"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -51,6 +51,8 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # Sysfs
 SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc"
@@ -102,18 +104,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _check_env {

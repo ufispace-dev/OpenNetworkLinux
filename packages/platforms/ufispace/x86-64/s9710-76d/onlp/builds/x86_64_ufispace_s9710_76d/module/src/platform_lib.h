@@ -50,8 +50,7 @@
 #define SYS_LPC_BSP                 SYS_LPC"bsp/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 
@@ -87,14 +86,10 @@
                                     "PSU0_VOUT "\
                                     "PSU0_IIN "\
                                     "PSU0_IOUT "\
-                                    "PSU0_STBVOUT "\
-                                    "PSU0_STBIOUT "\
                                     "PSU1_VIN "\
                                     "PSU1_VOUT "\
                                     "PSU1_IIN "\
                                     "PSU1_IOUT "\
-                                    "PSU1_STBVOUT "\
-                                    "PSU1_STBIOUT "\
                                     "> " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
 
 #define BMC_FRU_LINE_SIZE           256
@@ -191,14 +186,10 @@ enum bmc_attr_id {
     BMC_ATTR_ID_PSU0_VOUT,
     BMC_ATTR_ID_PSU0_IIN,
     BMC_ATTR_ID_PSU0_IOUT,
-    BMC_ATTR_ID_PSU0_STBVOUT,
-    BMC_ATTR_ID_PSU0_STBIOUT,
     BMC_ATTR_ID_PSU1_VIN,
     BMC_ATTR_ID_PSU1_VOUT,
     BMC_ATTR_ID_PSU1_IIN,
     BMC_ATTR_ID_PSU1_IOUT,
-    BMC_ATTR_ID_PSU1_STBVOUT,
-    BMC_ATTR_ID_PSU1_STBIOUT,
     BMC_ATTR_ID_MAX
 };
 
@@ -247,15 +238,11 @@ enum onlp_psu_id {
     ONLP_PSU_0_VOUT = 4,
     ONLP_PSU_0_IIN  = 5,
     ONLP_PSU_0_IOUT = 6,
-    ONLP_PSU_0_STBVOUT = 7,
-    ONLP_PSU_0_STBIOUT = 8,
-    ONLP_PSU_1_VIN  = 9,
-    ONLP_PSU_1_VOUT = 10,
-    ONLP_PSU_1_IIN  = 11,
-    ONLP_PSU_1_IOUT = 12,
-    ONLP_PSU_1_STBVOUT = 13,
-    ONLP_PSU_1_STBIOUT = 14,
-    ONLP_PSU_MAX = 15,
+    ONLP_PSU_1_VIN  = 7,
+    ONLP_PSU_1_VOUT = 8,
+    ONLP_PSU_1_IIN  = 9,
+    ONLP_PSU_1_IOUT = 10,
+    ONLP_PSU_MAX = 11,
 };
 
 /* thermal_id */

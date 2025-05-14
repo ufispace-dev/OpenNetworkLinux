@@ -47,6 +47,8 @@
 
 #define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYSFS_PLTM                  "/sys/devices/platform/"
+#define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9610_46dx_lpc/"
 #define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"
 #define SYSFS_CPLD1_ID              SYSFS_CPLD1 "cpld_id"
 #define SYSFS_HBM_PWR_CTRL          SYSFS_CPLD1 "cpld_hbm_pwr_ctrl"
@@ -54,12 +56,11 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
-#define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_46dx_lpc/bsp/"
-#define LPC_CPU_FMT                 "/sys/devices/platform/x86_64_ufispace_s9610_46dx_lpc/cpu_cpld/"
+#define LPC_BSP_FMT                 SYSFS_LPC "bsp/"
+#define LPC_CPU_FMT                 SYSFS_LPC "cpu_cpld/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       OUTPUT_REDIRECT_ERR
 #define OUTPUT_REDIRECT_ERR         " 2>>"LPC_BSP_FMT"bsp_pr_err"
 #define OUTPUT_REDIRECT_INFO         " 1>>"LPC_BSP_FMT"bsp_pr_info"
 //[BMC] 2.23

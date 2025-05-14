@@ -1,7 +1,7 @@
 /*
  * A lpc driver for the ufispace_s9600_30dx
  *
- * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
+ * Copyright (C) 2025 UfiSpace Technology Corporation.
  * Jason Tsai <jason.cy.tsai@ufispace.com>
  *
  * Based on ad7414.c
@@ -27,6 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -72,6 +73,7 @@
 #define REG_CPU_CTRL_0                    (REG_BASE_CPU + 0x03)
 #define REG_CPU_CTRL_1                    (REG_BASE_CPU + 0x04)
 #define REG_CPU_BRD_ID                    (REG_BASE_CPU + 0x06)
+#define REG_CPU_CTRL_V2                   (REG_BASE_CPU + 0x0B)
 #define REG_CPU_CPLD_BUILD                (REG_BASE_CPU + 0xE0)
 
 //MB CPLD
@@ -81,8 +83,7 @@
 #define REG_MB_CPLD_BUILD                 (REG_BASE_MB + 0x04)
 #define REG_MB_MUX_RESET                  (REG_BASE_MB + 0x46)
 #define REG_MB_MISC_RESET                 (REG_BASE_MB + 0x48)
-//FIXME
-#define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x45)
+#define REG_MB_MUX_CTRL                   (REG_BASE_MB + 0x5C)
 
 //I2C Alert
 #if CPU_TYPE == CPU_SKY
@@ -99,6 +100,7 @@
 #define MASK_CPU_REV_HW                   (0b00001100)
 #define MASK_CPU_REV_BUILD                (0b00000011)
 #define MASK_MB_MUX_RESET                 (0b00011110)
+#define MASK_HOST_TO_MB_I2C_RST           (0b00000001)
 #define LPC_MDELAY                        (5)
 
 /* LPC sysfs attributes index  */
@@ -111,6 +113,7 @@ enum lpc_sysfs_attributes {
     ATT_CPU_REV_SKU,
     ATT_CPU_REV_HW,
     ATT_CPU_REV_BUILD,
+	ATT_CPU_HOST_TO_MB_I2C_RST,
     ATT_CPU_CPLD_BUILD,
 
     ATT_CPU_CPLD_MAJOR_VER,
@@ -146,6 +149,7 @@ enum lpc_sysfs_attributes {
     ATT_BSP_PR_ERR,
     ATT_BSP_REG,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
     ATT_MAX
 };
 
@@ -391,7 +395,28 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t read_gpio_base(struct device *dev,
+                    struct device_attribute *da,
+                    char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d\n", -1);
+#else
+        return sprintf(buf, "%d\n", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -452,6 +477,10 @@ static ssize_t read_lpc_callback(struct device *dev,
         case ATT_CPU_REV_BUILD:
             reg = REG_CPU_BRD_ID;
             mask = MASK_CPU_REV_BUILD;
+            break;
+        case ATT_CPU_HOST_TO_MB_I2C_RST:
+            reg = REG_CPU_CTRL_V2;
+            mask = MASK_HOST_TO_MB_I2C_RST;
             break;
         case ATT_CPU_CPLD_BUILD:
             reg = REG_CPU_CPLD_BUILD;
@@ -548,6 +577,10 @@ static ssize_t write_lpc_callback(struct device *dev,
         case ATT_MB_MUX_CTRL:
             reg = REG_MB_MUX_CTRL;
             break;
+        case ATT_CPU_HOST_TO_MB_I2C_RST:
+            reg = REG_CPU_CTRL_V2;
+            mask = MASK_HOST_TO_MB_I2C_RST;
+            break;
         default:
             return -EINVAL;
     }
@@ -560,7 +593,7 @@ static ssize_t write_mux_reset(struct device *dev,
 {
     u8 val = 0;
     u8 mux_reset_reg_val = 0;
-    u8 misc_reset_reg_val = 0;
+    u8 host_to_mb_i2c_reset_reg_val = 0;
     static int mux_reset_flag = 0;
 
     if (kstrtou8(buf, 0, &val) < 0)
@@ -577,9 +610,19 @@ static ssize_t write_mux_reset(struct device *dev,
             _outb((mux_reset_reg_val & ~MASK_MB_MUX_RESET), REG_MB_MUX_RESET);
             BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val & ~MASK_MB_MUX_RESET);
 
+            //reset top level mux on MB (0x72, 0x73, 0x75)
+            host_to_mb_i2c_reset_reg_val = inb(REG_CPU_CTRL_V2);
+            _outb((host_to_mb_i2c_reset_reg_val & ~MASK_HOST_TO_MB_I2C_RST), REG_CPU_CTRL_V2);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_CPU_CTRL_V2, host_to_mb_i2c_reset_reg_val & ~MASK_HOST_TO_MB_I2C_RST);
+
             //unset mux on QSFP/QSFPDD ports
             _outb((mux_reset_reg_val | MASK_MB_MUX_RESET), REG_MB_MUX_RESET);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, misc_reset_reg_val | MASK_MB_MUX_RESET);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", REG_MB_MUX_RESET, mux_reset_reg_val | MASK_MB_MUX_RESET);
+
+            //unset top level mux on MB (0x72, 0x73, 0x75)
+            outb((host_to_mb_i2c_reset_reg_val | MASK_HOST_TO_MB_I2C_RST), REG_CPU_CTRL_V2);
+            mdelay(500);
+            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x",REG_CPU_CTRL_V2, host_to_mb_i2c_reset_reg_val | MASK_HOST_TO_MB_I2C_RST);
 
             mux_reset_flag = 0;
             mutex_unlock(&lpc_data->access_lock);
@@ -690,6 +733,7 @@ static _SENSOR_DEVICE_ATTR_RO(boot_cfg,           lpc_callback, ATT_CPU_BIOS_BOO
 static _SENSOR_DEVICE_ATTR_RO(cpu_rev_sku,        lpc_callback, ATT_CPU_REV_SKU);
 static _SENSOR_DEVICE_ATTR_RO(cpu_rev_hw,         lpc_callback, ATT_CPU_REV_HW);
 static _SENSOR_DEVICE_ATTR_RO(cpu_rev_build,      lpc_callback, ATT_CPU_REV_BUILD);
+static _SENSOR_DEVICE_ATTR_RW(host_to_mb_i2c_reset, lpc_callback, ATT_CPU_HOST_TO_MB_I2C_RST);
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_build,     lpc_callback, ATT_CPU_CPLD_BUILD);
 
 static _SENSOR_DEVICE_ATTR_RO(cpu_cpld_major_ver, lpc_callback, ATT_CPU_CPLD_MAJOR_VER);
@@ -726,6 +770,7 @@ static _SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static _SENSOR_DEVICE_ATTR_WO(bsp_pr_err , bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR(bsp_reg,         S_IRUGO | S_IWUSR, read_lpc_callback, write_bsp_callback, ATT_BSP_REG);
 static SENSOR_DEVICE_ATTR(bsp_gpio_max,    S_IRUGO, read_gpio_max, NULL, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR(bsp_gpio_base,   S_IRUGO, read_gpio_base, NULL, ATT_BSP_GPIO_BASE);
 
 static struct attribute *cpu_cpld_attrs[] = {
     _DEVICE_ATTR(cpu_cpld_version),
@@ -733,7 +778,8 @@ static struct attribute *cpu_cpld_attrs[] = {
     _DEVICE_ATTR(cpu_rev_sku),
     _DEVICE_ATTR(cpu_rev_hw),
     _DEVICE_ATTR(cpu_rev_build),
-    _DEVICE_ATTR(cpu_cpld_build),
+    _DEVICE_ATTR(host_to_mb_i2c_reset),
+	_DEVICE_ATTR(cpu_cpld_build),
     _DEVICE_ATTR(cpu_cpld_major_ver),
     _DEVICE_ATTR(cpu_cpld_minor_ver),
     _DEVICE_ATTR(cpu_cpld_build_ver),
@@ -780,6 +826,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_reg),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_gpio_base),
     NULL,
 };
 
@@ -919,7 +966,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
@@ -942,15 +989,15 @@ int lpc_init(void)
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);
 }
 
+module_init(lpc_init);
+module_exit(lpc_exit);
+
 MODULE_AUTHOR("Jason Tsai <jason.cy.tsai@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9600_30dx_lpc driver");
 MODULE_LICENSE("GPL");
-
-module_init(lpc_init);
-module_exit(lpc_exit);

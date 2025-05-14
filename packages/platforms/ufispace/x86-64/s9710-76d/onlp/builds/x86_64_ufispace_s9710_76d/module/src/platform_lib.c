@@ -77,14 +77,10 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_PSU0_VOUT] = {"PSU0_VOUT", 0},
     [BMC_ATTR_ID_PSU0_IIN] = {"PSU0_IIN",0},
     [BMC_ATTR_ID_PSU0_IOUT] = {"PSU0_IOUT",0},
-    [BMC_ATTR_ID_PSU0_STBVOUT] = {"PSU0_STBVOUT", 0},
-    [BMC_ATTR_ID_PSU0_STBIOUT] = {"PSU0_STBIOUT", 0},
     [BMC_ATTR_ID_PSU1_VIN] = {"PSU1_VIN", 0},
     [BMC_ATTR_ID_PSU1_VOUT] = {"PSU1_VOUT", 0},
     [BMC_ATTR_ID_PSU1_IIN] = {"PSU1_IIN", 0},
     [BMC_ATTR_ID_PSU1_IOUT] = {"PSU1_IOUT", 0},
-    [BMC_ATTR_ID_PSU1_STBVOUT] = {"PSU1_STBVOUT", 0},
-    [BMC_ATTR_ID_PSU1_STBIOUT] = {"PSU1_STBIOUT", 0}
 };
 
 static bmc_fru_t bmc_fru_cache[] =

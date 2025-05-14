@@ -58,8 +58,13 @@
  *            |----[04] ONLP_FAN_3
  */
 
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define SYSFS_PLTM                  "/sys/devices/platform/"
+#define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9705_48d_lpc/"
+#define SYS_LPC_BSP                 SYSFS_LPC"bsp/"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 
 #define ONLP_TRY(_expr)                                                 \
     do {                                                                \
@@ -206,6 +211,33 @@ enum sensor {
     THERMAL_SENSOR,
 };
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC2_ID,
+     MAC_MAX
+};
+
 typedef struct bmc_info_s {
     char name[20];
     float data;
@@ -242,6 +274,6 @@ int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psui_present_status(int local_id, int *status);
 void check_and_do_i2c_mux_reset(int port);
-
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */

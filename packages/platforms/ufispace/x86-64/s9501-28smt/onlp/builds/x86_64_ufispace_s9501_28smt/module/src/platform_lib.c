@@ -675,7 +675,6 @@ int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len)
 int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     int cpld_ver[CPLD_MAX];
-    int mb_cpld1_addr = CPLD_REG_BASE, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
@@ -683,7 +682,13 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
     char ucd_ver[8];
     char ucd_date[8];
     int ucd_len=0;
-    //int ucd_date_len=6;
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
 
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
@@ -709,11 +714,6 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
         "[MB CPLD] v%02d\n",
         cpld_ver[0]);
 
-    //Get HW Build Version
-    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-
-    mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 4 & 0x03));
-    mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) >> 6 & 0x03));
 
     //Get BIOS version
     ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
@@ -729,6 +729,20 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
         exec_cmd(CMD_BMC_VER_3, bmc_out3, sizeof(bmc_out3))) {
             AIM_LOG_ERROR("unable to read BMC version\n");
             return ONLP_STATUS_E_INTERNAL;
+    }
+
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
     }
 
     //get UCD version
@@ -751,17 +765,13 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[HW     ] %d\n"
-        "[BUILD  ] %d\n"
-        "[BIOS   ] %s\n"
-        "[BMC    ] %d.%d.%d\n"
-        //"[UCD    ] %s %s\n",
-        "[UCD    ] %s\n",
-        mb_cpld1_hw_rev,
-        mb_cpld1_build_rev,
+        "[BIOS] %s\n"
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n"
+        "[UCD] %s\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-        //ucd_ver, ucd_date);
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result,
         ucd_ver);
 
     return ONLP_STATUS_OK;

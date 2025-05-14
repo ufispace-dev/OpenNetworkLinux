@@ -23,6 +23,7 @@
  *
  ***********************************************************/
 #include <onlp/platformi/sysi.h>
+#include <unistd.h>
 #include "platform_lib.h"
 
 /* EEPROM */
@@ -97,15 +98,25 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
     char psu0_fw_ver_h[32];
     char psu1_fw_ver_h[32];
     char ucd_fw_ver_h[32];
-    int sku_id, hw_id, id_type, build_id, deph_id, ext_id;
     int data_len;
     int size;
+
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
 
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
     memset(bios_ver_h, 0, sizeof(bios_ver_h));
     memset(psu0_fw_ver_h, 0, sizeof(psu0_fw_ver_h));
     memset(psu1_fw_ver_h, 0, sizeof(psu1_fw_ver_h));
     memset(ucd_fw_ver_h, 0, sizeof(ucd_fw_ver_h));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get MB CPLD version from CPLD sysfs
     ONLP_TRY(onlp_file_read(mb_cpld_ver_h, sizeof(mb_cpld_ver_h), &data_len,
@@ -122,35 +133,38 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->cpld_versions = aim_fstrdup(
         "\n"
-        "[MB CPLD] %s\n"
-        "[PSU0 FW VER] %s\n"
-        "[PSU1 FW VER] %s\n"
-        "[UCD FW VER] %s\n",
-        mb_cpld_ver_h, psu0_fw_ver_h, psu1_fw_ver_h, ucd_fw_ver_h);
-
-    //get HW Build Version
-    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKU_ID_ATTR));
-    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH "/" LPC_MB_HW_ID_ATTR));
-    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH "/" LPC_MB_ID_TYPE_ATTR));
-    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH "/" LPC_MB_BUILD_ID_ATTR));
-    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPH_ID_ATTR));
-    ONLP_TRY(file_read_hex(&ext_id, LPC_MB_CPLD_PATH "/" LPC_MB_EXT_ID_ATTR));
+        "[MB CPLD] %s\n",
+        mb_cpld_ver_h);
 
     //get BIOS version
     ONLP_TRY(onlp_file_read(bios_ver_h, sizeof(bios_ver_h), &size, SYSFS_BIOS_VER));
     //trim new line
     bios_ver_h[strcspn((char *)bios_ver_h, "\n" )] = '\0';
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[SKU ID] %d\n"
-        "[HW ID] %d\n"
-        "[BUILD ID] %d\n"
-        "[ID TYPE] %d\n"
-        "[DEPH ID] %d\n"
-        "[EXTEND ID] %d\n"
-        "[BIOS] %s\n",
-        sku_id, hw_id, build_id, id_type, deph_id, ext_id, bios_ver_h);
+        "[BIOS] %s\n"
+        "[MU] %s (%s)\n"
+        "[PSU0] %s\n"
+        "[PSU1] %s\n"
+        "[UCD] %s\n",
+        bios_ver_h,
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result, 
+        psu0_fw_ver_h, psu1_fw_ver_h, ucd_fw_ver_h);
 
     return ONLP_STATUS_OK;
 }

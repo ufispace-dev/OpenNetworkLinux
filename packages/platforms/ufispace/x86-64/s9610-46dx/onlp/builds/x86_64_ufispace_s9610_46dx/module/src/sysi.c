@@ -71,7 +71,7 @@
 #define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9610_46dx_lpc/cpu_cpld/cpu_cpld_version_h"
 #define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
 
-#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 

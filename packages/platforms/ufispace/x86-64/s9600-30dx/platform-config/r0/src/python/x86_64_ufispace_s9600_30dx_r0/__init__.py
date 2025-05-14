@@ -5,7 +5,6 @@ from ctypes import c_int, sizeof
 import os
 import sys
 import subprocess
-import time
 import fcntl
 import yaml
 
@@ -169,19 +168,72 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def get_gpio_max(self):
-        cmd = ["cat", "/sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"]
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_max"
         output = ""
         try:
-            output = subprocess.check_output(cmd)
+            output = subprocess.check_output(cmd.split())
         except Exception as e:
-            self.bsp_pr("Get gpio max failed, exception={}, output={}, cmd={}\n".format(e, output, ' '.join(cmd)), self.LEVEL_ERR)
-            self.bsp_pr("Use default GPIO MAX value 511\n")
-            output="511"
+            self.bsp_pr("get_gpio_max() failed, exception={}".format(e), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO MAX value -1", self.LEVEL_ERR)
+            output="-1"
 
         gpio_max = int(output, 10)
-        self.bsp_pr("GPIO MAX: {}".format(gpio_max));
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max))
 
         return gpio_max
+
+    def get_gpio_base(self):
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s9600_30dx_lpc/bsp/bsp_gpio_base"
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("get_gpio_base() failed, exception={}".format(e), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO Base value -1", self.LEVEL_ERR)
+            output="-1"
+
+        gpio_base = int(output, 10)
+        self.bsp_pr("GPIO Base: {}".format(gpio_base))
+
+        return gpio_base
+
+    def init_gpio(self):
+        #9539_CPU_I2C
+        self.new_i2c_device('pca9539', 0x77, 0)
+
+        #get gpio_max/gpio_base
+        gpio_max = self.get_gpio_max()
+        gpio_base = self.get_gpio_base()
+        is_gpio_base = False
+
+        if gpio_base >= 0 :
+            base = gpio_base
+            is_gpio_base = True
+        elif gpio_max >= 0:
+            base = gpio_max
+            is_gpio_base = False
+        else:
+            self.bsp_pr("invalid gpio_max {} and gpio_base {}, bsp init stopped".format(gpio_max, gpio_base), self.LEVEL_ERR)
+            exit(1)
+
+        if is_gpio_base:
+            # export GPIO
+            for i in range(base, base+16):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+
+            # init GPIO direction
+            # 9539_CPU_I2C 0x77
+            for i in range(base, base+16):
+                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
+        else:
+            # export GPIO
+            for i in range(gpio_max-15, gpio_max+1):
+                os.system("echo {} > /sys/class/gpio/export".format(i))
+
+            # init GPIO direction
+            # 9539_CPU_I2C 0x77
+            for i in range(gpio_max-15, gpio_max+1):
+                os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
     def is_pvt_or_later(self):
         #read deph_id
@@ -226,8 +278,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
 
         # load default kernel driver
-        os.system("modprobe -rq i2c_ismt")
         os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -284,21 +336,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         self.init_eeprom()
 
         # init GPIO sysfs
-
-        #9539_CPU_I2C
-        self.new_i2c_device('pca9539', 0x77, 0)
-
-        #get gpio_max
-        gpio_max = self.get_gpio_max()
-
-        # export GPIO
-        for i in range(gpio_max-15, gpio_max+1):
-            os.system("echo {} > /sys/class/gpio/export".format(i))
-
-        # init GPIO direction
-        # 9539_CPU_I2C 0x77
-        for i in range(gpio_max-15, gpio_max+1):
-            os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
+        self.bsp_pr("Init GPIO sysfs")
+        self.init_gpio()
 
         # init CPLD
         self.bsp_pr("Init CPLD")

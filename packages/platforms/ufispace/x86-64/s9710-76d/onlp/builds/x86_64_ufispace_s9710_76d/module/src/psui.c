@@ -197,24 +197,19 @@ static int update_psui_fru_info(int id, onlp_psu_info_t* info)
 static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
 {
     int psu_present = 0, pw_good = 0;
-    int stbmvout = 0, stbmiout = 0;
     float data = 0;
-    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_stbvout = 0, attr_stbiout = 0;
+    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0;
 
     if (id == ONLP_PSU_0) {
         attr_vin = BMC_ATTR_ID_PSU0_VIN;
         attr_vout = BMC_ATTR_ID_PSU0_VOUT;
         attr_iin = BMC_ATTR_ID_PSU0_IIN;
         attr_iout = BMC_ATTR_ID_PSU0_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
     } else {
         attr_vin = BMC_ATTR_ID_PSU1_VIN;
         attr_vout = BMC_ATTR_ID_PSU1_VOUT;
         attr_iin = BMC_ATTR_ID_PSU1_IIN;
         attr_iout = BMC_ATTR_ID_PSU1_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
 
      /* Get power present status */
@@ -257,17 +252,9 @@ static int ufi_psu_status_info_get(int id, onlp_psu_info_t *info)
     info->miout = (int) (data*1000);
     info->caps |= ONLP_PSU_CAPS_IOUT;
 
-    /* Get standby power vout */
-    ONLP_TRY(bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data));
-    stbmvout = (int) (data*1000);
-
-    /* Get standby power iout */
-    ONLP_TRY(bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data));
-    stbmiout = (int) (data*1000);
-
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
+    info->mpout = (info->miout * info->mvout) / 1000;
     info->caps |= ONLP_PSU_CAPS_PIN | ONLP_PSU_CAPS_POUT;
 
     /* Get FRU */

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="1.1.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -300,7 +300,7 @@ function _show_board_info {
     hw_rev_id_array=(0 1 2 3)
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
-    ext_sku_name_array=("Reserved" "Reserved" "16SMT" "Reserved" "12SM")
+    ext_sku_name_array=("Reserved" "Reserved" "16SMT" "Reserved" "12SM" "Reserved" "12SM w/o NTM")
     deph_name_array=("NPI" "GA")
     model_id_array=($((2#00000100)))
     model_name_array=("S9502")
@@ -411,7 +411,7 @@ function _cpld_version_sysfs {
             mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9502_16smt_lpc/mb_cpld/mb_cpld_1_version ${LOG_REDIRECT}")
             _echo "[MB CPLD Version]: $(( (mb_cpld_ver & 2#11000000) >> 6)).$(( mb_cpld_ver & 2#00111111 ))"
         fi
-    elif [ "${SKU_NAME}" == "12SM" ]; then
+    elif [ "${SKU_NAME}" == "12SM" ] || [ "${SKU_NAME}" == "12SM w/o NTM" ]; then
         if _check_filepath "/sys/devices/platform/x86_64_ufispace_s9502_12sm_lpc/mb_cpld/mb_cpld_1_version"; then
             mb_cpld_ver=$(eval "cat /sys/devices/platform/x86_64_ufispace_s9502_12sm_lpc/mb_cpld/mb_cpld_1_version ${LOG_REDIRECT}")
             _echo "[MB CPLD Version]: $(( (mb_cpld_ver & 2#11000000) >> 6)).$(( mb_cpld_ver & 2#00111111 ))"

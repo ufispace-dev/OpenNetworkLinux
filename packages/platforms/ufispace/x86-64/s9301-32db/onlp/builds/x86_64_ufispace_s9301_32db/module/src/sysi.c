@@ -23,10 +23,11 @@
  *
  ***********************************************************/
 #include <onlp/platformi/sysi.h>
+#include <unistd.h>
 #include "platform_lib.h"
 
 #define SYSFS_BIOS_VER  "/sys/class/dmi/id/bios_version"
-#define CMD_BMC_VER_1   "expr `ipmitool mc info" IPMITOOL_REDIRECT_FIRST_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1   "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2   "expr `ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3   "echo $((`ipmitool mc info" IPMITOOL_REDIRECT_ERR " | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
@@ -105,14 +106,24 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     uint8_t mb_cpld_ver_h[CPLD_MAX][16];
     uint8_t bios_ver_h[32];
     char bmc_ver[3][16];
-    int sku_id, hw_id, id_type, build_id, deph_id;
     int i;
     int size;
+
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
 
     memset(cpu_cpld_ver_h, 0, sizeof(cpu_cpld_ver_h));
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
     memset(bios_ver_h, 0, sizeof(bios_ver_h));
     memset(bmc_ver, 0, sizeof(bmc_ver));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version readable string
     ONLP_TRY(onlp_file_read(cpu_cpld_ver_h, sizeof(cpu_cpld_ver_h), &size,
@@ -122,7 +133,6 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
 
     //get MB CPLD version from CPLD sysfs
     for(i=0; i<CPLD_MAX; ++i) {
-
         ONLP_TRY(onlp_file_read(mb_cpld_ver_h[i], sizeof(mb_cpld_ver_h[i]), &size,
                 SYS_DEV "/2-00%02x/" MB_CPLD_VER_H_ATTR, CPLD_BASE_ADDR[i]));
         //trim new line
@@ -139,13 +149,6 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         mb_cpld_ver_h[0],
         mb_cpld_ver_h[1],
         mb_cpld_ver_h[2]);
-
-    //Get HW Build Version
-    ONLP_TRY(file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/" LPC_MB_SKUID_ATTR));
-    ONLP_TRY(file_read_hex(&hw_id, LPC_MB_CPLD_PATH "/" LPC_MB_HWID_ATTR));
-    ONLP_TRY(file_read_hex(&id_type, LPC_MB_CPLD_PATH "/" LPC_MB_IDTYPE_ATTR));
-    ONLP_TRY(file_read_hex(&build_id, LPC_MB_CPLD_PATH "/" LPC_MB_BUILDID_ATTR));
-    ONLP_TRY(file_read_hex(&deph_id, LPC_MB_CPLD_PATH "/" LPC_MB_DEPHID_ATTR));
 
     //Get BIOS version
     ONLP_TRY(onlp_file_read(bios_ver_h, sizeof(bios_ver_h), &size, SYSFS_BIOS_VER));
@@ -166,18 +169,28 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     info->other_versions = aim_fstrdup(
         "\n"
-        "[SKU ID] %d\n"
-        "[HW ID] %d\n"
-        "[BUILD ID] %d\n"
-        "[ID TYPE] %d\n"
-        "[DEPH ID] %d\n"
         "[BIOS] %s\n"
-        "[BMC] %d.%d.%d\n",
-        sku_id, hw_id, build_id, id_type, deph_id,
+        "[BMC] %d.%d.%d\n"
+        "[MU] %s (%s)\n",
         bios_ver_h,
-        atoi(bmc_ver[0]), atoi(bmc_ver[1]), atoi(bmc_ver[2]));
+        atoi(bmc_ver[0]), atoi(bmc_ver[1]), atoi(bmc_ver[2]),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     return ONLP_STATUS_OK;
 }

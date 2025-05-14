@@ -475,14 +475,12 @@ s32 ufi_poe_PowerShow(struct device *dev, u32 lport, u8 *buf)
         return ret;
     }
 
-    portPowerInfo.vol = (BYTE_SWAP_16BIT(portPowerInfo.vol)) * BCM_POE_TYPE_DATA_PORT_BYTE2VOLT; /* milli volt */
-    portPowerInfo.power = BYTE_SWAP_16BIT(portPowerInfo.power);                                  /* walt */
+    portPowerInfo.vol = (BYTE_SWAP_16BIT(portPowerInfo.vol))*BCM_POE_TYPE_DATA_PORT_BYTE2VOLT; /* milli volt */
+    portPowerInfo.power = BYTE_SWAP_16BIT(portPowerInfo.power);                                /* walt */
     portPowerInfo.cur = BYTE_SWAP_16BIT(portPowerInfo.cur);
 
-    snprintf(buf, OUT_BUF_SIZE, "Port %-2d \nVoltage = %-2d.%-3d V\nCurrent = %-2d.%-3d A\nPower = %d.%d W\n",
-            lport, portPowerInfo.vol / 1000, portPowerInfo.vol % 1000,
-            portPowerInfo.cur / 1000, portPowerInfo.cur % 1000,
-            portPowerInfo.power / 10, portPowerInfo.power % 10);
+    sprintf(buf, "Voltage = %d mV, Current = %d mA, Power = %d mW\n", 
+            portPowerInfo.vol, portPowerInfo.cur, portPowerInfo.power * 100);
     return ret;
 }
 
@@ -1026,6 +1024,151 @@ s32 ufi_poe_GetPortPoEStatus(struct device *dev, u8 lport, BCM_POE_PORT_INFO_T *
     }
 
     return ret;
+}
+
+/*--------------------------------------------------------------------------
+ *
+ *  FUNCTION NAME :
+ *      ufi_poe_GetPortPoEConfig
+ *
+ *  DESCRIPTION :
+ *      To get port configuration
+ *
+ *  INPUT :
+ *      dev - i2c device
+ *      port - front port index
+ *
+ *  OUTPUT :
+ *      poePortConfig
+ *
+ *  RETURN :
+ *      error code
+ *
+ *  COMMENT :
+ *      none
+ *
+ *--------------------------------------------------------------------------
+ */
+s32 ufi_poe_GetPortPoEConfig(struct device *dev, u8 lport, BCM_POE_PORT_CONFIG_INFO_T *poePortConfig)
+{
+    E_ERROR_TYPE ret = E_TYPE_FAILED;
+    BCM_POE_TYPE_PKTBUF_I2C_T *pCmd = (BCM_POE_TYPE_PKTBUF_I2C_T *)CmdBuffer;
+    BCM_POE_TYPE_PKTBUF_I2C_T *pResp = (BCM_POE_TYPE_PKTBUF_I2C_T *)RespBuffer;
+    s32 retry;
+    u32 delay = 100;
+
+    /* fill poe message buffer */
+    memset(pCmd, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+    memset(pResp, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+
+    pCmd->command = BCM_POE_TYPE_COM_PORT_CONFIG_GET;
+    pCmd->data1 = g_poePortMap[lport];
+
+    ufi_poe_halInsertCheckSum(pCmd);
+    for (retry = 0; retry < 10; ++retry)
+    {
+        if (ufi_poe_halBcmI2cCmd_get(dev, (u8 *)pCmd, (u8 *)pResp, delay) == E_BCM_SCP_SUCCESS)
+        {
+            poePortConfig->pseEnable = pResp->data2;
+            poePortConfig->autoMode = pResp->data3;
+            poePortConfig->detectType = pResp->data4;
+            poePortConfig->classifType = pResp->data5;
+            poePortConfig->disconnType = pResp->data6;
+            poePortConfig->pairConfig = pResp->data7;
+            ret = E_TYPE_SUCCESS;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+/*--------------------------------------------------------------------------
+ *
+ *  FUNCTION NAME :
+ *      ufi_poe_GetPortDisconnectType
+ *
+ *  DESCRIPTION :
+ *      Get poe port disconnect type
+ *
+ *
+ *  INPUT :
+ *      dev - i2c device
+ *      lport - front port index
+ *
+ *  OUTPUT :
+ *      disconnectType - poe port disconnect type
+ *
+ *  RETURN :
+ *      error code
+ *
+ *  COMMENT :
+ *      none
+ *
+ *--------------------------------------------------------------------------
+ */
+s32 ufi_poe_GetPortDisconnectType(struct device *dev, u8 lport, E_BCM_POE_DISCONNECT_MODE *disconnectType)
+{
+    E_ERROR_TYPE ret = E_TYPE_SUCCESS;
+    BCM_POE_PORT_CONFIG_INFO_T poePortConfig;
+
+    memset(&poePortConfig, 0, sizeof(BCM_POE_PORT_CONFIG_INFO_T));
+
+    ret = ufi_poe_GetPortPoEConfig(dev, lport, &poePortConfig);
+
+    if (ret != E_TYPE_SUCCESS)
+    {
+        dev_err(dev, "Get port config fail\n");
+        return E_TYPE_FAILED;
+    }
+
+    *disconnectType = poePortConfig.disconnType;
+
+    return E_TYPE_SUCCESS;
+}
+
+/*--------------------------------------------------------------------------
+ *
+ *  FUNCTION NAME :
+ *      ufi_poe_GetPortDetectType
+ *
+ *  DESCRIPTION :
+ *      Get poe port detect type
+ *
+ *
+ *  INPUT :
+ *      dev - i2c device
+ *      lport - front port index
+ *
+ *  OUTPUT :
+ *      detectType - poe port detect type
+ *
+ *  RETURN :
+ *      error code
+ *
+ *  COMMENT :
+ *      none
+ *
+ *--------------------------------------------------------------------------
+ */
+s32 ufi_poe_GetPortDetectType(struct device *dev, u8 lport, E_BCM_POE_PD_TYPE *detectType)
+{
+    E_ERROR_TYPE ret = E_TYPE_SUCCESS;
+    BCM_POE_PORT_CONFIG_INFO_T poePortConfig;
+
+    memset(&poePortConfig, 0, sizeof(BCM_POE_PORT_CONFIG_INFO_T));
+
+    ret = ufi_poe_GetPortPoEConfig(dev, lport, &poePortConfig);
+
+    if (ret != E_TYPE_SUCCESS)
+    {
+        dev_err(dev, "Get port config fail\n");
+        return E_TYPE_FAILED;
+    }
+
+    *detectType = poePortConfig.detectType;
+
+    return E_TYPE_SUCCESS;
 }
 
 /*--------------------------------------------------------------------------

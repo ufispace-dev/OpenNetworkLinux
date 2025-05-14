@@ -136,9 +136,9 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         }
 
         for key, val in board_attrs.items():
-            cmd = ["cat", val["sysfs"]]
+            cmd = "cat {}".format(val["sysfs"])
             try:
-                output = subprocess.check_output(cmd)
+                output = subprocess.check_output(cmd.split())
             except Exception as e:
                 self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
                 output="1"
@@ -147,9 +147,9 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         return board
 
     def get_gpio_max(self):
-        cmd = ["cat", self.PATH_BSP_GPIO_MAX]
+        cmd = "cat {}".format(self.PATH_BSP_GPIO_MAX)
         try:
-            output = subprocess.check_output(cmd)
+            output = subprocess.check_output(cmd.split())
         except Exception as e:
             self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
@@ -367,7 +367,8 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         }
 
         #get rov from cpld
-        reg_val_str = subprocess.check_output("cat {}".format(self.PATH_MAC_ROV), shell=True)
+        cmd = "cat {}".format(self.PATH_MAC_ROV)
+        reg_val_str = subprocess.check_output(cmd.split())
         reg_val = int(reg_val_str, 0)
         self.bsp_pr("{}={}".format(self.PATH_MAC_ROV, reg_val_str))
 

@@ -29,8 +29,8 @@ enum poe_id
 
 enum poe_port_sysfs_type
 {
-    POE_PORT_SET_DETECT_TYPE = 1,
-    POE_PORT_SET_DISCONN_TYPE = 2,
+    POE_PORT_DETECT_TYPE = 1,
+    POE_PORT_DISCONN_TYPE = 2,
     POE_PORT_GET_POWER = 3,
     POE_PORT_GET_TEMP = 4,
     POE_PORT_GET_CONFIG = 5,
@@ -44,8 +44,8 @@ enum poe_port_sysfs_type
 };
 
 #define POE_PORT_ATTR_INDEX(port_num, prefix)              \
-    POE_PORT_##port_num##_SET_DETECT_TYPE = prefix##01,    \
-    POE_PORT_##port_num##_SET_DISCONN_TYPE = prefix##02,   \
+    POE_PORT_##port_num##_DETECT_TYPE = prefix##01,    \
+    POE_PORT_##port_num##_DISCONN_TYPE = prefix##02,   \
     POE_PORT_##port_num##_GET_POWER = prefix##03,          \
     POE_PORT_##port_num##_GET_TEMP = prefix##04,           \
     POE_PORT_##port_num##_GET_CONFIG = prefix##05,         \

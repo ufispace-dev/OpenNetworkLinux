@@ -930,6 +930,26 @@ int ufi_get_gpio_max(int *gpio_max)
 }
 
 /**
+ * @brief Get gpio base
+ * @param gpio_base [out] GPIO base
+ */
+int ufi_get_gpio_base(int *gpio_base)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_base == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if(file_read_hex(gpio_base, LPC_BSP_FMT "bsp_gpio_base") != ONLP_STATUS_OK)
+    {
+        *gpio_base = 512;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
  * @brief warm reset for mac, phy, mux and op2
  * @param unit_id The warm reset device unit id
  * @param reset_dev The warm reset device id

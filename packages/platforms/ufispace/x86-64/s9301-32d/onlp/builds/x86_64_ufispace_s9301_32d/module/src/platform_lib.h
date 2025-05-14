@@ -105,8 +105,7 @@
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN  (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 /* error redirect */
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR   " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR " 2>>"LPC_BSP_PATH"bsp_pr_err"
 
 /* Warm Reset */
 #define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_PATH"bsp_pr_err"
@@ -261,7 +260,8 @@ enum bmc_fru_id {
 extern const int CPLD_BASE_ADDR[CPLD_MAX];
 
 enum bmc_attr_id {
-    BMC_ATTR_ID_TEMP_CPU_PECI  = 0,
+    BMC_ATTR_ID_START          = 0,
+    BMC_ATTR_ID_TEMP_CPU_PECI  = BMC_ATTR_ID_START,
     BMC_ATTR_ID_TEMP_CPU_ENV   = 1,
     BMC_ATTR_ID_TEMP_CPU_ENV_2 = 2,
     BMC_ATTR_ID_TEMP_MAC_ENV   = 3,
@@ -333,9 +333,28 @@ enum onlp_psu_type_e {
 };
 
 typedef struct bmc_info_s {
+    int plat;
     char name[20];
     float data;
 } bmc_info_t;
+
+typedef enum brd_rev_id_e
+{
+    BRD_PROTO,
+    BRD_ALPHA,
+    BRD_BETA,
+    BRD_PVT,
+} brd_rev_id_t;
+
+enum hw_plat
+{
+    HW_PLAT_NONE = 0x0,
+    HW_PLAT_PROTO = 0x1,
+    HW_PLAT_ALPHA = 0x2,
+    HW_PLAT_BETA = 0x4,
+    HW_PLAT_PVT = 0x8,
+    HW_PLAT_ALL = 0xf,
+};
 
 typedef struct bmc_fru_attr_s {
     char key[BMC_FRU_ATTR_KEY_VALUE_SIZE];

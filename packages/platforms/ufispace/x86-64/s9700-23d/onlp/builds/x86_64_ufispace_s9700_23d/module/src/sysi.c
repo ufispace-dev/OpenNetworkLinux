@@ -37,7 +37,7 @@
 #include "platform_lib.h"
 
 #define CMD_BIOS_VER  "dmidecode -s bios-version | tail -1 | tr -d '\\r\\n'"
-#define CMD_BMC_VER_1 "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1 "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2 "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3 "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 #define CMD_UCD_VER   "ipmitool raw 0x3c 0x08"
@@ -119,7 +119,6 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
 {
     int cpu_cpld_addr = 0x600, cpu_cpld_ver, cpu_cpld_ver_major, cpu_cpld_ver_minor;
     int cpld_ver[CPLD_MAX], cpld_ver_major[CPLD_MAX], cpld_ver_minor[CPLD_MAX];
-    int mb_cpld1_addr = 0x700, mb_cpld1_board_type_rev, mb_cpld1_hw_rev, mb_cpld1_build_rev;
     int i;
     char bios_out[32];
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
@@ -177,11 +176,6 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         cpld_ver_major[1], cpld_ver_minor[1],
         cpld_ver_major[2], cpld_ver_minor[2]);
 
-    //Get HW Build Version
-    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-    mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 2 & 0x03));
-    mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
-
     //Get BIOS version
     ONLP_TRY(exec_cmd(CMD_BIOS_VER, bios_out, sizeof(bios_out)));
 
@@ -227,18 +221,14 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
 
     info->other_versions = aim_fstrdup(
             "\n"
-            "[HW   ] %d\n"
-            "[BUILD] %d\n"
-            "[BIOS ] %s\n"
-            "[BMC  ] %d.%d.%d\n"
-            "[UCD  ] %s %s\n"
-            "[MU   ] %s (%s)\n",
-            mb_cpld1_hw_rev,
-            mb_cpld1_build_rev,
+            "[BIOS] %s\n"
+            "[BMC] %d.%d.%d\n"
+            "[MU] %s (%s)\n"
+            "[UCD] %s %s\n",
             bios_out,
             atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-            ucd_ver, ucd_date,
-            strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
+            strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result,
+            ucd_ver, ucd_date);
 
     return ONLP_STATUS_OK;
 }
@@ -276,7 +266,7 @@ const char* onlp_sysi_platform_get(void)
     }
     mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 2 & 0x03));
     mb_cpld1_build_rev = (((mb_cpld1_board_type_rev) & 0x03) | ((mb_cpld1_board_type_rev) >> 5 & 0x04));
- 
+
     if (mb_cpld1_hw_rev == 1 && mb_cpld1_build_rev == 0) {
         return "x86-64-ufispace-s9700-23d-r0";
     } else if (mb_cpld1_hw_rev == 2 && mb_cpld1_build_rev == 0) {

@@ -33,10 +33,18 @@
 #include "platform_lib.h"
 
 bmc_info_t bmc_cache[] = {
-    [BMC_ATTR_ID_TEMP_MAC_ENV_1] = {HW_PLAT_ALL, BMC_ATTR_NAME_TEMP_MAC_ENV_1, BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_MAC_ENV_2] = {HW_PLAT_ALL, BMC_ATTR_NAME_TEMP_MAC_ENV_2, BMC_DATA_FLOAT, 0},
-    [BMC_ATTR_ID_TEMP_PSU_ENV] = {HW_PLAT_ALL, BMC_ATTR_NAME_TEMP_PSU_ENV, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_PSU_FRONT] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_PSU_FRONT, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_BMC_AMBIENT] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_BMC_AMBIENT, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_COME_FRONT] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_COME_FRONT, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_AIR_REAR] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_AIR_REAR, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_PWRBD_REAR] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_PWRBD_REAR, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_AIR_FRONT] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_AIR_FRONT, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_MAC_REAR] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_MAC_REAR, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_MAC_FRONT] = {HW_PLAT_BETA, BMC_ATTR_NAME_TEMP_MAC_FRONT, BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_TEMP_CPU_PECI] = {HW_PLAT_ALL, BMC_ATTR_NAME_TEMP_CPU_PECI, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_MAC_ENV_1] = {HW_PLAT_ALPHA, BMC_ATTR_NAME_TEMP_MAC_ENV_1, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_MAC_ENV_2] = {HW_PLAT_ALPHA, BMC_ATTR_NAME_TEMP_MAC_ENV_2, BMC_DATA_FLOAT, 0},
+    [BMC_ATTR_ID_TEMP_PSU_ENV] = {HW_PLAT_ALPHA, BMC_ATTR_NAME_TEMP_PSU_ENV, BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_PSU0_TEMP1] = {HW_PLAT_ALL, BMC_ATTR_NAME_PSU0_TEMP1, BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_PSU1_TEMP1] = {HW_PLAT_ALL, BMC_ATTR_NAME_PSU1_TEMP1, BMC_DATA_FLOAT, 0},
     [BMC_ATTR_ID_FAN0_RPM_F] = {HW_PLAT_ALL, BMC_ATTR_NAME_FAN0_RPM_F, BMC_DATA_FLOAT, 0},
@@ -306,7 +314,7 @@ int bmc_cache_expired_check(long last_time, long new_time, int cache_time)
     return bmc_cache_expired;
 }
 
-int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
+int read_bmc_sensor(int bmc_cache_index, int sensor_type, bmc_info_t *data)
 {
     int cache_time = 0;
     int bmc_cache_expired = 0;
@@ -392,7 +400,7 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
                     char tmp_str[1024] = {0};
                     int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0 ? (sizeof(bmc_token) - strlen(bmc_token) - 1) : 0;
                     snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
-                    strncat(bmc_token, tmp_str, copy_size);
+                    snprintf(bmc_token + strlen(bmc_token), copy_size, "%s", tmp_str);
                 }
             }
 
@@ -439,12 +447,14 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
             int i = 0;
             char *line_ptr = line;
             char *token = NULL;
+            char fmt_str[BMC_FRU_ATTR_KEY_VALUE_SIZE];
 
             // parse line into fields. fields[0]: fields name, fields[1]: fields value
             char line_fields[BMC_FIELDS_MAX][BMC_FRU_ATTR_KEY_VALUE_SIZE] = {{0}};
+            snprintf(fmt_str, sizeof(fmt_str), "%%%d[^\n]", BMC_FRU_ATTR_KEY_VALUE_SIZE - 1);
             while ((token = strsep(&line_ptr, ",")) != NULL)
             {
-                sscanf(token, "%[^\n]", line_fields[i++]);
+                sscanf(token, fmt_str, line_fields[i++]);
             }
 
             // save bmc_cache from fields
@@ -475,6 +485,60 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
                         {
                             bmc_cache[i].data = atof(line_fields[1]);
                         }
+
+                        if (strcmp(line_fields[10], "") == 0)
+                        {
+                            bmc_cache[i].upper_non_recov = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].upper_non_recov = atof(line_fields[10]);
+                        }
+
+                        if (strcmp(line_fields[11], "") == 0)
+                        {
+                            bmc_cache[i].upper_crit = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].upper_crit = atof(line_fields[11]);
+                        }
+
+                        if (strcmp(line_fields[12], "") == 0)
+                        {
+                            bmc_cache[i].upper_non_crit = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].upper_non_crit = atof(line_fields[12]);
+                        }
+
+                        if (strcmp(line_fields[13], "") == 0)
+                        {
+                            bmc_cache[i].lower_non_recov = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].lower_non_recov = atof(line_fields[13]);
+                        }
+
+                        if (strcmp(line_fields[14], "") == 0)
+                        {
+                            bmc_cache[i].lower_crit = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].lower_crit = atof(line_fields[14]);
+                        }
+
+                        if (strcmp(line_fields[15], "") == 0)
+                        {
+                            bmc_cache[i].lower_non_crit = BMC_ATTR_INVALID_VAL;
+                        }
+                        else
+                        {
+                            bmc_cache[i].lower_non_crit = atof(line_fields[15]);
+                        }
                     }
                     break;
                 }
@@ -485,7 +549,7 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, float *data)
     }
 
     // read from cache
-    *data = bmc_cache[bmc_cache_index].data;
+    *data = bmc_cache[bmc_cache_index];
 
 done:
     ONLP_UNLOCK();
@@ -609,7 +673,10 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
         {
             char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
             char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if (fscanf(fp, "%[^:]:%[^\n]\n", key, val) != 2)
+            char fmt_str[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+            snprintf(fmt_str, sizeof(fmt_str), "%%%d[^:]:%%%d[^\n]\n",
+                     BMC_FRU_ATTR_KEY_VALUE_SIZE - 1, BMC_FRU_ATTR_KEY_VALUE_SIZE - 1);
+            if (fscanf(fp, fmt_str, key, val) != 2)
             {
                 break;
             }
@@ -619,26 +686,22 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
 
             if (strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0)
             {
-                memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
-                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, val);
             }
 
             if (strcmp(key, BMC_FRU_KEY_NAME) == 0)
             {
-                memset(fru->name.val, '\0', sizeof(fru->name.val));
-                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, val);
             }
 
             if (strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0)
             {
-                memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
-                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, val);
             }
 
             if (strcmp(key, BMC_FRU_KEY_SERIAL) == 0)
             {
-                memset(fru->serial.val, '\0', sizeof(fru->serial.val));
-                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, val);
             }
         }
 
@@ -649,22 +712,22 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
         // Check output is correct
         if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0)
         {
-            strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
         if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0)
         {
-            strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->name.val, sizeof(fru->name.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
         if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0)
         {
-            strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
         if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0)
         {
-            strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->serial.val, sizeof(fru->serial.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
     }
 
@@ -785,6 +848,8 @@ int read_bmc_oem(int bmc_oem_id, int *data)
             // parse line into fields.
             int col;
             char line_field[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {0};
+            char fmt_str[BMC_FRU_ATTR_KEY_VALUE_SIZE];
+            snprintf(fmt_str, sizeof(fmt_str), "%%%d[^\n]", BMC_FRU_ATTR_KEY_VALUE_SIZE - 1);
             for (token = strsep(&line_ptr, " "), col = 0;
                  token != NULL;
                  token = strsep(&line_ptr, " "), col++)
@@ -793,7 +858,7 @@ int read_bmc_oem(int bmc_oem_id, int *data)
                 {
                     continue;
                 }
-                sscanf(token, "%[^\n]", line_field);
+                sscanf(token, fmt_str, line_field);
             }
 
             if (strlen(line_field) != 0)
@@ -956,22 +1021,11 @@ uint8_t get_bit_value(uint8_t reg_val, uint8_t bit)
 int get_hw_rev_id(void)
 {
     int hw_rev;
-    char hw_rev_cmd[128];
-    char buffer[128];
-    FILE *fp;
 
-    snprintf(hw_rev_cmd, sizeof(hw_rev_cmd), "cat " LPC_FMT "board_hw_id");
-    fp = popen(hw_rev_cmd, "r");
-    if (fp == NULL)
+    if (read_file_hex(&hw_rev, LPC_FMT "board_hw_id") != ONLP_STATUS_OK)
     {
-        AIM_LOG_ERROR("Unable to popen cmd(%s)\r\n", hw_rev_cmd);
-        return ONLP_STATUS_E_INTERNAL;
+        return hw_rev = 0;
     }
-    /* Read the output a line at a time - output it. */
-    fgets(buffer, sizeof(buffer), fp);
-    hw_rev = atoi(buffer);
-
-    pclose(fp);
 
     return hw_rev;
 }
@@ -992,6 +1046,27 @@ int get_gpio_max(int *gpio_max)
     if (read_file_hex(gpio_max, LPC_BSP_FMT "bsp_gpio_max") != ONLP_STATUS_OK)
     {
         *gpio_max = 511;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
+ * @brief Get gpio base
+ * @param gpio_base [out] GPIO base
+ */
+int get_gpio_base(int *gpio_base)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if (gpio_base == NULL)
+    {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if (read_file_hex(gpio_base, LPC_BSP_FMT "bsp_gpio_base") != ONLP_STATUS_OK)
+    {
+        *gpio_base = 512;
         rv = ONLP_STATUS_E_INVALID;
     }
     return rv;

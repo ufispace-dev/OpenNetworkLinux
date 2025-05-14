@@ -63,8 +63,7 @@
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
 #define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9700_53dx_lpc/"
 #define SYS_LPC_BSP                 SYSFS_LPC"bsp/"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
 #define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
 

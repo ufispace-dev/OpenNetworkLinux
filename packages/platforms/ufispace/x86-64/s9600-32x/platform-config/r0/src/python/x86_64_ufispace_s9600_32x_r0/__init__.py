@@ -67,7 +67,7 @@ class OnlPlatform_x86_64_ufispace_s9600_32x_r0(OnlPlatformUfiSpace):
         sysfs_mux_reset = "/sys/devices/platform/x86_64_ufispace_s9600_32x_lpc/mb_cpld/mux_reset"
 
         # Check I2C status
-        retcode = os.system("i2cget -f -y 0 0x71 > /dev/null 2>&1")
+        retcode = os.system("i2cget -f -y 0 0x72 > /dev/null 2>&1")
         if retcode != 0:
 
             # read mux failed, i2c bus may be stuck

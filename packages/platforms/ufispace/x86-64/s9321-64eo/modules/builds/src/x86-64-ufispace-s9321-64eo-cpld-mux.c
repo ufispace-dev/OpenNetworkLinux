@@ -289,7 +289,7 @@ static int _port_block_status_get(struct i2c_adapter *adap, struct i2c_client *c
     unsigned long stop_time;
     u32 try_times = 0;
 
-    if(port >= 0 && port <= NELEMS(ports_block_map)) {
+    if(port >= 0 && port < NELEMS(ports_block_map)) {
         if(is_evt == 1) {
             reg = ports_block_map[port].evt_reg;
         } else {

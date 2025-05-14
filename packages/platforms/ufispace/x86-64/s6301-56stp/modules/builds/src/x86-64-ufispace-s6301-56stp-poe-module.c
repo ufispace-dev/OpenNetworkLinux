@@ -86,8 +86,8 @@ static SENSOR_DEVICE_ATTR(poe_debug, S_IRUGO | S_IWUSR,
                           read_poe_callback, write_poe_callback, POE_DEBUG);
 
 #define POE_PORT_SENSOR_DEVICE_ATTR(port_num)                                                                                                                                          \
-    static SENSOR_DEVICE_ATTR(poe_port_##port_num##_set_detect_type, S_IWUSR, NULL, write_poe_port_callback, POE_PORT_##port_num##_SET_DETECT_TYPE);                                   \
-    static SENSOR_DEVICE_ATTR(poe_port_##port_num##_set_disconn_type, S_IWUSR, NULL, write_poe_port_callback, POE_PORT_##port_num##_SET_DISCONN_TYPE);                                 \
+    static SENSOR_DEVICE_ATTR(poe_port_##port_num##_detect_type, S_IRUGO | S_IWUSR, read_poe_port_callback, write_poe_port_callback, POE_PORT_##port_num##_DETECT_TYPE);                         \
+    static SENSOR_DEVICE_ATTR(poe_port_##port_num##_disconn_type, S_IRUGO | S_IWUSR, read_poe_port_callback, write_poe_port_callback, POE_PORT_##port_num##_DISCONN_TYPE);                       \
     static SENSOR_DEVICE_ATTR(poe_port_##port_num##_get_power, S_IRUGO, read_poe_port_callback, NULL, POE_PORT_##port_num##_GET_POWER);                                                \
     static SENSOR_DEVICE_ATTR(poe_port_##port_num##_get_temp, S_IRUGO, read_poe_port_callback, NULL, POE_PORT_##port_num##_GET_TEMP);                                                  \
     static SENSOR_DEVICE_ATTR(poe_port_##port_num##_get_config, S_IRUGO, read_poe_port_callback, NULL, POE_PORT_##port_num##_GET_CONFIG);                                              \
@@ -168,8 +168,8 @@ static struct attribute *s6301_56stp_poe_sys_attributes[] = {
 /* POE PORT */
 #define POE_PORT_SENSOR_DEVICE_ATTRS(port_num)                                   \
     static struct attribute *s6301_56stp_poe_port_##port_num##_attributes[] = {  \
-        &sensor_dev_attr_poe_port_##port_num##_set_detect_type.dev_attr.attr,    \
-        &sensor_dev_attr_poe_port_##port_num##_set_disconn_type.dev_attr.attr,   \
+        &sensor_dev_attr_poe_port_##port_num##_detect_type.dev_attr.attr,        \
+        &sensor_dev_attr_poe_port_##port_num##_disconn_type.dev_attr.attr,       \
         &sensor_dev_attr_poe_port_##port_num##_get_power.dev_attr.attr,          \
         &sensor_dev_attr_poe_port_##port_num##_get_temp.dev_attr.attr,           \
         &sensor_dev_attr_poe_port_##port_num##_get_config.dev_attr.attr,         \
@@ -458,6 +458,26 @@ static ssize_t read_poe_port_callback(struct device *dev,
     mutex_lock(&clientdata->cmd_lock);
     switch (attr_type)
     {
+    case POE_PORT_DETECT_TYPE:
+        if (ufi_poe_GetPortDetectType(dev, port_num, (E_BCM_POE_PD_TYPE *)&u32_out) != E_TYPE_SUCCESS)
+        {
+            ret = -EIO;
+        }
+        else
+        {
+            ret = sprintf(out, "%d\n", u32_out);
+        }
+        break;
+    case POE_PORT_DISCONN_TYPE:
+        if (ufi_poe_GetPortDisconnectType(dev, port_num, (E_BCM_POE_DISCONNECT_MODE *)&u32_out) != E_TYPE_SUCCESS)
+        {
+            ret = -EIO;
+        }
+        else
+        {
+            ret = sprintf(out, "%d\n", u32_out);
+        }
+        break;
     case POE_PORT_GET_POWER:
         if (ufi_poe_PowerShow(dev, port_num, out) != E_TYPE_SUCCESS)
         {
@@ -651,7 +671,7 @@ static ssize_t write_poe_port_callback(struct device *dev,
     mutex_lock(&clientdata->cmd_lock);
     switch (attr_type)
     {
-    case POE_PORT_SET_DETECT_TYPE:
+    case POE_PORT_DETECT_TYPE:
         if (val <= E_BCM_POE_PD_STANDARD_THEN_LEGACY && val >= E_BCM_POE_NO_DETECT)
         {
             if (ufi_poe_SetPortDetectType(dev, port_num, val) != E_TYPE_SUCCESS)
@@ -665,7 +685,7 @@ static ssize_t write_poe_port_callback(struct device *dev,
             ret = -EINVAL;
         }
         break;
-    case POE_PORT_SET_DISCONN_TYPE:
+    case POE_PORT_DISCONN_TYPE:
         if (val <= E_BCM_POE_DISCONNECT_DC && val >= E_BCM_POE_DISCONNECT_NONE)
         {
             if (ufi_poe_SetPortDisconnectType(dev, port_num, val) != E_TYPE_SUCCESS)

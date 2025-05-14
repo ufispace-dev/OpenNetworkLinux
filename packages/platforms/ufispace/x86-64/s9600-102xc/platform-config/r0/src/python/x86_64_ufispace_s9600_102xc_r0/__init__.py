@@ -61,7 +61,6 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
     PORT_CONFIG="96x25 + 6x100"
     LEVEL_INFO=1
     LEVEL_ERR=2
-    BSP_VERSION='1.1.1'
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"
     PATH_SYS_GPIO = "/sys/class/gpio"
     PATH_SYSTEM_LED="/sys/bus/i2c/devices/1-0030/cpld_sys_led_ctrl_1"
@@ -112,12 +111,6 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
         else:
             msg("Warning: bsp logging sys is not exist\n")
 
-    def config_bsp_ver(self, bsp_ver):
-        bsp_version_path=self.PATH_LPC_GRP_BSP+"/bsp_version"
-        if os.path.exists(bsp_version_path):
-            with open(bsp_version_path, "w") as f:
-                f.write(bsp_ver)
-
     def get_board_version(self):
         board = {}
         board_attrs = {
@@ -127,9 +120,9 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
         }
 
         for key, val in board_attrs.items():
-            cmd = ["cat", val["sysfs"]]
+            cmd = "cat {}".format(val["sysfs"])
             try:
-                output = subprocess.check_output(cmd)
+                output = subprocess.check_output(cmd.split())
             except Exception as e:
                 self.bsp_pr("Get hw rev id from LPC failed, exception={}".format(e), self.LEVEL_ERR)
                 output="1"
@@ -138,9 +131,9 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
         return board
 
     def get_gpio_max(self):
-        cmd = ["cat", self.PATH_LPC_GRP_BSP+"/bsp_gpio_max"]
+        cmd = "cat {}/bsp_gpio_max".format(self.PATH_LPC_GRP_BSP)
         try:
-            output = subprocess.check_output(cmd)
+            output = subprocess.check_output(cmd.split())
         except Exception as e:
             self.bsp_pr("Get gpio max failed, exception={}".format(e), self.LEVEL_ERR)
             output="511"
@@ -394,10 +387,6 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
 
         #lpc driver
         self.insmod("x86-64-ufispace-s9600-102xc-lpc")
-
-        # version setting
-        self.bsp_pr("BSP version {}".format(self.BSP_VERSION))
-        self.config_bsp_ver(self.BSP_VERSION)
 
         # get gpio max
         gpio_max = self.get_gpio_max()

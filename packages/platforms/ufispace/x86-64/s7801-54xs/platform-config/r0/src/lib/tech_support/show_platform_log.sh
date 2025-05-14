@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="2.0.0"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -59,6 +59,8 @@ LOG_REDIRECT="2>&1"
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # I2C Bus
 i801_bus=""
@@ -124,18 +126,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _check_env {
@@ -359,6 +372,7 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
+    hw_ext_name_array=("S8901-54XC" "S7801-54XS-9B1B" "S7801-56CS" "S8901-54XC-2B1A" "S7801-54XS" "S8901-54XC Port 1 BASE")
     model_id_array=($((2#11111111)))
     model_name_array=("S7801-54XS")
 
@@ -408,10 +422,26 @@ function _show_board_info {
        exit 1
     fi
 
+    hw_ext_id=`${IOGET} 0x706`
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        hw_ext_id=`echo ${hw_ext_id} | awk -F" " '{print $NF}'`
+        hw_ext_id=$(((hw_ext_id & 2#00000111) >> 0))
+    else
+        _echo "Get extended id failed ($ret), Exit!!"
+        exit $ret
+    fi
+    hw_ext_name=${hw_ext_name_array[${hw_ext_id}]}
+
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
-    _echo "[Board Type/Rev Reg Raw ]: ${model_id} ${board_rev_id}"
-    _echo "[Board Type and Revision]: ${model_name} ${deph_name} ${hw_rev} ${build_rev}"
+    HW_EXT=${hw_ext_id}
+    _echo "[CPLD 0x0/0x1/0x6 Reg Raw ]: ${model_id} ${board_rev_id} ${hw_ext_id}"
+    _echo "[Board Type               ]: ${model_name}"
+    _echo "[Extended ID              ]: ${hw_ext_name}"
+    _echo "[Design Phase             ]: ${deph_name}"
+    _echo "[Hardware Revision        ]: ${hw_rev}"
+    _echo "[BUILD_ID                 ]: ${build_rev}"
 }
 
 function _bios_version {
@@ -934,10 +964,26 @@ function _show_sfp_status_sysfs {
     _banner "Show SFP Status"
 
     local sysfs_idx_array=("0_7" "8_15" "16_23" "24_31" "32_39" "40_47")
-    #local rx_rs_base=464
-    #local tx_rs_base=416
-    local rx_rs_base=$((GPIO_MAX - 47))
-    local tx_rs_base=$((GPIO_MAX - 95))
+    # Get kernel version
+    local kernel_ver=$(uname -r)
+    local kernel_major=$(echo "$kernel_ver" | cut -d. -f1)
+    local kernel_minor=$(echo "$kernel_ver" | cut -d. -f2)
+
+    local rx_rs_base
+    local tx_rs_base
+    # Kernel version >= 6.2
+    if [[ $kernel_major -gt 6 || ($kernel_major -eq 6 && $kernel_minor -ge 2) ]]; then
+        #local rx_rs_base=512+47=559
+        #local tx_rs_base=512+95=607
+        rx_rs_base=$((GPIO_BASE + 47))
+        tx_rs_base=$((GPIO_BASE + 95))
+    # Kernel version < 6.2
+    else
+        #local rx_rs_base=1023-47=976
+        #local tx_rs_base=1023-95=928
+        rx_rs_base=$((GPIO_MAX - 47))
+        tx_rs_base=$((GPIO_MAX - 95))
+    fi
 
     if [[ $MODEL_NAME != *"S7801-54XS"* ]]; then
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
@@ -974,15 +1020,29 @@ function _show_sfp_status_sysfs {
         port_tx_disable_reg=$(eval "cat ${sysfs_path} ${LOG_REDIRECT}")
         port_tx_disable=$(( (port_tx_disable_reg >> ${bit_shift}) & 2#00000001 ))
 
-        # Port Rx Rate Select (0: low rate, 1:full rate)
-        sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( rx_rs_base + i )))
-        _check_filepath ${sysfs_path}
-        port_rx_rate_sel=$(eval "cat ${sysfs_path}")
+        # Kernel version >= 6.2
+        if [[ $kernel_major -gt 6 || ($kernel_major -eq 6 && $kernel_minor -ge 2) ]]; then
+    	    # Port Rx Rate Select (0: low rate, 1:full rate)
+            sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( rx_rs_base - i )))
+            _check_filepath ${sysfs_path}
+            port_rx_rate_sel=$(eval "cat ${sysfs_path}")
 
-        # Port Tx Rate Select (0: low rate, 1:full rate)
-        sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( tx_rs_base + i )))
-        _check_filepath ${sysfs_path}
-        port_tx_rate_sel=$(eval "cat ${sysfs_path}")
+            # Port Tx Rate Select (0: low rate, 1:full rate)
+            sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( tx_rs_base - i )))
+            _check_filepath ${sysfs_path}
+            port_tx_rate_sel=$(eval "cat ${sysfs_path}")
+        # Kernel version < 6.2
+        else
+            # Port Rx Rate Select (0: low rate, 1:full rate)
+            sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( rx_rs_base + i )))
+            _check_filepath ${sysfs_path}
+            port_rx_rate_sel=$(eval "cat ${sysfs_path}")
+
+            # Port Tx Rate Select (0: low rate, 1:full rate)
+            sysfs_path=$(printf ${FMT_SYSFS_GPIO_VAL} $(( tx_rs_base + i )))
+            _check_filepath ${sysfs_path}
+            port_tx_rate_sel=$(eval "cat ${sysfs_path}")
+        fi
 
         # Show Port Status
 
