@@ -2,6 +2,18 @@ obj-m += x86-64-ufispace-eeprom-mb.o
 obj-m += x86-64-ufispace-sys-eeprom.o
 obj-m += x86-64-ufispace-irq-handler.o
 
+KVERSION := $(shell echo $(KERNELVERSION) | cut -d "." -f 1,2)
+KVERSION_MAJOR := $(shell echo $(KERNELVERSION) | cut -d "." -f 1)
+KVERSION_MINOR := $(shell echo $(KERNELVERSION) | cut -d "." -f 2)
+
+# patch i2c-ismt if kernel < 5.0
+PATCH_MAJOR := 5
+PATCH_MINOR := 0
+KV_GE_PATCH := $(shell [ $(KVERSION_MAJOR) -gt $(PATCH_MAJOR) -o \( $(KVERSION_MAJOR) -eq $(PATCH_MAJOR) -a $(KVERSION_MINOR) -ge $(PATCH_MINOR) \) ] && echo true)
+ifneq ($(KV_GE_PATCH),true)
+	obj-m += i2c-ismt.o
+endif
+
 #i40e ccflags
 ccflags-y += -I$(src)/i40e -DUSE_INTEL_AUX_BUS
 
