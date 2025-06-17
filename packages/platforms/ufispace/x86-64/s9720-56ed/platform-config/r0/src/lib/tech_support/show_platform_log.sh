@@ -1,6 +1,5 @@
 #!/bin/bash
-
-#Tech Support script version
+# Tech Support Version
 TS_VERSION="1.0.0"
 
 # TRUE=0, FALSE=1
@@ -8,7 +7,7 @@ TRUE=0
 FALSE=1
 
 # Device Serial Number
-SN=$(dmidecode -s chassis-serial-number)
+SN=$(dmidecode -t 3 | grep "Serial Number" | cut -d : -f 2 | xargs)
 if [ ! $? -eq 0 ]; then
     SN=""
 elif [[ $SN = *" "* ]]; then
@@ -29,15 +28,14 @@ LOG_FAST=${FALSE}
 
 
 # PLAT: This script is compatible with the platform.
-PLAT="S9620-54DC"
+PLAT="S9720-56ED"
 # MODEL_NAME: set by function _board_info
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-HW_REV_ID=0
 # HW_EXT: set by function _board_info
 HW_EXT=""
-# BSP_INIT_FLAG: set by function _check_bsp_init
+# BSP_INIT_FLAG: set bu function _check_bsp_init
 BSP_INIT_FLAG=""
 
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -55,29 +53,23 @@ HEADER_PROMPT=1
 # LS_OPTION="-a | cat | sort"      : list one filename per output line and sort it
 LS_OPTION="-alu"
 
-# Log Redirection
-# LOG_REDIRECT="2> /dev/null"        : remove the error message from console
-# LOG_REDIRECT=""                    : show the error message in console
-# LOG_REDIRECT="2>> $LOG_FILE_PATH"  : show the error message in stdout, then stdout may send to console or file in _echo()
-LOG_REDIRECT=""
-
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+
+# GPIO_BASE: update by function _update_gpio_max
 GPIO_BASE=0
 GPIO_BASE_INIT_FLAG=0
-
 # I2C Bus
 i801_bus=""
-ismt_bus=""
 
 # Sysfs
 SYSFS_DEV="/sys/bus/i2c/devices"
-SYSFS_CPLD1="${SYSFS_DEV}/2-0030"
-SYSFS_CPLD2="${SYSFS_DEV}/2-0031"
-SYSFS_CPLD3="${SYSFS_DEV}/2-0032"
-SYSFS_FPGA="${SYSFS_DEV}/2-0037"
-SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9620_54dc_lpc"
+SYSFS_CPLD1="${SYSFS_DEV}/1-0030"
+SYSFS_CPLD2="${SYSFS_DEV}/1-0031"
+SYSFS_FPGA="${SYSFS_DEV}/1-0037"
+SYSFS_CPLD4="${SYSFS_DEV}/24-0032"
+SYSFS_CPLD5="${SYSFS_DEV}/24-0033"
 
 # Port Type
 PORT_T_QSFPDD=1
@@ -124,7 +116,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = ${TS_VERSION}"
+    _banner "Package Version = 1.0.0"
 }
 
 function _show_ts_version {
@@ -132,29 +124,28 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX and GPIO BASE"
-    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
-    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
+    _banner "Update GPIO MAX"
 
-    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_gpio_max)
     if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
-    #GPIO_BASE=$(cat ${sysfs_gpio_base})
-    #if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
-    #    GPIO_BASE_INIT_FLAG=0
-    #else
-    #    GPIO_BASE_INIT_FLAG=1
-    #fi
+    # GPIO_BASE=$(cat /sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_gpio_base)
+    # if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+    #     GPIO_BASE_INIT_FLAG=0
+    # else
+    #     GPIO_BASE_INIT_FLAG=1
+    # fi
 
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 
-    # _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
-    # _echo "[GPIO_BASE]: ${GPIO_BASE}"
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
+
 }
 
 function _dd_read_byte {
@@ -179,12 +170,6 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
-
-        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
-            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
-            exit 1
-        fi
-
         if [ "${HEADER_PROMPT}" == "1" ]; then
             echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
         else
@@ -196,7 +181,6 @@ function _check_env {
     _get_i2c_root
     if [ ! -z ${i801_bus} ]; then
         _echo "[I801 bus ]: ${i801_bus}"
-        _echo "[iSMT bus ]: ${ismt_bus}"
     fi
 
     # check BSP init
@@ -257,8 +241,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # As our bsp init status, we look at bsp_version.
-    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
+    # As our bsp init status, we look at bsp_version. 
+    if [ -f "/sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -272,25 +256,10 @@ function _get_i2c_root {
         i2c_0=`cat /sys/bus/i2c/devices/i2c-0/name`
     fi
 
-    if _check_filepath "/sys/bus/i2c/devices/i2c-1/name" ;then
-        i2c_1=`cat /sys/bus/i2c/devices/i2c-1/name`
-    fi
-
     if echo "$i2c_0" | grep -q "I801"; then
         i801_bus=0
     fi
 
-    if echo "$i2c_1" | grep -q "I801"; then
-        i801_bus=1
-    fi
-
-    if echo "$i2c_0" | grep -q "iSMT"; then
-        ismt_bus=0
-    fi
-
-    if echo "$i2c_1" | grep -q "iSMT"; then
-        ismt_bus=1
-    fi
 }
 
 function _show_system_info {
@@ -375,9 +344,14 @@ function _show_board_info {
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
     hw_rev_ga_array=("GA_1" "GA_2" "GA_3" "GA_4")
     deph_name_array=("NPI" "GA")
-    model_id_array=($((2#00101001)))
-    model_name_array=("S9620-54DC")
-    model_name=""
+    model_id_array=($((2#00100010)))
+    model_name_array=("S9720-56ED")
+    brd_id_array=(
+        "CSGR 4-bit/8-bit mode & DDC 8-bit mode" #0
+        ""                                       #1
+        "S9720-56ED and other new platform"      #2
+        "The earlies 4-bit mode (Apollo/SIAD)"   #3
+    )
 
     model_id=$(_dd_read_byte 0xE00)
     ret=$?
@@ -398,6 +372,16 @@ function _show_board_info {
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
         exit $ret
     fi
+
+    # ext_byte=$(_dd_read_byte 0xED0)
+    # ret=$?
+    # if [ $ret -eq 0 ]; then
+    #     ext_byte=`echo ${ext_byte} | awk -F" " '{print $NF}'`
+    #     ext_byte=$((ext_byte))
+    # else
+    #     _echo "Get extended byte failed ($ret), Exit!!"
+    #     exit $ret
+    # fi
 
     # DEPH D[2]
     deph_id=$(((board_rev_id & 2#00000100) >> 2))
@@ -420,8 +404,6 @@ function _show_board_info {
     model_id=$(((model_id & 2#11111111) >> 0))
     if [ $model_id -eq ${model_id_array[0]} ]; then
        model_name=${model_name_array[0]}
-    elif [ $model_id -eq ${model_id_array[1]} ]; then
-       model_name=${model_name_array[1]}
     else
        _echo "Invalid model_id: ${model_id}"
        exit 1
@@ -470,7 +452,7 @@ function _cpld_version_lpc {
     # _banner "Show CPLD Version (LPC)"
 
     # if [ "${MODEL_NAME}" == "${PLAT}" ]; then
-    #     # MB CPLD S9620-54DC
+    #     # MB CPLD S9720-56ED
     #     mb_cpld_ver=$(_dd_read_byte 0x702)
     #     ret=$?
     #     if [ ${ret} -eq 0 ]; then
@@ -496,7 +478,7 @@ function _cpld_version_i2c {
         _banner "Show CPLD Version (I2C) (Bypass)"
         return
     fi
-
+    
     _banner "Show CPLD Version (I2C)"
 
     if [[ $MODEL_NAME == "${PLAT}" ]]; then
@@ -504,19 +486,21 @@ function _cpld_version_i2c {
         local mux_i2c_bus=${i801_bus}
         local mux_i2c_addr_1=0x71
         local mux_i2c_addr_2=0x72
+        local mux_i2c_addr_3=0x76
 
         # MB CPLD
         mb_cpld1_ver=""
         mb_cpld2_ver=""
-        mb_cpld3_ver=""
         mb_fpga_ver=""
-        
+        mb_cpld4_ver=""
+        mb_cpld5_ver=""
         mb_cpld1_build=""
         mb_cpld2_build=""
-        mb_cpld3_build=""
         mb_fpga_build=""
+        mb_cpld4_build=""
+        mb_cpld5_build=""
 
-        # CPLD 1-3
+        # CPLD 1-5
 
         _check_i2c_device ${mux_i2c_bus} ${mux_i2c_addr_1}
         ret=$?
@@ -535,20 +519,25 @@ function _cpld_version_i2c {
                 _printf "[MB CPLD2 Version]: %d.%02d.%03d\n" $(( (mb_cpld2_ver & 2#11000000) >> 6)) $(( mb_cpld2_ver & 2#00111111 )) $((mb_cpld2_build))
             fi
 
-            if _check_i2c_device ${mux_i2c_bus} "0x32"; then
-                mb_cpld3_ver=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x2 ${LOG_REDIRECT}")
-                mb_cpld3_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x4 ${LOG_REDIRECT}")
-                _printf "[MB CPLD3 Version]: %d.%02d.%03d\n" $(( (mb_cpld3_ver & 2#11000000) >> 6)) $(( mb_cpld3_ver & 2#00111111 )) $((mb_cpld3_build))
-            fi
-
             if _check_i2c_device ${mux_i2c_bus} "0x37"; then
                 mb_fpga_ver=$(eval "i2cget -y -f ${mux_i2c_bus} 0x37 0x2 ${LOG_REDIRECT}")
                 mb_fpga_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x37 0x4 ${LOG_REDIRECT}")
                 _printf "[MB FPGA  Version]: %d.%02d.%03d\n" $(( (mb_fpga_ver & 2#11000000) >> 6)) $(( mb_fpga_ver & 2#00111111 )) $((mb_fpga_build))
             fi
 
-            
+            i2cset -y -f ${mux_i2c_bus} ${mux_i2c_addr_2} 0x8
+            i2cset -y -f ${mux_i2c_bus} ${mux_i2c_addr_3} 0x8
+            if _check_i2c_device ${mux_i2c_bus} "0x32"; then
+                mb_cpld4_ver=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x2 ${LOG_REDIRECT}")
+                mb_cpld4_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x4 ${LOG_REDIRECT}")
+                _printf "[MB CPLD4 Version]: %d.%02d.%03d\n" $(( (mb_cpld4_ver & 2#11000000) >> 6)) $(( mb_cpld4_ver & 2#00111111 )) $((mb_cpld4_build))
+            fi
 
+            if _check_i2c_device ${mux_i2c_bus} "0x33"; then
+                mb_cpld5_ver=$(eval "i2cget -y -f ${mux_i2c_bus} 0x33 0x2 ${LOG_REDIRECT}")
+                mb_cpld5_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x33 0x4 ${LOG_REDIRECT}")
+                _printf "[MB CPLD5 Version]: %d.%02d.%03d\n" $(( (mb_cpld5_ver & 2#11000000) >> 6)) $(( mb_cpld5_ver & 2#00111111 )) $((mb_cpld5_build))
+            fi
             i2cset -y -f ${mux_i2c_bus} ${mux_i2c_addr} 0x0
         fi
 
@@ -572,17 +561,20 @@ function _cpld_version_sysfs {
             _echo "[MB CPLD2 Version]: ${mb_cpld_ver}"
         fi
 
-        if _check_filepath "$SYSFS_CPLD3/cpld_version_h"; then
-            mb_cpld_ver=$(eval "cat $SYSFS_CPLD3/cpld_version_h ${LOG_REDIRECT}")
-            _echo "[MB CPLD3 Version]: ${mb_cpld_ver}"
-        fi
-
         if _check_filepath "$SYSFS_FPGA/fpga_version_h"; then
             mb_fpga_ver=$(eval "cat $SYSFS_FPGA/fpga_version_h ${LOG_REDIRECT}")
             _echo "[MB FPGA  Version]: ${mb_fpga_ver}"
         fi
 
+        if _check_filepath "$SYSFS_CPLD4/cpld_version_h"; then
+            mb_cpld_ver=$(eval "cat $SYSFS_CPLD4/cpld_version_h ${LOG_REDIRECT}")
+            _echo "[MB CPLD4 Version]: ${mb_cpld_ver}"
+        fi
 
+        if _check_filepath "$SYSFS_CPLD5/cpld_version_h"; then
+            mb_cpld_ver=$(eval "cat $SYSFS_CPLD5/cpld_version_h ${LOG_REDIRECT}")
+            _echo "[MB CPLD5 Version]: ${mb_cpld_ver}"
+        fi
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -647,18 +639,11 @@ function _show_version {
 }
 
 function _show_i2c_tree_bus {
-    _banner "Show I2C Tree Bus i801"
+    _banner "Show I2C Tree Bus 0"
 
-    ret=$(eval "i2cdetect -y "${i801_bus}" ${LOG_REDIRECT}")
+    ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
 
-    _echo "[I2C Tree ${i801_bus}]:"
-    _echo "${ret}"
-
-    _banner "Show I2C Tree Bus iSMT"
-
-    ret=$(eval "i2cdetect -y "${ismt_bus}" ${LOG_REDIRECT}")
-
-    _echo "[I2C Tree ${ismt_bus}]:"
+    _echo "[I2C Tree 0]:"
     _echo "${ret}"
 }
 
@@ -688,11 +673,11 @@ function _show_i2c_mux_devices {
     _check_i2c_device "$bus" "$chip_addr"
     ret=$?
     if [ "$ret" == "0" ]; then
-        _echo "TCA9548 Mux ${chip_dev_desc}"
+        _echo "TCA954x Mux ${chip_dev_desc}"
         _echo "---------------------------------------------------"
         for (( i=startc; i<${endc}; i++ ))
         do
-            _echo "TCA9548 Mux ${chip_dev_desc} - Channel ${i}"
+            _echo "TCA954x Mux ${chip_dev_desc} - Channel ${i}"
             # open mux channel
             i2cset -y ${bus} ${chip_addr} $(( 2 ** ${i} ))
             # dump i2c tree
@@ -711,74 +696,64 @@ function _show_i2c_tree_bus_mux_i2c {
         _banner "Show I2C Tree Bus MUX (I2C) (Bypass)"
         return
     fi
-
+    
     _banner "Show I2C Tree Bus MUX (I2C)"
 
     local i=0
     local chip_addr1=""
-    local bus=""
+    local bus="${i801_bus}"
 
-    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
-        # i801_bus
-        bus="${i801_bus}"
-        chip_addr1="0x71"
-        _check_i2c_device "${bus}" "${chip_addr1}"
-        ret=$?
-        if [ "$ret" == "0" ]; then
+    case $PLAT in
+        *$MODEL_NAME* )
 
-            ## (9548_ROOT_FPGA_CPLD)-0x72
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "9548_ROOT_FPGA_CPLD-${chip_addr1}"
-            local chip_addr2_array=("0x30" "0x31" " 0x32" "0x37" "" "" "" "")
-            local mux_name_array=("CPLD_1" "CPLD_2" "CPLD_3""FPGA" "" "" "" "")
+            # ROOT-0x71
+            chip_addr1="0x71"
+            _check_i2c_device "${bus}" "${chip_addr1}"
+            ret=$?
+            if [ "$ret" == "0" ]; then
 
-            for (( chip_addr1_chann=0; chip_addr1_chann<${#chip_addr2_array[@]}; chip_addr1_chann++ ))
-            do
-                if [ -z "${chip_addr2_array[${chip_addr1_chann}]}" ]; then
-                    continue
-                fi
+                # ROOT-0x71
+                _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "ROOT-${chip_addr1}"
+            fi
 
-                local chip_addr2=${chip_addr2_array[${chip_addr1_chann}]}
-                local mux_name=${mux_name_array[${chip_addr1_chann}]}
-                # open mux channel - 0x72 (chip_addr1)
-                i2cset -y ${bus} ${chip_addr1} $(( 2 ** ${chip_addr1_chann} ))
-                _show_i2c_mux_devices ${bus} "${chip_addr2}" "8" "${mux_name}-${chip_addr1}-${chip_addr1_chann}-${chip_addr2}"
-                # close mux channel - 0x72 (chip_addr1)
-                i2cset -y ${bus} ${chip_addr1} 0x0
-            done
-        fi
+            # ROOT-0x72
+            chip_addr1="0x72"
+            _check_i2c_device "${bus}" "${chip_addr1}"
+            ret=$?
+            if [ "$ret" == "0" ]; then
 
-   
-        chip_addr1="0x73"
-        _check_i2c_device "${bus}" "${chip_addr1}"
-        ret=$?
-        if [ "$ret" == "0" ]; then
+                # ROOT-0x72
+                _show_i2c_mux_devices "${bus}" "${chip_addr1}" "4" "ROOT-${chip_addr1}"
+            fi
 
-            ## (9546_ROOT_CLK)-0x73
-            _show_i2c_mux_devices "${bus}" "${chip_addr1}" "4" "9546_ROOT_CLK-${chip_addr1}"
-            local chip_addr2_array=("" "" "" "" "" "" "" "")
-            local mux_name_array=("" "" "" "" "" "" "" "")
+            # ROOT-0x73
+            chip_addr1="0x73"
+            _check_i2c_device "${bus}" "${chip_addr1}"
+            ret=$?
+            if [ "$ret" == "0" ]; then
 
-            for (( chip_addr1_chann=0; chip_addr1_chann<${#chip_addr2_array[@]}; chip_addr1_chann++ ))
-            do
-                if [ -z "${chip_addr2_array[${chip_addr1_chann}]}" ]; then
-                    continue
-                fi
+                # ROOT-0x73
+                _show_i2c_mux_devices "${bus}" "${chip_addr1}" "8" "ROOT-${chip_addr1}"
+            fi
 
-                local chip_addr2=${chip_addr2_array[${chip_addr1_chann}]}
-                local mux_name=${mux_name_array[${chip_addr1_chann}]}
-                # open mux channel - 0x72 (chip_addr1)
-                i2cset -y ${bus} ${chip_addr1} $(( 2 ** ${chip_addr1_chann} ))
-                _show_i2c_mux_devices ${bus} "${chip_addr2}" "4" "${mux_name}-${chip_addr1}-${chip_addr1_chann}-${chip_addr2}"
-                # close mux channel - 0x72 (chip_addr1)
-                i2cset -y ${bus} ${chip_addr1} 0x0
-            done
-        fi
+            # 0x72 MUX - 0x76
+            chip_addr1="0x76"
+            i2cset -y ${i801_bus} "0x72" "0x8" 
+            _check_i2c_device "${bus}" "${chip_addr1}"
+            ret=$?
+            if [ "$ret" == "0" ]; then
 
-    else
-        echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
-        exit 1
-    fi
+                # ROOT-0x72
+                _show_i2c_mux_devices "${bus}" "${chip_addr1}" "4" "ROOT-${chip_addr1}"
+            fi
+            ;;
+        *)
+            echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
+            exit 1
+            ;;
+    esac
 }
+
 
 function _show_i2c_tree {
     _banner "Show I2C Tree"
@@ -798,20 +773,33 @@ function _show_i2c_device_info {
     local pca954x_device_id=("")
     local pca954x_device_bus=("")
     if [ "${MODEL_NAME}" == "${PLAT}" ]; then
-        pca954x_device_id=("0x72" "0x73")
+        i2cset -f -y ${i801_bus} "0x72" "0x8"
+        pca954x_device_id_1=("0x71" "0x73")
+        pca954x_device_id_2=("0x72" "0x76")
         pca954x_device_bus=("${i801_bus}" "${i801_bus}")
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
 
-    for (( i=0; i<${#pca954x_device_id[@]}; i++ ))
+    for (( i=0; i<${#pca954x_device_id_1[@]}; i++ ))
     do
-        for ((j=0;j<5;j++))
+        for ((j=0;j<8;j++))
         do
             _echo "[DEV PCA9548 (${j})]"
-            ret=`i2cget -f -y ${pca954x_device_bus[$i]} ${pca954x_device_id[$i]}`
-            _echo "[I2C Device ${pca954x_device_id[$i]}]: $ret"
+            ret=`i2cget -f -y ${pca954x_device_bus[$i]} ${pca954x_device_id_1[$i]}`
+            _echo "[I2C Device ${pca954x_device_id_1[$i]}]: $ret"
+        done
+        sleep 0.4
+    done
+
+    for (( i=0; i<${#pca954x_device_id_2[@]}; i++ ))
+    do
+        for ((j=0;j<4;j++))
+        do
+            _echo "[DEV PCA9546 (${j})]"
+            ret=`i2cget -f -y ${pca954x_device_bus[$i]} ${pca954x_device_id_2[$i]}`
+            _echo "[I2C Device ${pca954x_device_id_2[$i]}]: $ret"
         done
         sleep 0.4
     done
@@ -846,27 +834,26 @@ function _show_sys_devices {
 function _show_sys_eeprom_i2c {
     _banner "Show System EEPROM"
 
-    local eeprom_addr="0x57"
-    local eeprom_mux=""
-    local eeprom_ch=""
-    local under_mux=false
-    local eeprom_bus=-1
+    eeprom_addr="0x57"
+    eeprom_mux=""
+    eeprom_ch=""
+    under_mux=false
 
     if [ "${eeprom_mux}" != "" ] && [ "${eeprom_ch}" != "" ]; then
         under_mux=true
     fi
 
     if $under_mux; then
-        i2cset -y ${ismt_bus} ${eeprom_mux} $(( 2 ** ${eeprom_ch} ))
+        i2cset -y ${i801_bus} ${eeprom_mux} $(( 2 ** ${eeprom_ch} ))
     fi
 
     #first read return empty content
-    sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
+    sys_eeprom=$(eval "i2cdump -y ${i801_bus} ${eeprom_addr} c")
     #second read return correct content
-    sys_eeprom=$(eval "i2cdump -y ${ismt_bus} ${eeprom_addr} c")
+    sys_eeprom=$(eval "i2cdump -y ${i801_bus} ${eeprom_addr} c")
 
     if $under_mux; then
-        i2cset -y -f ${ismt_bus} ${eeprom_mux} 0x0
+        i2cset -y -f ${i801_bus} ${eeprom_mux} 0x0
     fi
     _echo "[System EEPROM]:"
     _echo "${sys_eeprom}"
@@ -875,7 +862,7 @@ function _show_sys_eeprom_i2c {
 function _show_sys_eeprom_sysfs {
     _banner "Show System EEPROM"
 
-    sys_eeprom=$(eval "cat /sys/bus/i2c/devices/${ismt_bus}-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
+    sys_eeprom=$(eval "cat /sys/bus/i2c/devices/${i801_bus}-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
     _echo "[System EEPROM]:"
     _echo "${sys_eeprom}"
 }
@@ -892,8 +879,8 @@ function _show_gpio_sysfs {
 
     _banner "Show GPIO Status"
 
-    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | tail -n 1`
-    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | head -n 1`
+    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | tail -n 1`
+    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | head -n 1`
 
     if [ -z $max_gpio ] || [ -z $min_gpio ]  ;then
         _echo "No Contents!!!"
@@ -1091,7 +1078,8 @@ function _show_port_status_sysfs {
             "24"  "25"  "26"  "27"  "28"  "29"  "30"  "31"
             "32"  "33"  "34"  "35"  "36"  "37"  "38"  "39"
             "40"  "41"  "42"  "43"  "44"  "45"  "46"  "47"
-            "48"  "49"  "50"  "51"  "52"  "53"  
+            "48"  "49"  "50"  "51"  "52"  "53"  "54"  "55"
+            "56"  "57"  "58"  "59"
         )
 
 
@@ -1100,438 +1088,316 @@ function _show_port_status_sysfs {
         local SFP=${PORT_T_SFP}
         local MGMT=${PORT_T_MGMT}
         port_type_array=(
-        #      0         1        2         3         4         5        6          7
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
-        #      8         9        10        11        12        13       14         15
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
-        #      16        17       18        19        20        21       22         23
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
-        #      24        25       26        27        28        29       30         31
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
-	    #      32        33       34        35        36        37       38         39
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
-	    #      40        41       42        43        45        46       47         48
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
-	    #      48        49       50        51        52        53          
-            ${QSFP}   ${QSFP}   ${QSFP}   ${QSFP}  ${QSFPDD} ${QSFPDD}
+        #   0        1        2        3        4        5        6        7
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   8        9        10       11       12       13       14       15
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   16       17       18       19       20       21       22       23
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   24       25       26       27       28       29       30       31
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   32       33       34       35       36       37       38       39
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${SFP}      ${SFP}      ${QSFPDD}   ${QSFPDD}
+        #   40       41       42       43       44       45       46       47
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   48       49       50       51       52       53       54       55
+            ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}   ${QSFPDD}
+        #   56       57       58       59       
+            ${QSFPDD}   ${QSFPDD}   ${MGMT}     ${MGMT}    
 
         )
 
         port_absent_array=(
-            "${SYSFS_CPLD2}/sfp28_p0_abs"             #0 
-            "${SYSFS_CPLD2}/sfp28_p1_abs"             #1 
-            "${SYSFS_CPLD2}/sfp28_p2_abs"             #2 
-            "${SYSFS_CPLD2}/sfp28_p3_abs"             #3 
-            "${SYSFS_CPLD2}/sfp28_p4_abs"             #4 
-            "${SYSFS_CPLD2}/sfp28_p5_abs"             #5 
-            "${SYSFS_CPLD2}/sfp28_p6_abs"             #6 
-            "${SYSFS_CPLD2}/sfp28_p7_abs"             #7 
-            "${SYSFS_CPLD2}/sfp28_p8_abs"             #8 
-            "${SYSFS_CPLD2}/sfp28_p9_abs"             #9 
-            "${SYSFS_CPLD2}/sfp28_p10_abs"            #10
-            "${SYSFS_CPLD2}/sfp28_p11_abs"            #11
-            "${SYSFS_CPLD2}/sfp28_p12_abs"            #12
-            "${SYSFS_CPLD2}/sfp28_p13_abs"            #13
-            "${SYSFS_CPLD2}/sfp28_p14_abs"            #14
-            "${SYSFS_CPLD2}/sfp28_p15_abs"            #15
-            "${SYSFS_CPLD2}/sfp28_p16_abs"            #16
-            "${SYSFS_CPLD2}/sfp28_p17_abs"            #17
-            "${SYSFS_CPLD2}/sfp28_p18_abs"            #18
-            "${SYSFS_CPLD2}/sfp28_p19_abs"            #19
-            "${SYSFS_CPLD2}/sfp28_p20_abs"            #20
-            "${SYSFS_CPLD2}/sfp28_p21_abs"            #21
-            "${SYSFS_CPLD2}/sfp28_p22_abs"            #22
-            "${SYSFS_CPLD2}/sfp28_p23_abs"            #23
-            "${SYSFS_CPLD2}/sfp28_p24_abs"            #24
-            "${SYSFS_CPLD2}/sfp28_p25_abs"            #25
-            "${SYSFS_CPLD2}/sfp28_p26_abs"            #26
-            "${SYSFS_CPLD2}/sfp28_p27_abs"            #27
-            "${SYSFS_CPLD3}/sfp28_p28_abs"            #28
-            "${SYSFS_CPLD3}/sfp28_p29_abs"            #29
-            "${SYSFS_CPLD3}/sfp28_p30_abs"            #30
-            "${SYSFS_CPLD3}/sfp28_p31_abs"            #31
-            "${SYSFS_CPLD3}/sfp28_p32_abs"            #32
-            "${SYSFS_CPLD3}/sfp28_p33_abs"            #33
-            "${SYSFS_CPLD3}/sfp28_p34_abs"            #34
-            "${SYSFS_CPLD3}/sfp28_p35_abs"            #35
-            "${SYSFS_CPLD3}/sfp28_p36_abs"            #36
-            "${SYSFS_CPLD3}/sfp28_p37_abs"            #37
-            "${SYSFS_CPLD3}/sfp28_p38_abs"            #38
-            "${SYSFS_CPLD3}/sfp28_p39_abs"            #39
-            "${SYSFS_CPLD3}/sfp56_p40_abs"            #40
-            "${SYSFS_CPLD3}/sfp56_p41_abs"            #41
-            "${SYSFS_CPLD3}/sfp56_p42_abs"            #42
-            "${SYSFS_CPLD3}/sfp56_p43_abs"            #43
-            "${SYSFS_CPLD3}/sfp56_p44_abs"            #44
-            "${SYSFS_CPLD3}/sfp56_p45_abs"            #45
-            "${SYSFS_CPLD3}/sfp56_p46_abs"            #46
-            "${SYSFS_CPLD3}/sfp56_p47_abs"            #47
-            "${SYSFS_CPLD3}/qsfp28_p48_abs"           #48
-            "${SYSFS_CPLD3}/qsfp28_p49_abs"           #49
-            "${SYSFS_CPLD3}/qsfp28_p50_abs"           #50
-            "${SYSFS_CPLD3}/qsfp28_p51_abs"           #51
-            "${SYSFS_CPLD3}/qsfpdd_p52_abs"           #52
-            "${SYSFS_CPLD3}/qsfpdd_p53_abs"           #53
-        )
-
-         port_tx_fault_array=(
-            "${SYSFS_CPLD2}/sfp28_p0_tx_flt"            #0
-            "${SYSFS_CPLD2}/sfp28_p1_tx_flt"            #1
-            "${SYSFS_CPLD2}/sfp28_p2_tx_flt"            #2
-            "${SYSFS_CPLD2}/sfp28_p3_tx_flt"            #3
-            "${SYSFS_CPLD2}/sfp28_p4_tx_flt"            #4
-            "${SYSFS_CPLD2}/sfp28_p5_tx_flt"            #5
-            "${SYSFS_CPLD2}/sfp28_p6_tx_flt"            #6
-            "${SYSFS_CPLD2}/sfp28_p7_tx_flt"            #7
-            "${SYSFS_CPLD2}/sfp28_p8_tx_flt"            #8
-            "${SYSFS_CPLD2}/sfp28_p9_tx_flt"            #9
-            "${SYSFS_CPLD2}/sfp28_p10_tx_flt"           #10
-            "${SYSFS_CPLD2}/sfp28_p11_tx_flt"           #11
-            "${SYSFS_CPLD2}/sfp28_p12_tx_flt"           #12
-            "${SYSFS_CPLD2}/sfp28_p13_tx_flt"           #13
-            "${SYSFS_CPLD2}/sfp28_p14_tx_flt"           #14
-            "${SYSFS_CPLD2}/sfp28_p15_tx_flt"           #15
-            "${SYSFS_CPLD2}/sfp28_p16_tx_flt"           #16
-            "${SYSFS_CPLD2}/sfp28_p17_tx_flt"           #17
-            "${SYSFS_CPLD2}/sfp28_p18_tx_flt"           #18
-            "${SYSFS_CPLD2}/sfp28_p19_tx_flt"           #19
-            "${SYSFS_CPLD2}/sfp28_p20_tx_flt"           #20
-            "${SYSFS_CPLD2}/sfp28_p21_tx_flt"           #21
-            "${SYSFS_CPLD2}/sfp28_p22_tx_flt"           #22
-            "${SYSFS_CPLD2}/sfp28_p23_tx_flt"           #23
-            "${SYSFS_CPLD2}/sfp28_p24_tx_flt"           #24
-            "${SYSFS_CPLD2}/sfp28_p25_tx_flt"           #25
-            "${SYSFS_CPLD2}/sfp28_p26_tx_flt"           #26
-            "${SYSFS_CPLD2}/sfp28_p27_tx_flt"           #27
-            "${SYSFS_CPLD3}/sfp28_p28_tx_flt"           #28
-            "${SYSFS_CPLD3}/sfp28_p29_tx_flt"           #29
-            "${SYSFS_CPLD3}/sfp28_p30_tx_flt"           #30
-            "${SYSFS_CPLD3}/sfp28_p31_tx_flt"           #31
-            "${SYSFS_CPLD3}/sfp28_p32_tx_flt"           #32
-            "${SYSFS_CPLD3}/sfp28_p33_tx_flt"           #33
-            "${SYSFS_CPLD3}/sfp28_p34_tx_flt"           #34
-            "${SYSFS_CPLD3}/sfp28_p35_tx_flt"           #35
-            "${SYSFS_CPLD3}/sfp28_p36_tx_flt"           #36
-            "${SYSFS_CPLD3}/sfp28_p37_tx_flt"           #37
-            "${SYSFS_CPLD3}/sfp28_p38_tx_flt"           #38
-            "${SYSFS_CPLD3}/sfp28_p39_tx_flt"           #39
-            "${SYSFS_CPLD3}/sfp56_p40_tx_flt"           #40
-            "${SYSFS_CPLD3}/sfp56_p41_tx_flt"           #41
-            "${SYSFS_CPLD3}/sfp56_p42_tx_flt"           #42
-            "${SYSFS_CPLD3}/sfp56_p43_tx_flt"           #43
-            "${SYSFS_CPLD3}/sfp56_p44_tx_flt"           #44
-            "${SYSFS_CPLD3}/sfp56_p45_tx_flt"           #45
-            "${SYSFS_CPLD3}/sfp56_p46_tx_flt"           #46
-            "${SYSFS_CPLD3}/sfp56_p47_tx_flt"           #47
-            ""                                          #48
-            ""                                          #49
-            ""                                          #50
-            ""                                          #51
-            ""                                          #52
-            ""                                          #53
-        )
-
-        port_rx_los_array=(
-            "${SYSFS_CPLD2}/sfp28_p0_rx_los"            #0
-            "${SYSFS_CPLD2}/sfp28_p1_rx_los"            #1
-            "${SYSFS_CPLD2}/sfp28_p2_rx_los"            #2
-            "${SYSFS_CPLD2}/sfp28_p3_rx_los"            #3
-            "${SYSFS_CPLD2}/sfp28_p4_rx_los"            #4
-            "${SYSFS_CPLD2}/sfp28_p5_rx_los"            #5
-            "${SYSFS_CPLD2}/sfp28_p6_rx_los"            #6
-            "${SYSFS_CPLD2}/sfp28_p7_rx_los"            #7
-            "${SYSFS_CPLD2}/sfp28_p8_rx_los"            #8
-            "${SYSFS_CPLD2}/sfp28_p9_rx_los"            #9
-            "${SYSFS_CPLD2}/sfp28_p10_rx_los"           #10
-            "${SYSFS_CPLD2}/sfp28_p11_rx_los"           #11
-            "${SYSFS_CPLD2}/sfp28_p12_rx_los"           #12
-            "${SYSFS_CPLD2}/sfp28_p13_rx_los"           #13
-            "${SYSFS_CPLD2}/sfp28_p14_rx_los"           #14
-            "${SYSFS_CPLD2}/sfp28_p15_rx_los"           #15
-            "${SYSFS_CPLD2}/sfp28_p16_rx_los"           #16
-            "${SYSFS_CPLD2}/sfp28_p17_rx_los"           #17
-            "${SYSFS_CPLD2}/sfp28_p18_rx_los"           #18
-            "${SYSFS_CPLD2}/sfp28_p19_rx_los"           #19
-            "${SYSFS_CPLD2}/sfp28_p20_rx_los"           #20
-            "${SYSFS_CPLD2}/sfp28_p21_rx_los"           #21
-            "${SYSFS_CPLD2}/sfp28_p22_rx_los"           #22
-            "${SYSFS_CPLD2}/sfp28_p23_rx_los"           #23
-            "${SYSFS_CPLD2}/sfp28_p24_rx_los"           #24
-            "${SYSFS_CPLD2}/sfp28_p25_rx_los"           #25
-            "${SYSFS_CPLD2}/sfp28_p26_rx_los"           #26
-            "${SYSFS_CPLD2}/sfp28_p27_rx_los"           #27
-            "${SYSFS_CPLD3}/sfp28_p28_rx_los"           #28
-            "${SYSFS_CPLD3}/sfp28_p29_rx_los"           #29
-            "${SYSFS_CPLD3}/sfp28_p30_rx_los"           #30
-            "${SYSFS_CPLD3}/sfp28_p31_rx_los"           #31
-            "${SYSFS_CPLD3}/sfp28_p32_rx_los"           #32
-            "${SYSFS_CPLD3}/sfp28_p33_rx_los"           #33
-            "${SYSFS_CPLD3}/sfp28_p34_rx_los"           #34
-            "${SYSFS_CPLD3}/sfp28_p35_rx_los"           #35
-            "${SYSFS_CPLD3}/sfp28_p36_rx_los"           #36
-            "${SYSFS_CPLD3}/sfp28_p37_rx_los"           #37
-            "${SYSFS_CPLD3}/sfp28_p38_rx_los"           #38
-            "${SYSFS_CPLD3}/sfp28_p39_rx_los"           #39
-            "${SYSFS_CPLD3}/sfp56_p40_rx_los"           #40
-            "${SYSFS_CPLD3}/sfp56_p41_rx_los"           #41
-            "${SYSFS_CPLD3}/sfp56_p42_rx_los"           #42
-            "${SYSFS_CPLD3}/sfp56_p43_rx_los"           #43
-            "${SYSFS_CPLD3}/sfp56_p44_rx_los"           #44
-            "${SYSFS_CPLD3}/sfp56_p45_rx_los"           #45
-            "${SYSFS_CPLD3}/sfp56_p46_rx_los"           #46
-            "${SYSFS_CPLD3}/sfp56_p47_rx_los"           #47
-            ""                                          #48
-            ""                                          #49
-            ""                                          #50
-            ""                                          #51
-            ""                                          #52
-            ""                                          #53
-        )
-
-        port_tx_dis_array=(
-            "${SYSFS_CPLD2}/sfp28_p0_tx_dis"            #0
-            "${SYSFS_CPLD2}/sfp28_p1_tx_dis"            #1
-            "${SYSFS_CPLD2}/sfp28_p2_tx_dis"            #2
-            "${SYSFS_CPLD2}/sfp28_p3_tx_dis"            #3
-            "${SYSFS_CPLD2}/sfp28_p4_tx_dis"            #4
-            "${SYSFS_CPLD2}/sfp28_p5_tx_dis"            #5
-            "${SYSFS_CPLD2}/sfp28_p6_tx_dis"            #6
-            "${SYSFS_CPLD2}/sfp28_p7_tx_dis"            #7
-            "${SYSFS_CPLD2}/sfp28_p8_tx_dis"            #8
-            "${SYSFS_CPLD2}/sfp28_p9_tx_dis"            #9
-            "${SYSFS_CPLD2}/sfp28_p10_tx_dis"           #10
-            "${SYSFS_CPLD2}/sfp28_p11_tx_dis"           #11
-            "${SYSFS_CPLD2}/sfp28_p12_tx_dis"           #12
-            "${SYSFS_CPLD2}/sfp28_p13_tx_dis"           #13
-            "${SYSFS_CPLD2}/sfp28_p14_tx_dis"           #14
-            "${SYSFS_CPLD2}/sfp28_p15_tx_dis"           #15
-            "${SYSFS_CPLD2}/sfp28_p16_tx_dis"           #16
-            "${SYSFS_CPLD2}/sfp28_p17_tx_dis"           #17
-            "${SYSFS_CPLD2}/sfp28_p18_tx_dis"           #18
-            "${SYSFS_CPLD2}/sfp28_p19_tx_dis"           #19
-            "${SYSFS_CPLD2}/sfp28_p20_tx_dis"           #20
-            "${SYSFS_CPLD2}/sfp28_p21_tx_dis"           #21
-            "${SYSFS_CPLD2}/sfp28_p22_tx_dis"           #22
-            "${SYSFS_CPLD2}/sfp28_p23_tx_dis"           #23
-            "${SYSFS_CPLD2}/sfp28_p24_tx_dis"           #24
-            "${SYSFS_CPLD2}/sfp28_p25_tx_dis"           #25
-            "${SYSFS_CPLD2}/sfp28_p26_tx_dis"           #26
-            "${SYSFS_CPLD2}/sfp28_p27_tx_dis"           #27
-            "${SYSFS_CPLD3}/sfp28_p28_tx_dis"           #28
-            "${SYSFS_CPLD3}/sfp28_p29_tx_dis"           #29
-            "${SYSFS_CPLD3}/sfp28_p30_tx_dis"           #30
-            "${SYSFS_CPLD3}/sfp28_p31_tx_dis"           #31
-            "${SYSFS_CPLD3}/sfp28_p32_tx_dis"           #32
-            "${SYSFS_CPLD3}/sfp28_p33_tx_dis"           #33
-            "${SYSFS_CPLD3}/sfp28_p34_tx_dis"           #34
-            "${SYSFS_CPLD3}/sfp28_p35_tx_dis"           #35
-            "${SYSFS_CPLD3}/sfp28_p36_tx_dis"           #36
-            "${SYSFS_CPLD3}/sfp28_p37_tx_dis"           #37
-            "${SYSFS_CPLD3}/sfp28_p38_tx_dis"           #38
-            "${SYSFS_CPLD3}/sfp28_p39_tx_dis"           #39
-            "${SYSFS_CPLD3}/sfp56_p40_tx_dis"           #40
-            "${SYSFS_CPLD3}/sfp56_p41_tx_dis"           #41
-            "${SYSFS_CPLD3}/sfp56_p42_tx_dis"           #42
-            "${SYSFS_CPLD3}/sfp56_p43_tx_dis"           #43
-            "${SYSFS_CPLD3}/sfp56_p44_tx_dis"           #44
-            "${SYSFS_CPLD3}/sfp56_p45_tx_dis"           #45
-            "${SYSFS_CPLD3}/sfp56_p46_tx_dis"           #46
-            "${SYSFS_CPLD3}/sfp56_p47_tx_dis"           #47
-            ""                                          #48
-            ""                                          #49
-            ""                                          #50
-            ""                                          #51
-            ""                                          #52
-            ""                                          #53       
+            "${SYSFS_CPLD4}/qsfpdd_nif_p0_abs"             #0 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p1_abs"             #1 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p2_abs"             #2 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p3_abs"             #3 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p4_abs"             #4 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p5_abs"             #5 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p6_abs"             #6 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p7_abs"             #7 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p8_abs"             #8 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p9_abs"             #9 
+            "${SYSFS_CPLD4}/qsfpdd_nif_p10_abs"            #10
+            "${SYSFS_CPLD4}/qsfpdd_nif_p11_abs"            #11
+            "${SYSFS_CPLD4}/qsfpdd_nif_p12_abs"            #12
+            "${SYSFS_CPLD4}/qsfpdd_nif_p13_abs"            #13
+            "${SYSFS_CPLD4}/qsfpdd_nif_p14_abs"            #14
+            "${SYSFS_CPLD4}/qsfpdd_nif_p15_abs"            #15
+            "${SYSFS_CPLD4}/qsfpdd_nif_p16_abs"            #16
+            "${SYSFS_CPLD4}/qsfpdd_nif_p17_abs"            #17
+            "${SYSFS_CPLD4}/qsfpdd_nif_p18_abs"            #18
+            "${SYSFS_CPLD4}/qsfpdd_nif_p19_abs"            #19
+            "${SYSFS_CPLD2}/qsfpdd_nif_p20_abs"            #20
+            "${SYSFS_CPLD2}/qsfpdd_nif_p21_abs"            #21
+            "${SYSFS_CPLD2}/qsfpdd_nif_p22_abs"            #22
+            "${SYSFS_CPLD2}/qsfpdd_nif_p23_abs"            #23
+            "${SYSFS_CPLD2}/qsfpdd_nif_p24_abs"            #24
+            "${SYSFS_CPLD2}/qsfpdd_nif_p25_abs"            #25
+            "${SYSFS_CPLD2}/qsfpdd_nif_p26_abs"            #26
+            "${SYSFS_CPLD2}/qsfpdd_nif_p27_abs"            #27
+            "${SYSFS_CPLD2}/qsfpdd_nif_p28_abs"            #28
+            "${SYSFS_CPLD2}/qsfpdd_nif_p29_abs"            #29
+            "${SYSFS_CPLD2}/qsfpdd_nif_p30_abs"            #30
+            "${SYSFS_CPLD2}/qsfpdd_nif_p31_abs"            #31
+            "${SYSFS_CPLD2}/qsfpdd_nif_p32_abs"            #32
+            "${SYSFS_CPLD2}/qsfpdd_nif_p33_abs"            #33
+            "${SYSFS_CPLD2}/qsfpdd_nif_p34_abs"            #34
+            "${SYSFS_CPLD2}/qsfpdd_nif_p35_abs"            #35
+            "${SYSFS_FPGA}/sfp28_p36_abs"                  #36 
+            "${SYSFS_FPGA}/sfp28_p37_abs"                  #37
+            "${SYSFS_CPLD4}/qsfpdd_fab_p0_abs"             #38
+            "${SYSFS_CPLD4}/qsfpdd_fab_p1_abs"             #39
+            "${SYSFS_CPLD4}/qsfpdd_fab_p2_abs"             #40
+            "${SYSFS_CPLD4}/qsfpdd_fab_p3_abs"             #41
+            "${SYSFS_CPLD4}/qsfpdd_fab_p4_abs"             #42
+            "${SYSFS_CPLD4}/qsfpdd_fab_p5_abs"             #43
+            "${SYSFS_CPLD4}/qsfpdd_fab_p6_abs"             #44
+            "${SYSFS_CPLD4}/qsfpdd_fab_p7_abs"             #45
+            "${SYSFS_CPLD4}/qsfpdd_fab_p8_abs"             #46
+            "${SYSFS_CPLD4}/qsfpdd_fab_p9_abs"             #47
+            "${SYSFS_CPLD2}/qsfpdd_fab_p10_abs"            #48
+            "${SYSFS_CPLD2}/qsfpdd_fab_p11_abs"            #49
+            "${SYSFS_CPLD2}/qsfpdd_fab_p12_abs"            #50
+            "${SYSFS_CPLD2}/qsfpdd_fab_p13_abs"            #51
+            "${SYSFS_CPLD2}/qsfpdd_fab_p14_abs"            #52
+            "${SYSFS_CPLD2}/qsfpdd_fab_p15_abs"            #53
+            "${SYSFS_CPLD2}/qsfpdd_fab_p16_abs"            #54
+            "${SYSFS_CPLD2}/qsfpdd_fab_p17_abs"            #55 
+            "${SYSFS_CPLD2}/qsfpdd_fab_p18_abs"            #56
+            "${SYSFS_CPLD2}/qsfpdd_fab_p19_abs"            #57
+            "${SYSFS_FPGA}/mgmt_p0_abs"                   #58    
+            "${SYSFS_FPGA}/mgmt_p1_abs"                   #59    
+             
         )
 
         port_lp_mode_array=(
-            ""                                           #0
-            ""                                           #1
-            ""                                           #2
-            ""                                           #3
-            ""                                           #4
-            ""                                           #5
-            ""                                           #6
-            ""                                           #7
-            ""                                           #8
-            ""                                           #9
-            ""                                          #10
-            ""                                          #11
-            ""                                          #12
-            ""                                          #13
-            ""                                          #14
-            ""                                          #15
-            ""                                          #16
-            ""                                          #17
-            ""                                          #18
-            ""                                          #19
-            ""                                          #20
-            ""                                          #21
-            ""                                          #22
-            ""                                          #23
-            ""                                          #24
-            ""                                          #25
-            ""                                          #26
-            ""                                          #27
-            ""                                          #28
-            ""                                          #29
-            ""                                          #30
-            ""                                          #31
-            ""                                          #32
-            ""                                          #33
-            ""                                          #34
-            ""                                          #35
-            ""                                          #36
-            ""                                          #37
-            ""                                          #38
-            ""                                          #39
-            ""                                          #40
-            ""                                          #41
-            ""                                          #42
-            ""                                          #43
-            ""                                          #44
-            ""                                          #45
-            ""                                          #46
-            ""                                          #47
-            "${SYSFS_CPLD3}/qsfp28_p48_lp_mode"         #48
-            "${SYSFS_CPLD3}/qsfp28_p49_lp_mode"         #49
-            "${SYSFS_CPLD3}/qsfp28_p50_lp_mode"         #50
-            "${SYSFS_CPLD3}/qsfp28_p51_lp_mode"         #51
-            "${SYSFS_CPLD3}/qsfpdd_p52_lp_mode"         #52
-            "${SYSFS_CPLD3}/qsfpdd_p53_lp_mode"         #53
+            "${SYSFS_CPLD4}/qsfpdd_nif_p0_lp_mode"         #168              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p1_lp_mode"         #169              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p2_lp_mode"         #170              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p3_lp_mode"         #171              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p4_lp_mode"         #172              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p5_lp_mode"         #173              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p6_lp_mode"         #174              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p7_lp_mode"         #175              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p8_lp_mode"         #176              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p9_lp_mode"         #177              
+            "${SYSFS_CPLD4}/qsfpdd_nif_p10_lp_mode"        #178               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p11_lp_mode"        #179               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p12_lp_mode"        #180               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p13_lp_mode"        #181               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p14_lp_mode"        #182               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p15_lp_mode"        #183               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p16_lp_mode"        #184               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p17_lp_mode"        #185               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p18_lp_mode"        #186               
+            "${SYSFS_CPLD4}/qsfpdd_nif_p19_lp_mode"        #187               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p20_lp_mode"        #188               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p21_lp_mode"        #189               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p22_lp_mode"        #190               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p23_lp_mode"        #191               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p24_lp_mode"        #192               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p25_lp_mode"        #193               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p26_lp_mode"        #194               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p27_lp_mode"        #195               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p28_lp_mode"        #196               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p29_lp_mode"        #197               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p30_lp_mode"        #198               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p31_lp_mode"        #199               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p32_lp_mode"        #200               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p33_lp_mode"        #201               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p34_lp_mode"        #202               
+            "${SYSFS_CPLD2}/qsfpdd_nif_p35_lp_mode"        #203
+            ""
+            ""               
+            "${SYSFS_CPLD4}/qsfpdd_fab_p0_lp_mode"         #204              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p1_lp_mode"         #205              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p2_lp_mode"         #206              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p3_lp_mode"         #207              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p4_lp_mode"         #208              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p5_lp_mode"         #209              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p6_lp_mode"         #210              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p7_lp_mode"         #211              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p8_lp_mode"         #212              
+            "${SYSFS_CPLD4}/qsfpdd_fab_p9_lp_mode"         #213              
+            "${SYSFS_CPLD2}/qsfpdd_fab_p10_lp_mode"        #214               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p11_lp_mode"        #215               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p12_lp_mode"        #216               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p13_lp_mode"        #217               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p14_lp_mode"        #218               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p15_lp_mode"        #219               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p16_lp_mode"        #220               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p17_lp_mode"        #221               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p18_lp_mode"        #222               
+            "${SYSFS_CPLD2}/qsfpdd_fab_p19_lp_mode"        #223
         )
 
         port_reset_array=(
-            ""                                           #0
-            ""                                           #1
-            ""                                           #2
-            ""                                           #3
-            ""                                           #4
-            ""                                           #5
-            ""                                           #6
-            ""                                           #7
-            ""                                           #8
-            ""                                           #9
-            ""                                          #10
-            ""                                          #11
-            ""                                          #12
-            ""                                          #13
-            ""                                          #14
-            ""                                          #15
-            ""                                          #16
-            ""                                          #17
-            ""                                          #18
-            ""                                          #19
-            ""                                          #20
-            ""                                          #21
-            ""                                          #22
-            ""                                          #23
-            ""                                          #24
-            ""                                          #25
-            ""                                          #26
-            ""                                          #27
-            ""                                          #28
-            ""                                          #29
-            ""                                          #30
-            ""                                          #31
-            ""                                          #32
-            ""                                          #33
-            ""                                          #34
-            ""                                          #35
-            ""                                          #36
-            ""                                          #37
-            ""                                          #38
-            ""                                          #39
-            ""                                          #40
-            ""                                          #41
-            ""                                          #42
-            ""                                          #43
-            ""                                          #44
-            ""                                          #45
-            ""                                          #46
-            ""                                          #47
-            "${SYSFS_CPLD3}/qsfp28_p48_rst"             #48
-            "${SYSFS_CPLD3}/qsfp28_p49_rst"             #49
-            "${SYSFS_CPLD3}/qsfp28_p50_rst"             #50
-            "${SYSFS_CPLD3}/qsfp28_p51_rst"             #51
-            "${SYSFS_CPLD3}/qsfpdd_p52_rst"             #52
-            "${SYSFS_CPLD3}/qsfpdd_p53_rst"             #53
+            "${SYSFS_CPLD4}/qsfpdd_nif_p0_rst"             #112          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p1_rst"             #113          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p2_rst"             #114          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p3_rst"             #115          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p4_rst"             #116          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p5_rst"             #117          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p6_rst"             #118          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p7_rst"             #119          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p8_rst"             #120          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p9_rst"             #121          
+            "${SYSFS_CPLD4}/qsfpdd_nif_p10_rst"            #122           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p11_rst"            #123           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p12_rst"            #124           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p13_rst"            #125           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p14_rst"            #126           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p15_rst"            #127           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p16_rst"            #128           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p17_rst"            #129           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p18_rst"            #130           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p19_rst"            #131           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p20_rst"            #132           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p21_rst"            #133           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p22_rst"            #134           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p23_rst"            #135           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p24_rst"            #136           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p25_rst"            #137           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p26_rst"            #138           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p27_rst"            #139           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p28_rst"            #140           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p29_rst"            #141           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p30_rst"            #142           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p31_rst"            #143           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p32_rst"            #144           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p33_rst"            #145           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p34_rst"            #146           
+            "${SYSFS_CPLD2}/qsfpdd_nif_p35_rst"            #147  
+            ""
+            ""         
+            "${SYSFS_CPLD4}/qsfpdd_fab_p0_rst"             #148          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p1_rst"             #149          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p2_rst"             #150          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p3_rst"             #151          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p4_rst"             #152          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p5_rst"             #153          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p6_rst"             #154          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p7_rst"             #155          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p8_rst"             #156          
+            "${SYSFS_CPLD4}/qsfpdd_fab_p9_rst"             #157          
+            "${SYSFS_CPLD2}/qsfpdd_fab_p10_rst"            #158           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p11_rst"            #159           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p12_rst"            #160           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p13_rst"            #161           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p14_rst"            #162           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p15_rst"            #163           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p16_rst"            #164           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p17_rst"            #165           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p18_rst"            #166           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p19_rst"            #167
         )
 
         port_intr_array=(
-            ""                                           #0
-            ""                                           #1
-            ""                                           #2
-            ""                                           #3
-            ""                                           #4
-            ""                                           #5
-            ""                                           #6
-            ""                                           #7
-            ""                                           #8
-            ""                                           #9
-            ""                                          #10
-            ""                                          #11
-            ""                                          #12
-            ""                                          #13
-            ""                                          #14
-            ""                                          #15
-            ""                                          #16
-            ""                                          #17
-            ""                                          #18
-            ""                                          #19
-            ""                                          #20
-            ""                                          #21
-            ""                                          #22
-            ""                                          #23
-            ""                                          #24
-            ""                                          #25
-            ""                                          #26
-            ""                                          #27
-            ""                                          #28
-            ""                                          #29
-            ""                                          #30
-            ""                                          #31
-            ""                                          #32
-            ""                                          #33
-            ""                                          #34
-            ""                                          #35
-            ""                                          #36
-            ""                                          #37
-            ""                                          #38
-            ""                                          #39
-            ""                                          #40
-            ""                                          #41
-            ""                                          #42
-            ""                                          #43
-            ""                                          #44
-            ""                                          #45
-            ""                                          #46
-            ""                                          #47
-            "${SYSFS_CPLD3}/qsfp28_p48_intr"            #48
-            "${SYSFS_CPLD3}/qsfp28_p49_intr"            #49
-            "${SYSFS_CPLD3}/qsfp28_p50_intr"            #50
-            "${SYSFS_CPLD3}/qsfp28_p51_intr"            #51
-            "${SYSFS_CPLD3}/qsfpdd_p52_intr"            #52 
-            "${SYSFS_CPLD3}/qsfpdd_p53_intr"            #53  
+            "${SYSFS_CPLD4}/qsfpdd_nif_p0_intr"            #56           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p1_intr"            #57           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p2_intr"            #58           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p3_intr"            #59           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p4_intr"            #60           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p5_intr"            #61           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p6_intr"            #62           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p7_intr"            #63           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p8_intr"            #64           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p9_intr"            #65           
+            "${SYSFS_CPLD4}/qsfpdd_nif_p10_intr"           #66            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p11_intr"           #67            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p12_intr"           #68            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p13_intr"           #69            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p14_intr"           #70            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p15_intr"           #71            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p16_intr"           #72            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p17_intr"           #73            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p18_intr"           #74            
+            "${SYSFS_CPLD4}/qsfpdd_nif_p19_intr"           #75            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p20_intr"           #76            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p21_intr"           #77            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p22_intr"           #78            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p23_intr"           #79            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p24_intr"           #80            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p25_intr"           #81            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p26_intr"           #82            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p27_intr"           #83            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p28_intr"           #84            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p29_intr"           #85            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p30_intr"           #86            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p31_intr"           #87            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p32_intr"           #88            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p33_intr"           #89            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p34_intr"           #90            
+            "${SYSFS_CPLD2}/qsfpdd_nif_p35_intr"           #91
+            ""
+            ""            
+            "${SYSFS_CPLD4}/qsfpdd_fab_p0_intr"            #92           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p1_intr"            #93           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p2_intr"            #94           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p3_intr"            #95           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p4_intr"            #96           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p5_intr"            #97           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p6_intr"            #98           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p7_intr"            #99           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p8_intr"            #100           
+            "${SYSFS_CPLD4}/qsfpdd_fab_p9_intr"            #101           
+            "${SYSFS_CPLD2}/qsfpdd_fab_p10_intr"           #102            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p11_intr"           #103            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p12_intr"           #104            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p13_intr"           #105            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p14_intr"           #106            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p15_intr"           #107            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p16_intr"           #108            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p17_intr"           #109            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p18_intr"           #110            
+            "${SYSFS_CPLD2}/qsfpdd_fab_p19_intr"           #111  
+        )
+
+        port_tx_fault_array=(
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" 
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "${SYSFS_FPGA}/sfp28_p36_tx_flt" "${SYSFS_FPGA}/sfp28_p37_tx_flt" "" "" ""
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+            "${SYSFS_FPGA}/mgmt_p0_tx_flt"                      
+            "${SYSFS_FPGA}/mgmt_p1_tx_flt"  
+        )
+
+        port_rx_los_array=(
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" 
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "${SYSFS_FPGA}/sfp28_p36_rx_los" "${SYSFS_FPGA}/sfp28_p37_rx_los" "" "" ""
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+            "${SYSFS_FPGA}/mgmt_p0_rx_los"                      
+            "${SYSFS_FPGA}/mgmt_p1_rx_los"   
+        )
+
+        port_tx_dis_array=(
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" 
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "${SYSFS_FPGA}/sfp28_p36_tx_dis" "${SYSFS_FPGA}/sfp28_p37_tx_dis" "" "" ""
+            "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+            "${SYSFS_FPGA}/mgmt_p0_tx_dis"                      
+            "${SYSFS_FPGA}/mgmt_p1_tx_dis"                              
         )
 
         port_eeprom_bus_array=(
         #    0     1     2     3     4     5     6     7
-             18    19    20    21    22    23    24    25
+             35    36    37    38    39    40    41    42
         #    8     9     10    11    12    13    14    15
-             26    27    28    29    30    31    32    33
+             43    44    45    46    47    48    49    50
         #    16    17    18    19    20    21    22    23
-             34    35    36    37    38    39    40    41
+             51    52    53    54    65    66    67    68
         #    24    25    26    27    28    29    30    31
-             42    43    44    45    46    47    48    49
+             69    70    71    72    73    74    75    76
         #    32    33    34    35    36    37    38    39
-             50    51    52    53    54    55    56    57
+             77    78    79    80    83    84    25    26
         #    40    41    42    43    44    45    46    47
-             58    59    60    61    62    63    64    65
-        #    48    49    50    51    52    53    
-             66    67    68    69    70    71   
+             27    28    29    30    31    32    33    34
+        #    48    49    50    51    52    53    54    55
+             55    56    57    58    59    60    61    62
+        #    56    57    58    59    
+             63    64    81    82    
         )
+
+        # Alex fixed port_abs
 
         # original port_abs
         for (( i=0; i<${#port_name_array[@]}; i++ ))
@@ -1546,38 +1412,10 @@ function _show_port_status_sysfs {
                 _echo "[Port${port_name_array[${i}]} Module Absent]: ${port_absent}"
             fi
 
-            # Port Tx Fault Status (0:normal, 1:tx fault)
-            
-            sysfs_path=${port_tx_fault_array[i]}
-
-            if [ "${port_type_array[${i}]}" == "${SFP}" ] && _check_filepath ${sysfs_path}; then
-                reg=$(cat "${sysfs_path}")
-                port_tx_fault="${reg}"
-                _echo "[Port${port_name_array[${i}]} Tx Fault Status]: ${port_tx_fault}"
-            fi
-
-            # Port Rx Loss Status (0:los undetected, 1: los detected)
-            sysfs_path=${port_rx_los_array[i]}
-
-            if [ "${port_type_array[${i}]}" == "${SFP}" ] && _check_filepath ${sysfs_path}; then
-                reg=$(cat "${sysfs_path}")
-                port_rx_loss="${reg}"
-                _echo "[Port${port_name_array[${i}]} Rx Loss Status]: ${port_rx_loss}"
-            fi
-
-            # Port Tx Disable Status (0:enable tx, 1: disable tx)
-            sysfs_path=${port_tx_dis_array[i]}
-
-            if [ "${port_type_array[${i}]}" == "${SFP}" ] && _check_filepath ${sysfs_path}; then
-                reg=$(eval "cat ${sysfs_path}")
-                port_tx_dis="${reg}"
-                _echo "[Port${port_name_array[${i}]} Tx Disable Status]: ${port_tx_dis}"
-            fi
-
             # Port Lower Power Mode Status (0: Normal Power Mode, 1:Low Power Mode)
             sysfs_path=${port_lp_mode_array[i]}
 
-            if [[ "${port_type_array[${i}]}" == "${QSFPDD}" || "${port_type_array[${i}]}" == "${QSFP}" ]] && _check_filepath ${sysfs_path}; then
+            if [ "${port_type_array[${i}]}" == "${QSFPDD}" ] && _check_filepath ${sysfs_path}; then
                 reg=$(cat "${sysfs_path}")
                 port_lp_mode="${reg}"
                 _echo "[Port${port_name_array[${i}]} Low Power Mode]: ${port_lp_mode}"
@@ -1586,7 +1424,7 @@ function _show_port_status_sysfs {
             # Port Reset Status (0:Reset, 1:Normal)
             sysfs_path=${port_reset_array[i]}
 
-            if [[ "${port_type_array[${i}]}" == "${QSFPDD}" || "${port_type_array[${i}]}" == "${QSFP}" ]] && _check_filepath ${sysfs_path}; then
+            if [ "${port_type_array[${i}]}" == "${QSFPDD}" ] && _check_filepath ${sysfs_path}; then
                 reg=$(cat "${sysfs_path}")
                 port_reset="${reg}"
                 _echo "[Port${port_name_array[${i}]} Reset Status]: ${port_reset}"
@@ -1595,10 +1433,38 @@ function _show_port_status_sysfs {
             # Port Interrupt Status (0: Interrupted, 1:No Interrupt)
             sysfs_path=${port_intr_array[i]}
 
-            if [[ "${port_type_array[${i}]}" == "${QSFPDD}" || "${port_type_array[${i}]}" == "${QSFP}" ]] && _check_filepath ${sysfs_path}; then
+            if [ "${port_type_array[${i}]}" == "${QSFPDD}" ] && _check_filepath ${sysfs_path}; then
                 reg=$(cat "${sysfs_path}")
                 port_intr_l="${reg}"
                 _echo "[Port${port_name_array[${i}]} Interrupt Status (L)]: ${port_intr_l}"
+            fi
+
+            # Port Tx Fault Status (0:normal, 1:tx fault)
+            
+            sysfs_path=${port_tx_fault_array[i]}
+
+            if [[ "${port_type_array[${i}]}" == "${MGMT}" || "${port_type_array[${i}]}" == "${SFP}" ]] && _check_filepath ${sysfs_path}; then
+                reg=$(cat "${sysfs_path}")
+                port_tx_fault="${reg}"
+                _echo "[Port${port_name_array[${i}]} Tx Fault Status]: ${port_tx_fault}"
+            fi
+
+            # Port Rx Loss Status (0:los undetected, 1: los detected)
+            sysfs_path=${port_rx_los_array[i]}
+
+            if [[ "${port_type_array[${i}]}" == "${MGMT}" || "${port_type_array[${i}]}" == "${SFP}" ]] && _check_filepath ${sysfs_path}; then
+                reg=$(cat "${sysfs_path}")
+                port_rx_loss="${reg}"
+                _echo "[Port${port_name_array[${i}]} Rx Loss Status]: ${port_rx_loss}"
+            fi
+
+            # Port Tx Disable Status (0:enable tx, 1: disable tx)
+            sysfs_path=${port_tx_dis_array[i]}
+
+            if [[ "${port_type_array[${i}]}" == "${MGMT}" || "${port_type_array[${i}]}" == "${SFP}" ]] && _check_filepath ${sysfs_path}; then
+                reg=$(eval "cat ${sysfs_path}")
+                port_tx_dis="${reg}"
+                _echo "[Port${port_name_array[${i}]} Tx Disable Status]: ${port_tx_dis}"
             fi
 
             # Port Dump EEPROM
@@ -1608,7 +1474,7 @@ function _show_port_status_sysfs {
                 port_eeprom=$(eval "dd if=${eeprom_path} bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
                 if [ "${LOG_FILE_ENABLE}" == "1" ]; then
 
-                    if [ "${port_type_array[${i}]}" == "${QSFPDD}" ]; then
+                    if [[ "${port_type_array[${i}]}" == "${QSFPDD}" || "${port_type_array[${i}]}" == "${SFP}" ]]; then
                         hexdump -C "${eeprom_path}" > ${LOG_FOLDER_PATH}/port${port_name_array[${i}]}_eeprom.log 2>&1
                     else
 
@@ -1706,7 +1572,6 @@ function _show_system_led_sysfs {
             "system_led_status"
             "sync_led_status"
             "fan_led_status"
-            "id_led_status"      
         )
 
         local desc_color=("Yellow" "Green" "Blue")
@@ -1714,12 +1579,12 @@ function _show_system_led_sysfs {
         local desc_blink=("Solid" "Blink")
         local desc_onoff=("OFF" "ON")
 
-        local led=(          "Sync " "Sys  " "Fan  " "PSU 0" "PSU 1" "ID")
-        local led_sysfs_idx=(  3       2       4       0       1    5)
-        local color=(          0       0       0       0       0    -1)
-        local blink=(          2       2       2       2       2    1)
-        local onoff=(          3       3       3       3       3    2)
-        local freq=(           1       1       1       1       1    0)
+        local led=(          "Sync " "Sys  " "Fan  " "PSU 0" "PSU 1")
+        local led_sysfs_idx=(  3       2       4       0       1    )
+        local color=(          0       0       0       0       0    )
+        local blink=(          2       2       2       2       2    )
+        local onoff=(          3       3       3       3       3    )
+        local freq=(           1       1       1       1       1    )
 
         for (( i=0; i<${#led[@]}; i++ ))
         do
@@ -1757,11 +1622,14 @@ function _show_system_led {
 }
 
 function _show_beacon_led_sysfs {
-    local sgg7=(           "A"   "B"   "C"   "D"   "E"   "F"   "G" )
-    #                      502   501   496   498   497   500   499
-    local sgg7_left_off=(  9     10    15    13    14    11    12 )
-    #                      504   507   509   510   508   505   506
-    local sgg7_right_off=( 7     4     2     1     3     6     5  )
+    _banner "Show Beacon LED"
+    local sgg7=(               "A"   "B"   "C"   "D"   "E"   "F"   "G" )
+    #                           502   501   496   498   497   500   499
+    local sgg7_left_off=(       9     10    15    13    14    11    12 )
+    local sgg7_left_base_off=(  6     5     0     2     1     4     3  )
+    #                           504   507   509   510   508   505   506
+    local sgg7_right_off=(      7     4     2     1     3     6     5  )
+    local sgg7_right_base_off=( 8     11    13    14    12    9     10 )
     local sgg7_mum=( "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F")
     local sgg7_value=( 
             "0000001"  # 0
@@ -1789,11 +1657,19 @@ function _show_beacon_led_sysfs {
 
     for (( i=0; i<${#sgg7[@]}; i++))
     do
-        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_left_off[i] ))/value)
-        sgg7_left=$sgg7_left$num
-        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_right_off[i] ))/value)
-        sgg7_right=$sgg7_right$num
+        if [ "${GPIO_MAX_INIT_FLAG}" != "1" ]; then
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_BASE + sgg7_left_base_off[i] ))/value)
+            sgg7_left=$sgg7_left$num
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_BASE + sgg7_right_base_off[i] ))/value)
+            sgg7_right=$sgg7_right$num
+        else
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_left_off[i] ))/value)
+            sgg7_left=$sgg7_left$num
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_right_off[i] ))/value)
+            sgg7_right=$sgg7_right$num
+        fi
     done
+
 
     for (( i=0; i<${#sgg7_value[@]}; i++))
     do
@@ -1818,7 +1694,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_beacon_led_sysfs
     fi
 }
@@ -1854,30 +1730,34 @@ function _show_cpld_reg_sysfs {
     fi
 
     if _check_dirpath "$SYSFS_CPLD1"; then
-        reg_dump=$(eval "i2cdump -f -y 2 0x30 ${LOG_REDIRECT}")
+        reg_dump=$(eval "i2cdump -f -y 1 0x30 ${LOG_REDIRECT}")
         _echo "[CPLD 1 Register]:"
         _echo "${reg_dump}"
     fi
      
     if _check_dirpath "$SYSFS_CPLD2"; then
-        reg_dump=$(eval "i2cdump -f -y 2 0x31 ${LOG_REDIRECT}")
+        reg_dump=$(eval "i2cdump -f -y 1 0x31 ${LOG_REDIRECT}")
         _echo "[CPLD 2 Register]:"
-        _echo "${reg_dump}"
-    fi
-
-    if _check_dirpath "$SYSFS_CPLD3"; then
-        reg_dump=$(eval "i2cdump -f -y 2 0x32 ${LOG_REDIRECT}")
-        _echo "[CPLD 3 Register]:"
         _echo "${reg_dump}"
     fi
     
     if _check_dirpath "$SYSFS_FPGA"; then
-        reg_dump=$(eval "i2cdump -f -y 2 0x37 ${LOG_REDIRECT}")
+        reg_dump=$(eval "i2cdump -f -y 1 0x37 ${LOG_REDIRECT}")
         _echo "[FPGA   Register]:"
         _echo "${reg_dump}"
     fi
 
+    if _check_dirpath "$SYSFS_CPLD4"; then
+        reg_dump=$(eval "i2cdump -f -y 24 0x32 ${LOG_REDIRECT}")
+        _echo "[CPLD 4 Register]:"
+        _echo "${reg_dump}"
+    fi
 
+    if _check_dirpath "$SYSFS_CPLD5"; then
+        reg_dump=$(eval "i2cdump -f -y 24 0x33 ${LOG_REDIRECT}")
+        _echo "[CPLD 5 Register]:"
+        _echo "${reg_dump}"
+    fi
 }
 
 function _show_cpld_reg {
@@ -2365,7 +2245,7 @@ function _main {
     _show_cpu_temperature
 #   _show_cpld_interrupt # Not support
     _show_system_led
-#    _show_beacon_led 
+    _show_beacon_led 
     _show_ioport
     _show_cpld_reg
     _show_onlpdump

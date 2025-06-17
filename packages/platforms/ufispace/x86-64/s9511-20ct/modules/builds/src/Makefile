@@ -1,0 +1,1 @@
+obj-m += x86-64-ufispace-s9511-20ct-lpc.o x86-64-ufispace-s9511-20ct-cpld.o
