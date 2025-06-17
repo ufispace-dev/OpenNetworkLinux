@@ -1,0 +1,370 @@
+---
+FPGA:
+  sysfs:
+    root: /sys/devices/pci0000:15/0000:15:04.0/0000:18:00.0
+    resource: resource4
+
+QSFPDD_NIF:
+  0:
+    port_name: 0
+    fpga_i2c:
+      ctrl_addr: 0x5000
+      mem_addr:  0x0400
+      channel:   1
+  1:
+    port_name: 1
+    fpga_i2c:
+      ctrl_addr: 0x5000
+      mem_addr:  0x0400
+      channel:   2
+  2:
+    port_name: 2
+    fpga_i2c:
+      ctrl_addr: 0x5000
+      mem_addr:  0x0400
+      channel:   3
+  3:
+    port_name: 3
+    fpga_i2c:
+      ctrl_addr: 0x5000
+      mem_addr:  0x0400
+      channel:   4
+  4:
+    port_name: 4
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   1
+  5:
+    port_name: 5
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   2
+  6:
+    port_name: 6
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   3
+  7:
+    port_name: 7
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   4
+  8:
+    port_name: 8
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   5
+  9:
+    port_name: 9
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   6
+  10:
+    port_name: 10
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   7
+  11:
+    port_name: 11
+    fpga_i2c:
+      ctrl_addr: 0x6000
+      mem_addr:  0x0500
+      channel:   8
+  12:
+    port_name: 12
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   1
+  13:
+    port_name: 13
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   2
+  14:
+    port_name: 14
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   3
+  15:
+    port_name: 15
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   4
+  16:
+    port_name: 16
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   5
+  17:
+    port_name: 17
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   6
+  18:
+    port_name: 18
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   7
+  19:
+    port_name: 19
+    fpga_i2c:
+      ctrl_addr: 0x7000
+      mem_addr:  0x0600
+      channel:   8
+  20:
+    port_name: 20
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   1
+  21:
+    port_name: 21
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   2
+  22:
+    port_name: 22
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   3
+  23:
+    port_name: 23
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   4
+  24:
+    port_name: 24
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   5
+  25:
+    port_name: 25
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   6
+  26:
+    port_name: 26
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   7
+  27:
+    port_name: 27
+    fpga_i2c:
+      ctrl_addr: 0x2000
+      mem_addr:  0x0100
+      channel:   8
+  28:
+    port_name: 28
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   1
+  29:
+    port_name: 29
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   2
+  30:
+    port_name: 30
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   3
+  31:
+    port_name: 31
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   4
+  32:
+    port_name: 32
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   5
+  33:
+    port_name: 33
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   6
+  34:
+    port_name: 34
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   7
+  35:
+    port_name: 35
+    fpga_i2c:
+      ctrl_addr: 0x3000
+      mem_addr:  0x0200
+      channel:   8
+SFP:
+  36:
+    port_name: 36
+    fpga_i2c:
+      ctrl_addr: 0xA000
+      mem_addr:  0x0900
+      channel:   0
+  37:
+    port_name: 37
+    fpga_i2c:
+      ctrl_addr: 0xB000
+      mem_addr:  0x0A00
+      channel:   0
+QSFPDD_FAB:
+  38:
+    port_name: 38
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   1
+  39:
+    port_name: 39
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   2
+  40:
+    port_name: 40
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   3
+  41:
+    port_name: 41
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   4
+  42:
+    port_name: 42
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   5
+  43:
+    port_name: 43
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   6
+  44:
+    port_name: 44
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   7
+  45:
+    port_name: 45
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   8
+  46:
+    port_name: 46
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   9
+  47:
+    port_name: 47
+    fpga_i2c:
+      ctrl_addr: 0x4000
+      mem_addr:  0x0300
+      channel:   10
+  48:
+    port_name: 48
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   1
+  49:
+    port_name: 49
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   2
+  50:
+    port_name: 50
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   3
+  51:
+    port_name: 51
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   4
+  52:
+    port_name: 52
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   5
+  53:
+    port_name: 53
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   6
+  54:
+    port_name: 54
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   7
+  55:
+    port_name: 55
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   8
+  56:
+    port_name: 56
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   9
+  57:
+    port_name: 57
+    fpga_i2c:
+      ctrl_addr: 0x1000
+      mem_addr:  0x0
+      channel:   10
+MGMT:
+  58:
+    port_name: 58
+    fpga_i2c:
+      ctrl_addr: 0x8000
+      mem_addr:  0x0700
+      channel:   0
+  59:
+    port_name: 59
+    fpga_i2c:
+      ctrl_addr: 0x9000
+      mem_addr:  0x0800
+      channel:   0
