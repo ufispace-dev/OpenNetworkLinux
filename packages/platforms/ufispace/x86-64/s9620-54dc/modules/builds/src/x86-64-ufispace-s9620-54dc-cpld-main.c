@@ -31,6 +31,7 @@
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>
+#include <linux/version.h>
 #include "x86-64-ufispace-s9620-54dc-cpld-main.h"
 
 bool mux_en = false;
@@ -97,6 +98,7 @@ enum cpld_sysfs_attributes {
     CPLD_BUILD_VER,
     CPLD_VERSION_H,
     CPLD_WRITE_PROTECT,
+    EVENT_DETECT_CTRL,
 
     // CPLD 1
     CPLD_SKU_ID,
@@ -106,10 +108,55 @@ enum cpld_sysfs_attributes {
     CPLD_BRD_ID_TYPE,
     CPLD_CHIP_TYPE,
     BOARD_ID_INFO,
+    
+    MAC_INTR,
+    MAC_INTR_MASK,
+    CPLD_FRU_INTR,
+    CPLD_FRU_INTR_MASK,
+    NTM_INTR,
+    NTM_INTR_MASK,
+    THERMAL_ALERT,
+    THERMAL_ALERT_MASK,
+    MISC_INTR,
+    MISC_INTR_MASK,
     CPLD_2_INTR,
     CPLD_3_INTR,
     FPGA_INTR,
-    EVENT_DETECT_CTRL,
+    FAN_INTR,
+    PSU0_INTR,
+    PSU1_INTR,
+    NTM_1588_INTR,
+    NTM_SYNCE_INTR,
+    NTM_FPGA_INTR,
+    GNSS_MODE_INTR,
+    MAC1_THERMAL_ALERT,
+    MAC2_THERMAL_ALERT,
+    LM75_1_THERMAL_ALERT,
+    LM75_2_THERMAL_ALERT,
+    LM75_3_THERMAL_ALERT,
+    LM75_4_THERMAL_ALERT,
+    USB_OCP,
+    CPLD_2_INTR_MASK,
+    CPLD_3_INTR_MASK,
+    FPGA_INTR_MASK,
+    FAN_INTR_MASK,
+    PSU0_INTR_MASK,
+    PSU1_INTR_MASK,
+    NTM_1588_INTR_MASK,
+    NTM_SYNCE_INTR_MASK,
+    NTM_FPGA_INTR_MASK,
+    MAC1_THERMAL_ALERT_MASK,
+    MAC2_THERMAL_ALERT_MASK,
+    LM75_1_THERMAL_ALERT_MASK,
+    LM75_2_THERMAL_ALERT_MASK,
+    LM75_3_THERMAL_ALERT_MASK,
+    LM75_4_THERMAL_ALERT_MASK,
+    USB_OCP_MASK,
+    MAC_INTR_EVENT,
+    CPLD_FRU_INTR_EVENT,
+    NTM_INTR_EVENT,
+    THERMAL_ALERT_EVENT,
+    MISC_INTR_EVENT,
 
     MAC_RST,
     MAC_QSPI_FLASH_RST,
@@ -206,6 +253,60 @@ enum cpld_sysfs_attributes {
     QSFP28_P51_ABS,
     QSFPDD_P52_ABS,
     QSFPDD_P53_ABS,
+    SFP28_P0_ABS_MASK,
+    SFP28_P1_ABS_MASK,
+    SFP28_P2_ABS_MASK,
+    SFP28_P3_ABS_MASK,
+    SFP28_P4_ABS_MASK,
+    SFP28_P5_ABS_MASK,
+    SFP28_P6_ABS_MASK,
+    SFP28_P7_ABS_MASK,
+    SFP28_P8_ABS_MASK,
+    SFP28_P9_ABS_MASK,
+    SFP28_P10_ABS_MASK,
+    SFP28_P11_ABS_MASK,
+    SFP28_P12_ABS_MASK,
+    SFP28_P13_ABS_MASK,
+    SFP28_P14_ABS_MASK,
+    SFP28_P15_ABS_MASK,
+    SFP28_P16_ABS_MASK,
+    SFP28_P17_ABS_MASK,
+    SFP28_P18_ABS_MASK,
+    SFP28_P19_ABS_MASK,
+    SFP28_P20_ABS_MASK,
+    SFP28_P21_ABS_MASK,
+    SFP28_P22_ABS_MASK,
+    SFP28_P23_ABS_MASK, 
+    SFP28_P24_ABS_MASK,
+    SFP28_P25_ABS_MASK,
+    SFP28_P26_ABS_MASK,
+    SFP28_P27_ABS_MASK,
+    SFP28_P28_ABS_MASK,
+    SFP28_P29_ABS_MASK,
+    SFP28_P30_ABS_MASK,
+    SFP28_P31_ABS_MASK,
+    SFP28_P32_ABS_MASK,
+    SFP28_P33_ABS_MASK,
+    SFP28_P34_ABS_MASK,
+    SFP28_P35_ABS_MASK, 
+    SFP28_P36_ABS_MASK,
+    SFP28_P37_ABS_MASK,
+    SFP28_P38_ABS_MASK,
+    SFP28_P39_ABS_MASK,
+    SFP56_P40_ABS_MASK,
+    SFP56_P41_ABS_MASK,
+    SFP56_P42_ABS_MASK,
+    SFP56_P43_ABS_MASK,
+    SFP56_P44_ABS_MASK,
+    SFP56_P45_ABS_MASK, 
+    SFP56_P46_ABS_MASK,
+    SFP56_P47_ABS_MASK,
+    QSFP28_P48_ABS_MASK,
+    QSFP28_P49_ABS_MASK,
+    QSFP28_P50_ABS_MASK,
+    QSFP28_P51_ABS_MASK,
+    QSFPDD_P52_ABS_MASK,
+    QSFPDD_P53_ABS_MASK,
     SFP28_P0_I2C_STUCK,
     SFP28_P1_I2C_STUCK,
     SFP28_P2_I2C_STUCK,
@@ -260,6 +361,60 @@ enum cpld_sysfs_attributes {
     QSFP28_P51_I2C_STUCK,
     QSFPDD_P52_I2C_STUCK,
     QSFPDD_P53_I2C_STUCK,
+    SFP28_P0_I2C_STUCK_MASK,
+    SFP28_P1_I2C_STUCK_MASK,
+    SFP28_P2_I2C_STUCK_MASK,
+    SFP28_P3_I2C_STUCK_MASK,
+    SFP28_P4_I2C_STUCK_MASK,
+    SFP28_P5_I2C_STUCK_MASK,
+    SFP28_P6_I2C_STUCK_MASK,
+    SFP28_P7_I2C_STUCK_MASK,
+    SFP28_P8_I2C_STUCK_MASK,
+    SFP28_P9_I2C_STUCK_MASK,
+    SFP28_P10_I2C_STUCK_MASK,
+    SFP28_P11_I2C_STUCK_MASK,
+    SFP28_P12_I2C_STUCK_MASK,
+    SFP28_P13_I2C_STUCK_MASK,
+    SFP28_P14_I2C_STUCK_MASK,
+    SFP28_P15_I2C_STUCK_MASK,
+    SFP28_P16_I2C_STUCK_MASK,
+    SFP28_P17_I2C_STUCK_MASK,
+    SFP28_P18_I2C_STUCK_MASK,
+    SFP28_P19_I2C_STUCK_MASK,
+    SFP28_P20_I2C_STUCK_MASK,
+    SFP28_P21_I2C_STUCK_MASK,
+    SFP28_P22_I2C_STUCK_MASK,
+    SFP28_P23_I2C_STUCK_MASK, 
+    SFP28_P24_I2C_STUCK_MASK,
+    SFP28_P25_I2C_STUCK_MASK,
+    SFP28_P26_I2C_STUCK_MASK,
+    SFP28_P27_I2C_STUCK_MASK,
+    SFP28_P28_I2C_STUCK_MASK,
+    SFP28_P29_I2C_STUCK_MASK,
+    SFP28_P30_I2C_STUCK_MASK,
+    SFP28_P31_I2C_STUCK_MASK,
+    SFP28_P32_I2C_STUCK_MASK,
+    SFP28_P33_I2C_STUCK_MASK,
+    SFP28_P34_I2C_STUCK_MASK,
+    SFP28_P35_I2C_STUCK_MASK, 
+    SFP28_P36_I2C_STUCK_MASK,
+    SFP28_P37_I2C_STUCK_MASK,
+    SFP28_P38_I2C_STUCK_MASK,
+    SFP28_P39_I2C_STUCK_MASK,
+    SFP56_P40_I2C_STUCK_MASK,
+    SFP56_P41_I2C_STUCK_MASK,
+    SFP56_P42_I2C_STUCK_MASK,
+    SFP56_P43_I2C_STUCK_MASK,
+    SFP56_P44_I2C_STUCK_MASK,
+    SFP56_P45_I2C_STUCK_MASK, 
+    SFP56_P46_I2C_STUCK_MASK,
+    SFP56_P47_I2C_STUCK_MASK,
+    QSFP28_P48_I2C_STUCK_MASK,
+    QSFP28_P49_I2C_STUCK_MASK,
+    QSFP28_P50_I2C_STUCK_MASK,
+    QSFP28_P51_I2C_STUCK_MASK,
+    QSFPDD_P52_I2C_STUCK_MASK,
+    QSFPDD_P53_I2C_STUCK_MASK,
     PORT_0_7_ABS_EVENT,
     PORT_8_15_ABS_EVENT,
     PORT_16_23_ABS_EVENT, 
@@ -412,6 +567,102 @@ enum cpld_sysfs_attributes {
     SFP56_P45_RXLOS, 
     SFP56_P46_RXLOS,
     SFP56_P47_RXLOS,
+    SFP28_P0_RXLOS_MASK,
+    SFP28_P1_RXLOS_MASK,
+    SFP28_P2_RXLOS_MASK,
+    SFP28_P3_RXLOS_MASK,
+    SFP28_P4_RXLOS_MASK,
+    SFP28_P5_RXLOS_MASK,
+    SFP28_P6_RXLOS_MASK,
+    SFP28_P7_RXLOS_MASK,
+    SFP28_P8_RXLOS_MASK,
+    SFP28_P9_RXLOS_MASK,
+    SFP28_P10_RXLOS_MASK,
+    SFP28_P11_RXLOS_MASK,
+    SFP28_P12_RXLOS_MASK,
+    SFP28_P13_RXLOS_MASK,
+    SFP28_P14_RXLOS_MASK,
+    SFP28_P15_RXLOS_MASK,
+    SFP28_P16_RXLOS_MASK,
+    SFP28_P17_RXLOS_MASK,
+    SFP28_P18_RXLOS_MASK,
+    SFP28_P19_RXLOS_MASK,
+    SFP28_P20_RXLOS_MASK,
+    SFP28_P21_RXLOS_MASK,
+    SFP28_P22_RXLOS_MASK,
+    SFP28_P23_RXLOS_MASK, 
+    SFP28_P24_RXLOS_MASK,
+    SFP28_P25_RXLOS_MASK,
+    SFP28_P26_RXLOS_MASK,
+    SFP28_P27_RXLOS_MASK,
+    SFP28_P28_RXLOS_MASK,
+    SFP28_P29_RXLOS_MASK,
+    SFP28_P30_RXLOS_MASK,
+    SFP28_P31_RXLOS_MASK,
+    SFP28_P32_RXLOS_MASK,
+    SFP28_P33_RXLOS_MASK,
+    SFP28_P34_RXLOS_MASK,
+    SFP28_P35_RXLOS_MASK, 
+    SFP28_P36_RXLOS_MASK,
+    SFP28_P37_RXLOS_MASK,
+    SFP28_P38_RXLOS_MASK,
+    SFP28_P39_RXLOS_MASK,
+    SFP56_P40_RXLOS_MASK,
+    SFP56_P41_RXLOS_MASK,
+    SFP56_P42_RXLOS_MASK,
+    SFP56_P43_RXLOS_MASK,
+    SFP56_P44_RXLOS_MASK,
+    SFP56_P45_RXLOS_MASK, 
+    SFP56_P46_RXLOS_MASK,
+    SFP56_P47_RXLOS_MASK,
+    SFP28_P0_RXLOS_EVENT,
+    SFP28_P1_RXLOS_EVENT,
+    SFP28_P2_RXLOS_EVENT,
+    SFP28_P3_RXLOS_EVENT,
+    SFP28_P4_RXLOS_EVENT,
+    SFP28_P5_RXLOS_EVENT,
+    SFP28_P6_RXLOS_EVENT,
+    SFP28_P7_RXLOS_EVENT,
+    SFP28_P8_RXLOS_EVENT,
+    SFP28_P9_RXLOS_EVENT,
+    SFP28_P10_RXLOS_EVENT,
+    SFP28_P11_RXLOS_EVENT,
+    SFP28_P12_RXLOS_EVENT,
+    SFP28_P13_RXLOS_EVENT,
+    SFP28_P14_RXLOS_EVENT,
+    SFP28_P15_RXLOS_EVENT,
+    SFP28_P16_RXLOS_EVENT,
+    SFP28_P17_RXLOS_EVENT,
+    SFP28_P18_RXLOS_EVENT,
+    SFP28_P19_RXLOS_EVENT,
+    SFP28_P20_RXLOS_EVENT,
+    SFP28_P21_RXLOS_EVENT,
+    SFP28_P22_RXLOS_EVENT,
+    SFP28_P23_RXLOS_EVENT, 
+    SFP28_P24_RXLOS_EVENT,
+    SFP28_P25_RXLOS_EVENT,
+    SFP28_P26_RXLOS_EVENT,
+    SFP28_P27_RXLOS_EVENT,
+    SFP28_P28_RXLOS_EVENT,
+    SFP28_P29_RXLOS_EVENT,
+    SFP28_P30_RXLOS_EVENT,
+    SFP28_P31_RXLOS_EVENT,
+    SFP28_P32_RXLOS_EVENT,
+    SFP28_P33_RXLOS_EVENT,
+    SFP28_P34_RXLOS_EVENT,
+    SFP28_P35_RXLOS_EVENT, 
+    SFP28_P36_RXLOS_EVENT,
+    SFP28_P37_RXLOS_EVENT,
+    SFP28_P38_RXLOS_EVENT,
+    SFP28_P39_RXLOS_EVENT,
+    SFP56_P40_RXLOS_EVENT,
+    SFP56_P41_RXLOS_EVENT,
+    SFP56_P42_RXLOS_EVENT,
+    SFP56_P43_RXLOS_EVENT,
+    SFP56_P44_RXLOS_EVENT,
+    SFP56_P45_RXLOS_EVENT, 
+    SFP56_P46_RXLOS_EVENT,
+    SFP56_P47_RXLOS_EVENT,
     SFP28_P0_TXFLT,
     SFP28_P1_TXFLT,
     SFP28_P2_TXFLT,
@@ -460,14 +711,120 @@ enum cpld_sysfs_attributes {
     SFP56_P45_TXFLT, 
     SFP56_P46_TXFLT,
     SFP56_P47_TXFLT,
+    SFP28_P0_TXFLT_MASK,
+    SFP28_P1_TXFLT_MASK,
+    SFP28_P2_TXFLT_MASK,
+    SFP28_P3_TXFLT_MASK,
+    SFP28_P4_TXFLT_MASK,
+    SFP28_P5_TXFLT_MASK,
+    SFP28_P6_TXFLT_MASK,
+    SFP28_P7_TXFLT_MASK,
+    SFP28_P8_TXFLT_MASK,
+    SFP28_P9_TXFLT_MASK,
+    SFP28_P10_TXFLT_MASK,
+    SFP28_P11_TXFLT_MASK,
+    SFP28_P12_TXFLT_MASK,
+    SFP28_P13_TXFLT_MASK,
+    SFP28_P14_TXFLT_MASK,
+    SFP28_P15_TXFLT_MASK,
+    SFP28_P16_TXFLT_MASK,
+    SFP28_P17_TXFLT_MASK,
+    SFP28_P18_TXFLT_MASK,
+    SFP28_P19_TXFLT_MASK,
+    SFP28_P20_TXFLT_MASK,
+    SFP28_P21_TXFLT_MASK,
+    SFP28_P22_TXFLT_MASK,
+    SFP28_P23_TXFLT_MASK, 
+    SFP28_P24_TXFLT_MASK,
+    SFP28_P25_TXFLT_MASK,
+    SFP28_P26_TXFLT_MASK,
+    SFP28_P27_TXFLT_MASK,
+    SFP28_P28_TXFLT_MASK,
+    SFP28_P29_TXFLT_MASK,
+    SFP28_P30_TXFLT_MASK,
+    SFP28_P31_TXFLT_MASK,
+    SFP28_P32_TXFLT_MASK,
+    SFP28_P33_TXFLT_MASK,
+    SFP28_P34_TXFLT_MASK,
+    SFP28_P35_TXFLT_MASK, 
+    SFP28_P36_TXFLT_MASK,
+    SFP28_P37_TXFLT_MASK,
+    SFP28_P38_TXFLT_MASK,
+    SFP28_P39_TXFLT_MASK,
+    SFP56_P40_TXFLT_MASK,
+    SFP56_P41_TXFLT_MASK,
+    SFP56_P42_TXFLT_MASK,
+    SFP56_P43_TXFLT_MASK,
+    SFP56_P44_TXFLT_MASK,
+    SFP56_P45_TXFLT_MASK, 
+    SFP56_P46_TXFLT_MASK,
+    SFP56_P47_TXFLT_MASK,
+    SFP28_P0_TXFLT_EVENT,
+    SFP28_P1_TXFLT_EVENT,
+    SFP28_P2_TXFLT_EVENT,
+    SFP28_P3_TXFLT_EVENT,
+    SFP28_P4_TXFLT_EVENT,
+    SFP28_P5_TXFLT_EVENT,
+    SFP28_P6_TXFLT_EVENT,
+    SFP28_P7_TXFLT_EVENT,
+    SFP28_P8_TXFLT_EVENT,
+    SFP28_P9_TXFLT_EVENT,
+    SFP28_P10_TXFLT_EVENT,
+    SFP28_P11_TXFLT_EVENT,
+    SFP28_P12_TXFLT_EVENT,
+    SFP28_P13_TXFLT_EVENT,
+    SFP28_P14_TXFLT_EVENT,
+    SFP28_P15_TXFLT_EVENT,
+    SFP28_P16_TXFLT_EVENT,
+    SFP28_P17_TXFLT_EVENT,
+    SFP28_P18_TXFLT_EVENT,
+    SFP28_P19_TXFLT_EVENT,
+    SFP28_P20_TXFLT_EVENT,
+    SFP28_P21_TXFLT_EVENT,
+    SFP28_P22_TXFLT_EVENT,
+    SFP28_P23_TXFLT_EVENT, 
+    SFP28_P24_TXFLT_EVENT,
+    SFP28_P25_TXFLT_EVENT,
+    SFP28_P26_TXFLT_EVENT,
+    SFP28_P27_TXFLT_EVENT,
+    SFP28_P28_TXFLT_EVENT,
+    SFP28_P29_TXFLT_EVENT,
+    SFP28_P30_TXFLT_EVENT,
+    SFP28_P31_TXFLT_EVENT,
+    SFP28_P32_TXFLT_EVENT,
+    SFP28_P33_TXFLT_EVENT,
+    SFP28_P34_TXFLT_EVENT,
+    SFP28_P35_TXFLT_EVENT, 
+    SFP28_P36_TXFLT_EVENT,
+    SFP28_P37_TXFLT_EVENT,
+    SFP28_P38_TXFLT_EVENT,
+    SFP28_P39_TXFLT_EVENT,
+    SFP56_P40_TXFLT_EVENT,
+    SFP56_P41_TXFLT_EVENT,
+    SFP56_P42_TXFLT_EVENT,
+    SFP56_P43_TXFLT_EVENT,
+    SFP56_P44_TXFLT_EVENT,
+    SFP56_P45_TXFLT_EVENT, 
+    SFP56_P46_TXFLT_EVENT,
+    SFP56_P47_TXFLT_EVENT,
     QSFPDD_P52_EFUSE_PG,
     QSFPDD_P53_EFUSE_PG,
+    QSFPDD_P52_EFUSE_PG_MASK,
+    QSFPDD_P53_EFUSE_PG_MASK,
+    QSFPDD_P52_53_EFUSE_PG_EVENT,
     QSFP28_P48_INTR,
     QSFP28_P49_INTR,
     QSFP28_P50_INTR,
     QSFP28_P51_INTR,
     QSFPDD_P52_INTR,
     QSFPDD_P53_INTR,
+    QSFP28_P48_INTR_MASK,
+    QSFP28_P49_INTR_MASK,
+    QSFP28_P50_INTR_MASK,
+    QSFP28_P51_INTR_MASK,
+    QSFPDD_P52_INTR_MASK,
+    QSFPDD_P53_INTR_MASK,
+    PORT_48_53_INTR_EVENT,
     QSFP28_P48_RST,
     QSFP28_P49_RST,
     QSFP28_P50_RST,
@@ -535,14 +892,62 @@ static attr_reg_map_t attr_reg[]= {
     [CPLD_CHIP_TYPE]                       =  {CPLD_CHIP_TYPE_REG                      , MASK_0000_0011, DATA_DEC, REG_WP_DIS},
     [FPGA_INTR]                            =  {MISC_INTR_REG                           , MASK_0000_1000, DATA_HEX, REG_WP_DIS},
     [EVENT_DETECT_CTRL]                    =  {EVENT_DETECT_CTRL_REG                   , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
+    [MAC_INTR]                             =  {MAC_INTR_REG                            , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [MAC_INTR_MASK]                        =  {MAC_INTR_MASK_REG                       , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [CPLD_FRU_INTR]                        =  {CPLD_FRU_INTR_REG                       , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [CPLD_FRU_INTR_MASK]                   =  {CPLD_FRU_INTR_MASK_REG                  , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [NTM_INTR]                             =  {NTM_INTR_REG                            , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [NTM_INTR_MASK]                        =  {NTM_INTR_MASK_REG                       , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [THERMAL_ALERT]                        =  {THERMAL_ALERT_REG                       , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [THERMAL_ALERT_MASK]                   =  {THERMAL_ALERT_MASK_REG                  , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [MISC_INTR]                            =  {MISC_INTR_REG                           , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [MISC_INTR_MASK]                       =  {MISC_INTR_MASK_REG                      , MASK_ALL      , DATA_HEX, REG_WP_DIS}, 
+    [CPLD_2_INTR]                          =  {CPLD_FRU_INTR_REG                       , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
+    [CPLD_3_INTR]                          =  {CPLD_FRU_INTR_REG                       , MASK_0000_0010, DATA_HEX, REG_WP_DIS},
+    [FPGA_INTR]                            =  {CPLD_FRU_INTR_REG                       , MASK_0000_0100, DATA_HEX, REG_WP_DIS},
+    [FAN_INTR]                             =  {CPLD_FRU_INTR_REG                       , MASK_0001_0000, DATA_HEX, REG_WP_DIS},
+    [PSU0_INTR]                            =  {CPLD_FRU_INTR_REG                       , MASK_0010_0000, DATA_HEX, REG_WP_DIS},
+    [PSU1_INTR]                            =  {CPLD_FRU_INTR_REG                       , MASK_0100_0000, DATA_HEX, REG_WP_DIS},
+    [NTM_1588_INTR]                        =  {NTM_INTR_REG                            , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
+    [NTM_SYNCE_INTR]                       =  {NTM_INTR_REG                            , MASK_0000_0010, DATA_HEX, REG_WP_DIS},
+    [NTM_FPGA_INTR]                        =  {NTM_INTR_REG                            , MASK_0000_0100, DATA_HEX, REG_WP_DIS},
+    [GNSS_MODE_INTR]                       =  {NTM_INTR_REG                            , MASK_0000_1000, DATA_HEX, REG_WP_DIS},
+    [MAC1_THERMAL_ALERT]                   =  {THERMAL_ALERT_REG                       , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
+    [MAC2_THERMAL_ALERT]                   =  {THERMAL_ALERT_REG                       , MASK_0000_0010, DATA_HEX, REG_WP_DIS},
+    [LM75_1_THERMAL_ALERT]                 =  {THERMAL_ALERT_REG                       , MASK_0000_0100, DATA_HEX, REG_WP_DIS},
+    [LM75_2_THERMAL_ALERT]                 =  {THERMAL_ALERT_REG                       , MASK_0000_1000, DATA_HEX, REG_WP_DIS},
+    [LM75_3_THERMAL_ALERT]                 =  {THERMAL_ALERT_REG                       , MASK_0001_0000, DATA_HEX, REG_WP_DIS},
+    [LM75_4_THERMAL_ALERT]                 =  {THERMAL_ALERT_REG                       , MASK_0010_0000, DATA_HEX, REG_WP_DIS},
+    [USB_OCP]                              =  {MISC_INTR_REG                           , MASK_0000_0010, DATA_HEX, REG_WP_DIS},
+    [CPLD_2_INTR_MASK]                     =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0000_0001, DATA_HEX, REG_WP_DIS},              
+    [CPLD_3_INTR_MASK]                     =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0000_0010, DATA_HEX, REG_WP_DIS},              
+    [FPGA_INTR_MASK]                       =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0000_0100, DATA_HEX, REG_WP_DIS},            
+    [FAN_INTR_MASK]                        =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0001_0000, DATA_HEX, REG_WP_DIS},           
+    [PSU0_INTR_MASK]                       =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0010_0000, DATA_HEX, REG_WP_DIS},            
+    [PSU1_INTR_MASK]                       =  {CPLD_FRU_INTR_MASK_REG                  , MASK_0100_0000, DATA_HEX, REG_WP_DIS},            
+    [NTM_1588_INTR_MASK]                   =  {NTM_INTR_MASK_REG                       , MASK_0000_0001, DATA_HEX, REG_WP_DIS},                
+    [NTM_SYNCE_INTR_MASK]                  =  {NTM_INTR_MASK_REG                       , MASK_0000_0010, DATA_HEX, REG_WP_DIS},                 
+    [NTM_FPGA_INTR_MASK]                   =  {NTM_INTR_MASK_REG                       , MASK_0000_0100, DATA_HEX, REG_WP_DIS},                
+    [MAC1_THERMAL_ALERT_MASK]              =  {THERMAL_ALERT_MASK_REG                  , MASK_0000_0001, DATA_HEX, REG_WP_DIS},                     
+    [MAC2_THERMAL_ALERT_MASK]              =  {THERMAL_ALERT_MASK_REG                  , MASK_0000_0010, DATA_HEX, REG_WP_DIS},                     
+    [LM75_1_THERMAL_ALERT_MASK]            =  {THERMAL_ALERT_MASK_REG                  , MASK_0000_0100, DATA_HEX, REG_WP_DIS},                       
+    [LM75_2_THERMAL_ALERT_MASK]            =  {THERMAL_ALERT_MASK_REG                  , MASK_0000_1000, DATA_HEX, REG_WP_DIS},                       
+    [LM75_3_THERMAL_ALERT_MASK]            =  {THERMAL_ALERT_MASK_REG                  , MASK_0001_0000, DATA_HEX, REG_WP_DIS},                       
+    [LM75_4_THERMAL_ALERT_MASK]            =  {THERMAL_ALERT_MASK_REG                  , MASK_0010_0000, DATA_HEX, REG_WP_DIS},                       
+    [USB_OCP_MASK]                         =  {MISC_INTR_MASK_REG                      , MASK_0000_0010, DATA_HEX, REG_WP_DIS},          
+    [MAC_INTR_EVENT]                       =  {MAC_INTR_EVENT_REG                      , MASK_ALL      , DATA_HEX, REG_WP_DIS},            
+    [CPLD_FRU_INTR_EVENT]                  =  {CPLD_FRU_INTR_EVENT_REG                 , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [NTM_INTR_EVENT]                       =  {NTM_INTR_EVENT_REG                      , MASK_ALL      , DATA_HEX, REG_WP_DIS},                 
+    [THERMAL_ALERT_EVENT]                  =  {THERMAL_ALERT_EVENT_REG                 , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [MISC_INTR_EVENT]                      =  {MISC_INTR_EVENT_REG                     , MASK_ALL      , DATA_HEX, REG_WP_DIS},           
     [NTM_RST]                              =  {BMC_NTM_RST_REG                         , MASK_0000_0010, DATA_HEX, REG_WP_EN },
     [BMC_RST]                              =  {BMC_NTM_RST_REG                         , MASK_0000_0001, DATA_HEX, REG_WP_EN },
     [CPLD_2_3_RST]                         =  {MISC_RST_1_REG                          , MASK_0000_0001, DATA_HEX, REG_WP_EN },      
-    [FPGA_RST]                             =  {MISC_RST_1_REG                          , MASK_0001_0000, DATA_HEX, REG_WP_EN },  
-    [I2C_MUX_1_RST]                        =  {MISC_RST_1_REG                          , MASK_0010_0000, DATA_HEX, REG_WP_EN },       
-    [I2C_MUX_2_RST]                        =  {MISC_RST_1_REG                          , MASK_0100_0000, DATA_HEX, REG_WP_EN },       
+    [FPGA_RST]                             =  {MISC_RST_1_REG                          , MASK_0010_0000, DATA_HEX, REG_WP_EN },  
+    [I2C_MUX_1_RST]                        =  {MISC_RST_1_REG                          , MASK_0100_0000, DATA_HEX, REG_WP_EN },       
+    [I2C_MUX_2_RST]                        =  {MISC_RST_1_REG                          , MASK_1000_0000, DATA_HEX, REG_WP_EN },       
     [I2C_MUX_3_RST]                        =  {MISC_RST_2_REG                          , MASK_0000_0100, DATA_HEX, REG_WP_EN },       
-    [IOEXP_1_RST]                          =  {MISC_RST_1_REG                          , MASK_0000_1000, DATA_HEX, REG_WP_EN },        
+    [IOEXP_1_RST]                          =  {MISC_RST_1_REG                          , MASK_0001_0000, DATA_HEX, REG_WP_EN },        
     [IOEXP_2_RST]                          =  {MISC_RST_2_REG                          , MASK_0000_0010, DATA_HEX, REG_WP_EN },
     [FAN_I2C_MUX_RST]                      =  {MISC_RST_2_REG                          , MASK_0000_0001, DATA_HEX, REG_WP_EN },         
     [PSU_0_PRSNT]                          =  {PSU_STATUS_REG                          , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
@@ -617,6 +1022,60 @@ static attr_reg_map_t attr_reg[]= {
     [QSFP28_P51_ABS]                       =  {PORT_44_51_ABS_REG                      , MASK_1000_0000, DATA_DEC, REG_WP_DIS},      
     [QSFPDD_P52_ABS]                       =  {PORT_52_53_ABS_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_DIS},      
     [QSFPDD_P53_ABS]                       =  {PORT_52_53_ABS_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0000_0001, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P1_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0000_0010, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P2_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0000_0100, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P3_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0000_1000, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P4_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0001_0000, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P5_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0010_0000, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P6_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_0100_0000, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P7_ABS_MASK]                    =  {PORT_0_7_ABS_MASK_REG                   , MASK_1000_0000, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P8_ABS_MASK]                    =  {PORT_8_15_ABS_MASK_REG                  , MASK_0000_0001, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P9_ABS_MASK]                    =  {PORT_8_15_ABS_MASK_REG                  , MASK_0000_0010, DATA_DEC, REG_WP_DIS},    
+    [SFP28_P10_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P11_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P12_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_0001_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P13_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_0010_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P14_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_0100_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P15_ABS_MASK]                   =  {PORT_8_15_ABS_MASK_REG                  , MASK_1000_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P16_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P17_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P18_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P19_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P20_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P21_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P22_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P23_ABS_MASK]                   =  {PORT_16_23_ABS_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P24_ABS_MASK]                   =  {PORT_24_27_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P25_ABS_MASK]                   =  {PORT_24_27_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P26_ABS_MASK]                   =  {PORT_24_27_ABS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P27_ABS_MASK]                   =  {PORT_24_27_ABS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P28_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P29_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P30_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P31_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P32_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P33_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P34_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P35_ABS_MASK]                   =  {PORT_28_35_ABS_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P36_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P37_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P38_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P39_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P40_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P41_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P42_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P43_ABS_MASK]                   =  {PORT_36_43_ABS_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P44_ABS_MASK]                   =  {PORT_44_51_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P45_ABS_MASK]                   =  {PORT_44_51_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P46_ABS_MASK]                   =  {PORT_44_51_ABS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},     
+    [SFP56_P47_ABS_MASK]                   =  {PORT_44_51_ABS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},     
+    [QSFP28_P48_ABS_MASK]                  =  {PORT_44_51_ABS_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},      
+    [QSFP28_P49_ABS_MASK]                  =  {PORT_44_51_ABS_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},      
+    [QSFP28_P50_ABS_MASK]                  =  {PORT_44_51_ABS_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},      
+    [QSFP28_P51_ABS_MASK]                  =  {PORT_44_51_ABS_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},      
+    [QSFPDD_P52_ABS_MASK]                  =  {PORT_52_53_ABS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},      
+    [QSFPDD_P53_ABS_MASK]                  =  {PORT_52_53_ABS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},      
     [SFP28_P0_I2C_STUCK]                   =  {PORT_0_7_I2C_STUCK_REG                  , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
     [SFP28_P1_I2C_STUCK]                   =  {PORT_0_7_I2C_STUCK_REG                  , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
     [SFP28_P2_I2C_STUCK]                   =  {PORT_0_7_I2C_STUCK_REG                  , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
@@ -670,7 +1129,61 @@ static attr_reg_map_t attr_reg[]= {
     [QSFP28_P50_I2C_STUCK]                 =  {PORT_44_51_I2C_STUCK_REG                , MASK_0100_0000, DATA_DEC, REG_WP_DIS},  
     [QSFP28_P51_I2C_STUCK]                 =  {PORT_44_51_I2C_STUCK_REG                , MASK_1000_0000, DATA_DEC, REG_WP_DIS},  
     [QSFPDD_P52_I2C_STUCK]                 =  {PORT_52_53_I2C_STUCK_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
-    [QSFPDD_P53_I2C_STUCK]                 =  {PORT_52_53_I2C_STUCK_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},        
+    [QSFPDD_P53_I2C_STUCK]                 =  {PORT_52_53_I2C_STUCK_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_I2C_STUCK_MASK]              =  {PORT_0_7_I2C_STUCK_MASK_REG             , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_I2C_STUCK_MASK]              =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_I2C_STUCK_MASK]              =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P11_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P12_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0001_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P13_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0010_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P14_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_0100_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P15_I2C_STUCK_MASK]             =  {PORT_8_15_I2C_STUCK_MASK_REG            , MASK_1000_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P16_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P17_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P18_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P19_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P20_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0001_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P21_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0010_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P22_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_0100_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P23_I2C_STUCK_MASK]             =  {PORT_16_23_I2C_STUCK_MASK_REG           , MASK_1000_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P24_I2C_STUCK_MASK]             =  {PORT_24_27_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P25_I2C_STUCK_MASK]             =  {PORT_24_27_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P26_I2C_STUCK_MASK]             =  {PORT_24_27_I2C_STUCK_MASK_REG           , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P27_I2C_STUCK_MASK]             =  {PORT_24_27_I2C_STUCK_MASK_REG           , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P28_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P29_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P30_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P31_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P32_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0001_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P33_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0010_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P34_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_0100_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P35_I2C_STUCK_MASK]             =  {PORT_28_35_I2C_STUCK_MASK_REG           , MASK_1000_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P36_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P37_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P38_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP28_P39_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P40_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0001_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P41_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0010_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P42_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_0100_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P43_I2C_STUCK_MASK]             =  {PORT_36_43_I2C_STUCK_MASK_REG           , MASK_1000_0000, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P44_I2C_STUCK_MASK]             =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P45_I2C_STUCK_MASK]             =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P46_I2C_STUCK_MASK]             =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
+    [SFP56_P47_I2C_STUCK_MASK]             =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
+    [QSFP28_P48_I2C_STUCK_MASK]            =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0001_0000, DATA_DEC, REG_WP_DIS},  
+    [QSFP28_P49_I2C_STUCK_MASK]            =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0010_0000, DATA_DEC, REG_WP_DIS},  
+    [QSFP28_P50_I2C_STUCK_MASK]            =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_0100_0000, DATA_DEC, REG_WP_DIS},  
+    [QSFP28_P51_I2C_STUCK_MASK]            =  {PORT_44_51_I2C_STUCK_MASK_REG           , MASK_1000_0000, DATA_DEC, REG_WP_DIS},  
+    [QSFPDD_P52_I2C_STUCK_MASK]            =  {PORT_52_53_I2C_STUCK_MASK_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
+    [QSFPDD_P53_I2C_STUCK_MASK]            =  {PORT_52_53_I2C_STUCK_MASK_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS},       
     [PORT_0_7_ABS_EVENT]                   =  {PORT_0_7_ABS_EVENT_REG                  , MASK_ALL      , DATA_HEX, REG_WP_DIS},  
     [PORT_8_15_ABS_EVENT]                  =  {PORT_8_15_ABS_EVENT_REG                 , MASK_ALL      , DATA_HEX, REG_WP_DIS},  
     [PORT_16_23_ABS_EVENT]                 =  {PORT_16_23_ABS_EVENT_REG                , MASK_ALL      , DATA_HEX, REG_WP_DIS},   
@@ -775,110 +1288,312 @@ static attr_reg_map_t attr_reg[]= {
     [SFP56_P45_RS]                         =  {PORT_44_47_RS_REG                       , MASK_0000_0010, DATA_DEC, REG_WP_DIS}, 
     [SFP56_P46_RS]                         =  {PORT_44_47_RS_REG                       , MASK_0000_0100, DATA_DEC, REG_WP_DIS}, 
     [SFP56_P47_RS]                         =  {PORT_44_47_RS_REG                       , MASK_0000_1000, DATA_DEC, REG_WP_DIS}, 
-    [SFP28_P0_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P1_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P2_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0100, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P3_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_1000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P4_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0001_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P5_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0010_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P6_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0100_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P7_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_1000_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P8_RXLOS]                       =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P9_RXLOS]                       =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0010, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P10_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P11_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P12_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P13_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P14_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P15_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P16_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P17_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P18_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P19_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P20_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P21_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P22_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P23_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P24_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P25_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P26_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P27_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P28_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P29_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P30_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P31_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P32_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P33_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P34_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P35_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P36_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P37_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P38_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P39_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P40_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P41_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P42_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P43_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P44_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P45_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P46_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P47_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P0_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P1_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P2_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0100, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P3_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_1000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P4_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0001_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P5_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0010_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P6_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0100_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P7_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_1000_0000, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P8_TXFLT]                       =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0001, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P9_TXFLT]                       =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0010, DATA_DEC, REG_WP_DIS},  
-    [SFP28_P10_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P11_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P12_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P13_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P14_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P15_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P16_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P17_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P18_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P19_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P20_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P21_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P22_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P23_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P24_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P25_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P26_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P27_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P28_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P29_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P30_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P31_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P32_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P33_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P34_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P35_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P36_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P37_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P38_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP28_P39_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P40_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P41_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P42_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P43_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P44_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P45_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P46_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},   
-    [SFP56_P47_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},   
-    [QSFPDD_P52_EFUSE_PG]                  =  {PORT_52_53_EFUSE_PG_EVENT_REG           , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
-    [QSFPDD_P53_EFUSE_PG]                  =  {PORT_52_53_EFUSE_PG_EVENT_REG           , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [SFP28_P0_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_RXLOS]                       =  {PORT_0_7_RXLOS_REG                      , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_RXLOS]                       =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_RXLOS]                       =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_RXLOS]                      =  {PORT_8_15_RXLOS_REG                     , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_RXLOS]                      =  {PORT_16_23_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_RXLOS]                      =  {PORT_24_27_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_RXLOS]                      =  {PORT_28_35_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_RXLOS]                      =  {PORT_36_43_RXLOS_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_RXLOS]                      =  {PORT_44_47_RXLOS_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_RXLOS_MASK]                  =  {PORT_0_7_RXLOS_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_RXLOS_MASK]                  =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_RXLOS_MASK]                  =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_RXLOS_MASK]                 =  {PORT_8_15_RXLOS_MASK_REG                , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_RXLOS_MASK]                 =  {PORT_16_23_RXLOS_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_RXLOS_MASK]                 =  {PORT_24_27_RXLOS_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_RXLOS_MASK]                 =  {PORT_24_27_RXLOS_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_RXLOS_MASK]                 =  {PORT_24_27_RXLOS_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_RXLOS_MASK]                 =  {PORT_24_27_RXLOS_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_RXLOS_MASK]                 =  {PORT_28_35_RXLOS_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_RXLOS_MASK]                 =  {PORT_36_43_RXLOS_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_RXLOS_MASK]                 =  {PORT_44_47_RXLOS_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_RXLOS_MASK]                 =  {PORT_44_47_RXLOS_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_RXLOS_MASK]                 =  {PORT_44_47_RXLOS_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_RXLOS_MASK]                 =  {PORT_44_47_RXLOS_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_RXLOS_EVENT]                 =  {PORT_0_7_RXLOS_EVENT_REG                , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_RXLOS_EVENT]                 =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_RXLOS_EVENT]                 =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_RXLOS_EVENT]                =  {PORT_8_15_RXLOS_EVENT_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_RXLOS_EVENT]                =  {PORT_16_23_RXLOS_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_RXLOS_EVENT]                =  {PORT_24_27_RXLOS_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_RXLOS_EVENT]                =  {PORT_24_27_RXLOS_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_RXLOS_EVENT]                =  {PORT_24_27_RXLOS_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_RXLOS_EVENT]                =  {PORT_24_27_RXLOS_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_RXLOS_EVENT]                =  {PORT_28_35_RXLOS_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_RXLOS_EVENT]                =  {PORT_36_43_RXLOS_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_RXLOS_EVENT]                =  {PORT_44_47_RXLOS_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_RXLOS_EVENT]                =  {PORT_44_47_RXLOS_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_RXLOS_EVENT]                =  {PORT_44_47_RXLOS_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_RXLOS_EVENT]                =  {PORT_44_47_RXLOS_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_TXFLT]                       =  {PORT_0_7_TXFLT_REG                      , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_TXFLT]                       =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_TXFLT]                       =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_TXFLT]                      =  {PORT_8_15_TXFLT_REG                     , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_TXFLT]                      =  {PORT_16_23_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_TXFLT]                      =  {PORT_24_27_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_TXFLT]                      =  {PORT_28_35_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_TXFLT]                      =  {PORT_36_43_TXFLT_REG                    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_TXFLT]                      =  {PORT_44_47_TXFLT_REG                    , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_TXFLT_MASK]                  =  {PORT_0_7_TXFLT_MASK_REG                 , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_TXFLT_MASK]                  =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_TXFLT_MASK]                  =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_TXFLT_MASK]                 =  {PORT_8_15_TXFLT_MASK_REG                , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_TXFLT_MASK]                 =  {PORT_16_23_TXFLT_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_TXFLT_MASK]                 =  {PORT_24_27_TXFLT_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_TXFLT_MASK]                 =  {PORT_24_27_TXFLT_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_TXFLT_MASK]                 =  {PORT_24_27_TXFLT_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_TXFLT_MASK]                 =  {PORT_24_27_TXFLT_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_TXFLT_MASK]                 =  {PORT_28_35_TXFLT_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_TXFLT_MASK]                 =  {PORT_36_43_TXFLT_MASK_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_TXFLT_MASK]                 =  {PORT_44_47_TXFLT_MASK_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_TXFLT_MASK]                 =  {PORT_44_47_TXFLT_MASK_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_TXFLT_MASK]                 =  {PORT_44_47_TXFLT_MASK_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_TXFLT_MASK]                 =  {PORT_44_47_TXFLT_MASK_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P0_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P1_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P2_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P3_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P4_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P5_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P6_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P7_TXFLT_EVENT]                 =  {PORT_0_7_TXFLT_EVENT_REG                , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P8_TXFLT_EVENT]                 =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P9_TXFLT_EVENT]                 =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P10_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P11_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P12_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P13_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P14_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P15_TXFLT_EVENT]                =  {PORT_8_15_TXFLT_EVENT_REG               , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P16_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P17_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P18_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P19_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P20_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P21_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P22_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P23_TXFLT_EVENT]                =  {PORT_16_23_TXFLT_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P24_TXFLT_EVENT]                =  {PORT_24_27_TXFLT_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P25_TXFLT_EVENT]                =  {PORT_24_27_TXFLT_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P26_TXFLT_EVENT]                =  {PORT_24_27_TXFLT_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P27_TXFLT_EVENT]                =  {PORT_24_27_TXFLT_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P28_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P29_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P30_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P31_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P32_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P33_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P34_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P35_TXFLT_EVENT]                =  {PORT_28_35_TXFLT_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP28_P36_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP28_P37_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP28_P38_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP28_P39_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P40_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P41_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P42_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P43_TXFLT_EVENT]                =  {PORT_36_43_TXFLT_EVENT_REG              , MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [SFP56_P44_TXFLT_EVENT]                =  {PORT_44_47_TXFLT_EVENT_REG              , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [SFP56_P45_TXFLT_EVENT]                =  {PORT_44_47_TXFLT_EVENT_REG              , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [SFP56_P46_TXFLT_EVENT]                =  {PORT_44_47_TXFLT_EVENT_REG              , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [SFP56_P47_TXFLT_EVENT]                =  {PORT_44_47_TXFLT_EVENT_REG              , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [QSFPDD_P52_EFUSE_PG]                  =  {PORT_52_53_EFUSE_PG_REG                 , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [QSFPDD_P53_EFUSE_PG]                  =  {PORT_52_53_EFUSE_PG_REG                 , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [QSFPDD_P52_EFUSE_PG_MASK]             =  {PORT_52_53_EFUSE_PG_MASK_REG            , MASK_0000_0001, DATA_DEC, REG_WP_DIS},     
+    [QSFPDD_P53_EFUSE_PG_MASK]             =  {PORT_52_53_EFUSE_PG_MASK_REG            , MASK_0000_0010, DATA_DEC, REG_WP_DIS},     
+    [QSFPDD_P52_53_EFUSE_PG_EVENT]         =  {PORT_52_53_EFUSE_PG_EVENT_REG           , MASK_ALL      , DATA_HEX, REG_WP_DIS},         
     [QSFP28_P48_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0000_0001, DATA_DEC, REG_WP_DIS},       
     [QSFP28_P49_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0000_0010, DATA_DEC, REG_WP_DIS},       
     [QSFP28_P50_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0000_0100, DATA_DEC, REG_WP_DIS},       
     [QSFP28_P51_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0000_1000, DATA_DEC, REG_WP_DIS},       
     [QSFPDD_P52_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0001_0000, DATA_DEC, REG_WP_DIS},       
     [QSFPDD_P53_INTR]                      =  {PORT_48_53_INTR_REG                     , MASK_0010_0000, DATA_DEC, REG_WP_DIS},       
+    [QSFP28_P48_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0000_0001, DATA_DEC, REG_WP_DIS},
+    [QSFP28_P49_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0000_0010, DATA_DEC, REG_WP_DIS},
+    [QSFP28_P50_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [QSFP28_P51_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0000_1000, DATA_DEC, REG_WP_DIS},
+    [QSFPDD_P52_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0001_0000, DATA_DEC, REG_WP_DIS},
+    [QSFPDD_P53_INTR_MASK]                 =  {PORT_48_53_INTR_MASK_REG                , MASK_0010_0000, DATA_DEC, REG_WP_DIS},
+    [PORT_48_53_INTR_EVENT]                =  {PORT_48_53_INTR_EVENT_REG               , MASK_ALL      , DATA_HEX, REG_WP_DIS},
     [QSFP28_P48_RST]                       =  {PORT_48_53_RST_REG                      , MASK_0000_0001, DATA_DEC, REG_WP_EN }, 
     [QSFP28_P49_RST]                       =  {PORT_48_53_RST_REG                      , MASK_0000_0010, DATA_DEC, REG_WP_EN }, 
     [QSFP28_P50_RST]                       =  {PORT_48_53_RST_REG                      , MASK_0000_0100, DATA_DEC, REG_WP_EN }, 
@@ -892,6 +1607,7 @@ static attr_reg_map_t attr_reg[]= {
     [QSFPDD_P52_LP_MODE]                   =  {PORT_48_53_LP_REG                       , MASK_0001_0000, DATA_DEC, REG_WP_EN },    
     [QSFPDD_P53_LP_MODE]                   =  {PORT_48_53_LP_REG                       , MASK_0010_0000, DATA_DEC, REG_WP_EN },    
     //FPGA
+    [FPGA_ID]                              =  {FPGA_ID_REG                             , MASK_0000_0111, DATA_DEC, REG_WP_DIS},
     [FPGA_VER_1]                           =  {FPGA_VER_1_REG                          , MASK_ALL      , DATA_DEC, REG_WP_DIS},
     [FPGA_MINOR_VER]                       =  {FPGA_VER_1_REG                          , MASK_0011_1111, DATA_DEC, REG_WP_DIS},
     [FPGA_MAJOR_VER]                       =  {FPGA_VER_1_REG                          , MASK_1100_0000, DATA_DEC, REG_WP_DIS},
@@ -980,6 +1696,54 @@ static SENSOR_DEVICE_ATTR_RO(cpld_deph_rev                 , cpld, CPLD_DEPH_REV
 static SENSOR_DEVICE_ATTR_RO(cpld_build_rev                , cpld, CPLD_BUILD_REV);
 static SENSOR_DEVICE_ATTR_RO(cpld_brd_id_type              , cpld, CPLD_BRD_ID_TYPE);
 static SENSOR_DEVICE_ATTR_RO(cpld_chip_type                , cpld, CPLD_CHIP_TYPE);
+static SENSOR_DEVICE_ATTR_RO(mac_intr                      , cpld, MAC_INTR);
+static SENSOR_DEVICE_ATTR_RO(cpld_fru_intr                 , cpld, CPLD_FRU_INTR);
+static SENSOR_DEVICE_ATTR_RW(cpld_fru_intr_mask            , cpld, CPLD_FRU_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RO(ntm_intr                      , cpld, NTM_INTR);
+static SENSOR_DEVICE_ATTR_RW(ntm_intr_mask                 , cpld, NTM_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RO(thermal_alert                 , cpld, THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RW(thermal_alert_mask            , cpld, THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RO(misc_intr                     , cpld, MISC_INTR);
+static SENSOR_DEVICE_ATTR_RW(misc_intr_mask                , cpld, MISC_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RO(cpld_2_intr                   , cpld, CPLD_2_INTR);
+static SENSOR_DEVICE_ATTR_RO(cpld_3_intr                   , cpld, CPLD_3_INTR);
+static SENSOR_DEVICE_ATTR_RO(fpga_intr                     , cpld, FPGA_INTR);
+static SENSOR_DEVICE_ATTR_RO(fan_intr                      , cpld, FAN_INTR);
+static SENSOR_DEVICE_ATTR_RO(psu0_intr                     , cpld, PSU0_INTR);
+static SENSOR_DEVICE_ATTR_RO(psu1_intr                     , cpld, PSU1_INTR);
+static SENSOR_DEVICE_ATTR_RO(ntm_1588_intr                 , cpld, NTM_1588_INTR);
+static SENSOR_DEVICE_ATTR_RO(ntm_synce_intr                , cpld, NTM_SYNCE_INTR);
+static SENSOR_DEVICE_ATTR_RO(ntm_fpga_intr                 , cpld, NTM_FPGA_INTR);
+static SENSOR_DEVICE_ATTR_RO(gnss_mode_intr                , cpld, GNSS_MODE_INTR);
+static SENSOR_DEVICE_ATTR_RO(mac1_thermal_alert            , cpld, MAC1_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(mac2_thermal_alert            , cpld, MAC2_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(lm75_1_thermal_alert          , cpld, LM75_1_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(lm75_2_thermal_alert          , cpld, LM75_2_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(lm75_3_thermal_alert          , cpld, LM75_3_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(lm75_4_thermal_alert          , cpld, LM75_4_THERMAL_ALERT);
+static SENSOR_DEVICE_ATTR_RO(usb_ocp                       , cpld, USB_OCP);
+static SENSOR_DEVICE_ATTR_RW(mac_intr_mask                 , cpld, MAC_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(cpld_2_intr_mask              , cpld, CPLD_2_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(cpld_3_intr_mask              , cpld, CPLD_3_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(fpga_intr_mask                , cpld, FPGA_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(fan_intr_mask                 , cpld, FAN_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(psu0_intr_mask                , cpld, PSU0_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(psu1_intr_mask                , cpld, PSU1_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(ntm_1588_intr_mask            , cpld, NTM_1588_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(ntm_synce_intr_mask           , cpld, NTM_SYNCE_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(ntm_fpga_intr_mask            , cpld, NTM_FPGA_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(mac1_thermal_alert_mask       , cpld, MAC1_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(mac2_thermal_alert_mask       , cpld, MAC2_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(lm75_1_thermal_alert_mask     , cpld, LM75_1_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(lm75_2_thermal_alert_mask     , cpld, LM75_2_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(lm75_3_thermal_alert_mask     , cpld, LM75_3_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(lm75_4_thermal_alert_mask     , cpld, LM75_4_THERMAL_ALERT_MASK);
+static SENSOR_DEVICE_ATTR_RW(usb_ocp_mask                  , cpld, USB_OCP_MASK);
+static SENSOR_DEVICE_ATTR_RO(mac_intr_event                , cpld, MAC_INTR_EVENT);
+static SENSOR_DEVICE_ATTR_RO(cpld_fru_intr_event           , cpld, CPLD_FRU_INTR_EVENT);
+static SENSOR_DEVICE_ATTR_RO(ntm_intr_event                , cpld, NTM_INTR_EVENT);
+static SENSOR_DEVICE_ATTR_RO(thermal_alert_event           , cpld, THERMAL_ALERT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(misc_intr_event                 , cpld, MISC_INTR_EVENT);
 static SENSOR_DEVICE_ATTR_RW(ntm_rst                       , cpld, NTM_RST);
 static SENSOR_DEVICE_ATTR_RW(bmc_rst                       , cpld, BMC_RST);
 static SENSOR_DEVICE_ATTR_RW(cpld_2_3_rst                  , cpld, CPLD_2_3_RST);
@@ -1061,6 +1825,60 @@ static SENSOR_DEVICE_ATTR_RO(qsfp28_p50_abs                 , cpld, QSFP28_P50_A
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p51_abs                 , cpld, QSFP28_P51_ABS);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_abs                 , cpld, QSFPDD_P52_ABS);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_abs                 , cpld, QSFPDD_P53_ABS);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_abs_mask             , cpld, SFP28_P0_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_abs_mask             , cpld, SFP28_P1_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_abs_mask             , cpld, SFP28_P2_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_abs_mask             , cpld, SFP28_P3_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_abs_mask             , cpld, SFP28_P4_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_abs_mask             , cpld, SFP28_P5_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_abs_mask             , cpld, SFP28_P6_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_abs_mask             , cpld, SFP28_P7_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_abs_mask             , cpld, SFP28_P8_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_abs_mask             , cpld, SFP28_P9_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_abs_mask            , cpld, SFP28_P10_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_abs_mask            , cpld, SFP28_P11_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_abs_mask            , cpld, SFP28_P12_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_abs_mask            , cpld, SFP28_P13_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_abs_mask            , cpld, SFP28_P14_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_abs_mask            , cpld, SFP28_P15_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_abs_mask            , cpld, SFP28_P16_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_abs_mask            , cpld, SFP28_P17_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_abs_mask            , cpld, SFP28_P18_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_abs_mask            , cpld, SFP28_P19_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_abs_mask            , cpld, SFP28_P20_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_abs_mask            , cpld, SFP28_P21_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_abs_mask            , cpld, SFP28_P22_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_abs_mask            , cpld, SFP28_P23_ABS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_abs_mask            , cpld, SFP28_P24_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_abs_mask            , cpld, SFP28_P25_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_abs_mask            , cpld, SFP28_P26_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_abs_mask            , cpld, SFP28_P27_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_abs_mask            , cpld, SFP28_P28_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_abs_mask            , cpld, SFP28_P29_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_abs_mask            , cpld, SFP28_P30_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_abs_mask            , cpld, SFP28_P31_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_abs_mask            , cpld, SFP28_P32_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_abs_mask            , cpld, SFP28_P33_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_abs_mask            , cpld, SFP28_P34_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_abs_mask            , cpld, SFP28_P35_ABS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_abs_mask            , cpld, SFP28_P36_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_abs_mask            , cpld, SFP28_P37_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_abs_mask            , cpld, SFP28_P38_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_abs_mask            , cpld, SFP28_P39_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_abs_mask            , cpld, SFP56_P40_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_abs_mask            , cpld, SFP56_P41_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_abs_mask            , cpld, SFP56_P42_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_abs_mask            , cpld, SFP56_P43_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_abs_mask            , cpld, SFP56_P44_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_abs_mask            , cpld, SFP56_P45_ABS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_abs_mask            , cpld, SFP56_P46_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_abs_mask            , cpld, SFP56_P47_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p48_abs_mask           , cpld, QSFP28_P48_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p49_abs_mask           , cpld, QSFP28_P49_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p50_abs_mask           , cpld, QSFP28_P50_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p51_abs_mask           , cpld, QSFP28_P51_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_abs_mask           , cpld, QSFPDD_P52_ABS_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_abs_mask           , cpld, QSFPDD_P53_ABS_MASK);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p0_i2c_stuck            , cpld, SFP28_P0_I2C_STUCK);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p1_i2c_stuck            , cpld, SFP28_P1_I2C_STUCK);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p2_i2c_stuck            , cpld, SFP28_P2_I2C_STUCK);
@@ -1115,6 +1933,60 @@ static SENSOR_DEVICE_ATTR_RO(qsfp28_p50_i2c_stuck          , cpld, QSFP28_P50_I2
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p51_i2c_stuck          , cpld, QSFP28_P51_I2C_STUCK);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_i2c_stuck          , cpld, QSFPDD_P52_I2C_STUCK);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_i2c_stuck          , cpld, QSFPDD_P53_I2C_STUCK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_i2c_stuck_mask       , cpld, SFP28_P0_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_i2c_stuck_mask       , cpld, SFP28_P1_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_i2c_stuck_mask       , cpld, SFP28_P2_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_i2c_stuck_mask       , cpld, SFP28_P3_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_i2c_stuck_mask       , cpld, SFP28_P4_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_i2c_stuck_mask       , cpld, SFP28_P5_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_i2c_stuck_mask       , cpld, SFP28_P6_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_i2c_stuck_mask       , cpld, SFP28_P7_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_i2c_stuck_mask       , cpld, SFP28_P8_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_i2c_stuck_mask       , cpld, SFP28_P9_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_i2c_stuck_mask      , cpld, SFP28_P10_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_i2c_stuck_mask      , cpld, SFP28_P11_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_i2c_stuck_mask      , cpld, SFP28_P12_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_i2c_stuck_mask      , cpld, SFP28_P13_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_i2c_stuck_mask      , cpld, SFP28_P14_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_i2c_stuck_mask      , cpld, SFP28_P15_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_i2c_stuck_mask      , cpld, SFP28_P16_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_i2c_stuck_mask      , cpld, SFP28_P17_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_i2c_stuck_mask      , cpld, SFP28_P18_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_i2c_stuck_mask      , cpld, SFP28_P19_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_i2c_stuck_mask      , cpld, SFP28_P20_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_i2c_stuck_mask      , cpld, SFP28_P21_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_i2c_stuck_mask      , cpld, SFP28_P22_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_i2c_stuck_mask      , cpld, SFP28_P23_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_i2c_stuck_mask      , cpld, SFP28_P24_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_i2c_stuck_mask      , cpld, SFP28_P25_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_i2c_stuck_mask      , cpld, SFP28_P26_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_i2c_stuck_mask      , cpld, SFP28_P27_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_i2c_stuck_mask      , cpld, SFP28_P28_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_i2c_stuck_mask      , cpld, SFP28_P29_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_i2c_stuck_mask      , cpld, SFP28_P30_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_i2c_stuck_mask      , cpld, SFP28_P31_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_i2c_stuck_mask      , cpld, SFP28_P32_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_i2c_stuck_mask      , cpld, SFP28_P33_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_i2c_stuck_mask      , cpld, SFP28_P34_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_i2c_stuck_mask      , cpld, SFP28_P35_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_i2c_stuck_mask      , cpld, SFP28_P36_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_i2c_stuck_mask      , cpld, SFP28_P37_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_i2c_stuck_mask      , cpld, SFP28_P38_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_i2c_stuck_mask      , cpld, SFP28_P39_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_i2c_stuck_mask      , cpld, SFP56_P40_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_i2c_stuck_mask      , cpld, SFP56_P41_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_i2c_stuck_mask      , cpld, SFP56_P42_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_i2c_stuck_mask      , cpld, SFP56_P43_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_i2c_stuck_mask      , cpld, SFP56_P44_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_i2c_stuck_mask      , cpld, SFP56_P45_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_i2c_stuck_mask      , cpld, SFP56_P46_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_i2c_stuck_mask      , cpld, SFP56_P47_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p48_i2c_stuck_mask     , cpld, QSFP28_P48_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p49_i2c_stuck_mask     , cpld, QSFP28_P49_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p50_i2c_stuck_mask     , cpld, QSFP28_P50_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfp28_p51_i2c_stuck_mask     , cpld, QSFP28_P51_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_i2c_stuck_mask     , cpld, QSFPDD_P52_I2C_STUCK_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_i2c_stuck_mask     , cpld, QSFPDD_P53_I2C_STUCK_MASK);
 static SENSOR_DEVICE_ATTR_RO(port_0_7_abs_event            , cpld, PORT_0_7_ABS_EVENT);
 static SENSOR_DEVICE_ATTR_RO(port_8_15_abs_event           , cpld, PORT_8_15_ABS_EVENT);
 static SENSOR_DEVICE_ATTR_RO(port_16_23_abs_event          , cpld, PORT_16_23_ABS_EVENT);
@@ -1267,6 +2139,102 @@ static SENSOR_DEVICE_ATTR_RO(sfp56_p44_rx_los                , cpld, SFP56_P44_R
 static SENSOR_DEVICE_ATTR_RO(sfp56_p45_rx_los                , cpld, SFP56_P45_RXLOS); 
 static SENSOR_DEVICE_ATTR_RO(sfp56_p46_rx_los                , cpld, SFP56_P46_RXLOS);
 static SENSOR_DEVICE_ATTR_RO(sfp56_p47_rx_los                , cpld, SFP56_P47_RXLOS);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_rx_los_mask            , cpld, SFP28_P0_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_rx_los_mask            , cpld, SFP28_P1_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_rx_los_mask            , cpld, SFP28_P2_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_rx_los_mask            , cpld, SFP28_P3_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_rx_los_mask            , cpld, SFP28_P4_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_rx_los_mask            , cpld, SFP28_P5_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_rx_los_mask            , cpld, SFP28_P6_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_rx_los_mask            , cpld, SFP28_P7_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_rx_los_mask            , cpld, SFP28_P8_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_rx_los_mask            , cpld, SFP28_P9_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_rx_los_mask           , cpld, SFP28_P10_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_rx_los_mask           , cpld, SFP28_P11_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_rx_los_mask           , cpld, SFP28_P12_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_rx_los_mask           , cpld, SFP28_P13_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_rx_los_mask           , cpld, SFP28_P14_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_rx_los_mask           , cpld, SFP28_P15_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_rx_los_mask           , cpld, SFP28_P16_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_rx_los_mask           , cpld, SFP28_P17_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_rx_los_mask           , cpld, SFP28_P18_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_rx_los_mask           , cpld, SFP28_P19_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_rx_los_mask           , cpld, SFP28_P20_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_rx_los_mask           , cpld, SFP28_P21_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_rx_los_mask           , cpld, SFP28_P22_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_rx_los_mask           , cpld, SFP28_P23_RXLOS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_rx_los_mask           , cpld, SFP28_P24_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_rx_los_mask           , cpld, SFP28_P25_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_rx_los_mask           , cpld, SFP28_P26_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_rx_los_mask           , cpld, SFP28_P27_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_rx_los_mask           , cpld, SFP28_P28_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_rx_los_mask           , cpld, SFP28_P29_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_rx_los_mask           , cpld, SFP28_P30_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_rx_los_mask           , cpld, SFP28_P31_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_rx_los_mask           , cpld, SFP28_P32_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_rx_los_mask           , cpld, SFP28_P33_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_rx_los_mask           , cpld, SFP28_P34_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_rx_los_mask           , cpld, SFP28_P35_RXLOS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_rx_los_mask           , cpld, SFP28_P36_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_rx_los_mask           , cpld, SFP28_P37_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_rx_los_mask           , cpld, SFP28_P38_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_rx_los_mask           , cpld, SFP28_P39_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_rx_los_mask           , cpld, SFP56_P40_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_rx_los_mask           , cpld, SFP56_P41_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_rx_los_mask           , cpld, SFP56_P42_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_rx_los_mask           , cpld, SFP56_P43_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_rx_los_mask           , cpld, SFP56_P44_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_rx_los_mask           , cpld, SFP56_P45_RXLOS_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_rx_los_mask           , cpld, SFP56_P46_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_rx_los_mask           , cpld, SFP56_P47_RXLOS_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_rx_los_event           , cpld, SFP28_P0_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_rx_los_event           , cpld, SFP28_P1_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_rx_los_event           , cpld, SFP28_P2_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_rx_los_event           , cpld, SFP28_P3_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_rx_los_event           , cpld, SFP28_P4_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_rx_los_event           , cpld, SFP28_P5_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_rx_los_event           , cpld, SFP28_P6_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_rx_los_event           , cpld, SFP28_P7_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_rx_los_event           , cpld, SFP28_P8_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_rx_los_event           , cpld, SFP28_P9_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_rx_los_event          , cpld, SFP28_P10_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_rx_los_event          , cpld, SFP28_P11_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_rx_los_event          , cpld, SFP28_P12_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_rx_los_event          , cpld, SFP28_P13_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_rx_los_event          , cpld, SFP28_P14_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_rx_los_event          , cpld, SFP28_P15_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_rx_los_event          , cpld, SFP28_P16_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_rx_los_event          , cpld, SFP28_P17_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_rx_los_event          , cpld, SFP28_P18_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_rx_los_event          , cpld, SFP28_P19_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_rx_los_event          , cpld, SFP28_P20_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_rx_los_event          , cpld, SFP28_P21_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_rx_los_event          , cpld, SFP28_P22_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_rx_los_event          , cpld, SFP28_P23_RXLOS_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_rx_los_event          , cpld, SFP28_P24_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_rx_los_event          , cpld, SFP28_P25_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_rx_los_event          , cpld, SFP28_P26_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_rx_los_event          , cpld, SFP28_P27_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_rx_los_event          , cpld, SFP28_P28_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_rx_los_event          , cpld, SFP28_P29_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_rx_los_event          , cpld, SFP28_P30_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_rx_los_event          , cpld, SFP28_P31_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_rx_los_event          , cpld, SFP28_P32_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_rx_los_event          , cpld, SFP28_P33_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_rx_los_event          , cpld, SFP28_P34_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_rx_los_event          , cpld, SFP28_P35_RXLOS_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_rx_los_event          , cpld, SFP28_P36_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_rx_los_event          , cpld, SFP28_P37_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_rx_los_event          , cpld, SFP28_P38_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_rx_los_event          , cpld, SFP28_P39_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_rx_los_event          , cpld, SFP56_P40_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_rx_los_event          , cpld, SFP56_P41_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_rx_los_event          , cpld, SFP56_P42_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_rx_los_event          , cpld, SFP56_P43_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_rx_los_event          , cpld, SFP56_P44_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_rx_los_event          , cpld, SFP56_P45_RXLOS_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_rx_los_event          , cpld, SFP56_P46_RXLOS_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_rx_los_event          , cpld, SFP56_P47_RXLOS_EVENT);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p0_tx_flt                 , cpld, SFP28_P0_TXFLT);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p1_tx_flt                 , cpld, SFP28_P1_TXFLT);
 static SENSOR_DEVICE_ATTR_RO(sfp28_p2_tx_flt                 , cpld, SFP28_P2_TXFLT);
@@ -1315,14 +2283,120 @@ static SENSOR_DEVICE_ATTR_RO(sfp56_p44_tx_flt                , cpld, SFP56_P44_T
 static SENSOR_DEVICE_ATTR_RO(sfp56_p45_tx_flt                , cpld, SFP56_P45_TXFLT); 
 static SENSOR_DEVICE_ATTR_RO(sfp56_p46_tx_flt                , cpld, SFP56_P46_TXFLT);
 static SENSOR_DEVICE_ATTR_RO(sfp56_p47_tx_flt                , cpld, SFP56_P47_TXFLT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_tx_flt_mask           , cpld, SFP28_P0_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_tx_flt_mask           , cpld, SFP28_P1_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_tx_flt_mask           , cpld, SFP28_P2_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_tx_flt_mask           , cpld, SFP28_P3_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_tx_flt_mask           , cpld, SFP28_P4_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_tx_flt_mask           , cpld, SFP28_P5_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_tx_flt_mask           , cpld, SFP28_P6_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_tx_flt_mask           , cpld, SFP28_P7_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_tx_flt_mask           , cpld, SFP28_P8_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_tx_flt_mask           , cpld, SFP28_P9_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_tx_flt_mask          , cpld, SFP28_P10_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_tx_flt_mask          , cpld, SFP28_P11_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_tx_flt_mask          , cpld, SFP28_P12_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_tx_flt_mask          , cpld, SFP28_P13_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_tx_flt_mask          , cpld, SFP28_P14_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_tx_flt_mask          , cpld, SFP28_P15_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_tx_flt_mask          , cpld, SFP28_P16_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_tx_flt_mask          , cpld, SFP28_P17_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_tx_flt_mask          , cpld, SFP28_P18_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_tx_flt_mask          , cpld, SFP28_P19_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_tx_flt_mask          , cpld, SFP28_P20_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_tx_flt_mask          , cpld, SFP28_P21_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_tx_flt_mask          , cpld, SFP28_P22_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_tx_flt_mask          , cpld, SFP28_P23_TXFLT_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_tx_flt_mask          , cpld, SFP28_P24_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_tx_flt_mask          , cpld, SFP28_P25_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_tx_flt_mask          , cpld, SFP28_P26_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_tx_flt_mask          , cpld, SFP28_P27_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_tx_flt_mask          , cpld, SFP28_P28_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_tx_flt_mask          , cpld, SFP28_P29_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_tx_flt_mask          , cpld, SFP28_P30_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_tx_flt_mask          , cpld, SFP28_P31_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_tx_flt_mask          , cpld, SFP28_P32_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_tx_flt_mask          , cpld, SFP28_P33_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_tx_flt_mask          , cpld, SFP28_P34_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_tx_flt_mask          , cpld, SFP28_P35_TXFLT_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_tx_flt_mask          , cpld, SFP28_P36_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_tx_flt_mask          , cpld, SFP28_P37_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_tx_flt_mask          , cpld, SFP28_P38_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_tx_flt_mask          , cpld, SFP28_P39_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_tx_flt_mask          , cpld, SFP56_P40_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_tx_flt_mask          , cpld, SFP56_P41_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_tx_flt_mask          , cpld, SFP56_P42_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_tx_flt_mask          , cpld, SFP56_P43_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_tx_flt_mask          , cpld, SFP56_P44_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_tx_flt_mask          , cpld, SFP56_P45_TXFLT_MASK); 
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_tx_flt_mask          , cpld, SFP56_P46_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_tx_flt_mask          , cpld, SFP56_P47_TXFLT_MASK);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p0_tx_flt_event          , cpld, SFP28_P0_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p1_tx_flt_event          , cpld, SFP28_P1_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p2_tx_flt_event          , cpld, SFP28_P2_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p3_tx_flt_event          , cpld, SFP28_P3_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p4_tx_flt_event          , cpld, SFP28_P4_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p5_tx_flt_event          , cpld, SFP28_P5_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p6_tx_flt_event          , cpld, SFP28_P6_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p7_tx_flt_event          , cpld, SFP28_P7_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p8_tx_flt_event          , cpld, SFP28_P8_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p9_tx_flt_event          , cpld, SFP28_P9_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p10_tx_flt_event         , cpld, SFP28_P10_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p11_tx_flt_event         , cpld, SFP28_P11_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p12_tx_flt_event         , cpld, SFP28_P12_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p13_tx_flt_event         , cpld, SFP28_P13_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p14_tx_flt_event         , cpld, SFP28_P14_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p15_tx_flt_event         , cpld, SFP28_P15_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p16_tx_flt_event         , cpld, SFP28_P16_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p17_tx_flt_event         , cpld, SFP28_P17_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p18_tx_flt_event         , cpld, SFP28_P18_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p19_tx_flt_event         , cpld, SFP28_P19_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p20_tx_flt_event         , cpld, SFP28_P20_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p21_tx_flt_event         , cpld, SFP28_P21_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p22_tx_flt_event         , cpld, SFP28_P22_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p23_tx_flt_event         , cpld, SFP28_P23_TXFLT_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p24_tx_flt_event         , cpld, SFP28_P24_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p25_tx_flt_event         , cpld, SFP28_P25_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p26_tx_flt_event         , cpld, SFP28_P26_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p27_tx_flt_event         , cpld, SFP28_P27_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p28_tx_flt_event         , cpld, SFP28_P28_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p29_tx_flt_event         , cpld, SFP28_P29_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p30_tx_flt_event         , cpld, SFP28_P30_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p31_tx_flt_event         , cpld, SFP28_P31_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p32_tx_flt_event         , cpld, SFP28_P32_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p33_tx_flt_event         , cpld, SFP28_P33_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p34_tx_flt_event         , cpld, SFP28_P34_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p35_tx_flt_event         , cpld, SFP28_P35_TXFLT_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp28_p36_tx_flt_event         , cpld, SFP28_P36_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p37_tx_flt_event         , cpld, SFP28_P37_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p38_tx_flt_event         , cpld, SFP28_P38_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp28_p39_tx_flt_event         , cpld, SFP28_P39_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p40_tx_flt_event         , cpld, SFP56_P40_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p41_tx_flt_event         , cpld, SFP56_P41_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p42_tx_flt_event         , cpld, SFP56_P42_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p43_tx_flt_event         , cpld, SFP56_P43_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p44_tx_flt_event         , cpld, SFP56_P44_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p45_tx_flt_event         , cpld, SFP56_P45_TXFLT_EVENT); 
+static SENSOR_DEVICE_ATTR_RO(sfp56_p46_tx_flt_event         , cpld, SFP56_P46_TXFLT_EVENT);
+static SENSOR_DEVICE_ATTR_RO(sfp56_p47_tx_flt_event         , cpld, SFP56_P47_TXFLT_EVENT);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_efuse_pg            , cpld, QSFPDD_P52_EFUSE_PG);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_efuse_pg            , cpld, QSFPDD_P53_EFUSE_PG);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_efuse_pg_mask       , cpld, QSFPDD_P52_EFUSE_PG_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_efuse_pg_mask       , cpld, QSFPDD_P53_EFUSE_PG_MASK);
+static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_53_efuse_pg_event   , cpld, QSFPDD_P52_53_EFUSE_PG_EVENT);
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p48_intr                , cpld, QSFP28_P48_INTR);
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p49_intr                , cpld, QSFP28_P49_INTR);
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p50_intr                , cpld, QSFP28_P50_INTR);
 static SENSOR_DEVICE_ATTR_RO(qsfp28_p51_intr                , cpld, QSFP28_P51_INTR);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p52_intr                , cpld, QSFPDD_P52_INTR);
 static SENSOR_DEVICE_ATTR_RO(qsfpdd_p53_intr                , cpld, QSFPDD_P53_INTR);
+static SENSOR_DEVICE_ATTR_RW(qsfp28_p48_intr_mask           , cpld, QSFP28_P48_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(qsfp28_p49_intr_mask           , cpld, QSFP28_P49_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(qsfp28_p50_intr_mask           , cpld, QSFP28_P50_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(qsfp28_p51_intr_mask           , cpld, QSFP28_P51_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(qsfpdd_p52_intr_mask           , cpld, QSFPDD_P52_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RW(qsfpdd_p53_intr_mask           , cpld, QSFPDD_P53_INTR_MASK);
+static SENSOR_DEVICE_ATTR_RO(port_48_53_intr_event          , cpld, PORT_48_53_INTR_EVENT);
 static SENSOR_DEVICE_ATTR_RW(qsfp28_p48_rst                 , cpld, QSFP28_P48_RST);
 static SENSOR_DEVICE_ATTR_RW(qsfp28_p49_rst                 , cpld, QSFP28_P49_RST);
 static SENSOR_DEVICE_ATTR_RW(qsfp28_p50_rst                 , cpld, QSFP28_P50_RST);
@@ -1335,13 +2409,13 @@ static SENSOR_DEVICE_ATTR_RW(qsfp28_p50_lp_mode             , cpld, QSFP28_P50_L
 static SENSOR_DEVICE_ATTR_RW(qsfp28_p51_lp_mode             , cpld, QSFP28_P51_LP_MODE);
 static SENSOR_DEVICE_ATTR_RW(qsfpdd_p52_lp_mode             , cpld, QSFPDD_P52_LP_MODE);
 static SENSOR_DEVICE_ATTR_RW(qsfpdd_p53_lp_mode             , cpld, QSFPDD_P53_LP_MODE);
-static SENSOR_DEVICE_ATTR_RO(fpga_id                       , cpld, FPGA_ID);
-static SENSOR_DEVICE_ATTR_RO(fpga_ver_1                    , cpld, FPGA_VER_1);
-static SENSOR_DEVICE_ATTR_RO(fpga_minor_ver                , cpld, FPGA_MINOR_VER);
-static SENSOR_DEVICE_ATTR_RO(fpga_major_ver                , cpld, FPGA_MAJOR_VER);
-static SENSOR_DEVICE_ATTR_RO(fpga_build_ver                , cpld, FPGA_BUILD_VER);
-static SENSOR_DEVICE_ATTR_RO(fpga_version_h                , version_h, FPGA_VERSION_H);
-static SENSOR_DEVICE_ATTR_RO(fpga_dev_info                 , cpld, FPGA_DEV_INFO);
+static SENSOR_DEVICE_ATTR_RO(fpga_id                        , cpld, FPGA_ID);
+static SENSOR_DEVICE_ATTR_RO(fpga_ver_1                     , cpld, FPGA_VER_1);
+static SENSOR_DEVICE_ATTR_RO(fpga_minor_ver                 , cpld, FPGA_MINOR_VER);
+static SENSOR_DEVICE_ATTR_RO(fpga_major_ver                 , cpld, FPGA_MAJOR_VER);
+static SENSOR_DEVICE_ATTR_RO(fpga_build_ver                 , cpld, FPGA_BUILD_VER);
+static SENSOR_DEVICE_ATTR_RO(fpga_version_h                 , version_h, FPGA_VERSION_H);
+static SENSOR_DEVICE_ATTR_RO(fpga_dev_info                  , cpld, FPGA_DEV_INFO);
 
 
 //BSP DEBUG
@@ -1370,6 +2444,54 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_build_rev),
     _DEVICE_ATTR(cpld_brd_id_type),
     _DEVICE_ATTR(cpld_chip_type),
+    _DEVICE_ATTR(mac_intr),
+    _DEVICE_ATTR(cpld_fru_intr),
+    _DEVICE_ATTR(cpld_fru_intr_mask),
+    _DEVICE_ATTR(ntm_intr),
+    _DEVICE_ATTR(ntm_intr_mask),
+    _DEVICE_ATTR(thermal_alert),
+    _DEVICE_ATTR(thermal_alert_mask),
+    _DEVICE_ATTR(misc_intr),
+    _DEVICE_ATTR(misc_intr_mask),
+    _DEVICE_ATTR(cpld_2_intr),
+    _DEVICE_ATTR(cpld_3_intr),
+    _DEVICE_ATTR(fpga_intr),
+    _DEVICE_ATTR(fan_intr),
+    _DEVICE_ATTR(psu0_intr),
+    _DEVICE_ATTR(psu1_intr),
+    _DEVICE_ATTR(ntm_1588_intr),
+    _DEVICE_ATTR(ntm_synce_intr),
+    _DEVICE_ATTR(ntm_fpga_intr),
+    _DEVICE_ATTR(gnss_mode_intr),
+    _DEVICE_ATTR(mac1_thermal_alert),
+    _DEVICE_ATTR(mac2_thermal_alert),
+    _DEVICE_ATTR(lm75_1_thermal_alert),
+    _DEVICE_ATTR(lm75_2_thermal_alert),
+    _DEVICE_ATTR(lm75_3_thermal_alert),
+    _DEVICE_ATTR(lm75_4_thermal_alert),
+    _DEVICE_ATTR(usb_ocp),
+    _DEVICE_ATTR(mac_intr_mask),
+    _DEVICE_ATTR(cpld_2_intr_mask),
+    _DEVICE_ATTR(cpld_3_intr_mask),
+    _DEVICE_ATTR(fpga_intr_mask),
+    _DEVICE_ATTR(fan_intr_mask),
+    _DEVICE_ATTR(psu0_intr_mask),
+    _DEVICE_ATTR(psu1_intr_mask),
+    _DEVICE_ATTR(ntm_1588_intr_mask),
+    _DEVICE_ATTR(ntm_synce_intr_mask),
+    _DEVICE_ATTR(ntm_fpga_intr_mask),
+    _DEVICE_ATTR(mac1_thermal_alert_mask),
+    _DEVICE_ATTR(mac2_thermal_alert_mask),
+    _DEVICE_ATTR(lm75_1_thermal_alert_mask),
+    _DEVICE_ATTR(lm75_2_thermal_alert_mask),
+    _DEVICE_ATTR(lm75_3_thermal_alert_mask),
+    _DEVICE_ATTR(lm75_4_thermal_alert_mask),
+    _DEVICE_ATTR(usb_ocp_mask),
+    _DEVICE_ATTR(mac_intr_event),
+    _DEVICE_ATTR(cpld_fru_intr_event),
+    _DEVICE_ATTR(ntm_intr_event),
+    _DEVICE_ATTR(thermal_alert_event),
+    _DEVICE_ATTR(misc_intr_event),
     _DEVICE_ATTR(ntm_rst),
     _DEVICE_ATTR(bmc_rst),
     _DEVICE_ATTR(cpld_2_3_rst),
@@ -1443,6 +2565,34 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(sfp28_p25_abs),
     _DEVICE_ATTR(sfp28_p26_abs),
     _DEVICE_ATTR(sfp28_p27_abs),
+    _DEVICE_ATTR(sfp28_p0_abs_mask),
+    _DEVICE_ATTR(sfp28_p1_abs_mask),
+    _DEVICE_ATTR(sfp28_p2_abs_mask),
+    _DEVICE_ATTR(sfp28_p3_abs_mask),
+    _DEVICE_ATTR(sfp28_p4_abs_mask),
+    _DEVICE_ATTR(sfp28_p5_abs_mask),
+    _DEVICE_ATTR(sfp28_p6_abs_mask),
+    _DEVICE_ATTR(sfp28_p7_abs_mask),
+    _DEVICE_ATTR(sfp28_p8_abs_mask),
+    _DEVICE_ATTR(sfp28_p9_abs_mask),
+    _DEVICE_ATTR(sfp28_p10_abs_mask),
+    _DEVICE_ATTR(sfp28_p11_abs_mask),
+    _DEVICE_ATTR(sfp28_p12_abs_mask),
+    _DEVICE_ATTR(sfp28_p13_abs_mask),
+    _DEVICE_ATTR(sfp28_p14_abs_mask),
+    _DEVICE_ATTR(sfp28_p15_abs_mask),
+    _DEVICE_ATTR(sfp28_p16_abs_mask),
+    _DEVICE_ATTR(sfp28_p17_abs_mask),
+    _DEVICE_ATTR(sfp28_p18_abs_mask),
+    _DEVICE_ATTR(sfp28_p19_abs_mask),
+    _DEVICE_ATTR(sfp28_p20_abs_mask),
+    _DEVICE_ATTR(sfp28_p21_abs_mask),
+    _DEVICE_ATTR(sfp28_p22_abs_mask),
+    _DEVICE_ATTR(sfp28_p23_abs_mask),
+    _DEVICE_ATTR(sfp28_p24_abs_mask),
+    _DEVICE_ATTR(sfp28_p25_abs_mask),
+    _DEVICE_ATTR(sfp28_p26_abs_mask),
+    _DEVICE_ATTR(sfp28_p27_abs_mask),
     _DEVICE_ATTR(sfp28_p0_i2c_stuck),
     _DEVICE_ATTR(sfp28_p1_i2c_stuck),
     _DEVICE_ATTR(sfp28_p2_i2c_stuck),
@@ -1471,6 +2621,34 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(sfp28_p25_i2c_stuck),
     _DEVICE_ATTR(sfp28_p26_i2c_stuck),
     _DEVICE_ATTR(sfp28_p27_i2c_stuck),
+    _DEVICE_ATTR(sfp28_p0_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p1_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p2_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p3_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p4_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p5_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p6_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p7_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p8_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p9_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p10_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p11_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p12_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p13_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p14_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p15_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p16_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p17_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p18_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p19_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p20_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p21_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p22_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p23_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p24_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p25_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p26_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p27_i2c_stuck_mask),
     _DEVICE_ATTR(port_0_7_abs_event),
     _DEVICE_ATTR(port_8_15_abs_event),
     _DEVICE_ATTR(port_16_23_abs_event),
@@ -1559,6 +2737,62 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(sfp28_p25_rx_los),
     _DEVICE_ATTR(sfp28_p26_rx_los),
     _DEVICE_ATTR(sfp28_p27_rx_los),
+    _DEVICE_ATTR(sfp28_p0_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p1_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p2_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p3_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p4_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p5_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p6_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p7_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p8_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p9_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p10_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p11_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p12_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p13_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p14_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p15_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p16_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p17_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p18_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p19_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p20_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p21_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p22_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p23_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p24_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p25_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p26_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p27_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p0_rx_los_event),
+    _DEVICE_ATTR(sfp28_p1_rx_los_event),
+    _DEVICE_ATTR(sfp28_p2_rx_los_event),
+    _DEVICE_ATTR(sfp28_p3_rx_los_event),
+    _DEVICE_ATTR(sfp28_p4_rx_los_event),
+    _DEVICE_ATTR(sfp28_p5_rx_los_event),
+    _DEVICE_ATTR(sfp28_p6_rx_los_event),
+    _DEVICE_ATTR(sfp28_p7_rx_los_event),
+    _DEVICE_ATTR(sfp28_p8_rx_los_event),
+    _DEVICE_ATTR(sfp28_p9_rx_los_event),
+    _DEVICE_ATTR(sfp28_p10_rx_los_event),
+    _DEVICE_ATTR(sfp28_p11_rx_los_event),
+    _DEVICE_ATTR(sfp28_p12_rx_los_event),
+    _DEVICE_ATTR(sfp28_p13_rx_los_event),
+    _DEVICE_ATTR(sfp28_p14_rx_los_event),
+    _DEVICE_ATTR(sfp28_p15_rx_los_event),
+    _DEVICE_ATTR(sfp28_p16_rx_los_event),
+    _DEVICE_ATTR(sfp28_p17_rx_los_event),
+    _DEVICE_ATTR(sfp28_p18_rx_los_event),
+    _DEVICE_ATTR(sfp28_p19_rx_los_event),
+    _DEVICE_ATTR(sfp28_p20_rx_los_event),
+    _DEVICE_ATTR(sfp28_p21_rx_los_event),
+    _DEVICE_ATTR(sfp28_p22_rx_los_event),
+    _DEVICE_ATTR(sfp28_p23_rx_los_event),
+    _DEVICE_ATTR(sfp28_p24_rx_los_event),
+    _DEVICE_ATTR(sfp28_p25_rx_los_event),
+    _DEVICE_ATTR(sfp28_p26_rx_los_event),
+    _DEVICE_ATTR(sfp28_p27_rx_los_event),
     _DEVICE_ATTR(sfp28_p0_tx_flt),
     _DEVICE_ATTR(sfp28_p1_tx_flt),
     _DEVICE_ATTR(sfp28_p2_tx_flt),
@@ -1587,6 +2821,62 @@ static struct attribute *cpld2_attributes[] = {
     _DEVICE_ATTR(sfp28_p25_tx_flt),
     _DEVICE_ATTR(sfp28_p26_tx_flt),
     _DEVICE_ATTR(sfp28_p27_tx_flt),
+    _DEVICE_ATTR(sfp28_p0_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p1_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p2_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p3_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p4_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p5_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p6_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p7_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p8_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p9_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p10_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p11_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p12_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p13_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p14_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p15_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p16_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p17_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p18_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p19_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p20_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p21_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p22_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p23_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p24_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p25_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p26_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p27_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p0_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p1_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p2_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p3_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p4_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p5_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p6_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p7_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p8_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p9_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p10_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p11_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p12_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p13_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p14_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p15_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p16_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p17_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p18_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p19_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p20_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p21_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p22_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p23_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p24_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p25_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p26_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p27_tx_flt_event),
     NULL
 };
 
@@ -1614,6 +2904,18 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp28_p37_abs),
     _DEVICE_ATTR(sfp28_p38_abs),
     _DEVICE_ATTR(sfp28_p39_abs),
+    _DEVICE_ATTR(sfp28_p28_abs_mask),
+    _DEVICE_ATTR(sfp28_p29_abs_mask),
+    _DEVICE_ATTR(sfp28_p30_abs_mask),
+    _DEVICE_ATTR(sfp28_p31_abs_mask),
+    _DEVICE_ATTR(sfp28_p32_abs_mask),
+    _DEVICE_ATTR(sfp28_p33_abs_mask),
+    _DEVICE_ATTR(sfp28_p34_abs_mask),
+    _DEVICE_ATTR(sfp28_p35_abs_mask),
+    _DEVICE_ATTR(sfp28_p36_abs_mask),
+    _DEVICE_ATTR(sfp28_p37_abs_mask),
+    _DEVICE_ATTR(sfp28_p38_abs_mask),
+    _DEVICE_ATTR(sfp28_p39_abs_mask),
     _DEVICE_ATTR(sfp28_p28_tx_dis),
     _DEVICE_ATTR(sfp28_p29_tx_dis),
     _DEVICE_ATTR(sfp28_p30_tx_dis),
@@ -1650,6 +2952,30 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp28_p37_rx_los),
     _DEVICE_ATTR(sfp28_p38_rx_los),
     _DEVICE_ATTR(sfp28_p39_rx_los),
+    _DEVICE_ATTR(sfp28_p28_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p29_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p30_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p31_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p32_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p33_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p34_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p35_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p36_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p37_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p38_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p39_rx_los_mask),
+    _DEVICE_ATTR(sfp28_p28_rx_los_event),
+    _DEVICE_ATTR(sfp28_p29_rx_los_event),
+    _DEVICE_ATTR(sfp28_p30_rx_los_event),
+    _DEVICE_ATTR(sfp28_p31_rx_los_event),
+    _DEVICE_ATTR(sfp28_p32_rx_los_event),
+    _DEVICE_ATTR(sfp28_p33_rx_los_event),
+    _DEVICE_ATTR(sfp28_p34_rx_los_event),
+    _DEVICE_ATTR(sfp28_p35_rx_los_event),
+    _DEVICE_ATTR(sfp28_p36_rx_los_event),
+    _DEVICE_ATTR(sfp28_p37_rx_los_event),
+    _DEVICE_ATTR(sfp28_p38_rx_los_event),
+    _DEVICE_ATTR(sfp28_p39_rx_los_event),
     _DEVICE_ATTR(sfp28_p28_tx_flt),
     _DEVICE_ATTR(sfp28_p29_tx_flt),
     _DEVICE_ATTR(sfp28_p30_tx_flt),
@@ -1662,6 +2988,30 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp28_p37_tx_flt),
     _DEVICE_ATTR(sfp28_p38_tx_flt),
     _DEVICE_ATTR(sfp28_p39_tx_flt),
+    _DEVICE_ATTR(sfp28_p28_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p29_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p30_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p31_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p32_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p33_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p34_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p35_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p36_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p37_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p38_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p39_tx_flt_mask),
+    _DEVICE_ATTR(sfp28_p28_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p29_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p30_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p31_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p32_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p33_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p34_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p35_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p36_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p37_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p38_tx_flt_event),
+    _DEVICE_ATTR(sfp28_p39_tx_flt_event),
     _DEVICE_ATTR(sfp56_p40_abs),
     _DEVICE_ATTR(sfp56_p41_abs),
     _DEVICE_ATTR(sfp56_p42_abs),
@@ -1670,6 +3020,14 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp56_p45_abs),
     _DEVICE_ATTR(sfp56_p46_abs),
     _DEVICE_ATTR(sfp56_p47_abs),
+    _DEVICE_ATTR(sfp56_p40_abs_mask),
+    _DEVICE_ATTR(sfp56_p41_abs_mask),
+    _DEVICE_ATTR(sfp56_p42_abs_mask),
+    _DEVICE_ATTR(sfp56_p43_abs_mask),
+    _DEVICE_ATTR(sfp56_p44_abs_mask),
+    _DEVICE_ATTR(sfp56_p45_abs_mask),
+    _DEVICE_ATTR(sfp56_p46_abs_mask),
+    _DEVICE_ATTR(sfp56_p47_abs_mask),
     _DEVICE_ATTR(sfp56_p40_tx_dis),
     _DEVICE_ATTR(sfp56_p41_tx_dis),
     _DEVICE_ATTR(sfp56_p42_tx_dis),
@@ -1694,6 +3052,22 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp56_p45_rx_los),
     _DEVICE_ATTR(sfp56_p46_rx_los),
     _DEVICE_ATTR(sfp56_p47_rx_los),
+    _DEVICE_ATTR(sfp56_p40_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p41_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p42_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p43_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p44_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p45_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p46_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p47_rx_los_mask),
+    _DEVICE_ATTR(sfp56_p40_rx_los_event),
+    _DEVICE_ATTR(sfp56_p41_rx_los_event),
+    _DEVICE_ATTR(sfp56_p42_rx_los_event),
+    _DEVICE_ATTR(sfp56_p43_rx_los_event),
+    _DEVICE_ATTR(sfp56_p44_rx_los_event),
+    _DEVICE_ATTR(sfp56_p45_rx_los_event),
+    _DEVICE_ATTR(sfp56_p46_rx_los_event),
+    _DEVICE_ATTR(sfp56_p47_rx_los_event),
     _DEVICE_ATTR(sfp56_p40_tx_flt),
     _DEVICE_ATTR(sfp56_p41_tx_flt),
     _DEVICE_ATTR(sfp56_p42_tx_flt),
@@ -1702,12 +3076,34 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(sfp56_p45_tx_flt),
     _DEVICE_ATTR(sfp56_p46_tx_flt),
     _DEVICE_ATTR(sfp56_p47_tx_flt),
+    _DEVICE_ATTR(sfp56_p40_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p41_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p42_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p43_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p44_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p45_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p46_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p47_tx_flt_mask),
+    _DEVICE_ATTR(sfp56_p40_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p41_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p42_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p43_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p44_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p45_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p46_tx_flt_event),
+    _DEVICE_ATTR(sfp56_p47_tx_flt_event),
     _DEVICE_ATTR(qsfp28_p48_abs),
     _DEVICE_ATTR(qsfp28_p49_abs),
     _DEVICE_ATTR(qsfp28_p50_abs),
     _DEVICE_ATTR(qsfp28_p51_abs),
     _DEVICE_ATTR(qsfpdd_p52_abs),
     _DEVICE_ATTR(qsfpdd_p53_abs),
+    _DEVICE_ATTR(qsfp28_p48_abs_mask),
+    _DEVICE_ATTR(qsfp28_p49_abs_mask),
+    _DEVICE_ATTR(qsfp28_p50_abs_mask),
+    _DEVICE_ATTR(qsfp28_p51_abs_mask),
+    _DEVICE_ATTR(qsfpdd_p52_abs_mask),
+    _DEVICE_ATTR(qsfpdd_p53_abs_mask),
     _DEVICE_ATTR(qsfp28_p48_rst),
     _DEVICE_ATTR(qsfp28_p49_rst),
     _DEVICE_ATTR(qsfp28_p50_rst),
@@ -1726,8 +3122,18 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(qsfp28_p51_intr),
     _DEVICE_ATTR(qsfpdd_p52_intr),
     _DEVICE_ATTR(qsfpdd_p53_intr),
+    _DEVICE_ATTR(qsfp28_p48_intr_mask),
+    _DEVICE_ATTR(qsfp28_p49_intr_mask),
+    _DEVICE_ATTR(qsfp28_p50_intr_mask),
+    _DEVICE_ATTR(qsfp28_p51_intr_mask),
+    _DEVICE_ATTR(qsfpdd_p52_intr_mask),
+    _DEVICE_ATTR(qsfpdd_p53_intr_mask),
+    _DEVICE_ATTR(port_48_53_intr_event),
     _DEVICE_ATTR(qsfpdd_p52_efuse_pg),
     _DEVICE_ATTR(qsfpdd_p53_efuse_pg),
+    _DEVICE_ATTR(qsfpdd_p52_efuse_pg_mask),
+    _DEVICE_ATTR(qsfpdd_p53_efuse_pg_mask),
+    _DEVICE_ATTR(qsfpdd_p52_53_efuse_pg_event),
     _DEVICE_ATTR(port_28_35_abs_event),
     _DEVICE_ATTR(port_36_43_abs_event),
     _DEVICE_ATTR(port_44_51_abs_event),
@@ -1758,6 +3164,32 @@ static struct attribute *cpld3_attributes[] = {
     _DEVICE_ATTR(qsfp28_p51_i2c_stuck),
     _DEVICE_ATTR(qsfpdd_p52_i2c_stuck),
     _DEVICE_ATTR(qsfpdd_p53_i2c_stuck),
+    _DEVICE_ATTR(sfp28_p28_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p29_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p30_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p31_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p32_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p33_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p34_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p35_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p36_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p37_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p38_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp28_p39_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p40_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p41_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p42_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p43_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p44_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p45_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p46_i2c_stuck_mask),
+    _DEVICE_ATTR(sfp56_p47_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfp28_p48_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfp28_p49_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfp28_p50_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfp28_p51_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfpdd_p52_i2c_stuck_mask),
+    _DEVICE_ATTR(qsfpdd_p53_i2c_stuck_mask),
     NULL
 };
 
@@ -1973,7 +3405,9 @@ static ssize_t cpld_show(struct device *dev,
         case CPLD_BUILD_REV:
         case CPLD_BRD_ID_TYPE:
         case CPLD_CHIP_TYPE:
-        case FPGA_INTR:
+        //INTR, INTR_MASK, INTR_EVENT 
+        case MAC_INTR ... MISC_INTR_EVENT:
+        //RST
         case NTM_RST:
         case BMC_RST:
         case CPLD_2_3_RST:
@@ -2001,18 +3435,36 @@ static ssize_t cpld_show(struct device *dev,
         case PSU_1_LED_STATUS:
         case SYNC_LED_STATUS:
         case ID_LED_STATUS:
+        //FPGA
+        case FPGA_ID:
+        case FPGA_VER_1:
+        case FPGA_MINOR_VER:
+        case FPGA_MAJOR_VER:
+        case FPGA_BUILD_VER:
+        case FPGA_VERSION_H:
+        case FPGA_DEV_INFO:
         // PORT FUNC
         case SFP28_P0_ABS ... QSFPDD_P53_ABS:
+        case SFP28_P0_ABS_MASK ... QSFPDD_P53_ABS_MASK:
         case SFP28_P0_I2C_STUCK ... QSFPDD_P53_I2C_STUCK:
+        case SFP28_P0_I2C_STUCK_MASK ... QSFPDD_P53_I2C_STUCK_MASK:
         case PORT_0_7_ABS_EVENT ... PORT_52_53_ABS_EVENT:
         case SFP28_P0_TXDIS ... SFP56_P47_TXDIS:
         case SFP28_P0_RS ... SFP56_P47_RS:
         case SFP28_P0_RXLOS ... SFP56_P47_RXLOS:
+        case SFP28_P0_RXLOS_MASK ... SFP56_P47_RXLOS_MASK:
+        case SFP28_P0_RXLOS_EVENT ... SFP56_P47_RXLOS_EVENT:
         case SFP28_P0_TXFLT ... SFP56_P47_TXFLT:
+        case SFP28_P0_TXFLT_MASK ... SFP56_P47_TXFLT_MASK:
+        case SFP28_P0_TXFLT_EVENT ... SFP56_P47_TXFLT_EVENT:
         case QSFP28_P48_INTR ... QSFPDD_P53_INTR:
+        case QSFP28_P48_INTR_MASK ... QSFPDD_P53_INTR_MASK:
+        case PORT_48_53_INTR_EVENT:
         case QSFP28_P48_RST ... QSFPDD_P53_RST:
         case QSFP28_P48_LP_MODE ... QSFPDD_P53_LP_MODE:
         case QSFPDD_P52_EFUSE_PG ... QSFPDD_P53_EFUSE_PG:
+        case QSFPDD_P52_EFUSE_PG_MASK ... QSFPDD_P53_EFUSE_PG_MASK:
+        case QSFPDD_P52_53_EFUSE_PG_EVENT:
         
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
@@ -2038,6 +3490,27 @@ static ssize_t cpld_store(struct device *dev,
         case BMC_RST:
         case CPLD_2_3_RST:
         case FPGA_RST:
+        case CPLD_FRU_INTR_MASK:
+        case NTM_INTR_MASK:
+        case THERMAL_ALERT_MASK:
+        case MISC_INTR_MASK:
+        case MAC_INTR_MASK:
+        case CPLD_2_INTR_MASK:
+        case CPLD_3_INTR_MASK:
+        case FPGA_INTR_MASK:
+        case FAN_INTR_MASK:
+        case PSU0_INTR_MASK:
+        case PSU1_INTR_MASK:
+        case NTM_1588_INTR_MASK:
+        case NTM_SYNCE_INTR_MASK:
+        case NTM_FPGA_INTR_MASK:
+        case MAC1_THERMAL_ALERT_MASK:
+        case MAC2_THERMAL_ALERT_MASK:
+        case LM75_1_THERMAL_ALERT_MASK:
+        case LM75_2_THERMAL_ALERT_MASK:
+        case LM75_3_THERMAL_ALERT_MASK:
+        case LM75_4_THERMAL_ALERT_MASK:
+        case USB_OCP_MASK:
         case I2C_MUX_1_RST:
         case I2C_MUX_2_RST:
         case I2C_MUX_3_RST:
@@ -2047,6 +3520,12 @@ static ssize_t cpld_store(struct device *dev,
         case SFP28_P0_TXDIS ... SFP56_P47_TXDIS:
         case QSFP28_P48_RST ... QSFPDD_P53_RST:
         case QSFP28_P48_LP_MODE ... QSFPDD_P53_LP_MODE:
+        case QSFP28_P48_INTR_MASK:
+        case QSFP28_P49_INTR_MASK:
+        case QSFP28_P50_INTR_MASK:
+        case QSFP28_P51_INTR_MASK:
+        case QSFPDD_P52_INTR_MASK:
+        case QSFPDD_P53_INTR_MASK:
         case EVENT_DETECT_CTRL:
         case CPLD_WRITE_PROTECT:
         case SYSTEM_LED_STATUS:
@@ -2454,7 +3933,6 @@ exit:
 }
 
 /* cpld drvier remove */
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 static int cpld_remove(struct i2c_client *client)
 #else

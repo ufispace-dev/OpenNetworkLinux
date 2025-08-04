@@ -63,6 +63,7 @@
 #define SYSFS_FPGA                  SYSFS_DEVICES "2-0037/"
 #define BSP_PR_REDIRECT_ERR         " 2>>"LPC_BSP_PATH"bsp_pr_err"
 #define BSP_PR_REDIRECT_INFO        " 1>>"LPC_BSP_PATH"bsp_pr_info"
+#define MUX_RESET_PATH             LPC_BSP_PATH "mux_reset_all"
 
 /* Thermal threshold */
 #define THERMAL_WARNING_DEFAULT               77

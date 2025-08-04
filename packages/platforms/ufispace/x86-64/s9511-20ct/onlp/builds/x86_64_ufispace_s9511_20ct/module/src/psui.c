@@ -366,36 +366,30 @@ static int get_psu_sysfs(cpld_attr_idx_t idx, char** str)
     if(str == NULL)
         return ONLP_STATUS_E_PARAM;
 
-    *str = (char *)malloc(256);
-    if (*str == NULL)
-        return ONLP_STATUS_E_PARAM;
-
     switch(idx) {
         case PSU0_PRESENT:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu0_present");
+            *str =  SYSFS_CPLD1 "psu0_present";
             break;
         case PSU1_PRESENT:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu1_present");
+            *str =  SYSFS_CPLD1 "psu1_present";
             break;
         case PSU0_VIN_PWOK:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu0_vin_pwok");
+            *str =  SYSFS_CPLD1 "psu0_vin_pwok";
             break;
         case PSU1_VIN_PWOK:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu1_vin_pwok");
+            *str =  SYSFS_CPLD1 "psu1_vin_pwok";
             break;
         case PSU0_PWOK:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu0_pwok");
+            *str =  SYSFS_CPLD1 "psu0_pwok";
             break;
         case PSU1_PWOK:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu1_pwok");
+            *str =  SYSFS_CPLD1 "psu1_pwok";
             break;
         case PSU_TYPE:
-            snprintf(*str, 256, SYSFS_CPLD1 "psu_type");
+            *str =  SYSFS_CPLD1 "psu_type";
             break;
         default:
-            free(str);
-            AIM_LOG_ERROR("Get psu_sysfs wrong idx = %d\r\n", idx);
-            *str = NULL;
+            *str = "";
             return ONLP_STATUS_E_PARAM;
     }
 
@@ -457,8 +451,6 @@ int get_psu_present_status(int psu_type, int psu_id, int *pw_present)
         /* Get PSU Present Status */
         ONLP_TRY(get_psu_sysfs(ac_psu_attr[psu_id].cpld_abs, &sysfs));
         ONLP_TRY(read_file_hex(&status, sysfs));
-
-        free(sysfs);
 
         *pw_present = (status == 1)? PSU_STATUS_ABS : PSU_STATUS_PRES;
     } else if (psu_type == ONLP_PSU_TYPE_DC48) {
@@ -535,11 +527,11 @@ static int get_pmbus_psu_vin(int psu_type, int local_id, onlp_psu_info_t* info, 
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if (temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -613,7 +605,7 @@ static int get_pmbus_psu_vout(int psu_type, int local_id, onlp_psu_info_t* info,
             /* 1<<n_value is 2^n_value */
             temp = (unsigned int)(1<<n_value);
             if (temp)
-                snprintf(result, result_size, "%d.%04d", v_value/temp, ((v_value%temp)*10000)/temp);
+                snprintf(result, result_size, "%u.%04u", v_value/temp, ((v_value%temp)*10000)/temp);
         } else {
             snprintf(result, result_size, "%d", (v_value*(1<<n_value)));
         }
@@ -632,7 +624,7 @@ static int get_pmbus_psu_vout(int psu_type, int local_id, onlp_psu_info_t* info,
 
             temp = (unsigned int)(1<<n_value);
             if (temp)
-                snprintf(result, result_size, "%d.%04d", v_value/temp, ((v_value%temp)*10000)/temp);
+                snprintf(result, result_size, "%u.%04u", v_value/temp, ((v_value%temp)*10000)/temp);
         } else {
             if(v_value & 0x400) {
                 v_value = ~(v_value & 0x1F) + 1;
@@ -697,11 +689,11 @@ static int get_pmbus_psu_iin(int psu_type, int local_id, onlp_psu_info_t* info, 
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if (temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -748,11 +740,11 @@ static int get_pmbus_psu_iout(int psu_type, int local_id, onlp_psu_info_t* info,
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if (temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -807,11 +799,11 @@ static int get_pmbus_psu_pin(int psu_type, int local_id, onlp_psu_info_t* info, 
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if (temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -858,11 +850,11 @@ static int get_pmbus_psu_pout(int psu_type, int local_id, onlp_psu_info_t* info,
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if (temp) {
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
         }
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     dvalue = atof((const char *)result);
@@ -925,8 +917,8 @@ static int get_pmbus_psu_eeprom(int psu_type, onlp_psu_info_t* info, int local_i
     } else {
         memset(info->model, 0, sizeof(info->model));
         memset(info->serial, 0, sizeof(info->serial));
-        strcpy(info->model, COMM_STR_NOT_AVAILABLE);
-        strcpy(info->serial, COMM_STR_NOT_AVAILABLE);
+        snprintf(info->model, sizeof(info->model), "%s", COMM_STR_NOT_AVAILABLE);
+        snprintf(info->serial, sizeof(info->serial), "%s", COMM_STR_NOT_AVAILABLE);
     }
 
     return ONLP_STATUS_OK;

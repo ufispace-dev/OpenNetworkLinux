@@ -4,6 +4,7 @@ from struct import *
 import os
 import sys
 import subprocess
+import fcntl
 import yaml
 
 # Standard error messages
@@ -105,8 +106,8 @@ class OnlPlatform_x86_64_ufispace_s9511_20ct_r0(OnlPlatformUfiSpace):
         return board
 
     def get_psu_type(self):
-        command = "cat {}/psu_type".format(self.PATH_LPC_GRP_MB_CPLD)
-        output = subprocess.check_output(command, shell=True)
+        cmd = "cat {}/psu_type".format(self.PATH_LPC_GRP_MB_CPLD)
+        output = subprocess.check_output(cmd.split())
         hex_value_str = output.decode().strip()
         psu_type = int(hex_value_str, 16)
 
@@ -211,7 +212,7 @@ class OnlPlatform_x86_64_ufispace_s9511_20ct_r0(OnlPlatformUfiSpace):
             self.new_i2c_device(config["driver"], addr, config["bus"])
             port_name = data[config["type"]][port]["port_name"]
             sysfs=self.PATH_SYS_I2C_DEV_ATTR.format(config["bus"], addr, "port_name")
-            subprocess.call("echo {} > {}".format(port_name, sysfs), shell=True)
+            self._write(sysfs, port_name)
 
     def update_pci_device(self, driver, device, action):
         driver_path = os.path.join("/sys/bus/pci/drivers", driver, action)
@@ -234,6 +235,16 @@ class OnlPlatform_x86_64_ufispace_s9511_20ct_r0(OnlPlatformUfiSpace):
         # Iterate over the list and call modify_device for each tuple
         for driver_name, bus_address, action in device_actions:
             self.update_pci_device(driver_name, bus_address, action)
+
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
 
     def baseconfig(self):
         # Load default kernel drivers
@@ -310,8 +321,8 @@ class OnlPlatform_x86_64_ufispace_s9511_20ct_r0(OnlPlatformUfiSpace):
         os.system("echo {} > {}".format(no_blinking, self.PATH_STAT_LED_BlINKING_SYSFS))
 
         # enable event ctrl
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/10-0033/event_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/6-0027/event_ctrl", shell=True)
+        self._write("/sys/bus/i2c/devices/10-0033/event_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/6-0027/event_ctrl", 1)
 
         # Finished
         self.bsp_pr("Init done")

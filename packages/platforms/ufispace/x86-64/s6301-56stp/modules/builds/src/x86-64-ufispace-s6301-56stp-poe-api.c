@@ -1554,7 +1554,6 @@ s32 ufi_poe_PortConfigShow(struct device *dev, u32 lport, u8 *buf)
 {
     E_ERROR_TYPE ret = E_TYPE_FAILED;
     BCM_POE_PORT_EXTEND_INFO_T poePortExtInfo;
-    u8 tmp[128];
 
     ret = ufi_poe_GetPortExtendedStatus(dev, lport, &poePortExtInfo);
 
@@ -2016,7 +2015,6 @@ s32 ufi_poe_SystemStatus(struct device *dev, char *buf)
 {
     E_ERROR_TYPE ret = E_TYPE_SUCCESS;
     BCM_POE_SYSTEM_INFO_T sysInfo;
-    u8 temp[64];
 
     if (ufi_poe_GetPoeSystemInfo(dev, &sysInfo) != E_TYPE_SUCCESS)
     {
@@ -2164,7 +2162,6 @@ s32 ufi_poe_PortStatus(struct device *dev, u8 lport, char *buf)
 {
     E_ERROR_TYPE ret = E_TYPE_SUCCESS;
     BCM_POE_PORT_INFO_T poePortInfo;
-    u8 temp[64];
 
     ret = ufi_poe_GetPortPoEStatus(dev, lport, &poePortInfo);
 

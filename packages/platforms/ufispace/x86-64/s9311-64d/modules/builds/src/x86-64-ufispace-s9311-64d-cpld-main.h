@@ -79,8 +79,9 @@ enum cpld_id
 #define CPLD_BMC_RESET_REG 0x43
 #define CPLD_USB_RESET_REG 0x44
 #define CPLD_MISC_RESET_1_REG 0x48
-#define CPLD_MUX_RESET_REG CPLD_MISC_RESET_1_REG
 #define CPLD_MISC_RESET_2_REG 0x49
+#define CPLD_MUX_RESET_REG CPLD_MISC_RESET_2_REG
+#define CPLD_MISC_RESET_REG CPLD_MISC_RESET_1_REG
 #define CPLD_PUSH_BUTTON_CTRL_REG 0x4C
 // Sys status
 #define CPLD_BRD_PRESENT_REG 0x50
@@ -332,4 +333,6 @@ ssize_t idle_state_store(struct device *dev,
                          const char *buf, size_t count);
 int mux_init(struct device *dev);
 void mux_cleanup(struct device *dev);
+int port_chan_get_from_reg(u8 val, int index, int *chan, int *port);
+int mux_reg_get(struct i2c_adapter *adap, struct i2c_client *client);
 #endif

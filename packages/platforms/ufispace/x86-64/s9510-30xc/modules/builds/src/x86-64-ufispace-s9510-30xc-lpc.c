@@ -50,6 +50,8 @@
 #define REG_CPLD_VERSION               (REG_BASE_MB + 0x02)
 #define REG_CPLD_ID                    (REG_BASE_MB + 0x03)
 #define REG_CPLD_BUILD                 (REG_BASE_MB + 0x04)
+#define REG_GDDR6_ID                   (REG_BASE_MB + 0x07)
+#define REG_GDDR6_FUNC                 (REG_BASE_MB + 0x08)
 #define REG_PSU_INTR                   (REG_BASE_MB + 0x12)
 #define REG_FAN_INTR                   (REG_BASE_MB + 0x16)
 #define REG_PORT_INTR                  (REG_BASE_MB + 0x18)
@@ -98,6 +100,8 @@ enum lpc_sysfs_attributes {
     ATT_CPLD_VERSION_H,
     ATT_CPLD_ID,
     ATT_CPLD_BUILD,
+    ATT_GDDR6_ID,
+    ATT_GDDR6_FUNC,
     ATT_PSU_INTR,
     ATT_FAN_INTR,
     ATT_PORT_INTR,
@@ -397,6 +401,14 @@ static ssize_t read_lpc_callback(struct device *dev,
             break;
         case ATT_CPLD_BUILD:
             reg = REG_CPLD_BUILD;
+            break;
+        case ATT_GDDR6_ID:
+            reg = REG_GDDR6_ID;
+            mask = 0x7; // 2#00000111
+            break;
+        case ATT_GDDR6_FUNC:
+            reg = REG_GDDR6_FUNC;
+            mask = 0x1; // 2#00000001
             break;
         case ATT_PSU_INTR:
             reg = REG_PSU_INTR;
@@ -706,6 +718,8 @@ static SENSOR_DEVICE_ATTR(cpld_version_minor  , S_IRUGO          , read_lpc_call
 static SENSOR_DEVICE_ATTR(cpld_version_h      , S_IRUGO          , read_mb_cpld_version_h    , NULL                        , ATT_CPLD_VERSION_H);
 static SENSOR_DEVICE_ATTR(cpld_id             , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_ID);
 static SENSOR_DEVICE_ATTR(cpld_build          , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_CPLD_BUILD);
+static SENSOR_DEVICE_ATTR(ddr6_id             , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_GDDR6_ID);
+static SENSOR_DEVICE_ATTR(ddr6_func           , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_GDDR6_FUNC);
 static SENSOR_DEVICE_ATTR(psu_intr            , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PSU_INTR);
 static SENSOR_DEVICE_ATTR(fan_intr            , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_FAN_INTR);
 static SENSOR_DEVICE_ATTR(port_intr           , S_IRUGO          , read_lpc_callback         , NULL                        , ATT_PORT_INTR);
@@ -757,6 +771,8 @@ static struct attribute *mb_cpld_attrs[] = {
     &sensor_dev_attr_cpld_version_h.dev_attr.attr,
     &sensor_dev_attr_cpld_id.dev_attr.attr,
     &sensor_dev_attr_cpld_build.dev_attr.attr,
+    &sensor_dev_attr_ddr6_id.dev_attr.attr,
+    &sensor_dev_attr_ddr6_func.dev_attr.attr,
     &sensor_dev_attr_psu_intr.dev_attr.attr,
     &sensor_dev_attr_fan_intr.dev_attr.attr,
     &sensor_dev_attr_port_intr.dev_attr.attr,

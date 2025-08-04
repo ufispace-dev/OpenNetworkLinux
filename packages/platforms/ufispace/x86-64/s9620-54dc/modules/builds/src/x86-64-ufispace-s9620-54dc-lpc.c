@@ -65,6 +65,10 @@
 #define REG_BASE_EC                       0x2300
 #define REG_NONE                          0xFFF
 
+// LPC write protect register
+#define REG_LPC_WRITE_PROTECT   0xE70      
+#define MASK_LPC_WP_ENABLE      (1 << 0)
+
 //CPLD1
 #define CPLD_SKU_ID_REG                   (REG_BASE_CPLD1 + 0x00)
 #define CPLD_HW_BUILD_REV_REG             (REG_BASE_CPLD1 + 0x01)
@@ -107,6 +111,7 @@
 #define MDELAY_RESET_INTERVAL             (100)
 #define MDELAY_RESET_FINISH               (500)
 
+
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
     // CPLD Common
@@ -130,12 +135,6 @@ enum lpc_sysfs_attributes {
     BMC_RST,
     CPLD_2_3_RST,
     FPGA_RST,
-    I2C_MUX_1_RST,
-    I2C_MUX_2_RST,
-    I2C_MUX_3_RST,
-    IOEXP_1_RST,
-    IOEXP_2_RST,
-    FAN_I2C_MUX_RST,
 
     //BSP
     BSP_VERSION,
@@ -146,6 +145,7 @@ enum lpc_sysfs_attributes {
     BSP_REG_VALUE,
     BSP_GPIO_MAX,
     BSP_GPIO_BASE,
+    BSP_WP_ACCESS_COUNT,
 
     //EC
     EC_BIOS_BOOT_ROM,
@@ -167,56 +167,57 @@ enum data_type {
     DATA_UNK,
 };
 
+enum reg_write_protect
+{
+    REG_WP_DIS = false,
+    REG_WP_EN = true
+};
+
 typedef struct  {
     u16 reg;
     u8 mask;
     u8 data_type;
+    bool write_protect;
 } attr_reg_map_t;
 
 attr_reg_map_t attr_reg[]= {
 
-    [CPLD_MINOR_VER]       =         {CPLD_VERSION_REG          , MASK_0011_1111, DATA_DEC},
-    [CPLD_MAJOR_VER]       =         {CPLD_VERSION_REG          , MASK_1100_0000, DATA_DEC},
-    [CPLD_ID]              =         {CPLD_ID_REG               , MASK_0000_0111, DATA_DEC},
-    [CPLD_BUILD_VER]       =         {CPLD_SUB_VERSION_REG      , MASK_ALL      , DATA_DEC},
-    [CPLD_VERSION_H]       =         {REG_NONE                  , MASK_NONE     , DATA_UNK},
-    [CPLD_SKU_ID]          =         {CPLD_SKU_ID_REG           , MASK_ALL      , DATA_HEX},    
-    [CPLD_HW_BUILD_REV]    =         {CPLD_HW_BUILD_REV_REG     , MASK_ALL      , DATA_HEX},
-    [CPLD_HW_REV]          =         {CPLD_HW_BUILD_REV_REG     , MASK_0000_0011, DATA_DEC},    
-    [CPLD_DEPH_REV]        =         {CPLD_HW_BUILD_REV_REG     , MASK_0000_0100, DATA_DEC},      
-    [CPLD_BUILD_REV]       =         {CPLD_HW_BUILD_REV_REG     , MASK_0011_1000, DATA_DEC},       
-    [CPLD_BRD_ID_TYPE]     =         {CPLD_HW_BUILD_REV_REG     , MASK_1000_0000, DATA_DEC},         
-    [CPLD_CHIP_TYPE]       =         {CPLD_CHIP_TYPE_REG        , MASK_0000_0011, DATA_DEC},       
-    [EVENT_DETECT_CTRL]    =         {EVENT_DETECT_CTRL_REG                   , MASK_0000_0001, DATA_HEX},
-    [NTM_RST]              =         {BMC_NTM_RST_REG                         , MASK_0000_0010, DATA_HEX},
-    [BMC_RST]              =         {BMC_NTM_RST_REG                         , MASK_0000_0001, DATA_HEX},
-    [CPLD_2_3_RST]         =         {MISC_RST_1_REG                          , MASK_0000_0001, DATA_HEX},      
-    [FPGA_RST]             =         {MISC_RST_1_REG                          , MASK_0001_0000, DATA_HEX},  
-    [I2C_MUX_1_RST]        =         {MISC_RST_1_REG                          , MASK_0010_0000, DATA_HEX},       
-    [I2C_MUX_2_RST]        =         {MISC_RST_1_REG                          , MASK_0100_0000, DATA_HEX},       
-    [I2C_MUX_3_RST]        =         {MISC_RST_2_REG                          , MASK_0000_0100, DATA_HEX},       
-    [IOEXP_1_RST]          =         {MISC_RST_1_REG                          , MASK_0000_1000, DATA_HEX},        
-    [IOEXP_2_RST]          =         {MISC_RST_2_REG                          , MASK_0000_0010, DATA_HEX},
-    [FAN_I2C_MUX_RST]      =         {MISC_RST_2_REG                          , MASK_0000_0001, DATA_HEX},         
-    
+    [CPLD_MINOR_VER]       =          {CPLD_VERSION_REG         , MASK_0011_1111, DATA_DEC, REG_WP_DIS},
+    [CPLD_MAJOR_VER]       =          {CPLD_VERSION_REG         , MASK_1100_0000, DATA_DEC, REG_WP_DIS},
+    [CPLD_ID]              =          {CPLD_ID_REG              , MASK_0000_0111, DATA_DEC, REG_WP_DIS},
+    [CPLD_BUILD_VER]       =          {CPLD_SUB_VERSION_REG     , MASK_ALL      , DATA_DEC, REG_WP_DIS},
+    [CPLD_VERSION_H]       =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [CPLD_SKU_ID]          =          {CPLD_SKU_ID_REG          , MASK_ALL      , DATA_HEX, REG_WP_DIS},    
+    [CPLD_HW_BUILD_REV]    =          {CPLD_HW_BUILD_REV_REG    , MASK_ALL      , DATA_HEX, REG_WP_DIS},
+    [CPLD_HW_REV]          =          {CPLD_HW_BUILD_REV_REG    , MASK_0000_0011, DATA_DEC, REG_WP_DIS},    
+    [CPLD_DEPH_REV]        =          {CPLD_HW_BUILD_REV_REG    , MASK_0000_0100, DATA_DEC, REG_WP_DIS},      
+    [CPLD_BUILD_REV]       =          {CPLD_HW_BUILD_REV_REG    , MASK_0011_1000, DATA_DEC, REG_WP_DIS},       
+    [CPLD_BRD_ID_TYPE]     =          {CPLD_HW_BUILD_REV_REG    , MASK_1000_0000, DATA_DEC, REG_WP_DIS},         
+    [CPLD_CHIP_TYPE]       =          {CPLD_CHIP_TYPE_REG       , MASK_0000_0011, DATA_DEC, REG_WP_DIS},       
+    [EVENT_DETECT_CTRL]    =          {EVENT_DETECT_CTRL_REG    , MASK_0000_0001, DATA_HEX, REG_WP_DIS},
+    [NTM_RST]              =          {BMC_NTM_RST_REG          , MASK_0000_0010, DATA_HEX, REG_WP_EN },
+    [BMC_RST]              =          {BMC_NTM_RST_REG          , MASK_0000_0001, DATA_HEX, REG_WP_EN },
+    [CPLD_2_3_RST]         =          {MISC_RST_1_REG           , MASK_0000_0001, DATA_HEX, REG_WP_EN },      
+    [FPGA_RST]             =          {MISC_RST_1_REG           , MASK_0010_0000, DATA_HEX, REG_WP_EN },           
     //BSP    
-    [BSP_VERSION]          =          {REG_NONE                 , MASK_NONE     , DATA_UNK},
-    [BSP_DEBUG]            =          {REG_NONE                 , MASK_NONE     , DATA_UNK},
-    [BSP_PR_INFO]          =          {REG_NONE                 , MASK_NONE     , DATA_UNK},
-    [BSP_PR_ERR]           =          {REG_NONE                 , MASK_NONE     , DATA_UNK},
-    [BSP_REG]              =          {REG_NONE                 , MASK_NONE     , DATA_UNK},
-    [BSP_REG_VALUE]        =          {REG_NONE                 , MASK_NONE     , DATA_HEX},
-    [BSP_GPIO_MAX]         =          {REG_NONE                 , MASK_NONE     , DATA_DEC},
-    [BSP_GPIO_BASE]        =          {REG_NONE                 , MASK_NONE     , DATA_DEC},
+    [BSP_VERSION]          =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [BSP_DEBUG]            =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [BSP_PR_INFO]          =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [BSP_PR_ERR]           =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [BSP_REG]              =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
+    [BSP_REG_VALUE]        =          {REG_NONE                 , MASK_NONE     , DATA_HEX, REG_WP_DIS},
+    [BSP_GPIO_MAX]         =          {REG_NONE                 , MASK_NONE     , DATA_DEC, REG_WP_DIS},
+    [BSP_GPIO_BASE]        =          {REG_NONE                 , MASK_NONE     , DATA_DEC, REG_WP_DIS},
+    [BSP_WP_ACCESS_COUNT]  =          {REG_NONE                 , MASK_NONE     , DATA_UNK, REG_WP_DIS},
 
-       // EC
-    [EC_BIOS_BOOT_ROM]     =          {REG_MISC_CTRL,       MASK_0100_0000, DATA_DEC},
-    [EC_CPU_REV_HW_REV]    =          {REG_EC_CPU_REV_ID,   MASK_0000_0011, DATA_DEC},
-    [EC_CPU_REV_DEV_PHASE] =          {REG_EC_CPU_REV_ID,   MASK_0000_0100, DATA_DEC},
-    [EC_CPU_REV_BUILD_ID]  =          {REG_EC_CPU_REV_ID,   MASK_0001_1000, DATA_DEC},
-    [EC_MAJOR_VER]         =          {REG_EC_MAJOR_VER,    MASK_ALL,       DATA_DEC},
-    [EC_MINOR_VER]         =          {REG_EC_MINOR_VER,    MASK_ALL,       DATA_DEC},
-    [EC_BUILD_VER]         =          {REG_EC_BUILD_VER,    MASK_ALL,       DATA_DEC},
+    // EC
+    [EC_BIOS_BOOT_ROM]     =          {REG_MISC_CTRL            , MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [EC_CPU_REV_HW_REV]    =          {REG_EC_CPU_REV_ID        , MASK_0000_0011, DATA_DEC, REG_WP_DIS},
+    [EC_CPU_REV_DEV_PHASE] =          {REG_EC_CPU_REV_ID        , MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [EC_CPU_REV_BUILD_ID]  =          {REG_EC_CPU_REV_ID        , MASK_0001_1000, DATA_DEC, REG_WP_DIS},
+    [EC_MAJOR_VER]         =          {REG_EC_MAJOR_VER         , MASK_ALL      , DATA_DEC, REG_WP_DIS},
+    [EC_MINOR_VER]         =          {REG_EC_MINOR_VER         , MASK_ALL      , DATA_DEC, REG_WP_DIS},
+    [EC_BUILD_VER]         =          {REG_EC_BUILD_VER         , MASK_ALL      , DATA_DEC, REG_WP_DIS},
 };
 
 enum bsp_log_types {
@@ -231,6 +232,8 @@ enum bsp_log_ctrl {
     LOG_DISABLE,
     LOG_ENABLE
 };
+
+static unsigned int wp_access_count = 0;
 
 struct lpc_data_s {
     struct mutex    access_lock;
@@ -292,6 +295,37 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
         return -1;
     }
     return 0;
+}
+
+// write enable
+static u8 lpc_wp_begin(void)
+{
+    u8 current_wp = 0;
+
+    mutex_lock(&lpc_data->access_lock);
+
+    current_wp = inb(REG_LPC_WRITE_PROTECT);
+
+    if (!(current_wp & MASK_LPC_WP_ENABLE))
+    {
+        outb(current_wp | MASK_LPC_WP_ENABLE, REG_LPC_WRITE_PROTECT);
+        mdelay(LPC_MDELAY);
+        wp_access_count++;
+    }
+
+    return current_wp;
+}
+
+// write disable
+static void lpc_wp_end(u8 original_wp_state)
+{
+    if (!(original_wp_state & MASK_LPC_WP_ENABLE))
+    {
+        outb(original_wp_state, REG_LPC_WRITE_PROTECT);
+        mdelay(LPC_MDELAY);
+    }
+
+    mutex_unlock(&lpc_data->access_lock);
 }
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
@@ -374,7 +408,7 @@ static ssize_t lpc_reg_read(u16 reg, u8 mask, char *buf, u8 data_type)
 }
 
 /* set lpc register value */
-static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type)
+static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type, bool write_protect)
 {
     u8 reg_val, reg_val_now, shift;
 
@@ -399,16 +433,24 @@ static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8
         reg_val = _bit_operation(reg_val_now, shift, reg_val);
     }
 
-    mutex_lock(&lpc_data->access_lock);
-
-    _outb(reg_val, reg);
-
-    mutex_unlock(&lpc_data->access_lock);
+    if (write_protect)
+    {
+        u8 original_wp = lpc_wp_begin();
+        _outb(reg_val, reg);
+        lpc_wp_end(original_wp);
+    }
+    else
+    {
+        mutex_lock(&lpc_data->access_lock);
+        _outb(reg_val, reg);
+        mutex_unlock(&lpc_data->access_lock);
+    }
 
     BSP_LOG_W("reg=0x%03x, reg_val=0x%02x, mask=0x%02x", reg, reg_val, mask);
 
     return count;
 }
+
 
 /* get bsp value */
 static ssize_t bsp_read(char *buf, char *str)
@@ -441,11 +483,11 @@ static ssize_t gpio_max_show(struct device *dev,
                     struct device_attribute *da,
                     char *buf)
 {
-    u8 data_type=DATA_UNK;
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == BSP_GPIO_MAX) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        u8 data_type=DATA_UNK;
         data_type = attr_reg[attr->index].data_type;
         return _parse_data(buf, ARCH_NR_GPIOS-1, data_type);
 #else
@@ -474,6 +516,7 @@ static ssize_t gpio_base_show(struct device *dev,
     }
     return -1;
 }
+
 
 /* get mb cpld version in human readable format */
 static ssize_t cpld_version_h_show(struct device *dev,
@@ -535,12 +578,6 @@ static ssize_t lpc_callback_show(struct device *dev,
         case BMC_RST:
         case CPLD_2_3_RST:
         case FPGA_RST:
-        case I2C_MUX_1_RST:
-        case I2C_MUX_2_RST:
-        case I2C_MUX_3_RST:
-        case IOEXP_1_RST:
-        case IOEXP_2_RST:
-        case FAN_I2C_MUX_RST:
 
         //BSP
         case BSP_GPIO_MAX:
@@ -577,6 +614,7 @@ static ssize_t lpc_callback_store(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_NONE;
     u8 data_type=DATA_UNK;
+    bool write_protect;
 
     switch (attr->index) {
         // MB CPLD
@@ -584,20 +622,15 @@ static ssize_t lpc_callback_store(struct device *dev,
         case BMC_RST:
         case CPLD_2_3_RST:
         case FPGA_RST:
-        case I2C_MUX_1_RST:
-        case I2C_MUX_2_RST:
-        case I2C_MUX_3_RST:
-        case IOEXP_1_RST:
-        case IOEXP_2_RST:
-        case FAN_I2C_MUX_RST:
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
             data_type = attr_reg[attr->index].data_type;
+            write_protect = attr_reg[attr->index].write_protect;
             break;
         default:
             return -EINVAL;
     }
-    return lpc_reg_write(reg, mask, buf, count, data_type);
+    return lpc_reg_write(reg, mask, buf, count, data_type, write_protect);
 
 }
 
@@ -607,6 +640,15 @@ static ssize_t bsp_callback_show(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     char *str=NULL;
+
+    ssize_t len;
+
+    if (attr->index == BSP_WP_ACCESS_COUNT) {
+        mutex_lock(&lpc_data->access_lock);
+        len = sprintf(buf, "%u", wp_access_count);
+        mutex_unlock(&lpc_data->access_lock);
+        return len;
+    }
 
     switch (attr->index) {
         case BSP_VERSION:
@@ -686,6 +728,7 @@ static ssize_t bsp_pr_callback_store(struct device *dev,
     return str_len;
 }
 
+
 //SENSOR_DEVICE_ATTR - CPLD
 static SENSOR_DEVICE_ATTR_RO(cpld_minor_ver      , lpc_callback     , CPLD_MINOR_VER);
 static SENSOR_DEVICE_ATTR_RO(cpld_major_ver      , lpc_callback     , CPLD_MAJOR_VER);
@@ -703,12 +746,6 @@ static SENSOR_DEVICE_ATTR_RW(ntm_rst             , lpc_callback     , NTM_RST);
 static SENSOR_DEVICE_ATTR_RW(bmc_rst             , lpc_callback     , BMC_RST);
 static SENSOR_DEVICE_ATTR_RW(cpld_2_3_rst        , lpc_callback     , CPLD_2_3_RST);
 static SENSOR_DEVICE_ATTR_RW(fpga_rst            , lpc_callback     , FPGA_RST);
-static SENSOR_DEVICE_ATTR_RW(i2c_mux_1_rst       , lpc_callback     , I2C_MUX_1_RST);
-static SENSOR_DEVICE_ATTR_RW(i2c_mux_2_rst       , lpc_callback     , I2C_MUX_2_RST);
-static SENSOR_DEVICE_ATTR_RW(i2c_mux_3_rst       , lpc_callback     , I2C_MUX_3_RST);
-static SENSOR_DEVICE_ATTR_RW(ioexp_1_rst         , lpc_callback     , IOEXP_1_RST);
-static SENSOR_DEVICE_ATTR_RW(ioexp_2_rst         , lpc_callback     , IOEXP_2_RST);
-static SENSOR_DEVICE_ATTR_RW(fan_i2c_mux_rst     , lpc_callback     , FAN_I2C_MUX_RST);
 
 //SENSOR_DEVICE_ATTR - BSP
 static SENSOR_DEVICE_ATTR_RW(bsp_version         , bsp_callback     , BSP_VERSION);
@@ -719,6 +756,7 @@ static SENSOR_DEVICE_ATTR_RW(bsp_reg             , bsp_callback     , BSP_REG);
 static SENSOR_DEVICE_ATTR_RO(bsp_reg_value       , lpc_callback     , BSP_REG_VALUE);
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_max        , gpio_max         , BSP_GPIO_MAX);
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_base       , gpio_base        , BSP_GPIO_BASE);
+static SENSOR_DEVICE_ATTR_RO(bsp_wp_access_count , bsp_callback     , BSP_WP_ACCESS_COUNT);
 
 //SENSOR_DEVICE_ATTR - EC
 static SENSOR_DEVICE_ATTR_RO(bios_boot_rom        , lpc_callback     , EC_BIOS_BOOT_ROM);
@@ -747,13 +785,7 @@ static struct attribute *mb_cpld_attrs[] = {
     _DEVICE_ATTR(bmc_rst),
     _DEVICE_ATTR(cpld_2_3_rst),
     _DEVICE_ATTR(fpga_rst),
-    _DEVICE_ATTR(i2c_mux_1_rst),
-    _DEVICE_ATTR(i2c_mux_2_rst),
-    _DEVICE_ATTR(i2c_mux_3_rst),
-    _DEVICE_ATTR(ioexp_1_rst),
-    _DEVICE_ATTR(ioexp_2_rst),
-    _DEVICE_ATTR(fan_i2c_mux_rst),
-    NULL,
+    NULL
 };
 
 static struct attribute *cpu_cpld_attrs[] = {
@@ -785,6 +817,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_reg_value),
     _DEVICE_ATTR(bsp_gpio_max),
     _DEVICE_ATTR(bsp_gpio_base),
+    _DEVICE_ATTR(bsp_wp_access_count),
     NULL,
 };
 
@@ -922,7 +955,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
@@ -945,7 +978,7 @@ int lpc_init(void)
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);
@@ -953,8 +986,9 @@ void lpc_exit(void)
 
 MODULE_AUTHOR("Alex Hsia <alex.hsia@ufispace.com>");
 MODULE_DESCRIPTION("x86_64_ufispace_s9620_54dc_lpc driver");
-MODULE_VERSION("0.0.1");
+
 MODULE_LICENSE("GPL");
+MODULE_VERSION("1.0.0");
 
 module_init(lpc_init);
 module_exit(lpc_exit);

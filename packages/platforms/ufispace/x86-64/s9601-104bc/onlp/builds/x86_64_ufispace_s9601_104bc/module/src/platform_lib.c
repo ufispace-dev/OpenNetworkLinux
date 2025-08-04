@@ -557,22 +557,22 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
 
         //Check output is correct
         if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
-                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->name.val, sizeof(fru->name.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->serial.val, sizeof(fru->serial.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
     }
 

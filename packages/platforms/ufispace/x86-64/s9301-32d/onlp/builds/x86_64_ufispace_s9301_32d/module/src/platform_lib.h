@@ -80,6 +80,7 @@
 #define COMM_STR_NOT_AVAILABLE "not available"
 /* SYSFS */
 #define SYS_DEV                 "/sys/bus/i2c/devices/"
+#define SYS_FMT                 SYS_DEV "%d-%04x/%s"
 #define CPLD1_SYSFS_PATH        SYS_DEV "2-0030"
 #define CPLD2_SYSFS_PATH        SYS_DEV "2-0031"
 #define CPLD3_SYSFS_PATH        SYS_DEV "2-0032"
@@ -391,7 +392,6 @@ int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psui_present_status(int local_id, int *status);
 void check_and_do_i2c_mux_reset(int port);
-int bmc_check_alive(void);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */

@@ -85,26 +85,27 @@ class OnlPlatform_x86_64_ufispace_s9620_54dc_r0(OnlPlatformUfiSpace):
     def check_bmc_enable(self):
         return 1
 
-    def check_i2c_status(self, bus_i801):
-        sysfs_mux_reset = self.PATH_LPC_GRP_MB_CPLD + "/mb_i2c_mux_rst"
+    def check_i2c_status(self):
+        sysfs_mux_reset = self.PATH_LPC_GRP_MB_CPLD + "/mux_reset_all"
 
-        bus=bus_i801
-
-        # Check I2C status,assume
-        retcode = os.system("i2cget -f -y {} 0x72 > /dev/null 2>&1".format(bus))
+        # Check I2C status
+        retcode = os.system("i2cget -f -y 0 0x72 > /dev/null 2>&1")
         if retcode != 0:
 
             #read mux failed, i2c bus may be stuck
             self.bsp_pr("Warning: Read I2C Mux Failed!! (ret={})".format(retcode))
 
-            #Recovery I2C
-            if os.path.exists(sysfs_mux_reset):
-                with open(sysfs_mux_reset, "w") as f:
-                    #write 0 to sysfs
-                    f.write("{}".format(0))
-                    self.bsp_pr("I2C bus recovery done.")
-            else:
-                msg("Warning: I2C recovery sysfs does not exist!! (path=%s)\n" % (sysfs_mux_reset) )
+            # Not supporting I2C recovery
+            if 0:
+                #Recovery I2C
+                if os.path.exists(sysfs_mux_reset):
+                    with open(sysfs_mux_reset, "w") as f:
+                        #write 0 to sysfs
+                        f.write("{}".format(0))
+                        self.bsp_pr("I2C bus recovery done.")
+                else:
+                    self.bsp_pr("Warning: I2C recovery sysfs does not exist!! (path={})".format(sysfs_mux_reset))
+
 
     def bsp_pr(self, pr_msg, level = LEVEL_INFO):
         if level == self.LEVEL_INFO:
@@ -388,8 +389,8 @@ class OnlPlatform_x86_64_ufispace_s9620_54dc_r0(OnlPlatformUfiSpace):
         # get board version
         board = self.get_board_version()
 
-        # check i2c bus status //Q3U Not Support
-        # self.check_i2c_status(bus_i801)
+        # check i2c bus status 
+        # self.check_i2c_status() # Q3U Not Support
 
         bmc_enable = self.check_bmc_enable()
         self.bsp_pr("bmc enable : {}".format(True if bmc_enable else False))

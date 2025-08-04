@@ -298,7 +298,8 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         self.insmod("intel_auxiliary", False)
         self.insmod("i40e")
         # init bcm82752
-        os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9600-72xc-r0/onl/epdm_cli init")
+        # epdm_cli ver 0.0.5
+        os.system("timeout 120s /lib/platform-config/current/onl/epdm_cli init -s fix_10G -t copper")
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

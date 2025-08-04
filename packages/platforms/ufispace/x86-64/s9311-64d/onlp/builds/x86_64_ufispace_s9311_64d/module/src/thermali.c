@@ -86,7 +86,7 @@ static onlp_thermal_info_t thermal_info[] = {
 
     {.hdr = {
          .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_COME_FRONT),
-         .description = "TEMP_COME_FRONT",
+         .description = "TEMP_COMe_FRONT",
          .poid = POID_0,
      },
      .status = ONLP_THERMAL_STATUS_PRESENT,

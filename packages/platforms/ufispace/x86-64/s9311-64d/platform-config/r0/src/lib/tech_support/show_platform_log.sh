@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.0"
+TS_VERSION="1.0.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -64,6 +64,8 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 FPGA_PCI_ENABLE=0
 
@@ -132,18 +134,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
+    _banner "Update GPIO MAX and GPIO BASE"
 
     GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9311_64d_lpc/bsp/bsp_gpio_max)
 
-    if [ $? -eq 1 ]; then
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat /sys/devices/platform/x86_64_ufispace_s9311_64d_lpc/bsp/bsp_gpio_base)
+
+    if [ $? -eq 1 ]  || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _dd_read_byte {
@@ -508,7 +521,7 @@ function _cpld_version_i2c {
 
                 if _check_i2c_device ${mux_i2c_bus} "0x32"; then
                     mb_cpld3_ver=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x2 ${LOG_REDIRECT}")
-                    mb_cpld3_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x31 0x4 ${LOG_REDIRECT}")
+                    mb_cpld3_build=$(eval "i2cget -y -f ${mux_i2c_bus} 0x32 0x4 ${LOG_REDIRECT}")
                     _printf "[MB CPLD3 Version]: %d.%02d.%03d\n" $(( (mb_cpld3_ver & 2#11000000) >> 6)) $(( mb_cpld3_ver & 2#00111111 )) $((mb_cpld3_build))
                 fi
                 i2cset -y -f ${mux_i2c_bus} ${mux_i2c_addr} 0x0
@@ -678,7 +691,7 @@ function _show_version {
 function _show_i2c_tree_bus {
     _banner "Show I2C Tree Bus i801"
 
-    ret=$(eval "i2cdetect -y "${i801_bus}" ${LOG_REDIRECT}")
+    ret=$(eval "(time i2cdetect -y "${i801_bus}") ${LOG_REDIRECT}")
 
     _echo "[I2C Tree ${i801_bus}]:"
     _echo "${ret}"
@@ -1954,17 +1967,47 @@ function _show_onlpdump {
 
     which onlpdump > /dev/null 2>&1
     ret_onlpdump=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlpdump} -eq 0 ]; then
-        cmd_array=("onlpdump -d" \
-                   "onlpdump -s" \
-                   "onlpdump -r" \
-                   "onlpdump -e" \
-                   "onlpdump -o" \
-                   "onlpdump -x" \
-                   "onlpdump -i" \
-                   "onlpdump -p" \
-                   "onlpdump -S")
+        cmd_array=("${timeout_cmd} onlpdump -d" \
+                   "${timeout_cmd} onlpdump -s" \
+                   "${timeout_cmd} onlpdump -r" \
+                   "${timeout_cmd} onlpdump -e" \
+                   "${timeout_cmd} onlpdump -o" \
+                   "${timeout_cmd} onlpdump -x" \
+                   "${timeout_cmd} onlpdump -i" \
+                   "${timeout_cmd} onlpdump -p" \
+                   "${timeout_cmd} onlpdump -S")
+        for (( i=0; i<${#cmd_array[@]}; i++ ))
+        do
+            _echo "[Command]: ${cmd_array[$i]}"
+            ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT} | tr -d '\0'")
+            _echo "${ret}"
+            _echo ""
+        done
+    else
+        _echo "Not support!"
+    fi
+}
+
+function _show_onlpd {
+    _banner "Show onlpd"
+
+    which onlpd > /dev/null 2>&1
+    ret_onlpd=$?
+    timeout_cmd="timeout 20s"
+
+    if [ ${ret_onlpd} -eq 0 ]; then
+        cmd_array=("${timeout_cmd} onlpd -d" \
+                   "${timeout_cmd} onlpd -s" \
+                   "${timeout_cmd} onlpd -r" \
+                   "${timeout_cmd} onlpd -e" \
+                   "${timeout_cmd} onlpd -o" \
+                   "${timeout_cmd} onlpd -x" \
+                   "${timeout_cmd} onlpd -i" \
+                   "${timeout_cmd} onlpd -p" \
+                   "${timeout_cmd} onlpd -S")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1982,14 +2025,15 @@ function _show_onlps {
 
     which onlps > /dev/null 2>&1
     ret_onlps=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlps} -eq 0 ]; then
-        cmd_array=("onlps chassis onie show -" \
-                   "onlps chassis asset show -" \
-                   "onlps chassis env -" \
-                   "onlps sfp inventory -" \
-                   "onlps sfp bitmaps -" \
-                   "onlps chassis debug show -")
+        cmd_array=("${timeout_cmd} onlps chassis onie show -" \
+                   "${timeout_cmd} onlps chassis asset show -" \
+                   "${timeout_cmd} onlps chassis env -" \
+                   "${timeout_cmd} onlps sfp inventory -" \
+                   "${timeout_cmd} onlps sfp bitmaps -" \
+                   "${timeout_cmd} onlps chassis debug show -")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -2432,6 +2476,7 @@ function _main {
     _show_ioport
     _show_cpld_reg
     _show_onlpdump
+    _show_onlpd
     _show_onlps
     _show_system_info
     #_show_cpld_error_log # Not support

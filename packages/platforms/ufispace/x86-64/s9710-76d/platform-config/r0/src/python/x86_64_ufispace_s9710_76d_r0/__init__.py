@@ -111,7 +111,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 73
                 port_name = data["QSFPDD_NIF"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init QSFPDD FAB EEPROM
         for bus in range(33, 73):
@@ -120,7 +120,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 33
                 port_name = data["QSFPDD_FAB"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init SFP+ EEPROM
         for bus in range(109, 111):
@@ -129,7 +129,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 109
                 port_name = data["SFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -268,6 +268,16 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             for i in range(base-31, base-15):
                 os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
+
     def baseconfig(self):
 
         # init interrupt handler for IRQ 16
@@ -373,7 +383,8 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         rov_reg_array=( 0x77, 0x6f, 0x5b, 0x5f, 0x63, 0x67, 0x6b, 0x73 )
 
         #get rov from cpld
-        reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr), shell=True)
+        cmd = "cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr)
+        reg_val_str = subprocess.check_output(cmd.split())
         reg_val = int(reg_val_str, 16)
         msg("/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov={}".format(cpld_bus, cpld_addr, reg_val_str))
 
@@ -386,11 +397,11 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
 
         # enable event ctrl
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0033/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0034/cpld_evt_ctrl", shell=True)
+        self._write("/sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/30-0033/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/30-0034/cpld_evt_ctrl", 1)
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
@@ -405,7 +416,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # init bcm82752
         self.bsp_pr("Init bcm82752")
-        os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init mdio 10G optics")
+        os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init auto 10G")
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

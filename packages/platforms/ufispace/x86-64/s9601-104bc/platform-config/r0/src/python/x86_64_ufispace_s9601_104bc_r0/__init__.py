@@ -455,10 +455,11 @@ class OnlPlatform_x86_64_ufispace_s9601_104bc_r0(OnlPlatformUfiSpace):
         # disable bmc watchdog
         self.disable_bmc_watchdog()
 
-        self.bsp_pr("Init bcm82752")
+        self.insmod("ixgbe", False)
+        os.system("modprobe ixgbe")
 
         # init bcm82752
-        os.system("timeout 120s {} init -s auto_10G -d mdio".format(self.PATH_EPDM_CLI))
+        os.system("timeout 120s {} init -s auto_10G -t copper".format(self.PATH_EPDM_CLI))
 
         # set system led to green
         self.set_system_led_green()

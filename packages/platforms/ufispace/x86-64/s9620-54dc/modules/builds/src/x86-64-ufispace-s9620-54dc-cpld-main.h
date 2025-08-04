@@ -76,7 +76,7 @@ enum cpld_id {
 #define PHY_INTR_EVENT_REG                      0x33
 #define CPLD_FRU_INTR_EVENT_REG                 0x34
 #define NTM_INTR_EVENT_REG                      0x35
-#define THERMAL_ALERT_INTR_REG                  0x37
+#define THERMAL_ALERT_EVENT_REG                 0x37
 #define MISC_INTR_EVENT_REG                     0x3B
 #define SYSTEM_INTR_EVENT_REG                   0x3C
 // Reset ctrl
@@ -156,11 +156,31 @@ enum cpld_id {
 #define PORT_8_15_RXLOS_REG                     0x19
 #define PORT_16_23_RXLOS_REG                    0x1A
 #define PORT_24_27_RXLOS_REG                    0x1B
+// SFP28 Port Rxloss Mask
+#define PORT_0_7_RXLOS_MASK_REG                 0x28
+#define PORT_8_15_RXLOS_MASK_REG                0x29
+#define PORT_16_23_RXLOS_MASK_REG               0x2A
+#define PORT_24_27_RXLOS_MASK_REG               0x2B
+// SFP28 Port Rxloss Event
+#define PORT_0_7_RXLOS_EVENT_REG                0x38
+#define PORT_8_15_RXLOS_EVENT_REG               0x39
+#define PORT_16_23_RXLOS_EVENT_REG              0x3A
+#define PORT_24_27_RXLOS_EVENT_REG              0x3B
 // SFP28 Port Tx Fault
 #define PORT_0_7_TXFLT_REG                      0x1C
 #define PORT_8_15_TXFLT_REG                     0x1D
 #define PORT_16_23_TXFLT_REG                    0x1E
 #define PORT_24_27_TXFLT_REG                    0x1F
+// SFP28 Port Tx Fault Mask
+#define PORT_0_7_TXFLT_MASK_REG                 0x2C
+#define PORT_8_15_TXFLT_MASK_REG                0x2D
+#define PORT_16_23_TXFLT_MASK_REG               0x2E
+#define PORT_24_27_TXFLT_MASK_REG               0x2F
+// SFP28 Port Tx Fault Event
+#define PORT_0_7_TXFLT_EVENT_REG                0x3C
+#define PORT_8_15_TXFLT_EVENT_REG               0x3D
+#define PORT_16_23_TXFLT_EVENT_REG              0x3E
+#define PORT_24_27_TXFLT_EVENT_REG              0x3F
 // SFP28 Port I2C stuck status
 #define PORT_0_7_I2C_STUCK_REG                  0x5A
 #define PORT_8_15_I2C_STUCK_REG                 0x5B
@@ -236,10 +256,26 @@ enum cpld_id {
 #define PORT_28_35_RXLOS_REG                    0x18
 #define PORT_36_43_RXLOS_REG                    0x19
 #define PORT_44_47_RXLOS_REG                    0x1A
+// SFP28/56 Port Rxloss Mask
+#define PORT_28_35_RXLOS_MASK_REG               0x28
+#define PORT_36_43_RXLOS_MASK_REG               0x29
+#define PORT_44_47_RXLOS_MASK_REG               0x2A
+// SFP28/56 Port Rxloss Event
+#define PORT_28_35_RXLOS_EVENT_REG              0x38
+#define PORT_36_43_RXLOS_EVENT_REG              0x39
+#define PORT_44_47_RXLOS_EVENT_REG              0x3A
 // SFP28/56 Port Tx Fault 
 #define PORT_28_35_TXFLT_REG                    0x1C
 #define PORT_36_43_TXFLT_REG                    0x1D
 #define PORT_44_47_TXFLT_REG                    0x1E
+// SFP28/56 Port Tx Fault Mask
+#define PORT_28_35_TXFLT_MASK_REG               0x2C
+#define PORT_36_43_TXFLT_MASK_REG               0x2D
+#define PORT_44_47_TXFLT_MASK_REG               0x2E
+// SFP28/56 Port Tx Event
+#define PORT_28_35_TXFLT_EVENT_REG              0x3C
+#define PORT_36_43_TXFLT_EVENT_REG              0x3D
+#define PORT_44_47_TXFLT_EVENT_REG              0x3E
 // SFP28/56 Port I2C stuck status
 #define PORT_28_35_I2C_STUCK_REG                0x5A
 #define PORT_36_43_I2C_STUCK_REG                0x5B
@@ -284,6 +320,7 @@ enum cpld_id {
 
 /* FPGA */
 #define FPGA_VER_1_REG                          0x02
+#define FPGA_ID_REG                             0x03
 #define FPGA_VER_2_REG                          0x04
 #define FPGA_DEV_INFO_REG                       0x05
 #define FPGA_LAN_PORT_RELAY_REG                 0x40
@@ -371,4 +408,7 @@ ssize_t idle_state_store(struct device *dev,
             const char *buf, size_t count);
 int mux_init(struct device *dev);
 void mux_cleanup(struct device *dev);
+int port_chan_get_from_reg(u8 val, int index, int *chan, int *port);
+int mux_reg_get(struct i2c_adapter *adap, struct i2c_client *client);
+
 #endif

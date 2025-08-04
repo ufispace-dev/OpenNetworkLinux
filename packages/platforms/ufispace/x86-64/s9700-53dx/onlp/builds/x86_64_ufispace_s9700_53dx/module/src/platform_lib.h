@@ -61,6 +61,8 @@
 
 #define SYSFS_PLTM                  "/sys/devices/platform/"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
+#define SYS_FMT                     "/sys/bus/i2c/devices/%d-%04x/%s"
+#define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYSFS_LPC                   SYSFS_PLTM "x86_64_ufispace_s9700_53dx_lpc/"
 #define SYS_LPC_BSP                 SYSFS_LPC"bsp/"
 #define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
@@ -276,5 +278,8 @@ int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psui_present_status(int local_id, int *status);
 void check_and_do_i2c_mux_reset(int port);
+uint8_t ufi_shift(uint8_t mask);
+uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
+int trim_whitespace(char *str);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */
