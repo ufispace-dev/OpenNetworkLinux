@@ -180,7 +180,7 @@ void init_lock()
 
 static const warm_reset_data_t warm_reset_data[] = {
     //               unit_max | dev | unit
-    [WARM_RESET_ALL] = {-1, NULL, NULL},
+    [WARM_RESET_ALL] = {-1, "all", NULL},
     [WARM_RESET_MAC] = {MAC_MAX, "mac", NULL},
     [WARM_RESET_PHY] = {-1, NULL, NULL}, // not support
     [WARM_RESET_MUX] = {-1, NULL, NULL}, // not support
@@ -757,6 +757,17 @@ int read_bmc_oem(int bmc_oem_id, int *data)
 
     switch (bmc_oem_id)
     {
+    case BMC_OEM_IDX_FAN_0_F_DIR:
+    case BMC_OEM_IDX_FAN_0_R_DIR:
+    case BMC_OEM_IDX_FAN_1_F_DIR:
+    case BMC_OEM_IDX_FAN_1_R_DIR:
+    case BMC_OEM_IDX_FAN_2_F_DIR:
+    case BMC_OEM_IDX_FAN_2_R_DIR:
+    case BMC_OEM_IDX_FAN_3_F_DIR:
+    case BMC_OEM_IDX_FAN_3_R_DIR:
+    case BMC_OEM_IDX_PSU_0_FAN_DIR:
+    case BMC_OEM_IDX_PSU_1_FAN_DIR:
+        break;
     case BMC_OEM_IDX_INVALID:
     default:
         AIM_LOG_ERROR("Unsupport OEM ID(%d)\n", bmc_oem_id);

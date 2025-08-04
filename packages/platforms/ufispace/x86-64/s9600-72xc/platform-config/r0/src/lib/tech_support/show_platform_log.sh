@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.2"
+TS_VERSION="2.0.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -14,7 +14,7 @@ SYSFS_LPC_CPLD="${SYSFS_LPC}/mb_cpld"
 SYSFS_LPC_BSP="${SYSFS_LPC}/bsp"
 
 # Device Serial Number
-SN=$(dmidecode -t 3 | grep "Serial Number" | cut -d : -f 2 | xargs)
+SN=$(dmidecode -s chassis-serial-number)
 if [ ! $? -eq 0 ]; then
     SN=""
 elif [[ $SN = *" "* ]]; then
@@ -42,12 +42,10 @@ LOG_FAST=${FALSE}
 MODEL_NAME=""
 # HW_REV: set by function _board_info
 HW_REV=""
-# BSP_INIT_FLAG: set bu function _check_bsp_init
+# BSP_INIT_FLAG: set by function _check_bsp_init
 BSP_INIT_FLAG=""
 
-
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-IOGET="${SCRIPTPATH}/ioget"
 
 # LOG_FILE_ENABLE=1: Log all the platform info to log files (${LOG_FILE_NAME})
 # LOG_FILE_ENABLE=0: Print all the platform info in console
@@ -64,6 +62,8 @@ LOG_REDIRECT="2>> $LOG_FILE_PATH"
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # CPLD max index
 MAX_CPLD=4
@@ -106,30 +106,38 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
-    local sysfs="/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc/bsp/bsp_gpio_max"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC_BSP}/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC_BSP}/bsp_gpio_base"
 
-    GPIO_MAX=$(cat ${sysfs})
-    if [ $? -eq 1 ]; then
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
-    
+
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
+function _dd_read_byte {
+    reg=$1
+    echo "0x"`dd if=/dev/port bs=1 count=1 skip=$((reg)) status=none | xxd -g 1 | cut -d ' ' -f 2`
+}
 
 function _check_env {
     #_banner "Check Environment"
-
-    # check utility
-    if [ ! -f "${IOGET}" ]; then
-        echo "Error!!! ioget(${IOGET}) file not found!!! Exit!!!"
-        echo "Please update the ioget file path in script or put the ioget under ${IOGET}."
-        exit 1
-    fi
 
     # check basic commands
     cmd_array=("ipmitool" "lsusb" "dmidecode")
@@ -156,16 +164,13 @@ function _check_env {
     
     # check BSP init
     _check_bsp_init
-
-    if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _update_gpio_max
-    fi
+    _update_gpio_max
 }
 
 function _check_filepath {
     filepath=$1
     if [ -z "${filepath}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     elif [ ! -f "$filepath" ]; then
         _echo "ERROR: No such file: ${filepath}"
@@ -193,7 +198,7 @@ function _check_i2c_device {
     i2c_addr=$1
 
     if [ -z "${i2c_addr}" ]; then
-        _echo "ERROR, the ipnut string is empyt!!!"
+        _echo "ERROR, the ipnut string is empty!!!"
         return ${FALSE}
     fi
 
@@ -302,20 +307,18 @@ function _show_board_info {
     model_id_array=($((2#00000011)) $((2#00000110)))
     model_name_array=("S9600-72XC w/o OP2" "S9600-72XC w OP2")
 
-    model_id=`${IOGET} 0xE00`
+    model_id=$(_dd_read_byte 0xE00)
     ret=$?
-    if [ $ret -eq 0 ]; then 
-        model_id=`echo ${model_id} | awk -F" " '{print $NF}'`
+    if [ $ret -eq 0 ]; then
         model_id=$((model_id))
     else
         _echo "Get board model id failed ($ret), Exit!!"
         exit $ret
     fi
-    
-    board_rev_id=`${IOGET} 0xE01`
+
+    board_rev_id=$(_dd_read_byte 0xE01)
     ret=$?
-    if [ $ret -eq 0 ]; then 
-        board_rev_id=`echo ${board_rev_id} | awk -F" " '{print $NF}'`
+    if [ $ret -eq 0 ]; then
         board_rev_id=$((board_rev_id))
     else
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
@@ -362,11 +365,8 @@ function _bios_version {
     _banner "Show BIOS Version"
 
     bios_ver=$(eval "dmidecode -s bios-version ${LOG_REDIRECT}")
-    bios_boot_rom=`${IOGET} 0x602`
-    if [ $? -eq 0 ]; then
-        bios_boot_rom=`echo ${bios_boot_rom} | awk -F" " '{print $NF}'`
-    fi
-    
+    bios_boot_rom=$(_dd_read_byte 0x602)
+
     _echo "[BIOS Vesion  ]: ${bios_ver}"
     _echo "[BIOS Boot ROM]: ${bios_boot_rom}"    
 }
@@ -393,20 +393,16 @@ function _cpld_version_i2c {
     _banner "Show CPLD Version (I2C)"
 
     # CPU CPLD
-    cpu_cpld_info=`${IOGET} 0x600`
+    cpu_cpld_info=$(_dd_read_byte 0x600)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_info=`echo ${cpu_cpld_info} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD version info failed ($ret), Exit!!"
         exit $ret
     fi
 
-    cpu_cpld_build=`${IOGET} 0x6e0`
+    cpu_cpld_build=$(_dd_read_byte 0x6e0)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        cpu_cpld_build=`echo ${cpu_cpld_build} | awk -F" " '{print $NF}'`
-    else
+    if [ $ret -ne 0 ]; then
         _echo "Get CPU CPLD build info failed ($ret), Exit!!"
         exit $ret
     fi
@@ -497,7 +493,7 @@ function _show_version {
 function _show_i2c_tree_bus_0 {
     _banner "Show I2C Tree Bus 0"
 
-    ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
+    ret=$(eval "(time i2cdetect -y 0) ${LOG_REDIRECT}")
 
     _echo "[I2C Tree]:"
     _echo "${ret}"
@@ -525,7 +521,7 @@ function _show_i2c_mux_devices {
             # open mux channel
             i2cset -y 0 ${chip_addr} $(( 2 ** ${i} ))
             # dump i2c tree
-            ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
+            ret=$(eval "(time i2cdetect -y 0) ${LOG_REDIRECT}")
             _echo "${ret}"
             # close mux channel
             i2cset -y 0 ${chip_addr} 0x0 
@@ -671,30 +667,30 @@ function _show_sys_devices {
     _echo "${ret}"
 }
 
-function _show_cpu_eeprom_i2c {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_i2c {
+    _banner "Show System EEPROM"
 
     #first read return empty content
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
     #second read return correct content
-    cpu_eeprom=$(eval "i2cdump -y 0 0x57 c")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    sys_eeprom=$(eval "i2cdump -y 0 0x57 c")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom_sysfs {
-    _banner "Show CPU EEPROM"
+function _show_sys_eeprom_sysfs {
+    _banner "Show System EEPROM"
 
-    cpu_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
-    _echo "[CPU EEPROM]:"
-    _echo "${cpu_eeprom}"
+    sys_eeprom=$(eval "cat /sys/bus/i2c/devices/0-0057/eeprom ${LOG_REDIRECT} | hexdump -C")
+    _echo "[System EEPROM]:"
+    _echo "${sys_eeprom}"
 }
 
-function _show_cpu_eeprom {
+function _show_sys_eeprom {
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
-        _show_cpu_eeprom_sysfs
+        _show_sys_eeprom_sysfs
     else
-        _show_cpu_eeprom_i2c
+        _show_sys_eeprom_i2c
     fi
 }
 
@@ -854,7 +850,7 @@ function _show_sfp_port_status_sysfs {
             sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr_array[${i}]}/cpld_sfp_port_${port_status_sysfs_idx_array[${i}]}_tx_disable"
             _check_filepath $sysfs
             port_tx_disable_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_tx_disable=$(( (port_tx_fault_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
+            port_tx_disable=$(( (port_tx_disable_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
             # Module SFP Port Dump EEPROM
             if [ "${port_absent}" == "0" ]; then
@@ -1168,7 +1164,9 @@ function _show_ioport {
 
     while [ "${reg}" != "0x700" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
@@ -1183,11 +1181,12 @@ function _show_ioport {
 
     while [ "${reg}" != "0x800" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
     
     base=0xE00
@@ -1198,37 +1197,71 @@ function _show_ioport {
 
     while [ "${reg}" != "0xF00" ]
     do
-        ret=`${IOGET} "${reg}"`
+        ret=$(_dd_read_byte ${reg})
+        _echo "The value of address ${reg} is ${ret}"
+
         offset=$(( ${offset} + 1 ))
         reg=$(( ${base} + ${offset} ))
         reg=`printf "0x%X\n" ${reg}`
-        _echo "${ret}"
     done
-    
-    ret=$(eval "${IOGET} 0x501 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf000 ${LOG_REDIRECT}")
-    _echo "${ret}"
-    ret=$(eval "${IOGET} 0xf011 ${LOG_REDIRECT}")
-    _echo "${ret}"
+
+    reg="0x501"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf000"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
+    reg="0xf011"
+    ret=$(_dd_read_byte ${reg})
+    _echo "The value of address ${reg} is ${ret}"
 }
 
 function _show_onlpdump {
     _banner "Show onlpdump"
-    
+
     which onlpdump > /dev/null 2>&1
     ret_onlpdump=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlpdump} -eq 0 ]; then
-        cmd_array=("onlpdump -d" \
-                   "onlpdump -s" \
-                   "onlpdump -r" \
-                   "onlpdump -e" \
-                   "onlpdump -o" \
-                   "onlpdump -x" \
-                   "onlpdump -i" \
-                   "onlpdump -p" \
-                   "onlpdump -S")
+        cmd_array=("${timeout_cmd} onlpdump -d" \
+                   "${timeout_cmd} onlpdump -s" \
+                   "${timeout_cmd} onlpdump -r" \
+                   "${timeout_cmd} onlpdump -e" \
+                   "${timeout_cmd} onlpdump -o" \
+                   "${timeout_cmd} onlpdump -x" \
+                   "${timeout_cmd} onlpdump -i" \
+                   "${timeout_cmd} onlpdump -p" \
+                   "${timeout_cmd} onlpdump -S")
+        for (( i=0; i<${#cmd_array[@]}; i++ ))
+        do
+            _echo "[Command]: ${cmd_array[$i]}"
+            ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT} | tr -d '\0'")
+            _echo "${ret}"
+            _echo ""
+        done
+    else
+        _echo "Not support!"
+    fi
+}
+
+function _show_onlpd {
+    _banner "Show onlpd"
+
+    which onlpd > /dev/null 2>&1
+    ret_onlpd=$?
+    timeout_cmd="timeout 20s"
+
+    if [ ${ret_onlpd} -eq 0 ]; then
+        cmd_array=("${timeout_cmd} onlpd -d" \
+                   "${timeout_cmd} onlpd -s" \
+                   "${timeout_cmd} onlpd -r" \
+                   "${timeout_cmd} onlpd -e" \
+                   "${timeout_cmd} onlpd -o" \
+                   "${timeout_cmd} onlpd -x" \
+                   "${timeout_cmd} onlpd -i" \
+                   "${timeout_cmd} onlpd -p" \
+                   "${timeout_cmd} onlpd -S")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1243,17 +1276,18 @@ function _show_onlpdump {
 
 function _show_onlps {
     _banner "Show onlps"
-    
+
     which onlps > /dev/null 2>&1
     ret_onlps=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlps} -eq 0 ]; then
-        cmd_array=("onlps chassis onie show -" \
-                   "onlps chassis asset show -" \
-                   "onlps chassis env -" \
-                   "onlps sfp inventory -" \
-                   "onlps sfp bitmaps -" \
-                   "onlps chassis debug show -")
+        cmd_array=("${timeout_cmd} onlps chassis onie show -" \
+                   "${timeout_cmd} onlps chassis asset show -" \
+                   "${timeout_cmd} onlps chassis env -" \
+                   "${timeout_cmd} onlps sfp inventory -" \
+                   "${timeout_cmd} onlps sfp bitmaps -" \
+                   "${timeout_cmd} onlps chassis debug show -")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1812,7 +1846,7 @@ function _main {
     _show_i2c_tree
     _show_i2c_device_info
     _show_sys_devices
-    _show_cpu_eeprom
+    _show_sys_eeprom
     _show_psu_status_cpld
     _show_rov
     _show_sfp_port_status    
@@ -1823,6 +1857,7 @@ function _main {
     _show_beacon_led
     _show_ioport
     _show_onlpdump
+    _show_onlpd
     _show_onlps   
     _show_system_info
     _show_cpld_error_log

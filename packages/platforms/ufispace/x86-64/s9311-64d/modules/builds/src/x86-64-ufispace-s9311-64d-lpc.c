@@ -27,6 +27,8 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
+#include <linux/atomic.h>
 
 #if !defined(SENSOR_DEVICE_ATTR_RO)
 #define SENSOR_DEVICE_ATTR_RO(_name, _func, _index) \
@@ -64,9 +66,11 @@
 #define REG_BASE_EC 0x2300
 #define REG_BASE_I2C_ALERT 0x700
 
+#define REG_LPC_WRITE_PROTECT 0xE70
+#define MASK_LPC_WP_ENABLE (1 << 0)
 /*
- *  Normally, the LPC register range is 0x00-0xff.
- *  Therefore, we define the invalid address 0x100 as REG_NONE
+ * Normally, the LPC register range is 0x00-0xff.
+ * Therefore, we define the invalid address 0x100 as REG_NONE
  */
 #define REG_NONE 0x100
 
@@ -81,7 +85,7 @@
 // I2C Alert
 #define REG_ALERT_STATUS (REG_BASE_I2C_ALERT + 0x80)
 
-//MB EC
+// MB EC
 #define REG_MISC_CTRL (REG_BASE_EC + 0x0C)
 #define REG_CPU_REV (REG_BASE_EC + 0x17)
 
@@ -130,9 +134,11 @@ enum lpc_sysfs_attributes
     ATT_BSP_PR_INFO,
     ATT_BSP_PR_ERR,
     ATT_BSP_GPIO_MAX,
+    ATT_BSP_GPIO_BASE,
     ATT_BSP_FPGA_PCI_ENABLE,
+    ATT_BSP_WP_ACCESS_COUNT,
 
-    //EC
+    // EC
     ATT_EC_BIOS_BOOT_ROM,
     ATT_EC_CPU_REV_HW_REV,
     ATT_EC_CPU_REV_DEV_PHASE,
@@ -149,11 +155,18 @@ enum data_type
     DATA_UNK,
 };
 
+enum reg_write_protect
+{
+    REG_WP_DIS = false,
+    REG_WP_EN = true
+};
+
 typedef struct
 {
     u16 reg;
     u8 mask;
     u8 data_type;
+    bool write_protect;
 } attr_reg_map_t;
 
 enum bsp_log_types
@@ -179,35 +192,37 @@ struct lpc_data_s
 attr_reg_map_t attr_reg[] = {
 
     // MB CPLD
-    [ATT_MB_BRD_ID_0] = {REG_MB_BRD_ID_0, MASK_ALL, DATA_HEX},
-    [ATT_MB_BRD_SKU_ID] = {REG_MB_BRD_ID_0, MASK_ALL, DATA_DEC},
-    [ATT_MB_BRD_ID_1] = {REG_MB_BRD_ID_1, MASK_ALL, DATA_HEX},
-    [ATT_MB_BRD_HW_ID] = {REG_MB_BRD_ID_1, MASK_0000_0011, DATA_DEC},
-    [ATT_MB_BRD_DEPH_ID] = {REG_MB_BRD_ID_1, MASK_0000_0100, DATA_DEC},
-    [ATT_MB_BRD_BUILD_ID] = {REG_MB_BRD_ID_1, MASK_0011_1000, DATA_DEC},
-    [ATT_MB_BRD_ID_TYPE] = {REG_MB_BRD_ID_1, MASK_1000_0000, DATA_DEC},
-    [ATT_MB_CPLD_1_MINOR_VER] = {REG_MB_CPLD_VERSION, MASK_0011_1111, DATA_DEC},
-    [ATT_MB_CPLD_1_MAJOR_VER] = {REG_MB_CPLD_VERSION, MASK_1100_0000, DATA_DEC},
-    [ATT_MB_CPLD_1_BUILD_VER] = {REG_MB_CPLD_BUILD, MASK_ALL, DATA_DEC},
-    [ATT_MB_CPLD_1_VERSION_H] = {REG_NONE, MASK_NONE, DATA_UNK},
-    [ATT_MB_MUX_RESET_ALL] = {REG_MB_MUX_RESET, MASK_1100_0000, DATA_DEC},
-    [ATT_MB_MUX_CTRL] = {REG_MB_MUX_CTRL, MASK_ALL, DATA_HEX},
+    [ATT_MB_BRD_ID_0] = {REG_MB_BRD_ID_0, MASK_ALL, DATA_HEX, REG_WP_DIS},
+    [ATT_MB_BRD_SKU_ID] = {REG_MB_BRD_ID_0, MASK_ALL, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_BRD_ID_1] = {REG_MB_BRD_ID_1, MASK_ALL, DATA_HEX, REG_WP_DIS},
+    [ATT_MB_BRD_HW_ID] = {REG_MB_BRD_ID_1, MASK_0000_0011, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_BRD_DEPH_ID] = {REG_MB_BRD_ID_1, MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_BRD_BUILD_ID] = {REG_MB_BRD_ID_1, MASK_0011_1000, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_BRD_ID_TYPE] = {REG_MB_BRD_ID_1, MASK_1000_0000, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_CPLD_1_MINOR_VER] = {REG_MB_CPLD_VERSION, MASK_0011_1111, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_CPLD_1_MAJOR_VER] = {REG_MB_CPLD_VERSION, MASK_1100_0000, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_CPLD_1_BUILD_VER] = {REG_MB_CPLD_BUILD, MASK_ALL, DATA_DEC, REG_WP_DIS},
+    [ATT_MB_CPLD_1_VERSION_H] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
+    [ATT_MB_MUX_RESET_ALL] = {REG_MB_MUX_RESET, MASK_1100_0000, DATA_DEC, REG_WP_EN},
+    [ATT_MB_MUX_CTRL] = {REG_MB_MUX_CTRL, MASK_ALL, DATA_HEX, REG_WP_EN},
     // I2C Alert
-    [ATT_ALERT_STATUS] = {REG_ALERT_STATUS, MASK_0010_0000, DATA_DEC},
+    [ATT_ALERT_STATUS] = {REG_ALERT_STATUS, MASK_0010_0000, DATA_DEC, REG_WP_DIS},
 
     // BSP
-    [ATT_BSP_VERSION] = {REG_NONE, MASK_NONE, DATA_UNK},
-    [ATT_BSP_DEBUG] = {REG_NONE, MASK_NONE, DATA_UNK},
-    [ATT_BSP_PR_INFO] = {REG_NONE, MASK_NONE, DATA_UNK},
-    [ATT_BSP_PR_ERR] = {REG_NONE, MASK_NONE, DATA_UNK},
-    [ATT_BSP_GPIO_MAX] = {REG_NONE, MASK_NONE, DATA_DEC},
-    [ATT_BSP_FPGA_PCI_ENABLE] = {REG_NONE, MASK_NONE, DATA_DEC},
+    [ATT_BSP_VERSION] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
+    [ATT_BSP_DEBUG] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
+    [ATT_BSP_PR_INFO] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
+    [ATT_BSP_PR_ERR] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
+    [ATT_BSP_GPIO_MAX] = {REG_NONE, MASK_NONE, DATA_DEC, REG_WP_DIS},
+    [ATT_BSP_GPIO_BASE] = {REG_NONE, MASK_NONE, DATA_DEC, REG_WP_DIS},
+    [ATT_BSP_FPGA_PCI_ENABLE] = {REG_NONE, MASK_NONE, DATA_DEC, REG_WP_DIS},
+    [ATT_BSP_WP_ACCESS_COUNT] = {REG_NONE, MASK_NONE, DATA_UNK, REG_WP_DIS},
 
     // EC
-    [ATT_EC_BIOS_BOOT_ROM] = {REG_MISC_CTRL, MASK_0100_0000, DATA_DEC},
-    [ATT_EC_CPU_REV_HW_REV] = {REG_CPU_REV, MASK_0000_0011, DATA_DEC},
-    [ATT_EC_CPU_REV_DEV_PHASE] = {REG_CPU_REV, MASK_0000_0100, DATA_DEC},
-    [ATT_EC_CPU_REV_BUILD_ID] = {REG_CPU_REV, MASK_0001_1000, DATA_DEC},
+    [ATT_EC_BIOS_BOOT_ROM] = {REG_MISC_CTRL, MASK_0100_0000, DATA_DEC, REG_WP_DIS},
+    [ATT_EC_CPU_REV_HW_REV] = {REG_CPU_REV, MASK_0000_0011, DATA_DEC, REG_WP_DIS},
+    [ATT_EC_CPU_REV_DEV_PHASE] = {REG_CPU_REV, MASK_0000_0100, DATA_DEC, REG_WP_DIS},
+    [ATT_EC_CPU_REV_BUILD_ID] = {REG_CPU_REV, MASK_0001_1000, DATA_DEC, REG_WP_DIS},
 };
 
 struct lpc_data_s *lpc_data;
@@ -217,6 +232,11 @@ char bsp_fpga_pci_enable[3] = "-1";
 u8 enable_log_read = LOG_DISABLE;
 u8 enable_log_write = LOG_DISABLE;
 u8 enable_log_sys = LOG_ENABLE;
+
+static unsigned int wp_access_count = 0;
+
+int lpc_init(void);
+void lpc_exit(void);
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -328,6 +348,37 @@ static void _outb(u8 data, u16 port)
     mdelay(LPC_MDELAY);
 }
 
+// write enable
+static u8 lpc_wp_begin(void)
+{
+    u8 current_wp = 0;
+
+    mutex_lock(&lpc_data->access_lock);
+
+    current_wp = inb(REG_LPC_WRITE_PROTECT);
+
+    if (!(current_wp & MASK_LPC_WP_ENABLE))
+    {
+        outb(current_wp | MASK_LPC_WP_ENABLE, REG_LPC_WRITE_PROTECT);
+        mdelay(LPC_MDELAY);
+        wp_access_count++;
+    }
+
+    return current_wp;
+}
+
+// write disable
+static void lpc_wp_end(u8 original_wp_state)
+{
+    if (!(original_wp_state & MASK_LPC_WP_ENABLE))
+    {
+        outb(original_wp_state, REG_LPC_WRITE_PROTECT);
+        mdelay(LPC_MDELAY);
+    }
+
+    mutex_unlock(&lpc_data->access_lock);
+}
+
 /* get lpc register value */
 static u8 _lpc_reg_read(u16 reg, u8 mask)
 {
@@ -359,7 +410,7 @@ static ssize_t lpc_reg_read(u16 reg, u8 mask, char *buf, u8 data_type)
 }
 
 /* set lpc register value */
-static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type)
+static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8 data_type, bool write_protect)
 {
     u8 reg_val, reg_val_now, shift;
 
@@ -390,11 +441,18 @@ static ssize_t lpc_reg_write(u16 reg, u8 mask, const char *buf, size_t count, u8
         reg_val = _bit_operation(reg_val_now, shift, reg_val);
     }
 
-    mutex_lock(&lpc_data->access_lock);
-
-    _outb(reg_val, reg);
-
-    mutex_unlock(&lpc_data->access_lock);
+    if (write_protect)
+    {
+        u8 original_wp = lpc_wp_begin();
+        _outb(reg_val, reg);
+        lpc_wp_end(original_wp);
+    }
+    else
+    {
+        mutex_lock(&lpc_data->access_lock);
+        _outb(reg_val, reg);
+        mutex_unlock(&lpc_data->access_lock);
+    }
 
     BSP_LOG_W("reg=0x%03x, reg_val=0x%02x, mask=0x%02x", reg, reg_val, mask);
 
@@ -432,13 +490,33 @@ static ssize_t gpio_max_show(struct device *dev,
                              struct device_attribute *da,
                              char *buf)
 {
-    u8 data_type = DATA_UNK;
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX)
     {
-        data_type = attr_reg[attr->index].data_type;
-        return _parse_data(buf, ARCH_NR_GPIOS - 1, data_type);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d", ARCH_NR_GPIOS - 1);
+#else
+        return sprintf(buf, "%d", -1);
+#endif
+    }
+    return -1;
+}
+
+/* get gpio base value */
+static ssize_t gpio_base_show(struct device *dev,
+                              struct device_attribute *da,
+                              char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+
+    if (attr->index == ATT_BSP_GPIO_BASE)
+    {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+        return sprintf(buf, "%d", -1);
+#else
+        return sprintf(buf, "%d", GPIO_DYNAMIC_BASE);
+#endif
     }
     return -1;
 }
@@ -504,6 +582,7 @@ static ssize_t lpc_callback_show(struct device *dev,
 
     // BSP
     case ATT_BSP_GPIO_MAX:
+    case ATT_BSP_GPIO_BASE:
         reg = attr_reg[attr->index].reg;
         mask = attr_reg[attr->index].mask;
         data_type = attr_reg[attr->index].data_type;
@@ -522,6 +601,7 @@ static ssize_t lpc_callback_store(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_NONE;
     u8 data_type = DATA_UNK;
+    bool write_protect = REG_WP_DIS;
 
     switch (attr->index)
     {
@@ -530,11 +610,12 @@ static ssize_t lpc_callback_store(struct device *dev,
         reg = attr_reg[attr->index].reg;
         mask = attr_reg[attr->index].mask;
         data_type = attr_reg[attr->index].data_type;
+        write_protect = attr_reg[attr->index].write_protect;
         break;
     default:
         return -EINVAL;
     }
-    return lpc_reg_write(reg, mask, buf, count, data_type);
+    return lpc_reg_write(reg, mask, buf, count, data_type, write_protect);
 }
 
 /* get bsp parameter value */
@@ -543,6 +624,15 @@ static ssize_t bsp_callback_show(struct device *dev,
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
     char *str = NULL;
+    ssize_t len;
+
+    if (attr->index == ATT_BSP_WP_ACCESS_COUNT)
+    {
+        mutex_lock(&lpc_data->access_lock);
+        len = sprintf(buf, "%u", wp_access_count);
+        mutex_unlock(&lpc_data->access_lock);
+        return len;
+    }
 
     switch (attr->index)
     {
@@ -650,16 +740,13 @@ static ssize_t mux_reset_all_store(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_NONE;
     u8 val = 0;
-    u8 reg_val = 0;
-    static int mux_reset_flag = 0;
+    static atomic_t mux_reset_flag = ATOMIC_INIT(0);
 
     switch (attr->index)
     {
     case ATT_MB_MUX_RESET_ALL:
         reg = attr_reg[attr->index].reg;
-        ;
         mask = attr_reg[attr->index].mask;
-        ;
         break;
     default:
         return -EINVAL;
@@ -668,39 +755,39 @@ static ssize_t mux_reset_all_store(struct device *dev,
     if (kstrtou8(buf, 0, &val) < 0)
         return -EINVAL;
 
-    if (mux_reset_flag == 0)
+    if (val != 0)
+        return -EINVAL;
+
+    // atomic compare and exchange
+    if (atomic_cmpxchg(&mux_reset_flag, 0, 1) == 0)
     {
-        if (val == 0)
-        {
-            mutex_lock(&lpc_data->access_lock);
-            mux_reset_flag = 1;
-            BSP_LOG_W("i2c mux reset is triggered...");
+        u8 reg_val = 0;
+        u8 original_wp;
 
-            // reset mux
-            reg_val = inb(reg);
-            outb((reg_val & (u8)(~mask)), reg);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val & (u8)(~mask));
+        BSP_LOG_W("i2c mux reset is triggered...");
 
-            mdelay(MDELAY_RESET_INTERVAL);
+        // reset mux
+        original_wp = lpc_wp_begin();
+        reg_val = inb(reg);
+        outb((reg_val & (u8)(~mask)), reg);
+        BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val & (u8)(~mask));
+        lpc_wp_end(original_wp);
 
-            // unset mux
-            outb((reg_val | mask), reg);
-            BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val | mask);
+        msleep(MDELAY_RESET_INTERVAL);
 
-            mdelay(MDELAY_RESET_FINISH);
-            mux_reset_flag = 0;
-            mutex_unlock(&lpc_data->access_lock);
-        }
-        else
-        {
-            return -EINVAL;
-        }
+        // unset mux
+        original_wp = lpc_wp_begin();
+        outb((reg_val | mask), reg);
+        BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val | mask);
+        lpc_wp_end(original_wp);
+
+        msleep(MDELAY_RESET_FINISH);
+
+        atomic_set(&mux_reset_flag, 0);
     }
     else
     {
         BSP_LOG_W("i2c mux is resetting... (ignore)");
-        mutex_lock(&lpc_data->access_lock);
-        mutex_unlock(&lpc_data->access_lock);
     }
     return count;
 }
@@ -729,9 +816,11 @@ static SENSOR_DEVICE_ATTR_RW(bsp_debug, bsp_callback, ATT_BSP_DEBUG);
 static SENSOR_DEVICE_ATTR_WO(bsp_pr_info, bsp_pr_callback, ATT_BSP_PR_INFO);
 static SENSOR_DEVICE_ATTR_WO(bsp_pr_err, bsp_pr_callback, ATT_BSP_PR_ERR);
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_max, gpio_max, ATT_BSP_GPIO_MAX);
+static SENSOR_DEVICE_ATTR_RO(bsp_gpio_base, gpio_base, ATT_BSP_GPIO_BASE);
 static SENSOR_DEVICE_ATTR_RW(bsp_fpga_pci_enable, bsp_callback, ATT_BSP_FPGA_PCI_ENABLE);
+static SENSOR_DEVICE_ATTR_RO(bsp_wp_access_count, bsp_callback, ATT_BSP_WP_ACCESS_COUNT);
 
-//SENSOR_DEVICE_ATTR - EC
+// SENSOR_DEVICE_ATTR - EC
 static SENSOR_DEVICE_ATTR_RO(bios_boot_sel, lpc_callback, ATT_EC_BIOS_BOOT_ROM);
 static SENSOR_DEVICE_ATTR_RO(cpu_rev_hw_rev, lpc_callback, ATT_EC_CPU_REV_HW_REV);
 static SENSOR_DEVICE_ATTR_RO(cpu_rev_dev_phase, lpc_callback, ATT_EC_CPU_REV_DEV_PHASE);
@@ -765,7 +854,9 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_pr_info),
     _DEVICE_ATTR(bsp_pr_err),
     _DEVICE_ATTR(bsp_gpio_max),
+    _DEVICE_ATTR(bsp_gpio_base),
     _DEVICE_ATTR(bsp_fpga_pci_enable),
+    _DEVICE_ATTR(bsp_wp_access_count),
     NULL,
 };
 

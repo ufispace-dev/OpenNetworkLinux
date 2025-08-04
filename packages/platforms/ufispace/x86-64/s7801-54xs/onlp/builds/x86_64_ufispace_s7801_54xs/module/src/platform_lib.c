@@ -28,6 +28,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <ctype.h>
 #include "platform_lib.h"
 
 /*                                   ALL UNIT1*/
@@ -355,7 +356,9 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
 
             //parse line into fields
             while ((token = strsep (&line_ptr, seps)) != NULL) {
-                sscanf (token, "%[^\n]", line_fields[i++]);
+                snprintf(line_fields[i], sizeof(line_fields[i]), "%s", token);
+                line_fields[i][strcspn(line_fields[i], "\n")] = 0;
+                i++;
             }
 
             //save bmc_cache from fields
@@ -469,31 +472,42 @@ int bmc_fru_read(int local_id, bmc_fru_t *data)
         //read fru from cache file and save to bmc_fru_cache
         FILE *fp = NULL;
         fp = fopen (fru->cache_files, "r");
-        while(1) {
-            char key[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            char val[BMC_FRU_ATTR_KEY_VALUE_SIZE] = {'\0'};
-            if(fscanf(fp ,"%[^:]:%[^\n]\n", key, val) != 2) {
+        char line[BMC_FRU_LINE_SIZE] = {'\0'};
+        while(fgets(line,BMC_FRU_LINE_SIZE, fp) != NULL) {
+            char *line_ptr = line;
+            char *key = NULL;
+            char *val = NULL;
+
+            key = strsep(&line_ptr, ":");
+            if ((val = strsep(&line_ptr, ":")) != NULL) {
+                val[strcspn(val, "\n")] = 0;
+            }
+
+            if(strlen(key) == 0 || strlen(val) == 0) {
                 break;
             }
 
+            trim_whitespace(key);
+            trim_whitespace(val);
+
             if(strcmp(key, BMC_FRU_KEY_MANUFACTURER) == 0) {
                 memset(fru->vendor.val, '\0', sizeof(fru->vendor.val));
-                strncpy(fru->vendor.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
                 memset(fru->name.val, '\0', sizeof(fru->name.val));
-                strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->name.val, sizeof(fru->name.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
                 memset(fru->part_num.val, '\0', sizeof(fru->part_num.val));
-                strncpy(fru->part_num.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%s", val);
             }
 
             if(strcmp(key, BMC_FRU_KEY_SERIAL) == 0) {
                 memset(fru->serial.val, '\0', sizeof(fru->serial.val));
-                strncpy(fru->serial.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
+                snprintf(fru->serial.val, sizeof(fru->serial.val), "%s", val);
             }
 
         }
@@ -594,7 +608,9 @@ int bmc_fan_dir_read(int bmc_cache_index, float *data)
             i = 0;
             //parse line into fields
             while((token = strsep (&line_ptr, seps)) != NULL) {
-                sscanf(token, "%[^\n]", line_fields[i++]);
+                snprintf(line_fields[i], sizeof(line_fields[i]), "%s", token);
+                line_fields[i][strcspn(line_fields[i], "\n")] = 0;
+                i++;
             }
 
             for(i=BMC_ATTR_ID_FAN0_DIR; i<=BMC_ATTR_ID_FAN4_DIR; i++) {
@@ -611,7 +627,9 @@ int bmc_fan_dir_read(int bmc_cache_index, float *data)
             //parse line into fields
             memset(line_fields, 0, sizeof(line_fields));
             while((token = strsep (&line_ptr, seps)) != NULL) {
-                sscanf(token, "%[^\n]", line_fields[i++]);
+                snprintf(line_fields[i], sizeof(line_fields[i]), "%s", token);
+                line_fields[i][strcspn(line_fields[i], "\n")] = 0;
+                i++;
             }
 
             for(i=BMC_ATTR_ID_PSU0_FAN1_DIR; i<=BMC_ATTR_ID_PSU1_FAN1_DIR; i++) {
@@ -793,4 +811,22 @@ int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
 
 
     return ret;
+}
+
+/**
+ * @brief Trim trailing whitespace
+ * @param str [out] string without trailing whitespace
+ */
+int trim_whitespace(char *str)
+{
+    char *end;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while(end > str && isspace((unsigned char)*end)) end--;
+
+    // Write new null terminator character
+    end[1] = '\0';
+
+    return ONLP_STATUS_OK;
 }

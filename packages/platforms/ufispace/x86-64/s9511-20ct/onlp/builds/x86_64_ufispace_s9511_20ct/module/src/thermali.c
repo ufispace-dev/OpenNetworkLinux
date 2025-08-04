@@ -397,10 +397,10 @@ static int get_pmbus_thermal_info(int local_id, onlp_thermal_info_t* info)
         n_value = (~n_value) +1;
         temp = (unsigned int)(1<<n_value);
         if(temp)
-            snprintf(result, sizeof(result), "%d.%04d", y_value/temp, ((y_value%temp)*10000)/temp);
+            snprintf(result, sizeof(result), "%u.%04u", y_value/temp, ((y_value%temp)*10000)/temp);
     } else {
         n_value = (((value) >> 11) & 0x0F);
-        snprintf(result, sizeof(result), "%d", (y_value*(1<<n_value)));
+        snprintf(result, sizeof(result), "%u", (y_value*(1<<n_value)));
     }
 
     buf = atof((const char *)result);

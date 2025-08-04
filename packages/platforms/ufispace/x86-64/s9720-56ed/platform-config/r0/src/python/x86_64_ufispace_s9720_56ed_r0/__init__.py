@@ -74,7 +74,7 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
     PATH_LPC_GRP_BSP=PATH_LPC+"/bsp"
     PATH_LPC_GRP_MB_CPLD=PATH_LPC+"/mb_cpld"
     PATH_PORT_CONFIG="/lib/platform-config/"+PLATFORM+"/onl/port_config.yml"
-    PATH_EPDM_CLI="/lib/platform-config/"+PLATFORM+"/onl/epdm_cli"
+    PATH_EPDM_CLI="/lib/platform-config/current/onl/epdm_cli"
     PATH_CPLD1_EVT_CTRL=PATH_I2C_CPLD1+"/event_detect_ctrl"
     PATH_CPLD2_EVT_CTRL=PATH_I2C_CPLD2+"/event_detect_ctrl"
     PATH_FPGA_EVT_CTRL=PATH_I2C_FPGA+"/event_detect_ctrl"
@@ -452,8 +452,8 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
         #self.bsp_pr("Init bcm88860")
         self.insmod("intel_auxiliary", False)
         self.insmod("ice")
-        # init bcm85361
-        # os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
+        # init BCM82399
+        os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

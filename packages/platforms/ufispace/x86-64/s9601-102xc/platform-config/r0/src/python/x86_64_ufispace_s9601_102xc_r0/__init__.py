@@ -481,7 +481,7 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
         os.system("modprobe ice")
 
         # # init bcm82752
-        # os.system("timeout 120s {} init".format(self.PATH_EPDM_CLI))
+        os.system("timeout 120s {} init -s auto_10G -t copper".format(self.PATH_EPDM_CLI))
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

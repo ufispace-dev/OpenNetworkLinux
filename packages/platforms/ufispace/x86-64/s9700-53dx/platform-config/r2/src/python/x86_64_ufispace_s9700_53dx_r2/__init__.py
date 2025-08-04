@@ -95,14 +95,14 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
             else:
                 port_name = port
 
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+            self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
             port = port + 1
 
         # init QSFPDD EEPROM
         for bus in range(65, 78):
-            self.new_i2c_device('optoe1', 0x50, bus)
+            self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port)
             port = port + 1
 
     def enable_ipmi_maintenance_mode(self):
@@ -281,6 +281,16 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
             for i in range(base-63, base-31):
                 os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                msg("Open file failed, exception={}".format(e))
+        else:
+            msg("File not found: {}".format(path))
+
     def baseconfig(self):
 
         # load default kernel driver
@@ -377,7 +387,8 @@ class OnlPlatform_x86_64_ufispace_s9700_53dx_r2(OnlPlatformUfiSpace):
 
         for index, cpld in enumerate(cpld_addr):
             #get rov from cpld
-            reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_psu_status_0".format(cpld_bus, cpld), shell=True)
+            cmd = "cat /sys/bus/i2c/devices/{}-00{}/cpld_psu_status_0".format(cpld_bus, cpld)
+            reg_val_str = subprocess.check_output(cmd.split())
             reg_val = int(reg_val_str, 16)
             vid = (reg_val & 0xe) >> 1
             mac_vdd_val = vdd_val_array[vid]

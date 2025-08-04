@@ -624,22 +624,22 @@ int read_bmc_fru(int fru_id, bmc_fru_t *data)
 
         //Check output is correct
         if (strnlen(fru->vendor.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0 ) {
-                strncpy(fru->vendor.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->vendor.val, sizeof(fru->vendor.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->name.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->name.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->name.val, sizeof(fru->name.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->part_num.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->part_num.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->part_num.val, sizeof(fru->part_num.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
 
 
         if (strnlen(fru->serial.val, BMC_FRU_ATTR_KEY_VALUE_LEN) == 0) {
-                strncpy(fru->serial.val, COMM_STR_NOT_AVAILABLE, strnlen(COMM_STR_NOT_AVAILABLE, BMC_FRU_ATTR_KEY_VALUE_LEN));
+            snprintf(fru->serial.val, sizeof(fru->serial.val), "%.*s", BMC_FRU_ATTR_KEY_VALUE_LEN, COMM_STR_NOT_AVAILABLE);
         }
     }
 
@@ -823,23 +823,20 @@ int vread_file_hex(int* value, const char* fmt, va_list vargs)
  */
 void check_and_do_i2c_mux_reset(int port)
 {
-    char cmd_buf[256] = {0};
-    int ret = 0;
-    const char *mux_reset_paths[] = {
-        LPC_MB_CPLD "i2c_mux_1_rst",
-        LPC_MB_CPLD "i2c_mux_2_rst",
-        LPC_MB_CPLD "i2c_mux_3_rst"
-    };
-    int i;
+    // Not support
+    if(0) {
+        char cmd_buf[256] = {0};
+        int ret = 0;
 
-    snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
-    ret = system(cmd_buf);
-    if (ret != 0) {
-        for (i = 0; i < sizeof(mux_reset_paths) / sizeof(mux_reset_paths[0]); i++) {
-            if (access(mux_reset_paths[i], F_OK) != -1) {
+        snprintf(cmd_buf, sizeof(cmd_buf), I2C_STUCK_CHECK_CMD);
+        ret = system(cmd_buf);
+        if(ret != 0) {
+            if(access(MUX_RESET_PATH, F_OK) != -1 ) {
+                //AIM_LOG_SYSLOG_WARN("I2C bus is stuck!! (port=%d)\r\n", port);
                 memset(cmd_buf, 0, sizeof(cmd_buf));
-                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", mux_reset_paths[i]);
+                snprintf(cmd_buf, sizeof(cmd_buf), "echo 0 > %s 2> /dev/null", MUX_RESET_PATH);
                 ret = system(cmd_buf);
+                //AIM_LOG_SYSLOG_WARN("Do I2C mux reset!! (ret=%d)\r\n", ret);
             }
         }
     }

@@ -335,6 +335,9 @@ class OnlPlatform_x86_64_ufispace_s9500_22xst_r0(OnlPlatformUfiSpace):
         msg("****** End S9500-22XST platform initializing ... ******\n")
         '''
 
+        # sets the System Event Log (SEL) timestamp to the current system time
+        os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
         return True
 
     def enable_ipmi_maintenance_mode(self):

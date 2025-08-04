@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -500,7 +500,7 @@ function _show_version {
 function _show_i2c_tree_bus_0 {
     _banner "Show I2C Tree Bus 0"
 
-    ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
+    ret=$(eval "(time i2cdetect -y 0) ${LOG_REDIRECT}")
 
     _echo "[I2C Tree]:"
     _echo "${ret}"
@@ -528,7 +528,7 @@ function _show_i2c_mux_devices {
             # open mux channel
             i2cset -y 0 ${chip_addr} $(( 2 ** ${i} ))
             # dump i2c tree
-            ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
+            ret=$(eval "(time i2cdetect -y 0) ${LOG_REDIRECT}")
             _echo "${ret}"
             # close mux channel
             i2cset -y 0 ${chip_addr} 0x0 
@@ -780,7 +780,7 @@ function _show_sfp_port_status_sysfs {
             sysfs="/sys/bus/i2c/devices/${bus_id}-${port_status_cpld_addr}/cpld_sfp_tx_dis"
             _check_filepath $sysfs
             port_tx_disable_reg=$(eval "cat $sysfs ${LOG_REDIRECT}")
-            port_tx_disable=$(( (port_tx_fault_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
+            port_tx_disable=$(( (port_tx_disable_reg & 1 << ${port_status_bit_idx_array[i]}) >> ${port_status_bit_idx_array[i]} ))
 
             # Module SFP Port Dump EEPROM
             if [ "${port_absent}" == "0" ]; then
@@ -1085,20 +1085,50 @@ function _show_ioport {
 
 function _show_onlpdump {
     _banner "Show onlpdump"
-    
+
     which onlpdump > /dev/null 2>&1
     ret_onlpdump=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlpdump} -eq 0 ]; then
-        cmd_array=("onlpdump -d" \
-                   "onlpdump -s" \
-                   "onlpdump -r" \
-                   "onlpdump -e" \
-                   "onlpdump -o" \
-                   "onlpdump -x" \
-                   "onlpdump -i" \
-                   "onlpdump -p" \
-                   "onlpdump -S")
+        cmd_array=("${timeout_cmd} onlpdump -d" \
+                   "${timeout_cmd} onlpdump -s" \
+                   "${timeout_cmd} onlpdump -r" \
+                   "${timeout_cmd} onlpdump -e" \
+                   "${timeout_cmd} onlpdump -o" \
+                   "${timeout_cmd} onlpdump -x" \
+                   "${timeout_cmd} onlpdump -i" \
+                   "${timeout_cmd} onlpdump -p" \
+                   "${timeout_cmd} onlpdump -S")
+        for (( i=0; i<${#cmd_array[@]}; i++ ))
+        do
+            _echo "[Command]: ${cmd_array[$i]}"
+            ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT} | tr -d '\0'")
+            _echo "${ret}"
+            _echo ""
+        done
+    else
+        _echo "Not support!"
+    fi
+}
+
+function _show_onlpd {
+    _banner "Show onlpd"
+
+    which onlpd > /dev/null 2>&1
+    ret_onlpd=$?
+    timeout_cmd="timeout 20s"
+
+    if [ ${ret_onlpd} -eq 0 ]; then
+        cmd_array=("${timeout_cmd} onlpd -d" \
+                   "${timeout_cmd} onlpd -s" \
+                   "${timeout_cmd} onlpd -r" \
+                   "${timeout_cmd} onlpd -e" \
+                   "${timeout_cmd} onlpd -o" \
+                   "${timeout_cmd} onlpd -x" \
+                   "${timeout_cmd} onlpd -i" \
+                   "${timeout_cmd} onlpd -p" \
+                   "${timeout_cmd} onlpd -S")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1113,17 +1143,18 @@ function _show_onlpdump {
 
 function _show_onlps {
     _banner "Show onlps"
-    
+
     which onlps > /dev/null 2>&1
     ret_onlps=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlps} -eq 0 ]; then
-        cmd_array=("onlps chassis onie show -" \
-                   "onlps chassis asset show -" \
-                   "onlps chassis env -" \
-                   "onlps sfp inventory -" \
-                   "onlps sfp bitmaps -" \
-                   "onlps chassis debug show -")
+        cmd_array=("${timeout_cmd} onlps chassis onie show -" \
+                   "${timeout_cmd} onlps chassis asset show -" \
+                   "${timeout_cmd} onlps chassis env -" \
+                   "${timeout_cmd} onlps sfp inventory -" \
+                   "${timeout_cmd} onlps sfp bitmaps -" \
+                   "${timeout_cmd} onlps chassis debug show -")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1687,6 +1718,7 @@ function _main {
     _show_beacon_led
     _show_ioport
     _show_onlpdump
+    _show_onlpd
     _show_onlps   
     _show_system_info
     _show_cpld_error_log

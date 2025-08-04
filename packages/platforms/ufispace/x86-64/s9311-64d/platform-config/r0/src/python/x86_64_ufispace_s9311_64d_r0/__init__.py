@@ -78,6 +78,7 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
     PATH_LPC_GRP_BSP=PATH_LPC+"/bsp"
     PATH_LPC_GRP_MB_CPLD=PATH_LPC+"/mb_cpld"
     PATH_BSP_GPIO_MAX=PATH_LPC_GRP_BSP+"/bsp_gpio_max"
+    PATH_BSP_GPIO_BASE=PATH_LPC_GRP_BSP+"/bsp_gpio_base"
     PATH_MUX_RESET_ALL=PATH_LPC_GRP_MB_CPLD + "/mux_reset_all"
     PATH_BOARD_HW_ID=PATH_LPC_GRP_MB_CPLD+"/board_hw_id"
     PATH_BOARD_DEPH_ID=PATH_LPC_GRP_MB_CPLD+"/board_deph_id"
@@ -150,15 +151,32 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
     def get_gpio_max(self):
         cmd = "cat " + self.PATH_BSP_GPIO_MAX
 
-        output = "511"
+        output = ""
         try:
             output = subprocess.check_output(cmd.split())
         except Exception as e:
             self.bsp_pr("Get gpio max failed, exception={}, output={}, cmd={}\n".format(e, output, cmd), self.LEVEL_ERR)
 
         gpio_max = int(output, 10)
+        self.bsp_pr("GPIO MAX: {}".format(gpio_max))
 
         return gpio_max
+
+    def get_gpio_base(self):
+        cmd = "cat " + self.PATH_BSP_GPIO_BASE
+
+        output = ""
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("get_gpio_base() failed, exception={}".format(e), self.LEVEL_ERR)
+            self.bsp_pr("Use default GPIO Base value -1", self.LEVEL_ERR)
+            output="-1"
+
+        gpio_base = int(output, 10)
+        self.bsp_pr("GPIO Base: {}".format(gpio_base))
+
+        return gpio_base
 
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
@@ -392,6 +410,27 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
         for driver_name, bus_address, action in device_actions:
             self.update_pci_device(driver_name, bus_address, action)
 
+    def init_gpio(self):
+        self.bsp_pr("Init GPIO")
+        
+        # init GPIO sysfs
+
+        #get gpio_max
+        gpio_max = self.get_gpio_max()
+        #get gpio_base
+        gpio_base = self.get_gpio_base()
+        is_gpio_base = False
+
+        if gpio_base >= 0 :
+            base = gpio_base
+            is_gpio_base = True
+        elif gpio_max >= 0:
+            base = gpio_max
+            is_gpio_base = False
+        else:
+            self.bsp_pr("invalid gpio_max {} and gpio_base {}, bsp init stopped".format(gpio_max, gpio_base), self.LEVEL_ERR)
+            exit(1)
+
     def baseconfig(self):
         # init interrupt handler for IRQ 17
         self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 17})
@@ -413,8 +452,6 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
 
         board = self.get_board_version()
 
-        gpio_max = self.get_gpio_max()
-        self.bsp_pr("GPIO MAX: {}".format(gpio_max))
 
         self.check_i2c_status(board)
 
@@ -440,6 +477,9 @@ class OnlPlatform_x86_64_ufispace_s9311_64d_r0(OnlPlatformUfiSpace):
             self.insmod("x86-64-ufispace-s9311-64d-cpld", params={'mux_en': 1})
         
         self.init_cpld(board)
+
+        # init GPIO sysfs
+        self.init_gpio()
 
         # init EEPROM
         if self.FPGA_PCI_ENABLE == 1:

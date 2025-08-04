@@ -157,12 +157,13 @@ static int get_platform_info(onlp_platform_info_t* pi)
         mb_cpld2_ver);
 
 
-    /* Get BIOS version */
-    char tmp_str[ONLP_CONFIG_INFO_STR_MAX] = {'\0'};
-    ONLP_TRY(onlp_file_read((uint8_t*)&tmp_str, ONLP_CONFIG_INFO_STR_MAX - 1, &len, SYSFS_BIOS_VER));
+    //Get BIOS version
+    ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_BIOS_VER));
 
-    /* Remove '\n' */
-    sscanf (tmp_str, "%[^\n]", bios_out);
+    //replace tailing new line in bios_out
+    if (len > 0 && bios_out[len-1] == '\n') {
+        bios_out[len-1] = '\0';
+    }
 
     char mu_ver[128] = {'\0'}, mu_result[128] = {'\0'};
     char path_onie_folder[] = "/mnt/onie-boot/onie";

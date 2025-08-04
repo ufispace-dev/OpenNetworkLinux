@@ -88,7 +88,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
         for bus in range(21, 69):
             self.new_i2c_device('optoe3', 0x50, bus)
             # update port_name
-            subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port, bus), shell=True)
+            self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port)
             port = port + 1
 
     def enable_ipmi_maintenance_mode(self):
@@ -224,6 +224,16 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
             for i in range(base-47, base-15):
                 os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                msg("Open file failed, exception={}".format(e))
+        else:
+            msg("File not found: {}".format(path))
+
     def baseconfig(self):
 
         # load default kernel driver
@@ -328,7 +338,7 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
 
         for index, cpld in enumerate(cpld_addr):
             #get rov from cpld
-            reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_10gmux_config".format(cpld_bus, cpld), shell=True)
+            reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_10gmux_config".format(cpld_bus, cpld).split())
             reg_val = int(reg_val_str, 16)
             vid = reg_val & 0x7
             mac_vdd_val = vdd_val_array[vid]
@@ -469,13 +479,13 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
             hidata = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["HiData"]
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_preamble"][i]["value"]
-            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata).split())
             if len(out) != 0:
                 msg("Set write_preamble hidata {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value).split())
             if len(out) != 0:
                 msg("Set write_preamble lowdata {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
+            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata).split())
             if int(out, 16) != set_value:
                 msg("Get write_preamble {} for CLKGEN failed.{}=/={}".format(i, int(out, 16), set_value))
 
@@ -489,23 +499,23 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["perform_freerun"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["perform_freerun"][i]["value"]
             if (hidata == 0x2 and lowdata == 0x9d) or (hidata == 0x2 and lowdata == 0xa9):
-                out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
+                out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata).split())
                 if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
-                out = subprocess.check_output("i2cset -y {} {} 0x1 {} w".format(bus, addr, lowdata), shell=True)
+                out = subprocess.check_output("i2cset -y {} {} 0x1 {} w".format(bus, addr, lowdata).split())
                 if len(out) != 0:
                     msg("Set word data perform_freerun {} for CLKGEN failed.".format(i))
-                out = subprocess.check_output("i2cget -y {} {} {} w".format(bus, addr, lowdata), shell=True)
+                out = subprocess.check_output("i2cget -y {} {} {} w".format(bus, addr, lowdata).split())
                 if int(out, 16) != set_value:
                     msg("Get word data perform_freerun {} for compare failed.{}=/={}".format(i, int(out, 16), set_value))
             else:
-                out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
+                out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata).split())
                 if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
-                out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
+                out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value).split())
                 if len(out) != 0:
                     msg("Set perform_freerun {} for CLKGEN failed.".format(i))
-                out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
+                out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata).split())
                 if int(out, 16) != set_value:
                     msg("Get perform_freerun {} for CLKGEN failed.{}=/={}".format(i, int(out, 16), set_value))
 
@@ -514,13 +524,13 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
             hidata = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["HiData"]
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_soft_rst"][i]["value"]
-            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata).split())
             if len(out) != 0:
                 msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value).split())
             if len(out) != 0:
                 msg("Set write_soft_rst {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
+            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata).split())
             if int(out, 16) != set_value:
                 msg("Get write_soft_rst {} for CLKGEN diff.{}=/={}".format(i, int(out, 16), set_value))
 
@@ -529,13 +539,13 @@ class OnlPlatform_x86_64_ufispace_s9705_48d_r2(OnlPlatformUfiSpace):
             hidata = CLKGEN_CONFIG["FREE_RUN"]["write_post_amble"][i]["HiData"]
             lowdata = CLKGEN_CONFIG["FREE_RUN"]["write_post_amble"][i]["LowData"]
             set_value = CLKGEN_CONFIG["FREE_RUN"]["write_post_amble"][i]["value"]
-            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} 0x1 {}".format(bus, addr, hidata).split())
             if len(out) != 0:
                 msg("Set write_post_amble {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value), shell=True)
+            out = subprocess.check_output("i2cset -y {} {} {} {}".format(bus, addr, lowdata, set_value).split())
             if len(out) != 0:
                 msg("Set write_post_amble {} for CLKGEN failed.".format(i))
-            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata), shell=True)
+            out = subprocess.check_output("i2cget -y {} {} {}".format(bus, addr, lowdata).split())
             if int(out, 16) != set_value:
                 msg("Get write_post_amble {} for CLKGEN failed. {}=/={}.".format(i, int(out, 16), set_value))
 

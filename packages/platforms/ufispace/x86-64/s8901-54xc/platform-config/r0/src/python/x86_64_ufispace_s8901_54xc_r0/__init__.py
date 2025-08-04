@@ -192,7 +192,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
                         port_name = data[port_type][port]["port_name_1_base"]
                     else:
                         port_name = data[port_type][port]["port_name"]
-                    subprocess.call("echo {} > /sys/bus/i2c/devices/{}-{:0>4x}/port_name".format(port_name, bus, addr_eeprom), shell=True)
+                        self._write("/sys/bus/i2c/devices/{}-{:0>4x}/port_name".format(bus, addr_eeprom), port_name)
 
     def init_gpio(self):
         self.bsp_pr("Init GPIO")
@@ -271,7 +271,7 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
 
         # enable event ctrl
         for _, addr in enumerate(addrs):
-            subprocess.call("echo 1 > /sys/bus/i2c/devices/{}-{:0>4x}/cpld_evt_ctrl".format(bus, addr), shell=True)
+            self._write("/sys/bus/i2c/devices/{}-{:0>4x}/cpld_evt_ctrl".format(bus, addr), 1)
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -368,6 +368,16 @@ class OnlPlatform_x86_64_ufispace_s8901_54xc_r0(OnlPlatformUfiSpace):
         # Iterate over the list and call modify_device for each tuple
         for driver_name, bus_address, action in device_actions:
             self.update_pci_device(driver_name, bus_address, action)
+
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
 
     def baseconfig(self):
 
