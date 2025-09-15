@@ -22,6 +22,7 @@
  * Attribute Implementation.
  *
  ***********************************************************/
+#include <unistd.h>
 #include <onlp/platformi/attributei.h>
 #include <onlp/stdattrs.h>
 #include <onlplib/file.h>
@@ -40,7 +41,7 @@
 #define SYSFS_CPU_CPLD_VER "/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc/cpu_cpld/cpu_cpld_version_h"
 #define SYSFS_MB_CPLD_VER "/sys/bus/i2c/devices/%d-%04x/cpld_version_h"
 
-#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_FIRST_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
+#define CMD_BMC_VER_1      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f1` + 0"
 #define CMD_BMC_VER_2      "expr `ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Firmware Revision' | cut -d':' -f2 | cut -d'.' -f2` + 0"
 #define CMD_BMC_VER_3      "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 
@@ -48,47 +49,51 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
 {
     char cpu_cpld_ver_out[ONLP_CONFIG_INFO_STR_MAX];
     char mb_cpld_ver_out[CPLD_MAX][ONLP_CONFIG_INFO_STR_MAX];
-    int mb_cpld1_addr = 0xE01, mb_cpld1_board_type_rev = 0, mb_cpld1_hw_rev = 0, mb_cpld1_build_rev = 0;
     int i = 0, len = 0;
     char bios_out[ONLP_CONFIG_INFO_STR_MAX] = "";
     char bmc_out1[8], bmc_out2[8], bmc_out3[8];
 
     onlp_onie_info_t onie_info;
-    
+
+    char mu_ver[128], mu_result[128];
+    char path_onie_folder[] = "/mnt/onie-boot/onie";
+    char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
+    char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
+    char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
+    char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_mu_result[256];
+
     memset(bios_out, 0, sizeof(bios_out));
     memset(bmc_out1, 0, sizeof(bmc_out1));
     memset(bmc_out2, 0, sizeof(bmc_out2));
     memset(bmc_out3, 0, sizeof(bmc_out3));
+    memset(mu_ver, 0, sizeof(mu_ver));
+    memset(mu_result, 0, sizeof(mu_result));
+    memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version
     ONLP_TRY(onlp_file_read((uint8_t*)&cpu_cpld_ver_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_CPU_CPLD_VER));
 
     //get MB CPLD version
     for(i=0; i < CPLD_MAX; ++i) {
-        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER, 
+        ONLP_TRY(onlp_file_read((uint8_t*)&mb_cpld_ver_out[i], ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_MB_CPLD_VER,
                                              CPLD_I2C_BUS[i], CPLD_BASE_ADDR[i]));
     }
-    
+
     asset_info->cpld_revision = aim_fstrdup(
         "\n"
         "[CPU CPLD] %s\n"
         "[MB CPLD1] %s\n"
         "[MB CPLD2] %s\n"
         "[MB CPLD3] %s\n"
-        "[MB CPLD4] %s\n" 
-        "[MB CPLD5] %s\n", 
-        cpu_cpld_ver_out, 
+        "[MB CPLD4] %s\n"
+        "[MB CPLD5] %s\n",
+        cpu_cpld_ver_out,
         mb_cpld_ver_out[0],
         mb_cpld_ver_out[1],
         mb_cpld_ver_out[2],
         mb_cpld_ver_out[3],
-        mb_cpld_ver_out[4]);    
-    
-    //Get HW Build Version
-    ONLP_TRY(read_ioport(mb_cpld1_addr, &mb_cpld1_board_type_rev));
-    
-    mb_cpld1_hw_rev = (((mb_cpld1_board_type_rev) >> 0 & 0x03));
-    mb_cpld1_build_rev = ((mb_cpld1_board_type_rev) >> 3 & 0x07);
+        mb_cpld_ver_out[4]);
 
     //Get BIOS version
     ONLP_TRY(onlp_file_read((uint8_t*)&bios_out, ONLP_CONFIG_INFO_STR_MAX, &len, SYSFS_BIOS_VER));
@@ -103,7 +108,7 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
         AIM_LOG_ERROR("Timeout, BMC did not respond.\n");
         return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     //Get BMC version
     if (exec_cmd(CMD_BMC_VER_1, bmc_out1, sizeof(bmc_out1)) < 0 ||
         exec_cmd(CMD_BMC_VER_2, bmc_out2, sizeof(bmc_out2)) < 0 ||
@@ -112,16 +117,28 @@ static int update_attributei_asset_info(onlp_oid_t oid, onlp_asset_info_t* asset
             return ONLP_STATUS_E_INTERNAL;
     }
 
+    //Mount MU Folder
+    if(access(path_onie_folder, F_OK) == -1 )
+        system(cmd_mount_mu_dir);
+
+    //Get MU Version
+    if(access(path_onie_update_log, F_OK) != -1 ) {
+        exec_cmd(cmd_mu_ver, mu_ver, sizeof(mu_ver));
+
+        if (strnlen(mu_ver, sizeof(mu_ver)) != 0) {
+            snprintf(cmd_mu_result, sizeof(cmd_mu_result), cmd_mu_result_template, mu_ver);
+            exec_cmd(cmd_mu_result, mu_result, sizeof(mu_result));
+        }
+    }
+
     asset_info->firmware_revision = aim_fstrdup(
             "\n"
-            "    [HW   ] %d\n"
-            "    [BUILD] %d\n"
-            "    [BIOS ] %s\n"
-            "    [BMC  ] %d.%d.%d\n",
-            mb_cpld1_hw_rev,
-            mb_cpld1_build_rev,
+            "[BIOS] %s\n"
+            "[BMC] %d.%d.%d\n"
+            "[MU] %s (%s)\n",
             bios_out,
-            atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3));
+            atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
 
     /* get platform info from onie syseeprom */
     onlp_attributei_onie_info_get(oid, &onie_info);

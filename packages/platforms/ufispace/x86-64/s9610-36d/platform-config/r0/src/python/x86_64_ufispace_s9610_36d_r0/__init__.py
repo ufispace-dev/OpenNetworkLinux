@@ -133,6 +133,9 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
         mode=ipmi_ioctl.get_ipmi_maintenance_mode()
         msg("After IPMI_IOCTL IPMI_MAINTENANCE_MODE=%d\n" % (mode) )
 
+    def disable_bmc_watchdog(self):
+        os.system("ipmitool mc watchdog off")
+
     def disable_watchdog(self):
         sysfs_watchdog = "/dev/watchdog"
 
@@ -373,6 +376,7 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
 
         # disable watchdog
         self.disable_watchdog()
+        self.disable_bmc_watchdog()
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.bsp_pr("Init i40e")
@@ -381,7 +385,7 @@ class OnlPlatform_x86_64_ufispace_s9610_36d_r0(OnlPlatformUfiSpace):
 
         # init bcm82752
         self.bsp_pr("Init bcm82752")
-        os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init mdio 10G optics")
+        os.system("timeout 120s " + self.FS_PLTM_CFG + "/epdm_cli init auto 10G")
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

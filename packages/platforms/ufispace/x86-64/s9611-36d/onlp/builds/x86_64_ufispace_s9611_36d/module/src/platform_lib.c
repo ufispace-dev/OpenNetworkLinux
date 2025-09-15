@@ -61,6 +61,24 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV1] = {"TEMP_ENV1", 0},
     [BMC_ATTR_ID_TEMP_ENV_EXT0] = {"TEMP_ENV_EXT0", 0},
     [BMC_ATTR_ID_TEMP_ENV_EXT1] = {"TEMP_ENV_EXT1", 0},
+#if ADV_THERMAL_SENSOR_EN == 1
+    [BMC_ATTR_ID_TEMP_MAC0_PVT2] = {"TEMP_MAC0_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT3] = {"TEMP_MAC0_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT4] = {"TEMP_MAC0_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT6] = {"TEMP_MAC0_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM0] = {"TEMP_MAC0_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM1] = {"TEMP_MAC0_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT2] = {"TEMP_MAC1_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT3] = {"TEMP_MAC1_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT4] = {"TEMP_MAC1_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT6] = {"TEMP_MAC1_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM0] = {"TEMP_MAC1_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM1] = {"TEMP_MAC1_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_0] = {"TEMP_OP2_0", 0},
+    [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
+    [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},
+#endif
     [BMC_ATTR_ID_PSU0_TEMP1] = {"PSU0_TEMP1", 0},
     [BMC_ATTR_ID_PSU1_TEMP1] = {"PSU1_TEMP1", 0},
     [BMC_ATTR_ID_FAN0_RPM_FRONT] = {"FAN0_RPM_FRONT", 0},
@@ -497,7 +515,6 @@ int bmc_fru_read(int fru_id, bmc_fru_t *data)
             if(strcmp(key, BMC_FRU_KEY_NAME) == 0) {
                 memset(fru->name.val, '\0', sizeof(fru->name.val));
                 strncpy(fru->name.val, val, strnlen(val, BMC_FRU_ATTR_KEY_VALUE_LEN));
-
             }
 
             if(strcmp(key, BMC_FRU_KEY_PART_NUMBER) == 0) {
@@ -513,7 +530,6 @@ int bmc_fru_read(int fru_id, bmc_fru_t *data)
         }
 
         fclose(fp);
-
         fru->init_done = 1;
 
         //Check output is correct

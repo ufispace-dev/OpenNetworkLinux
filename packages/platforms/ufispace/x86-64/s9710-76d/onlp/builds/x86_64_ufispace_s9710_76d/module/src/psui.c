@@ -87,7 +87,7 @@ static char *vendors[] = {"DELTA", "FSPGROUP"};
 /**
  * @brief get psu presnet status
  * @param local_id: psu id
- * @param[out] psu_present: psu present status(0: absence, 1: presence) 
+ * @param[out] psu_present: psu present status(0: absence, 1: presence)
  */
 int get_psu_present_status(int local_id, int *psu_present)
 {
@@ -115,7 +115,7 @@ int get_psu_present_status(int local_id, int *psu_present)
 /**
  * @brief get psu pwgood status
  * @param local_id: psu id
- * @param[out] psu_pwgood: psu power good status (0: not good, 1: good) 
+ * @param[out] psu_pwgood: psu power good status (0: not good, 1: good)
  */
 static int get_psu_pwgood_status(int local_id, int *psu_pwgood)
 {
@@ -143,14 +143,14 @@ static int get_psu_pwgood_status(int local_id, int *psu_pwgood)
 /**
  * @brief get psu type
  * @param local_id: psu id
- * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48) 
+ * @param[out] psu_type: psu type(ONLP_PSU_TYPE_AC, ONLP_PSU_TYPE_DC48)
  * @param fru_in: input fru node. we will use the input node informations to get psu type
  */
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
 {
     bmc_fru_t *fru = NULL;
     bmc_fru_t fru_tmp = {0};
-    
+
     if(psu_type == NULL) {
         return ONLP_STATUS_E_INTERNAL;
     }
@@ -161,7 +161,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
     } else {
         fru = fru_in;
     }
-    
+
     if (strncmp(fru->vendor.val, vendors[0], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) { //Delta
         //read from part_num
         if (fru->part_num.val[7] == 'A') {
@@ -170,24 +170,24 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in)
             *psu_type = ONLP_PSU_TYPE_DC48;
         } else {
             AIM_LOG_ERROR("unknown PSU type, vendor=%d, model=%s, func=%s\n", fru->vendor.val, fru->part_num.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
         }
     } else if (strncmp(fru->vendor.val, vendors[1], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) { //FSP
-        //read from name        
+        //read from name
         if (strstr(fru->name.val, "AM") > 0) {
             *psu_type = ONLP_PSU_TYPE_AC;
         } else if (strstr(fru->name.val, "EM") > 0) {
             *psu_type = ONLP_PSU_TYPE_DC48;
         } else {
             AIM_LOG_ERROR("unknown PSU type, vendor=%d, name=%s, func=%s\n", fru->vendor.val, fru->name.val, __FUNCTION__);
-            return ONLP_STATUS_E_INTERNAL; 
+            return ONLP_STATUS_E_INTERNAL;
         }
     } else {
         *psu_type = ONLP_PSU_TYPE_INVALID;
         AIM_LOG_ERROR("unknown PSU type, vendor=%s, model=%s, func=%s", fru->vendor.val, fru->name.val, __FUNCTION__);
-        return ONLP_STATUS_E_INTERNAL; 
+        return ONLP_STATUS_E_INTERNAL;
     }
-    
+
     return ONLP_STATUS_OK;
 }
 
@@ -238,7 +238,7 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
     ONLP_TRY(bmc_fru_read(local_id, &fru));
 
     //update FRU model
-    memset(info->model, 0, sizeof(info->model));   
+    memset(info->model, 0, sizeof(info->model));
     if (strncmp(fru.vendor.val, vendors[1], BMC_FRU_ATTR_KEY_VALUE_SIZE)==0) {
         //read product name for FSP
         snprintf(info->model, sizeof(info->model), "%s", fru.name.val);
@@ -264,24 +264,19 @@ static int update_psui_fru_info(int local_id, onlp_psu_info_t* info)
  */
 static int update_psui_info(int local_id, onlp_psu_info_t* info)
 {
-    int stbmvout = 0, stbmiout = 0;
     float data = 0;
-    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0, attr_stbvout = 0, attr_stbiout = 0;
-    
+    int attr_vin = 0, attr_vout = 0, attr_iin = 0, attr_iout = 0;
+
     if (local_id == ONLP_PSU_0) {
         attr_vin = BMC_ATTR_ID_PSU0_VIN;
         attr_vout = BMC_ATTR_ID_PSU0_VOUT;
         attr_iin = BMC_ATTR_ID_PSU0_IIN;
         attr_iout = BMC_ATTR_ID_PSU0_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU0_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU0_STBIOUT;
     } else {
         attr_vin = BMC_ATTR_ID_PSU1_VIN;
         attr_vout = BMC_ATTR_ID_PSU1_VOUT;
         attr_iin = BMC_ATTR_ID_PSU1_IIN;
         attr_iout = BMC_ATTR_ID_PSU1_IOUT;
-        attr_stbvout = BMC_ATTR_ID_PSU1_STBVOUT;
-        attr_stbiout = BMC_ATTR_ID_PSU1_STBIOUT;
     }
 
     /* Get power vin status */
@@ -300,17 +295,9 @@ static int update_psui_info(int local_id, onlp_psu_info_t* info)
     ONLP_TRY(bmc_sensor_read(attr_iout, PSU_SENSOR, &data));
     info->miout = (int) (data*1000);
 
-    /* Get standby power vout */
-    ONLP_TRY(bmc_sensor_read(attr_stbvout, PSU_SENSOR, &data));
-    stbmvout = (int) (data*1000);
-
-    /* Get standby power iout */
-    ONLP_TRY(bmc_sensor_read(attr_stbiout, PSU_SENSOR, &data));
-    stbmiout = (int) (data*1000);
-
     /* Get power in and out */
     info->mpin = info->miin * info->mvin / 1000;
-    info->mpout = (info->miout * info->mvout + stbmiout * stbmvout) / 1000;
+    info->mpout = (info->miout * info->mvout) / 1000;
 
     /* Get FRU info */
     ONLP_TRY(update_psui_fru_info(local_id, info));
@@ -383,7 +370,7 @@ int onlp_psui_hdr_get(onlp_oid_id_t id, onlp_oid_hdr_t* hdr)
 int onlp_psui_info_get(onlp_oid_id_t id, onlp_psu_info_t* info)
 {
     int local_id = ONLP_OID_ID_GET(id);
-    
+
     /* Set the onlp_psu_info_t */
     memset(info, 0, sizeof(onlp_psu_info_t));
     *info = __onlp_psu_info[local_id];

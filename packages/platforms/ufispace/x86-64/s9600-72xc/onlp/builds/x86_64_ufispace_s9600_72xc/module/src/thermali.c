@@ -44,7 +44,7 @@
     }
 /**
  * Get all information about the given Thermal oid.
- *
+ *            (ADV_THERMAL_SENSOR_EN == 0)
  *            |----[01] ONLP_THERMAL_CPU_PECI
  *            |----[02] ONLP_THERMAL_CPU_ENV
  *            |----[03] ONLP_THERMAL_CPU_ENV_2
@@ -55,6 +55,29 @@
  *            |----[08] ONLP_THERMAL_PSU0
  *            |----[09] ONLP_THERMAL_PSU1
  *            |----[10] ONLP_THERMAL_CPU_PKG
+ *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU0
+ *            |
+ *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU1
+ *
+ *            (ADV_THERMAL_SENSOR_EN == 1)
+ *            |----[01] ONLP_THERMAL_CPU_PECI
+ *            |----[02] ONLP_THERMAL_CPU_ENV
+ *            |----[03] ONLP_THERMAL_CPU_ENV_2
+ *            |----[04] ONLP_THERMAL_MAC_ENV
+ *            |----[05] ONLP_THERMAL_MAC_DIE
+ *            |----[06] ONLP_THERMAL_ENV_FRONT
+ *            |----[07] ONLP_THERMAL_ENV_REAR
+ *            |----[08] ONLP_THERMAL_PSU0
+ *            |----[09] ONLP_THERMAL_PSU1
+ *            |----[10] ONLP_THERMAL_CPU_PKG
+ *            |----[11] ONLP_THERMAL_MAC_PM0
+ *            |----[12] ONLP_THERMAL_MAC_PM1
+ *            |----[13] ONLP_THERMAL_MAC_PM2
+ *            |----[14] ONLP_THERMAL_MAC_PM3
+ *            |----[15] ONLP_THERMAL_MAC_PM4
+ *            |----[16] ONLP_THERMAL_MAC_HBM
+ *            |----[17] ONLP_THERMAL_OPTICS
+ *            |----[18] ONLP_THERMAL_OP2
  *            |
  *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU0
  *            |
@@ -108,7 +131,8 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
      },
      .caps = ONLP_THERMAL_CAPS_ALL,
      .mcelsius = 0,
-     .thresholds = {90000, 100000, 110000}},
+     .thresholds = {100000, 105000, 120000}},
+
     {.hdr = {
          .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_FRONT),
          .description = "TEMP_ENV_FRONT",
@@ -154,6 +178,80 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
      .caps = ONLP_THERMAL_CAPS_ALL,
      .mcelsius = 0,
      .thresholds = THERMAL_THRESHOLD_INIT_DEFAULTS},
+#if ADV_THERMAL_SENSOR_EN == 1
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_PM0),
+         .description = "TEMP_MAC_PM0",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_PM1),
+         .description = "TEMP_MAC_PM1",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_PM2),
+         .description = "TEMP_MAC_PM2",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_PM3),
+         .description = "TEMP_MAC_PM3",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_PM4),
+         .description = "TEMP_MAC_PM4",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_HBM),
+         .description = "TEMP_MAC_HBM",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {100000, 105000, 110000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OPTICS),
+         .description = "TEMP_OPTICS",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {70000, 75000, 80000}},
+    {.hdr = {
+         .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OP2),
+         .description = "TEMP_OP2",
+         .poid = ONLP_OID_CHASSIS,
+         .status = ONLP_OID_STATUS_FLAG_PRESENT,
+     },
+     .caps = ONLP_THERMAL_CAPS_ALL,
+     .mcelsius = 0,
+     .thresholds = {95000, 100000, 105000}},
+#endif
 };
 
 static int ufi_cpu_thermal_info_get(onlp_thermal_info_t *info, int local_id)
@@ -181,8 +279,22 @@ int ufi_bmc_thermal_info_get(onlp_thermal_info_t *info, int local_id)
     int index;
     index = local_id - ONLP_THERMAL_CPU_PECI;
 
+#if ADV_THERMAL_SENSOR_EN == 1
+    if ( local_id >= ONLP_THERMAL_MAC_PM0 && local_id <= ONLP_THERMAL_OP2)
+    {
+        index--;
+    }
+#endif
+
     ONLP_TRY(bmc_sensor_read(index, THERMAL_SENSOR, &data));
-    info->mcelsius = (int)(data * 1000);
+
+    if(BMC_ATTR_INVALID_VAL != (int)(data)) {
+        info->hdr.status &= ~ONLP_OID_STATUS_FLAG_FAILED;
+        info->mcelsius = (int) (data*1000);
+    }else{
+        info->hdr.status |= ONLP_OID_STATUS_FLAG_FAILED;
+        info->mcelsius = 0;
+    }
 
     return ONLP_STATUS_OK;
 }
@@ -291,6 +403,9 @@ int onlp_thermali_info_get(onlp_oid_id_t id, onlp_thermal_info_t *info)
         ONLP_TRY(ufi_cpu_thermal_info_get(info, local_id));
         break;
     case ONLP_THERMAL_CPU_PECI ... ONLP_THERMAL_PSU1:
+    #if ADV_THERMAL_SENSOR_EN == 1
+    case ONLP_THERMAL_MAC_PM0 ... ONLP_THERMAL_OP2:
+    #endif
         ONLP_TRY(ufi_bmc_thermal_info_get(info, local_id));
         break;
     default:

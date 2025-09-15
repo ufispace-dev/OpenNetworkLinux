@@ -36,6 +36,21 @@
 #define THERMAL_CACHE_TIME 10
 #define IPMITOOL_CMD_TIMEOUT "10s"
 
+/*                                   ALL UNIT1*/
+static const char *mac_unit_str[] = {"", ""};
+// static const char *phy_unit_str[] = {"", ""};
+// static const char *mux_unit_str[] = {"", ""};
+// static const char *op2_unit_str[] = {"", ""};
+static const warm_reset_data_t warm_reset_data[] = {
+    //                     unit_max | dev | unit
+    [WARM_RESET_ALL] = {-1, "all", NULL},
+    [WARM_RESET_MAC] = {MAC_MAX, "mac", mac_unit_str},
+    [WARM_RESET_PHY] = {-1, "phy", NULL},
+    [WARM_RESET_MUX] = {-1, NULL, NULL}, // not support
+    [WARM_RESET_OP2] = {-1, "op2", NULL},
+    [WARM_RESET_GB] = {-1, NULL, NULL}, // not support
+};
+
 #define BMC_SENSOR_CACHE "/tmp/bmc_sensor_cache"
 
 #define BMC_FRU_KEY_MANUF "Product Manufacturer"
@@ -48,6 +63,66 @@
                           " | awk -F: '/:/{gsub(/^ /,\"\", $0);gsub(/ +:/,\":\",$0);gsub(/: +/,\":\", $0);print $0}'" \
                           " > %s"
 
+#if ADV_THERMAL_SENSOR_EN == 1
+//[BMC] 3.5.0
+#define BASIC_SENSORS           " TEMP_CPU_PECI"   \
+                                " TEMP_CPU_ENV"    \
+                                " TEMP_CPU_ENV_2"  \
+                                " TEMP_MAC_ENV"    \
+                                " TEMP_MAC_DIE"    \
+                                " TEMP_ENV_FRONT"  \
+                                " TEMP_ENV_REAR"   \
+                                " PSU0_TEMP"       \
+                                " PSU1_TEMP"
+#define OP2_ADVANCED_SENSORS    " TEMP_MAC_PM0"    \
+                                " TEMP_MAC_PM1"    \
+                                " TEMP_MAC_PM2"    \
+                                " TEMP_MAC_PM3"    \
+                                " TEMP_MAC_PM4"    \
+                                " TEMP_MAC_HBM"    \
+                                " TEMP_OPTICS"     \
+                                " TEMP_OP2"
+#define NOP2_ADVANCED_SENSORS   " TEMP_MAC_PM0"    \
+                                " TEMP_MAC_PM1"    \
+                                " TEMP_MAC_PM2"    \
+                                " TEMP_MAC_PM3"    \
+                                " TEMP_MAC_PM4"    \
+                                " TEMP_MAC_HBM"    \
+                                " TEMP_OPTICS"
+#define OTHER_SENSORS           " FAN0_RPM"        \
+                                " FAN1_RPM"        \
+                                " FAN2_RPM"        \
+                                " FAN3_RPM"        \
+                                " PSU0_FAN1"       \
+                                " PSU1_FAN1"       \
+                                " FAN0_PSNT_L"     \
+                                " FAN1_PSNT_L"     \
+                                " FAN2_PSNT_L"     \
+                                " FAN3_PSNT_L"     \
+                                " PSU0_VIN"        \
+                                " PSU0_VOUT"       \
+                                " PSU0_IIN"        \
+                                " PSU0_IOUT"       \
+                                " PSU0_STBVOUT"    \
+                                " PSU0_STBIOUT"    \
+                                " PSU1_VIN"        \
+                                " PSU1_VOUT"       \
+                                " PSU1_IIN"        \
+                                " PSU1_IOUT"       \
+                                " PSU1_STBVOUT"    \
+                                " PSU1_STBIOUT"
+
+#define CMD_BMC_SENSOR_CACHE_OP2    "timeout " IPMITOOL_CMD_TIMEOUT " ipmitool sdr -c get " \
+                                    BASIC_SENSORS                                           \
+                                    OP2_ADVANCED_SENSORS                                    \
+                                    OTHER_SENSORS                                           \
+                                    " > " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#define CMD_BMC_SENSOR_CACHE_NOP2   "timeout " IPMITOOL_CMD_TIMEOUT " ipmitool sdr -c get " \
+                                    BASIC_SENSORS                                           \
+                                    NOP2_ADVANCED_SENSORS                                    \
+                                    OTHER_SENSORS                                           \
+                                    " > " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
+#else
 //[BMC] 3.1.0
 #define CMD_BMC_SENSOR_CACHE "timeout " IPMITOOL_CMD_TIMEOUT " ipmitool sdr -c get " \
                              " TEMP_CPU_PECI"                                        \
@@ -82,65 +157,74 @@
                              " PSU1_STBVOUT"                                         \
                              " PSU1_STBIOUT"                                         \
                              " > " BMC_SENSOR_CACHE IPMITOOL_REDIRECT_ERR
-
+#endif
 #define CPLD_ID_SYSFS_PATH MB_CPLD1_SYSFS_PATH "/cpld_id"
 #define MUX_RESET_SYSFS_PATH LPC_MB_CPLD_PATH "/mux_reset"
 
-bmc_info_t bmc_cache[] =
-    {
-        {"TEMP_CPU_PECI", 0},
-        {"TEMP_CPU_ENV", 0},
-        {"TEMP_CPU_ENV_2", 0},
-        {"TEMP_MAC_ENV", 0},
-        {"TEMP_MAC_DIE", 0},
-        {"TEMP_ENV_FRONT", 0},
-        {"TEMP_ENV_REAR", 0},
-        {"PSU0_TEMP", 0},
-        {"PSU1_TEMP", 0},
-        {"FAN0_RPM", 0},
-        {"FAN1_RPM", 0},
-        {"FAN2_RPM", 0},
-        {"FAN3_RPM", 0},
-        {"PSU0_FAN1", 0},
-        {"PSU1_FAN1", 0},
-        {"FAN0_PSNT_L", 0},
-        {"FAN1_PSNT_L", 0},
-        {"FAN2_PSNT_L", 0},
-        {"FAN3_PSNT_L", 0},
-        {"PSU0_VIN", 0},
-        {"PSU0_VOUT", 0},
-        {"PSU0_IIN", 0},
-        {"PSU0_IOUT", 0},
-        {"PSU0_STBVOUT", 0},
-        {"PSU0_STBIOUT", 0},
-        {"PSU1_VIN", 0},
-        {"PSU1_VOUT", 0},
-        {"PSU1_IIN", 0},
-        {"PSU1_IOUT", 0},
-        {"PSU1_STBVOUT", 0},
-        {"PSU1_STBIOUT", 0}};
+bmc_info_t bmc_cache[] = {
+    {"TEMP_CPU_PECI", 0},
+    {"TEMP_CPU_ENV", 0},
+    {"TEMP_CPU_ENV_2", 0},
+    {"TEMP_MAC_ENV", 0},
+    {"TEMP_MAC_DIE", 0},
+    {"TEMP_ENV_FRONT", 0},
+    {"TEMP_ENV_REAR", 0},
+    {"PSU0_TEMP", 0},
+    {"PSU1_TEMP", 0},
+#if ADV_THERMAL_SENSOR_EN == 1
+    {"TEMP_MAC_PM0", 0},
+    {"TEMP_MAC_PM1", 0},
+    {"TEMP_MAC_PM2", 0},
+    {"TEMP_MAC_PM3", 0},
+    {"TEMP_MAC_PM4", 0},
+    {"TEMP_MAC_HBM", 0},
+    {"TEMP_OPTICS", 0},
+    {"TEMP_OP2", 0},
+#endif
+    {"FAN0_RPM", 0},
+    {"FAN1_RPM", 0},
+    {"FAN2_RPM", 0},
+    {"FAN3_RPM", 0},
+    {"PSU0_FAN1", 0},
+    {"PSU1_FAN1", 0},
+    {"FAN0_PSNT_L", 0},
+    {"FAN1_PSNT_L", 0},
+    {"FAN2_PSNT_L", 0},
+    {"FAN3_PSNT_L", 0},
+    {"PSU0_VIN", 0},
+    {"PSU0_VOUT", 0},
+    {"PSU0_IIN", 0},
+    {"PSU0_IOUT", 0},
+    {"PSU0_STBVOUT", 0},
+    {"PSU0_STBIOUT", 0},
+    {"PSU1_VIN", 0},
+    {"PSU1_VOUT", 0},
+    {"PSU1_IIN", 0},
+    {"PSU1_IOUT", 0},
+    {"PSU1_STBVOUT", 0},
+    {"PSU1_STBIOUT", 0},
+};
 
-static bmc_fru_t bmc_fru_cache[] =
-    {
-        [ONLP_PSU_0] = {
-            .bmc_fru_id = 1,
-            .init_done = 0,
-            .cache_files = "/tmp/bmc_fru_cache_1",
-            .vendor = {BMC_FRU_KEY_MANUF, ""},
-            .name = {BMC_FRU_KEY_NAME, ""},
-            .part_num = {BMC_FRU_KEY_PART_NUMBER, ""},
-            .serial = {BMC_FRU_KEY_SERIAL, ""},
+static bmc_fru_t bmc_fru_cache[] = {
+    [ONLP_PSU_0] = {
+        .bmc_fru_id = 1,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_1",
+        .vendor = {BMC_FRU_KEY_MANUF, ""},
+        .name = {BMC_FRU_KEY_NAME, ""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER, ""},
+        .serial = {BMC_FRU_KEY_SERIAL, ""},
 
-        },
-        [ONLP_PSU_1] = {
-            .bmc_fru_id = 2,
-            .init_done = 0,
-            .cache_files = "/tmp/bmc_fru_cache_2",
-            .vendor = {BMC_FRU_KEY_MANUF, ""},
-            .name = {BMC_FRU_KEY_NAME, ""},
-            .part_num = {BMC_FRU_KEY_PART_NUMBER, ""},
-            .serial = {BMC_FRU_KEY_SERIAL, ""},
-        },
+    },
+    [ONLP_PSU_1] = {
+        .bmc_fru_id = 2,
+        .init_done = 0,
+        .cache_files = "/tmp/bmc_fru_cache_2",
+        .vendor = {BMC_FRU_KEY_MANUF, ""},
+        .name = {BMC_FRU_KEY_NAME, ""},
+        .part_num = {BMC_FRU_KEY_PART_NUMBER, ""},
+        .serial = {BMC_FRU_KEY_SERIAL, ""},
+    },
 };
 
 static onlp_shlock_t *onlp_lock = NULL;
@@ -340,7 +424,18 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                 goto exit;
             }
             // get data from bmc
+#if ADV_THERMAL_SENSOR_EN == 1
+            if (get_board_sku_id() == BRD_OP2)
+            {
+                snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE_OP2);
+            }
+            else
+            {
+                snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE_NOP2);
+            }
+#else
             snprintf(ipmi_cmd, sizeof(ipmi_cmd), CMD_BMC_SENSOR_CACHE);
+#endif
             for (retry = 0; retry < retry_max; ++retry)
             {
                 if ((rv = system(ipmi_cmd)) != 0)
@@ -397,18 +492,22 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
                     {
                         if (strstr(line_fields[4], presence_str) != NULL)
                         {
-                            f_rv = 1;
+                            f_rv = BMC_ATTR_STATUS_PRES;
                         }
                         else
                         {
-                            f_rv = 0;
+                            f_rv = BMC_ATTR_STATUS_ABS;
                         }
                         bmc_cache[dev_num].data = f_rv;
                     }
                     else
                     {
-                        f_rv = atof(line_fields[1]);
-                        bmc_cache[dev_num].data = f_rv;
+                        /* other attribute, got from bmc */
+                        if(strcmp(line_fields[1], "") == 0) {
+                            bmc_cache[dev_num].data = BMC_ATTR_INVALID_VAL;
+                        } else {
+                            bmc_cache[dev_num].data = atof(line_fields[1]);
+                        }
                     }
                     break;
                 }
@@ -656,4 +755,80 @@ void check_and_do_i2c_mux_reset(int port)
             }
         }
     }
+}
+
+/**
+ * @brief warm reset for mac, phy, mux and op2
+ * @param unit_id The warm reset device unit id
+ * @param reset_dev The warm reset device id
+ * @param ret return value.
+ */
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
+{
+    char cmd_buf[256] = {0};
+    char dev_unit_buf[32] = {0};
+    const warm_reset_data_t *data = NULL;
+    int ret = 0;
+
+    if (reset_dev >= WARM_RESET_MAX)
+    {
+        AIM_LOG_ERROR("%s() dev_id(%d) out of range.", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (access(WARM_RESET_PATH, F_OK) == -1)
+    {
+        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, WARM_RESET_PATH);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (warm_reset_data[reset_dev].warm_reset_dev_str == NULL)
+    {
+        AIM_LOG_ERROR("%s() reset_dev not support, reset_dev=%d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    data = &warm_reset_data[reset_dev];
+
+    if (data != NULL && data->warm_reset_dev_str != NULL)
+    {
+        snprintf(dev_unit_buf, sizeof(dev_unit_buf), "%s", data->warm_reset_dev_str);
+        if (data->unit_str != NULL && unit_id < data->unit_max)
+        { // assuming unit_max is defined
+            snprintf(dev_unit_buf + strlen(dev_unit_buf), sizeof(dev_unit_buf) - strlen(dev_unit_buf),
+                     " %s", data->unit_str[unit_id]);
+        }
+        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, dev_unit_buf);
+        AIM_LOG_INFO("%s() info, warm reset cmd=%s", __func__, cmd_buf); // TODO
+        ret = system(cmd_buf);
+    }
+    else
+    {
+        AIM_LOG_ERROR("%s() error, invalid reset_dev %d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (ret != 0)
+    {
+        AIM_LOG_ERROR("%s() error, please check dmesg error output.", __func__);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ret;
+}
+
+/**
+ * @brief Get board sku id
+ * @param ret return board sku id value.
+ */
+int get_board_sku_id(void)
+{
+    int sku_id;
+
+    if (file_read_hex(&sku_id, LPC_MB_CPLD_PATH "/board_sku_id") != ONLP_STATUS_OK)
+    {
+        return sku_id = 0;
+    }
+
+    return sku_id;
 }

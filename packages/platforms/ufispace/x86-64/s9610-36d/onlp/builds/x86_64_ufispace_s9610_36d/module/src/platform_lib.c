@@ -33,6 +33,21 @@
 const int CPLD_BASE_ADDR[] = {0x30, 0x31, 0x32};
 const int CPLD_I2C_BUS[] = {1, 1, 1};
 
+/*                                   ALL   UNIT1 UNIT2*/
+static const char *mac_unit_str[] = {"",   "",   ""};
+//static const char *phy_unit_str[] = {"", ""};
+//static const char *mux_unit_str[] = {"", ""};
+//static const char *op2_unit_str[] = {"", ""};
+static const warm_reset_data_t warm_reset_data[] = {
+//                     unit_max | dev | unit
+    [WARM_RESET_ALL] = {-1,      "all", NULL},
+    [WARM_RESET_MAC] = {MAC_MAX, "mac", mac_unit_str},
+    [WARM_RESET_PHY] = {-1,      NULL, NULL}, //not support
+    [WARM_RESET_MUX] = {-1,      "mux", NULL},
+    [WARM_RESET_OP2] = {-1,      "op2", NULL},
+    [WARM_RESET_GB]  = {-1,      NULL, NULL}, //not support
+};
+
 bmc_info_t bmc_cache[] =
 {
     [BMC_ATTR_ID_TEMP_ENV_CPU] = {"TEMP_ENV_CPU", 0},
@@ -45,6 +60,24 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV1] = {"TEMP_ENV1", 0},
     [BMC_ATTR_ID_TEMP_ENV_EXT0] = {"TEMP_ENV_EXT0", 0},
     [BMC_ATTR_ID_TEMP_ENV_EXT1] = {"TEMP_ENV_EXT1", 0},
+#if ADV_THERMAL_SENSOR_EN == 1
+    [BMC_ATTR_ID_TEMP_MAC0_PVT2] = {"TEMP_MAC0_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT3] = {"TEMP_MAC0_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT4] = {"TEMP_MAC0_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_PVT6] = {"TEMP_MAC0_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM0] = {"TEMP_MAC0_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC0_HBM1] = {"TEMP_MAC0_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT2] = {"TEMP_MAC1_PVT2", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT3] = {"TEMP_MAC1_PVT3", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT4] = {"TEMP_MAC1_PVT4", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_PVT6] = {"TEMP_MAC1_PVT6", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM0] = {"TEMP_MAC1_HBM0", 0},
+    [BMC_ATTR_ID_TEMP_MAC1_HBM1] = {"TEMP_MAC1_HBM1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_0] = {"TEMP_OP2_0", 0},
+    [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
+    [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
+    [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},
+#endif
     [BMC_ATTR_ID_PSU0_TEMP1] = {"PSU0_TEMP1", 0},
     [BMC_ATTR_ID_PSU1_TEMP1] = {"PSU1_TEMP1", 0},
     [BMC_ATTR_ID_FAN0_RPM_FRONT] = {"FAN0_RPM_FRONT", 0},
@@ -204,11 +237,11 @@ int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data)
     int dev_num = 0;
     int cache_time = 0;
     int bmc_cache_expired = 0;
-    float f_rv = 0;
     int bmc_cache_change = 0;
     static long file_pre_time = 0;
     long file_last_time = 0;
     static int init_cache = 1;
+    float f_rv = 0;
     char* presence_str = "Present";
     int retry = 0, retry_max = 2;
     char line[BMC_FRU_LINE_SIZE] = {'\0'};
@@ -566,4 +599,57 @@ uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val)
     else
         reg_val = reg_val | (1 << bit);
     return reg_val;
+}
+
+/**
+ * @brief warm reset for mac, phy, mux and op2
+ * @param unit_id The warm reset device unit id
+ * @param reset_dev The warm reset device id
+ * @param ret return value.
+ */
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
+{
+    char cmd_buf[256] = {0};
+    char dev_unit_buf[32] = {0};
+    const warm_reset_data_t *data = NULL;
+    int ret = 0;
+
+    if (reset_dev >= WARM_RESET_MAX) {
+        AIM_LOG_ERROR("%s() dev_id(%d) out of range.", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if(access(WARM_RESET_PATH, F_OK) == -1) {
+        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, WARM_RESET_PATH);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (warm_reset_data[reset_dev].warm_reset_dev_str == NULL) {
+        AIM_LOG_ERROR("%s() reset_dev not support, reset_dev=%d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    data = &warm_reset_data[reset_dev];
+
+    if (data != NULL && data->warm_reset_dev_str != NULL) {
+        snprintf(dev_unit_buf, sizeof(dev_unit_buf), "%s", data->warm_reset_dev_str);
+        if (data->unit_str != NULL && unit_id < data->unit_max) {  // assuming unit_max is defined
+            snprintf(dev_unit_buf + strlen(dev_unit_buf), sizeof(dev_unit_buf) - strlen(dev_unit_buf),
+                     " %s", data->unit_str[unit_id]);
+        }
+        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, dev_unit_buf);
+        AIM_LOG_INFO("%s() info, warm reset cmd=%s", __func__, cmd_buf); //TODO
+        ret = system(cmd_buf);
+    } else {
+        AIM_LOG_ERROR("%s() error, invalid reset_dev %d", __func__, reset_dev);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (ret != 0) {
+        AIM_LOG_ERROR("%s() error, please check dmesg error output.", __func__);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+
+    return ret;
 }

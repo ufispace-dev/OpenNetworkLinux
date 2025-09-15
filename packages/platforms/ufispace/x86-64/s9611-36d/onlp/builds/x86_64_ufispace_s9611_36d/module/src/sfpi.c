@@ -339,7 +339,6 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
-        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -387,7 +386,6 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
-        AIM_LOG_INFO("Port[%d] module is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 

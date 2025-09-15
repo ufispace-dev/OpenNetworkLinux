@@ -19,7 +19,7 @@
  * </bsn.cl>
  ************************************************************
  *
- * Platform Lib
+ * Platform Library
  *
  ***********************************************************/
 #ifndef __PLATFORM_LIB_H__
@@ -34,10 +34,36 @@
 #define SYS_FMT_OFFSET              "/sys/bus/i2c/devices/%d-%04x/%s_%d"
 #define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
 #define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_LPC                     "/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc/"
+#define SYS_LPC_BSP                 SYS_LPC"bsp/"
 
 #define BMC_SENSOR_CACHE            "/tmp/bmc_sensor_cache"
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR       " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR       " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_ERR         " 2>>"SYS_LPC_BSP"bsp_pr_err"
+#define BSP_PR_REDIRECT_INFO        " 1>>"SYS_LPC_BSP"bsp_pr_info"
+
+#define ADV_THERMAL_SENSOR_EN       0
+
+#if ADV_THERMAL_SENSOR_EN == 1
+#define ADVANCED_SENSORS "TEMP_MAC0_PVT2 "\
+                         "TEMP_MAC0_PVT3 "\
+                         "TEMP_MAC0_PVT4 "\
+                         "TEMP_MAC0_PVT6 "\
+                         "TEMP_MAC0_HBM0 "\
+                         "TEMP_MAC0_HBM1 "\
+                         "TEMP_MAC1_PVT2 "\
+                         "TEMP_MAC1_PVT3 "\
+                         "TEMP_MAC1_PVT4 "\
+                         "TEMP_MAC1_PVT6 "\
+                         "TEMP_MAC1_HBM0 "\
+                         "TEMP_MAC1_HBM1 "\
+                         "TEMP_OP2_0 "\
+                         "TEMP_OP2_1 "\
+                         "TEMP_OP2_2 "\
+                         "TEMP_OP2_3 "
+#else
+#define ADVANCED_SENSORS ""
+#endif
 
 //[BMC] 2.11
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
@@ -51,6 +77,7 @@
                                     "TEMP_ENV1 "\
                                     "TEMP_ENV_EXT0 "\
                                     "TEMP_ENV_EXT1 "\
+                                    ADVANCED_SENSORS \
                                     "PSU0_TEMP1 "\
                                     "PSU1_TEMP1 "\
                                     "FAN0_RPM_FRONT "\
@@ -100,7 +127,7 @@
                           " > %s"
 
 #define MB_CPLD1_ID_PATH            "/sys/bus/i2c/devices/1-0030/cpld_id"
-#define MUX_RESET_PATH          "/sys/devices/platform/x86_64_ufispace_s9610_36d_lpc/mb_cpld/mux_reset"
+#define MUX_RESET_PATH          SYS_LPC"mb_cpld/mux_reset"
 
 /* SYS */
 #define CPLD_MAX      3
@@ -120,6 +147,34 @@ extern const int CPLD_I2C_BUS[CPLD_MAX];
 #define COMM_STR_NOT_SUPPORTED              "not supported"
 #define COMM_STR_NOT_AVAILABLE              "not available"
 
+/* Warm Reset */
+#define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT       60
+#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+enum reset_dev_type {
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id {
+     MAC_ALL = 0,
+     MAC1_ID,
+     MAC2_ID,
+     MAC_MAX
+};
+
+enum sensor
+{
+    FAN_SENSOR = 0,
+    PSU_SENSOR,
+    THERMAL_SENSOR,
+};
+
 enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_ENV_CPU,
     BMC_ATTR_ID_TEMP_CPU_PECI,
@@ -131,6 +186,24 @@ enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_ENV1,
     BMC_ATTR_ID_TEMP_ENV_EXT0,
     BMC_ATTR_ID_TEMP_ENV_EXT1,
+#if ADV_THERMAL_SENSOR_EN == 1
+    BMC_ATTR_ID_TEMP_MAC0_PVT2,
+    BMC_ATTR_ID_TEMP_MAC0_PVT3,
+    BMC_ATTR_ID_TEMP_MAC0_PVT4,
+    BMC_ATTR_ID_TEMP_MAC0_PVT6,
+    BMC_ATTR_ID_TEMP_MAC0_HBM0,
+    BMC_ATTR_ID_TEMP_MAC0_HBM1,
+    BMC_ATTR_ID_TEMP_MAC1_PVT2,
+    BMC_ATTR_ID_TEMP_MAC1_PVT3,
+    BMC_ATTR_ID_TEMP_MAC1_PVT4,
+    BMC_ATTR_ID_TEMP_MAC1_PVT6,
+    BMC_ATTR_ID_TEMP_MAC1_HBM0,
+    BMC_ATTR_ID_TEMP_MAC1_HBM1,
+    BMC_ATTR_ID_TEMP_OP2_0,
+    BMC_ATTR_ID_TEMP_OP2_1,
+    BMC_ATTR_ID_TEMP_OP2_2,
+    BMC_ATTR_ID_TEMP_OP2_3,
+#endif
     BMC_ATTR_ID_PSU0_TEMP1,
     BMC_ATTR_ID_PSU1_TEMP1,
     BMC_ATTR_ID_FAN0_RPM_FRONT,
@@ -176,21 +249,39 @@ enum fru_attr_id {
 
 /* Thermal definitions*/
 enum onlp_thermal_id {
-    ONLP_THERMAL_RESERVED   = 0,
-    ONLP_THERMAL_CPU_PKG    = 1,
-    ONLP_THERMAL_ENV_CPU    = 2,
-    ONLP_THERMAL_CPU_PECI   = 3,
-    ONLP_THERMAL_ENV_MAC0   = 4,
-    ONLP_THERMAL_ENV_MAC1   = 5,
-    ONLP_THERMAL_ENV_FRONT0 = 6,
-    ONLP_THERMAL_ENV_FRONT1 = 7,
-    ONLP_THERMAL_ENV0       = 8,
-    ONLP_THERMAL_ENV1       = 9,
-    ONLP_THERMAL_ENV_EXT0   = 10,
-    ONLP_THERMAL_ENV_EXT1   = 11,
-    ONLP_THERMAL_PSU0_TEMP1 = 12,
-    ONLP_THERMAL_PSU1_TEMP1 = 13,
-    ONLP_THERMAL_MAX        = 14,
+    ONLP_THERMAL_RESERVED,
+    ONLP_THERMAL_CPU_PKG,
+    ONLP_THERMAL_ENV_CPU,
+    ONLP_THERMAL_CPU_PECI,
+    ONLP_THERMAL_ENV_MAC0,
+    ONLP_THERMAL_ENV_MAC1,
+    ONLP_THERMAL_ENV_FRONT0,
+    ONLP_THERMAL_ENV_FRONT1,
+    ONLP_THERMAL_ENV0,
+    ONLP_THERMAL_ENV1,
+    ONLP_THERMAL_ENV_EXT0,
+    ONLP_THERMAL_ENV_EXT1,
+#if ADV_THERMAL_SENSOR_EN == 1
+    ONLP_THERMAL_MAC0_PVT2,
+    ONLP_THERMAL_MAC0_PVT3,
+    ONLP_THERMAL_MAC0_PVT4,
+    ONLP_THERMAL_MAC0_PVT6,
+    ONLP_THERMAL_MAC0_HBM0,
+    ONLP_THERMAL_MAC0_HBM1,
+    ONLP_THERMAL_MAC1_PVT2,
+    ONLP_THERMAL_MAC1_PVT3,
+    ONLP_THERMAL_MAC1_PVT4,
+    ONLP_THERMAL_MAC1_PVT6,
+    ONLP_THERMAL_MAC1_HBM0,
+    ONLP_THERMAL_MAC1_HBM1,
+    ONLP_THERMAL_OP2_0,
+    ONLP_THERMAL_OP2_1,
+    ONLP_THERMAL_OP2_2,
+    ONLP_THERMAL_OP2_3,
+#endif
+    ONLP_THERMAL_PSU0_TEMP1,
+    ONLP_THERMAL_PSU1_TEMP1,
+    ONLP_THERMAL_MAX,
 };
 
 #define ONLP_THERMAL_COUNT ONLP_THERMAL_MAX /*include "reserved"*/
@@ -231,7 +322,7 @@ enum onlp_psu_id {
     ONLP_PSU_1_IIN ,
     ONLP_PSU_1_IOUT,
     ONLP_PSU_1_PIN,
-    ONLP_PSU_1_POUT,    
+    ONLP_PSU_1_POUT,
     ONLP_PSU_MAX = ONLP_PSU_1+1,
 };
 
@@ -248,13 +339,6 @@ enum onlp_led_id {
 };
 
 #define ONLP_LED_COUNT ONLP_LED_MAX /*include "reserved"*/
-
-enum sensor
-{
-    FAN_SENSOR = 0,
-    PSU_SENSOR,
-    THERMAL_SENSOR,
-};
 
 typedef struct bmc_info_s
 {
@@ -279,6 +363,12 @@ typedef struct bmc_fru_s
     bmc_fru_attr_t serial;
 }bmc_fru_t;
 
+typedef struct warm_reset_data_s {
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
 int check_file_exist(char *file_path, long *file_time);
 int bmc_cache_expired_check(long last_time, long new_time, int cache_time);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
@@ -289,13 +379,11 @@ int file_read_hex(int* value, const char* fmt, ...);
 int file_vread_hex(int* value, const char* fmt, va_list vargs);
 int get_psu_present_status(int local_id, int *psu_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
-
 void lock_init();
 
 int bmc_check_alive(void);
 int bmc_sensor_read(int bmc_cache_index, int sensor_type, float *data);
 int bmc_fru_read(int local_id, bmc_fru_t *data);
-
 void check_and_do_i2c_mux_reset(int port);
 
 uint8_t ufi_shift(uint8_t mask);
@@ -303,5 +391,6 @@ uint8_t ufi_shift(uint8_t mask);
 uint8_t ufi_mask_shift(uint8_t val, uint8_t mask);
 
 uint8_t ufi_bit_operation(uint8_t reg_val, uint8_t bit, uint8_t bit_val);
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 
 #endif  /* __PLATFORM_LIB_H__ */

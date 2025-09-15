@@ -45,18 +45,48 @@
 #define SYS_LPC "/sys/devices/platform/x86_64_ufispace_s9600_72xc_lpc"
 #define LPC_MB_CPLD_PATH SYS_LPC "/mb_cpld"
 #define LPC_CPU_CPLD_PATH SYS_LPC "/cpu_cpld"
+#define LPC_BSP_FMT SYS_LPC "/bsp/"
+#define OUTPUT_REDIRECT_ERR " 2>>" LPC_BSP_FMT "bsp_pr_err"
+#define OUTPUT_REDIRECT_INFO " 1>>" LPC_BSP_FMT "bsp_pr_info"
 /* LENGTH */
 #define BMC_FRU_LINE_SIZE 256
 #define BMC_FRU_ATTR_KEY_VALUE_SIZE ONLP_CONFIG_INFO_STR_MAX
 #define BMC_FRU_ATTR_KEY_VALUE_LEN (BMC_FRU_ATTR_KEY_VALUE_SIZE - 1)
 /* error redirect */
-#define IPMITOOL_REDIRECT_FIRST_ERR " 2>/tmp/ipmitool_err_msg"
-#define IPMITOOL_REDIRECT_ERR " 2>>/tmp/ipmitool_err_msg"
+#define IPMITOOL_REDIRECT_ERR " 2>>" LPC_BSP_FMT "bsp_pr_err"
 /* PORT NUMBER */
 #define QSFP_NUM 8
 #define MGMT_SFP_NUM 2
 #define SFP_NUM 64
 #define PORT_NUM SFP_NUM + QSFP_NUM + MGMT_SFP_NUM
+/* Warm Reset */
+#define WARM_RESET_PATH "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_TIMEOUT 60
+#define CMD_WARM_RESET "timeout %ds " WARM_RESET_PATH " %s" OUTPUT_REDIRECT_ERR OUTPUT_REDIRECT_INFO
+/* advance thermal */
+#define ADV_THERMAL_SENSOR_EN 0
+/* bmc value */
+#define BMC_ATTR_STATUS_ABS 0
+#define BMC_ATTR_STATUS_PRES 1
+#define BMC_ATTR_INVALID_VAL 999999
+
+enum reset_dev_type
+{
+    WARM_RESET_ALL = 0,
+    WARM_RESET_MAC,
+    WARM_RESET_PHY,
+    WARM_RESET_MUX,
+    WARM_RESET_OP2,
+    WARM_RESET_GB,
+    WARM_RESET_MAX
+};
+
+enum mac_unit_id
+{
+    MAC_ALL = 0,
+    MAC1_ID,
+    MAC_MAX
+};
 
 /* Fan definitions*/
 enum onlp_fan_id
@@ -110,6 +140,16 @@ enum onlp_thermal_id
     ONLP_THERMAL_PSU0,
     ONLP_THERMAL_PSU1,
     ONLP_THERMAL_CPU_PKG,
+#if ADV_THERMAL_SENSOR_EN == 1
+    ONLP_THERMAL_MAC_PM0,
+    ONLP_THERMAL_MAC_PM1,
+    ONLP_THERMAL_MAC_PM2,
+    ONLP_THERMAL_MAC_PM3,
+    ONLP_THERMAL_MAC_PM4,
+    ONLP_THERMAL_MAC_HBM,
+    ONLP_THERMAL_OPTICS,
+    ONLP_THERMAL_OP2,
+#endif
     ONLP_THERMAL_MAX,
 };
 
@@ -126,6 +166,16 @@ enum bmc_attr_id
     BMC_ATTR_ID_TEMP_ENV_REAR,
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
+#if ADV_THERMAL_SENSOR_EN == 1
+    BMC_ATTR_ID_TEMP_MAC_PM0,
+    BMC_ATTR_ID_TEMP_MAC_PM1,
+    BMC_ATTR_ID_TEMP_MAC_PM2,
+    BMC_ATTR_ID_TEMP_MAC_PM3,
+    BMC_ATTR_ID_TEMP_MAC_PM4,
+    BMC_ATTR_ID_TEMP_MAC_HBM,
+    BMC_ATTR_ID_TEMP_OPTICS,
+    BMC_ATTR_ID_TEMP_OP2,
+#endif
     BMC_ATTR_ID_FAN0_RPM,
     BMC_ATTR_ID_FAN1_RPM,
     BMC_ATTR_ID_FAN2_RPM,
@@ -188,6 +238,19 @@ typedef struct psu_support_info_s
     int type;
 } psu_support_info_t;
 
+typedef struct warm_reset_data_s
+{
+    int unit_max;
+    const char *warm_reset_dev_str;
+    const char **unit_str;
+} warm_reset_data_t;
+
+typedef enum brd_sku_id_e
+{
+    BRD_NOP2 = 0x3,
+    BRD_OP2 = 0x6,
+} brd_sku_id_t;
+
 int psu_present_get(int *pw_present, int id);
 
 int psu_pwgood_get(int *pw_good, int id);
@@ -208,4 +271,7 @@ void check_and_do_i2c_mux_reset(int port);
 
 int bmc_check_alive(void);
 
+int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
+
+int get_board_sku_id(void);
 #endif /* __PLATFORM_LIB_H__ */
