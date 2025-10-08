@@ -36,9 +36,6 @@ const int CPLD_I2C_BUS[] = {1, 1, 1};
 
 /*                                   ALL   UNIT1 UNIT2*/
 static const char *mac_unit_str[] = {"",   "",   ""};
-//static const char *phy_unit_str[] = {"", ""};
-//static const char *mux_unit_str[] = {"", ""};
-//static const char *op2_unit_str[] = {"", ""};
 static const warm_reset_data_t warm_reset_data[] = {
 //                     unit_max | dev | unit
     [WARM_RESET_ALL] = {-1,      "all", NULL},
@@ -78,6 +75,7 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
     [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
     [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},
+    [BMC_ATTR_ID_TEMP_OPTICS] = {"TEMP_OPTICS", 0},
 #endif
     [BMC_ATTR_ID_PSU0_TEMP1] = {"PSU0_TEMP1", 0},
     [BMC_ATTR_ID_PSU1_TEMP1] = {"PSU1_TEMP1", 0},

@@ -57,7 +57,7 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_ENV_2] = {"TEMP_ENV_2", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_1] = {"TEMP_EXT_ENV_1", 0},
     [BMC_ATTR_ID_TEMP_EXT_ENV_2] = {"TEMP_EXT_ENV_2", 0},
-#if ADV_THERMAL_SENSOR_EN == 1    
+#if ADV_THERMAL_SENSOR_EN == 1
     [BMC_ATTR_ID_TEMP_MAC0_PVT2] = {"TEMP_MAC0_PVT2", 0},
     [BMC_ATTR_ID_TEMP_MAC0_PVT3] = {"TEMP_MAC0_PVT3", 0},
     [BMC_ATTR_ID_TEMP_MAC0_PVT4] = {"TEMP_MAC0_PVT4", 0},
@@ -74,6 +74,7 @@ bmc_info_t bmc_cache[] =
     [BMC_ATTR_ID_TEMP_OP2_1] = {"TEMP_OP2_1", 0},
     [BMC_ATTR_ID_TEMP_OP2_2] = {"TEMP_OP2_2", 0},
     [BMC_ATTR_ID_TEMP_OP2_3] = {"TEMP_OP2_3", 0},
+    [BMC_ATTR_ID_TEMP_OPTICS] = {"TEMP_OPTICS", 0},
 #endif
     [BMC_ATTR_ID_PSU0_TEMP] = {"PSU0_TEMP", 0},
     [BMC_ATTR_ID_PSU1_TEMP] = {"PSU1_TEMP", 0},

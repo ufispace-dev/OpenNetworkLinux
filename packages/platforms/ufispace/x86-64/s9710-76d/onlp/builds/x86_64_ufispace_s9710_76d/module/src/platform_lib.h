@@ -60,12 +60,13 @@
                          "TEMP_OP2_0 "\
                          "TEMP_OP2_1 "\
                          "TEMP_OP2_2 "\
-                         "TEMP_OP2_3 "
+                         "TEMP_OP2_3 "\
+                         "TEMP_OPTICS "
 #else
 #define ADVANCED_SENSORS ""
 #endif
 
-//[BMC] 3.81
+//[BMC] 3.37
 #define CMD_BMC_SENSOR_CACHE        "timeout %ds ipmitool sdr -c get "\
                                     "ADC_CPU_TEMP "\
                                     "TEMP_CPU_PECI "\
@@ -199,6 +200,7 @@ enum bmc_attr_id {
     BMC_ATTR_ID_TEMP_OP2_1,
     BMC_ATTR_ID_TEMP_OP2_2,
     BMC_ATTR_ID_TEMP_OP2_3,
+    BMC_ATTR_ID_TEMP_OPTICS,
 #endif
     BMC_ATTR_ID_PSU0_TEMP,
     BMC_ATTR_ID_PSU1_TEMP,
@@ -270,6 +272,7 @@ enum onlp_thermal_id {
     ONLP_THERMAL_OP2_1,
     ONLP_THERMAL_OP2_2,
     ONLP_THERMAL_OP2_3,
+    ONLP_THERMAL_OPTICS,
 #endif
     ONLP_THERMAL_PSU_0,
     ONLP_THERMAL_PSU_1,

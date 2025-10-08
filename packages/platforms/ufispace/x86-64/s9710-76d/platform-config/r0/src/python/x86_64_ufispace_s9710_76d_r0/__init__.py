@@ -62,6 +62,98 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
     LEVEL_ERR=2
     SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9710_76d_lpc"
     FS_PLTM_CFG="/lib/platform-config/current/onl"
+    port_type_dict = {
+        0x03: [2, 'SFP/SFP+/SFP28'],  # [dev_class, type_str]
+        0x0B: [2, 'DWDM-SFP/SFP+'],
+        0x0C: [1, 'QSFP'],
+        0x0D: [1, 'QSFP+'],
+        0x11: [1, 'QSFP28'],
+        0x18: [3, 'QSFP-DD Double Density 8x (INF-8628)'],
+        0x19: [3, 'OSFP 8x Pluggable Transceiver'],
+        0x1E: [3, 'QSFP+ or later with CMIS spec'],
+        0x1F: [3, 'SFP-DD Double Density 2X Pluggable Transceiver with CMIS spec'],
+    }
+
+    sysfs_port_present = {
+        0:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 0, "bus": 73},
+        1:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 1, "bus": 74},
+        2:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 2, "bus": 75},
+        3:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 3, "bus": 76},
+        4:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 4, "bus": 77},
+        5:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 5, "bus": 78},
+        6:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 6, "bus": 79},
+        7:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_0",  "bit": 7, "bus": 80},
+        8:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 0, "bus": 81},
+        9:  {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 1, "bus": 82},
+        10: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 2, "bus": 83},
+        11: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 3, "bus": 84},
+        12: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 4, "bus": 85},
+        13: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 5, "bus": 86},
+        14: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 6, "bus": 87},
+        15: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_1",  "bit": 7, "bus": 88},
+        16: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_2",  "bit": 0, "bus": 89},
+        17: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_qsfpdd_intr_present_2",  "bit": 1, "bus": 90},
+        18: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 0, "bus": 91},
+        19: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 1, "bus": 92},
+        20: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 2, "bus": 93},
+        21: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 3, "bus": 94},
+        22: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 4, "bus": 95},
+        23: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 5, "bus": 96},
+        24: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 6, "bus": 97},
+        25: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_0",  "bit": 7, "bus": 98},
+        26: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 0, "bus": 99},
+        27: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 1, "bus": 100},
+        28: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 2, "bus": 101},
+        29: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 3, "bus": 102},
+        30: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 4, "bus": 103},
+        31: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 5, "bus": 104},
+        32: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 6, "bus": 105},
+        33: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_1",  "bit": 7, "bus": 106},
+        34: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_2",  "bit": 0, "bus": 107},
+        35: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_qsfpdd_intr_present_2",  "bit": 1, "bus": 108},
+        36: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 0, "bus": 33},
+        37: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 1, "bus": 34},
+        38: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 2, "bus": 35},
+        39: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 3, "bus": 36},
+        40: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 4, "bus": 37},
+        41: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 5, "bus": 38},
+        42: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 6, "bus": 39},
+        43: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_0", "bit": 7, "bus": 40},
+        44: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 0, "bus": 41},
+        45: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 1, "bus": 42},
+        46: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 2, "bus": 43},
+        47: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 3, "bus": 44},
+        48: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 4, "bus": 45},
+        49: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 5, "bus": 46},
+        50: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 6, "bus": 47},
+        51: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_1", "bit": 7, "bus": 48},
+        52: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_2", "bit": 0, "bus": 49},
+        53: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_2", "bit": 1, "bus": 50},
+        54: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_2", "bit": 2, "bus": 51},
+        55: {"sysfs": "/sys/bus/i2c/devices/30-0033/cpld_qsfpdd_intr_present_2", "bit": 3, "bus": 52},
+        56: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 0, "bus": 53},
+        57: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 1, "bus": 54},
+        58: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 2, "bus": 55},
+        59: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 3, "bus": 56},
+        60: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 4, "bus": 57},
+        61: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 5, "bus": 58},
+        62: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 6, "bus": 59},
+        63: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_0", "bit": 7, "bus": 60},
+        64: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 0, "bus": 61},
+        65: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 1, "bus": 62},
+        66: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 2, "bus": 63},
+        67: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 3, "bus": 64},
+        68: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 4, "bus": 65},
+        69: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 5, "bus": 66},
+        70: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 6, "bus": 67},
+        71: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_1", "bit": 7, "bus": 68},
+        72: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_2", "bit": 0, "bus": 69},
+        73: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_2", "bit": 1, "bus": 70},
+        74: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_2", "bit": 2, "bus": 71},
+        75: {"sysfs": "/sys/bus/i2c/devices/30-0034/cpld_qsfpdd_intr_present_2", "bit": 3, "bus": 72},
+        76: {"sysfs": "/sys/bus/i2c/devices/1-0031/cpld_sfp_status"            , "bit": 0, "bus": 109},
+        77: {"sysfs": "/sys/bus/i2c/devices/1-0032/cpld_sfp_status"            , "bit": 0, "bus": 110},
+    }
 
     def check_i2c_status(self):
         sysfs_mux_reset = self.SYSFS_LPC + "/mb_cpld/mux_reset"
@@ -111,7 +203,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 73
                 port_name = data["QSFPDD_NIF"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init QSFPDD FAB EEPROM
         for bus in range(33, 73):
@@ -120,7 +212,7 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 33
                 port_name = data["QSFPDD_FAB"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
 
         # init SFP+ EEPROM
         for bus in range(109, 111):
@@ -129,7 +221,64 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             if data is not None:
                 port = bus - 109
                 port_name = data["SFP"][port]["port_name"]
-                subprocess.call("echo {} > /sys/bus/i2c/devices/{}-0050/port_name".format(port_name, bus), shell=True)
+                self._write("/sys/bus/i2c/devices/{}-0050/port_name".format(bus), port_name)
+
+    def ufi_port_present_get(self, port):
+        present_raw = ""
+
+        if port not in self.sysfs_port_present:
+            self.bsp_pr("Port {} is not valid.".format(port), self.LEVEL_ERR)
+            return False
+
+        sysfs = self.sysfs_port_present[port]["sysfs"]
+        bit = self.sysfs_port_present[port]["bit"]
+
+        with open(sysfs, "r") as f:
+            present_raw = f.read().strip()
+
+        reg_val = int(present_raw, 16)
+        pres_status = True if ((reg_val >> bit) & 0x1) == 0 else False
+
+        return pres_status
+
+    def update_dev_class(self):
+        for port in range(0, 76):  # QSFPX ports
+            bus = self.sysfs_port_present[port]["bus"]
+
+            # check module presence
+            if not self.ufi_port_present_get(port):
+                continue
+
+            # get dev_class
+            sysfs = "/sys/bus/i2c/devices/{}-0050/dev_class".format(bus)
+            cmd = ["cat", sysfs]
+            dev_class_str = subprocess.check_output(cmd)
+            dev_class = int(dev_class_str, 10)
+
+            # get port type
+            cmd = ["dd", "if=/sys/bus/i2c/devices/{}-0050/eeprom".format(bus), "bs=1", "count=1", "skip=0", "status=none"]
+            output = subprocess.check_output(cmd)
+            hex_str = unpack('B', output)[0]
+            type_str = "{:02x}".format(hex_str)
+            if type_str == "": #i2c maybe stuck
+                self.check_i2c_status()
+                continue
+            port_type = int(type_str, 16)
+
+
+            # check if port_type is in port_type_dict
+            if port_type not in self.port_type_dict:
+                self.bsp_pr("Port[{}] Type: {} is Unknown.".format(port, hex(port_type)))
+                continue
+
+            # check if dev_class matches port_type_dev_class
+            port_type_dev_class = self.port_type_dict.get(port_type)[0]
+            if dev_class != port_type_dev_class:
+                with open(sysfs, "w") as f:
+                    f.write("{}".format(port_type_dev_class))
+                self.bsp_pr("Port[{}] dev_class is changed from {} to {}".format(port, dev_class, port_type_dev_class))
+
+        self.bsp_pr("Please run ONLP API onlp_sfpi_dev_class_update() after inserting QSFP/QSFPDD modules at runtime")
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -274,13 +423,24 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             for i in range(base-31, base-15):
                 os.system("echo in > /sys/class/gpio/gpio{}/direction".format(i))
 
+    def _write(self, path, val, perm="w"):
+        if os.path.exists(path):
+            try:
+                with open(path, perm) as f:
+                    f.write(str(val))
+            except Exception as e:
+                self.bsp_pr("Open file failed, exception={}".format(e))
+        else:
+            self.bsp_pr("File not found: {}".format(path))
+
     def baseconfig(self):
 
         # init interrupt handler for IRQ 16
         self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 16})
 
         # load default kernel driver
-        os.system("modprobe -r i2c_i801")
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
         self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
@@ -378,7 +538,8 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
         rov_reg_array=( 0x77, 0x6f, 0x5b, 0x5f, 0x63, 0x67, 0x6b, 0x73 )
 
         #get rov from cpld
-        reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr), shell=True)
+        cmd = "cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr)
+        reg_val_str = subprocess.check_output(cmd.split())
         reg_val = int(reg_val_str, 16)
         msg("/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov={}".format(cpld_bus, cpld_addr, reg_val_str))
 
@@ -391,11 +552,11 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
             os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
 
         # enable event ctrl
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0033/cpld_evt_ctrl", shell=True)
-        subprocess.call("echo 1 > /sys/bus/i2c/devices/30-0034/cpld_evt_ctrl", shell=True)
+        self._write("/sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/1-0032/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/30-0033/cpld_evt_ctrl", 1)
+        self._write("/sys/bus/i2c/devices/30-0034/cpld_evt_ctrl", 1)
 
         # enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()
@@ -415,6 +576,9 @@ class OnlPlatform_x86_64_ufispace_s9710_76d_r0(OnlPlatformUfiSpace):
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
+        # init dev_class for CMIS/non-CMIS modules
+        self.update_dev_class()
 
         self.bsp_pr("Init done")
 

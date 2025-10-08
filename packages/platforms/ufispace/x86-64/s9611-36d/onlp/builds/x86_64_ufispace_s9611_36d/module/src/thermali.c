@@ -81,10 +81,11 @@
  *            |----[25] ONLP_THERMAL_OP2_1
  *            |----[26] ONLP_THERMAL_OP2_2
  *            |----[27] ONLP_THERMAL_OP2_3
+ *            |----[28] ONLP_THERMAL_OPTICS
  *            |
- *            |----[01] ONLP_PSU_0----[28] ONLP_THERMAL_PSU0_TEMP1
+ *            |----[01] ONLP_PSU_0----[29] ONLP_THERMAL_PSU0_TEMP1
  *            |
- *            |----[02] ONLP_PSU_1----[29] ONLP_THERMAL_PSU1_TEMP1
+ *            |----[02] ONLP_PSU_1----[30] ONLP_THERMAL_PSU1_TEMP1
  */
 /* Static values */
 static onlp_thermal_info_t __onlp_thermal_info[] = {
@@ -388,6 +389,17 @@ static onlp_thermal_info_t __onlp_thermal_info[] = {
         .mcelsius = 0,
         .thresholds = UFI_ONLP_THERMAL_THRESHOLD(65000, 70000, 80000),
     },
+    {
+        .hdr = {
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_OPTICS),
+            .description = "TEMP_OPTICS",
+            .poid = ONLP_OID_CHASSIS,
+            .status = ONLP_OID_STATUS_FLAG_PRESENT,
+        },
+        .caps = ONLP_THERMAL_CAPS_ALL,
+        .mcelsius = 0,
+        .thresholds = UFI_ONLP_THERMAL_THRESHOLD(70000, 75000, 80000),
+    },
 #endif
     {
         .hdr = {
@@ -524,6 +536,9 @@ static int update_thermali_from_bmc_info(int local_id, onlp_thermal_info_t* info
             break;
         case ONLP_THERMAL_OP2_3:
             bmc_attr_id = BMC_ATTR_ID_TEMP_OP2_3;
+            break;
+        case ONLP_THERMAL_OPTICS:
+            bmc_attr_id = BMC_ATTR_ID_TEMP_OPTICS;
             break;
 #endif
         case ONLP_THERMAL_PSU0_TEMP1:
