@@ -360,6 +360,22 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 }
 
 /**
+ * @brief Update device class for QSFPDD ports
+ * [Dummy function]
+ * This function updates the device class for a given QSFPDD port.
+ * It reads the current device class and module type, then checks against a dev type list
+ * to determine the correct device class.
+ * If the device class needs to be updated, it writes the new value to dev_class.
+ *
+ * @param port The port number
+ * @return An error condition or current port dev_class.
+ */
+int onlp_sfpi_dev_class_update(int port)
+{
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Read the SFP EEPROM.
  * @param port The port number.
  * @param data Receives the SFP data.
@@ -401,7 +417,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = xfr_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -421,7 +437,7 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     int rc = 0;
     int bus = xfr_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -445,7 +461,7 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     int rc = 0;
     int bus = xfr_port_to_eeprom_bus(port);
 
-    if(onlp_sfpi_is_present(port) !=  1) {
+    if(onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -465,7 +481,7 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
     int rc = 0;
     int bus = xfr_port_to_eeprom_bus(port);
 
-    if(onlp_sfpi_is_present(port) !=  1) {
+    if(onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -510,7 +526,7 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
     int rc = 0;
     int bus = xfr_port_to_eeprom_bus(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -521,7 +537,6 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
 
     return rc;
 }
-
 
 /**
  * @brief Read the SFP DOM EEPROM.
@@ -540,7 +555,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     //qsfpdd 3.0 and later dom and above is on lower page 0x00 and higher page 0x17
     VALIDATE_SFP_PORT(port);
 
-    if (onlp_sfpi_is_present(port) !=  1) {
+    if (onlp_sfpi_is_present(port) != 1) {
         AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
@@ -746,7 +761,7 @@ int onlp_sfpi_denit(void)
  */
 void onlp_sfpi_debug(int port, aim_pvs_t* pvs)
 {
-    return;
+
 }
 
 /**

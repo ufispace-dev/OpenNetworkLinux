@@ -197,7 +197,8 @@ enum onlp_thermal_id {
 enum sku_subtype_e {
     SKU_POE = 0,
     SKU_NPOE_0BASE,
-    SKU_NPOE_1BASE
+    SKU_NPOE_1BASE,
+    SKU_POE_1PSU,
 };
 
 enum onlp_psu_type_e {
@@ -245,6 +246,8 @@ int mask_shift(int val, int mask);
 void check_and_do_i2c_mux_reset(int port);
 
 int get_hw_rev_id();
+
+int get_hw_ext_id();
 
 int get_gpio_max();
 

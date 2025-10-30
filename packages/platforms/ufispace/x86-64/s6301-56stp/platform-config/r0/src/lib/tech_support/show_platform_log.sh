@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -169,8 +169,8 @@ function _check_env {
         if [ ! -d "${LOG_FOLDER_PATH}" ]; then
             _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
             exit 1
-        fi        
-        
+        fi
+
         if [ "${HEADER_PROMPT}" == "1" ]; then
             echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
         else
@@ -700,7 +700,7 @@ function _show_sys_eeprom_sysfs {
 
     addr="56"
     bus=${ismt_bus}
-     
+
     sys_eeprom=$(eval "cat /sys/bus/i2c/devices/${bus}-00${addr}/eeprom ${LOG_REDIRECT} | hexdump -C")
     _echo "[System EEPROM]:"
     _echo "${sys_eeprom}"
@@ -813,7 +813,7 @@ function _show_psu_status_cpld {
 function _show_port_status_sysfs {
     _banner "Show Port Status / EEPROM"
 
-    # check GPIO_MAX 
+    # check GPIO_MAX
     if [ "$GPIO_MAX" == "0" ]; then
         _echo "Incorrect GPIO_MAX value (${GPIO_MAX}), exit!!!"
         return 0
@@ -1216,14 +1216,21 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/sda"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
+        local smartctl_commands=(
+        "smartctl -a /dev/sda"
+        "smartctl -x /dev/sda"
+        )
+
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
     fi
 
 }
@@ -1318,16 +1325,17 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
     fi
 }
 
@@ -1359,7 +1367,7 @@ function _compression {
 
 function _show_poe_status_sysfs {
     _banner "show POE SYS status"
-    
+
     # show poe sys info
     sysfs="${SYSFS_POE_SYS}/poe_sys_info"
     if _check_filepath ${sysfs}; then
@@ -1368,7 +1376,7 @@ function _show_poe_status_sysfs {
     _echo "[POE sys info]:"
     _echo "${sys_info}"
 
-    # show poe port info 
+    # show poe port info
     for (( i=0; i<48; i++ ))
     do
         sysfs_port="${SYSFS_POE}/port-${i}"
@@ -1396,7 +1404,7 @@ function _show_poe_status_sysfs {
         _echo "[power]:"
         _echo "${power}"
         _echo "[temp]:"
-        _echo "${temp}"        
+        _echo "${temp}"
     done
 }
 
@@ -1406,7 +1414,7 @@ usage() {
     echo "Usage:"
     echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
     echo "Description:"
-    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"    
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
     echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
     echo "  -i                insert an identifier in the log file name"
     echo "  -v                show tech support script version"

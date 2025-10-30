@@ -6,7 +6,7 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.2-bsp"
 silence=0
 #            MAC#L   MAC#R
 MAC_RP_ARR=(15:05.0 15:02.0)
@@ -68,31 +68,31 @@ get_pcie_status()
     case "${1}" in
     "mac")
         echo "RP Status ${MAC_RP_ARR[1]}:"
-        lspci -vvv -s ${MAC_RP_ARR[1]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${MAC_RP_ARR[1]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         echo "RP Status ${MAC_RP_ARR[0]}:"
-        lspci -vvv -s ${MAC_RP_ARR[0]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${MAC_RP_ARR[0]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "MAC Status %s:00.0:\n" $(setpci -s ${MAC_RP_ARR[1]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "MAC Status %s:00.0:\n" $(setpci -s ${MAC_RP_ARR[0]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         ;;
     "op2")
         echo "RP Status ${OP2_RP_ARR[3]}:"
-        lspci -vvv -s ${OP2_RP_ARR[3]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${OP2_RP_ARR[3]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         echo "RP Status ${OP2_RP_ARR[2]}:"
-        lspci -vvv -s ${OP2_RP_ARR[2]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${OP2_RP_ARR[2]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         echo "RP Status ${OP2_RP_ARR[1]}:"
-        lspci -vvv -s ${OP2_RP_ARR[1]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${OP2_RP_ARR[1]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         echo "RP Status ${OP2_RP_ARR[0]}:"
-        lspci -vvv -s ${OP2_RP_ARR[0]} | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s ${OP2_RP_ARR[0]} | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_RP_ARR[3]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_RP_ARR[2]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_RP_ARR[1]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         printf "OP2 Status %s:00.0:\n" $(setpci -s ${OP2_RP_ARR[0]} 0x19.b)
-        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        lspci -vvv -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 | grep -e DevSta: -e LnkCtl -e LnkSta: -e UESta: -e CESta: -e SERR
         ;;
     *)
         print_log "Invalid Parameters\n"
@@ -230,20 +230,58 @@ enable_common_clk()
 {
     case ${1} in
     mac)
-        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b=0x40
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
         sleep 0.1
-        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b=0x40
-        sleep 0.1
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        sleep 1
         ;;
     op2)
-        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b=0x40
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
         sleep 0.1
-        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b=0x40
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
         sleep 0.1
-        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b=0x40
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
         sleep 0.1
-        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b=0x40
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        sleep 1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+retrain_link()
+{
+    case "${1}" in
+    "mac")
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
         sleep 0.1
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 1
+        ;;
+    "op2")
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 0.1
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 0.1
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 0.1
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 1
         ;;
     *)
         print_log "Invalid Parameters\n"
@@ -307,9 +345,13 @@ reset_mac()
         print_log "done\n"
     fi
 
-    printf "Enable Common Clock......"
+    print_log "Enable Common Clock......"
     enable_common_clk mac
-    printf "done\n"
+    print_log "done\n"
+
+    print_log "Retrain link......"
+    retrain_link mac
+    print_log "done\n"
 
     print_log "After MAC Warm Reset ...\n"
     get_pcie_status mac
@@ -381,9 +423,13 @@ reset_op2()
         print_log "done\n"
     fi
 
-    printf "Enable Common Clock......"
+    print_log "Enable Common Clock......"
     enable_common_clk op2
-    printf "done\n"
+    print_log "done\n"
+
+    print_log "Retrain link......"
+    retrain_link op2
+    print_log "done\n"
 
     print_log "After OP2 Warm Reset ...\n"
     get_pcie_status op2

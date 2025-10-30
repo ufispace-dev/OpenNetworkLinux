@@ -1,12 +1,14 @@
 #!/bin/bash
-
+#     MAC:  Separate CommClk-
+#     OP2:  Separate CommClk-
+#
 if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     #echo "Please set UFI_RESET_TOOL_PATH"
     #exit 1
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.2-bsp"
 silence=0
 
 function _ioget {
@@ -30,7 +32,6 @@ help()
     echo "    mac  : Reset MAC"
     echo "    op2  : Reset OP2"
     echo "    phy  : Reset BCM82752"
-    echo "    i210 : Reset I210"
     echo "    all  : Reset MAC, op2 and phy"
     echo "  silent(optional): Don't display reset result"
     echo ""
@@ -81,25 +82,6 @@ remove_kmod()
             rmmod kbp_driver
         fi
         ;;
-    "i210")
-        kmod_cnt=`lsmod | grep igb | wc -l`
-        if [ ${kmod_cnt} -gt 2 ]; then
-            rmmod igb
-        fi
-        ;;
-    *)
-        print_log "Invalid Parameters\n"
-        help
-        ;;
-    esac
-}
-
-insert_kmod()
-{
-    case "${1}" in
-    "i210")
-        modprobe igb
-        ;;
     *)
         print_log "Invalid Parameters\n"
         help
@@ -116,10 +98,6 @@ remove_dev()
         ;;
     "op2")
         echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:09.0 0x19.b)\:00.0/remove
-        sleep 1
-        ;;
-    "i210")
-        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:0f.0 0x19.b)\:00.0/remove
         sleep 1
         ;;
     *)
@@ -159,21 +137,6 @@ set_2nd_bus_reset()
             #sleep 0.1
             bc=$(setpci -s 00:09.0 BRIDGE_CONTROL)
             setpci -s 00:09.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-            sleep 1
-        fi
-        ;;
-    "i210")
-        if [ ${2} -eq 1 ]; then
-            #setpci -s 00:0f.0 0x3e.b
-            #sleep 0.1
-            bc=$(setpci -s 00:0f.0 BRIDGE_CONTROL)
-            setpci -s 00:0f.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-            sleep 1
-        else
-            #setpci -s 00:0f.0 0x3e.b
-            #sleep 0.1
-            bc=$(setpci -s 00:0f.0 BRIDGE_CONTROL)
-            setpci -s 00:0f.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
             sleep 1
         fi
         ;;
@@ -327,67 +290,6 @@ reset_phy()
     print_log "Reset BCM82752 Done\n\n"
 }
 
-reset_i210()
-{
-    print_log "Reset I210...\n"
-    print_log "==============================\n"
-
-    print_log "Remove kernel module......"
-    remove_kmod i210
-    sleep 1
-    print_log "done\n"
-
-    print_log "Remove i210 from PCIe bus......"
-    remove_dev i210
-    sleep 1
-    print_log "done\n"
-
-    # set secondary bus reset to 1 before reset
-    set_2nd_bus_reset i210 1
-
-    # reset I210 (PCIe)
-    print_log "Reset Assertion......"
-    val=$(_ioget 0x748 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    _ioset 0x748 $(printf "0x%02x" $(("$val" & 0xf7)))
-    sleep 2
-    print_log "done\n"
-
-    # unreset I210 (PCIe)
-    print_log "Reset Deassertion......"
-    val=$(_ioget 0x748 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    _ioset 0x748 $(printf "0x%02x" $(("$val" | 0x08)))
-    sleep 2
-    print_log "done\n"
-
-    # set secondary bus reset to 0 after reset
-    set_2nd_bus_reset i210 0
-    sleep 1
-
-    print_log "Rescan PCIe bus......"
-    echo 1 > /sys/bus/pci/rescan
-    sleep 1
-    print_log "done\n"
-
-    print_log "Insert kernel module......"
-    insert_kmod i210
-    sleep 1
-    print_log "done\n"
-
-    print_log "Check I210 status......"
-    i210_cnt=`lspci | grep I210 | wc -l`
-    if [ ${i210_cnt} -ne 1 ]; then
-        print_log "fail: After reset, I210 should be exist!\n"
-        lspci | grep I210 
-        exit 2  
-    fi
-    print_log "done\n"
-
-    print_log "==============================\n"
-    print_log "Reset I210 Done\n\n"
-}
-
 main()
 {
     case ${2} in
@@ -408,9 +310,6 @@ main()
         ;;
     "phy")
         reset_phy
-        ;;
-    "i210")
-        reset_i210
         ;;
     "all")
         reset_op2

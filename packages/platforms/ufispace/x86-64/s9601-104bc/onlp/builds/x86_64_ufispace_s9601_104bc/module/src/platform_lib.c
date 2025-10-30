@@ -42,7 +42,7 @@ static const warm_reset_data_t warm_reset_data[] = {
     [WARM_RESET_MUX]  = {-1,      NULL, NULL}, //not support
     [WARM_RESET_OP2]  = {-1,      "op2", NULL}, //not support
     [WARM_RESET_GB]   = {-1,      NULL, NULL}, //not support
-    [WARM_RESET_I210] = {-1,      "i210", NULL}, //not support
+    [WARM_RESET_I210] = {-1,      NULL, NULL}, //not support
 };
 
 bmc_info_t bmc_cache[] =

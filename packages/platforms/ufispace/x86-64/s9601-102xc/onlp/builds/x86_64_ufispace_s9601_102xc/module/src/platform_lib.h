@@ -148,6 +148,9 @@
 #define BMC_ATTR_STATUS_PRES        1
 #define BMC_ATTR_INVALID_VAL        999999
 
+#define SKU_NO_KBP     0b00101101
+#define SKU_KBP        0b00101100
+
 enum sensor
 {
     FAN_SENSOR = 0,
@@ -193,8 +196,9 @@ enum bmc_attr_id {
 
 /* Warm Reset */
 #define WARM_RESET_PATH          "/lib/platform-config/current/onl/warm_reset/warm_reset"
+#define WARM_RESET_KBP_PATH      "/lib/platform-config/current/onl/warm_reset/warm_reset_kbp"
 #define WARM_RESET_TIMEOUT       60
-#define CMD_WARM_RESET           "timeout %ds "WARM_RESET_PATH " %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
+#define CMD_WARM_RESET           "timeout %ds %s %s" BSP_PR_REDIRECT_ERR BSP_PR_REDIRECT_INFO
 enum reset_dev_type {
     WARM_RESET_ALL = 0,
     WARM_RESET_MAC,

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.0"
+TS_VERSION="1.1.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -341,7 +341,7 @@ function _show_board_info {
     _banner "Show Board Info"
 
     # CPLD1 0x700 Register Definition
-    build_rev_id_array=(0 1 2 3 4 5 6 7) 
+    build_rev_id_array=(0 1 2 3 4 5 6 7)
     build_rev_array=(1 2 3 4 5 6 7 8)
     hw_rev_id_array=(0 1 2 3)
     hw_rev_array=("Proto" "Alpha" "Beta" "PVT")
@@ -349,7 +349,7 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     model_id_array=($((2#00101011)))
     model_name_array=("S9601-104BC")
-    brd_id_def_id_array=(0 1 2 3) 
+    brd_id_def_id_array=(0 1 2 3)
     brd_id_array=(
         "CSGR 4-bit/8-bit mode & DDC 8-bit mode" #0
         ""                                       #1
@@ -1700,7 +1700,7 @@ function _show_port_status_sysfs {
 
             # Port Dump EEPROM
             local eeprom_path="/sys/bus/i2c/devices/${port_eeprom_bus_array[${i}]}-0050/eeprom"
-            
+
             if [ "${port_absent}" == "0" ] && _check_filepath "${eeprom_path}"; then
                 port_eeprom=$(eval "dd if=${eeprom_path} bs=128 count=2 skip=0 status=none ${LOG_REDIRECT} | hexdump -C")
                 if [ "${LOG_FILE_ENABLE}" == "1" ]; then
@@ -2056,14 +2056,21 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/sda"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
+        local smartctl_commands=(
+        "smartctl -a /dev/sda"
+        "smartctl -x /dev/sda"
+        )
+
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
     fi
 
 }
@@ -2247,16 +2254,17 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
     fi
 }
 

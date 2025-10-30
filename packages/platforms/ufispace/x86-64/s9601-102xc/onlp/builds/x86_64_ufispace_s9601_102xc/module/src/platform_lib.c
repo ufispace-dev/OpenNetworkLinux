@@ -42,7 +42,18 @@ static const warm_reset_data_t warm_reset_data[] = {
     [WARM_RESET_MUX]  = {-1,      NULL, NULL}, //not support
     [WARM_RESET_OP2]  = {-1,      NULL, NULL}, //not support
     [WARM_RESET_GB]   = {-1,      NULL, NULL}, //not support
-    [WARM_RESET_I210] = {-1,      "i210", NULL},
+    [WARM_RESET_I210] = {-1,      NULL, NULL},
+};
+
+static const warm_reset_data_t warm_reset_kbp_data[] = {
+//                      unit_max | dev | unit
+    [WARM_RESET_ALL]  = {-1,      "all", NULL},
+    [WARM_RESET_MAC]  = {MAC_MAX, "mac", mac_unit_str},
+    [WARM_RESET_PHY]  = {-1,      "phy", NULL},
+    [WARM_RESET_MUX]  = {-1,      NULL, NULL}, //not support
+    [WARM_RESET_OP2]  = {-1,      "op2", NULL},
+    [WARM_RESET_GB]   = {-1,      NULL, NULL}, //not support
+    [WARM_RESET_I210] = {-1,      NULL, NULL},
 };
 
 bmc_info_t bmc_cache[] =
@@ -969,25 +980,38 @@ int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
 {
     char cmd_buf[256] = {0};
     char dev_unit_buf[32] = {0};
+    char *warm_reset_path = NULL;
+    const warm_reset_data_t *data_table = NULL;
     const warm_reset_data_t *data = NULL;
     int ret = 0;
+    board_t board = {0};
+
+    ONLP_TRY(get_board_version(&board));
+
+    if(board.sku_id == SKU_KBP) {
+        warm_reset_path = WARM_RESET_KBP_PATH;
+        data_table = warm_reset_kbp_data;
+    } else {
+        warm_reset_path = WARM_RESET_PATH;
+        data_table = warm_reset_data;
+    }
 
     if (reset_dev >= WARM_RESET_MAX) {
         AIM_LOG_ERROR("%s() dev_id(%d) out of range.", __func__, reset_dev);
         return ONLP_STATUS_E_PARAM;
     }
 
-    if(access(WARM_RESET_PATH, F_OK) == -1) {
-        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, WARM_RESET_PATH);
+    if(access(warm_reset_path, F_OK) == -1) {
+        AIM_LOG_ERROR("%s() file not exist, file=%s", __func__, warm_reset_path);
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    if (warm_reset_data[reset_dev].warm_reset_dev_str == NULL) {
+    if (data_table[reset_dev].warm_reset_dev_str == NULL) {
         AIM_LOG_ERROR("%s() reset_dev not support, reset_dev=%d", __func__, reset_dev);
         return ONLP_STATUS_E_PARAM;
     }
 
-    data = &warm_reset_data[reset_dev];
+    data = &data_table[reset_dev];
 
     if (data != NULL && data->warm_reset_dev_str != NULL) {
         snprintf(dev_unit_buf, sizeof(dev_unit_buf), "%s", data->warm_reset_dev_str);
@@ -995,7 +1019,7 @@ int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev)
             snprintf(dev_unit_buf + strlen(dev_unit_buf), sizeof(dev_unit_buf) - strlen(dev_unit_buf),
                      " %s", data->unit_str[unit_id]);
         }
-        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, dev_unit_buf);
+        snprintf(cmd_buf, sizeof(cmd_buf), CMD_WARM_RESET, WARM_RESET_TIMEOUT, warm_reset_path, dev_unit_buf);
         AIM_LOG_INFO("%s() info, warm reset cmd=%s", __func__, cmd_buf); //TODO
         ret = system(cmd_buf);
     } else {

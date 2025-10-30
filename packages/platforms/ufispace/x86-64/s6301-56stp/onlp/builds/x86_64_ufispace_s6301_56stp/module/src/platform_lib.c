@@ -147,6 +147,22 @@ int get_hw_rev_id()
 }
 
 /**
+ * @brief Get hw ext id
+ * @param board [out] hw ext id
+ */
+int get_hw_ext_id()
+{
+    int hw_ext_id;
+
+    //Get HW EXT ID
+    if(onlp_file_read_int(&hw_ext_id, LPC_MB_CPLD_PATH "/" LPC_MB_EXT_ID_ATTR) != ONLP_STATUS_OK) {
+        hw_ext_id = 0;
+    }
+
+    return hw_ext_id;
+}
+
+/**
  * @brief init gpio max value
  * @param board [out] gpio max value
  */

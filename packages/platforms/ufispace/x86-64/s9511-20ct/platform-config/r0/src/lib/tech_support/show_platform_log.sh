@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -587,7 +587,7 @@ function _show_i2c_mux_devices {
             _echo "TCA9548 Mux ${chip_dev_desc} - Channel ${i}"
             # open mux channel
             i2cset -y ${bus} ${chip_addr} $(( 2 ** ${i} ))
-            # dump i2c tree            
+            # dump i2c tree
             ret=$(eval "(time i2cdetect -y ${bus}) ${LOG_REDIRECT}")
             _echo "${ret}"
             # close mux channel
@@ -1931,16 +1931,22 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/mmcblk0"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
-    fi
+        local smartctl_commands=(
+        "smartctl -a /dev/mmcblk0"
+        "smartctl -x /dev/mmcblk0"
+        )
 
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
+    fi
 }
 
 function _show_lspci {
@@ -2033,16 +2039,17 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
     fi
 }
 
@@ -2170,10 +2177,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

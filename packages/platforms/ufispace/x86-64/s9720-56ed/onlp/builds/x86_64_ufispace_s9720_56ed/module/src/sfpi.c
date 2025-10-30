@@ -27,7 +27,9 @@
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
-
+#define SYSFS_DEV_CLASS       "dev_class"
+#define ALL_PORTS             -1
+ 
 #define MGMT_NUM              2
 #define SFP_NUM               2
 #define QSFP_NUM              0
@@ -56,6 +58,10 @@
 #define CMIS_SEEK_TX_DIS_ADV                  (CMIS_PAGE_SIZE * CMIS_PAGE_SUPPORTED_CTRL_ADV + CMIS_OFFSET_SUPPORTED_CTRL_ADV)
 #define CMIS_SEEK_TX_DIS                      (CMIS_PAGE_SIZE * CMIS_PAGE_TX_DIS + CMIS_OFFSET_TX_DIS)
 
+//SFF8636 TX Disable
+#define SFF8636_EEPROM_OFFSET_TXDIS    0x56
+#define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
+#define SFF8636_EEPROM_TX_EN           0x0
 
 
 #define EEPROM_ADDR (0x50)
@@ -89,6 +95,25 @@ typedef struct
     unsigned int cpld_bit;
     int intr;
 } port_attr_t;
+
+typedef struct {
+    int key;  //[module_type]
+    int value;  // [dev_class]
+} PortTypeDictEntry;
+
+PortTypeDictEntry port_type_dict[] = {
+    {0x03, 2},// 'SFP/SFP+/SFP28'
+    {0x0B, 2},// 'DWDM-SFP/SFP+'
+    {0x0C, 1},// 'QSFP'
+    {0x0D, 1},// 'QSFP+'
+    {0x11, 1},// 'QSFP28'
+    {0x18, 3},// 'QSFP-DD Double Density 8x (INF-8628)'
+    {0x19, 3},// 'OSFP 8x Pluggable Transceiver'
+    {0x1E, 3},// 'QSFP+ or later with CMIS spec'
+    {0x1F, 3},// 'SFP-DD Double Density 2X Pluggable Transceiver with CMIS spec'
+};
+
+#define PORT_TYPE_DICT_SIZE (sizeof(port_type_dict) / sizeof(PortTypeDictEntry))
 
 typedef enum cpld_attr_idx_e {
     // Network Interface (NIF) attributes
@@ -176,64 +201,64 @@ static const port_attr_t port_attr[] = {
  */
 //  QSFPDD (NIF/FAB)
 //  port       abs            lpmode           reset            rxlos            txflt           txdis       eeprom      type          bit     intr 
-    [0]   ={ABS_NIF_0    , LPMODE_NIF_0     , RST_NIF_0    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 35    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_0},
-    [1]   ={ABS_NIF_1    , LPMODE_NIF_1     , RST_NIF_1    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 36    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_1},
-    [2]   ={ABS_NIF_2    , LPMODE_NIF_2     , RST_NIF_2    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 37    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_2},
-    [3]   ={ABS_NIF_3    , LPMODE_NIF_3     , RST_NIF_3    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 38    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_3},
-    [4]   ={ABS_NIF_4    , LPMODE_NIF_4     , RST_NIF_4    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 39    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_4},
-    [5]   ={ABS_NIF_5    , LPMODE_NIF_5     , RST_NIF_5    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 40    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_5},
-    [6]   ={ABS_NIF_6    , LPMODE_NIF_6     , RST_NIF_6    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 41    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_6},
-    [7]   ={ABS_NIF_7    , LPMODE_NIF_7     , RST_NIF_7    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 42    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_7},
-    [8]   ={ABS_NIF_8    , LPMODE_NIF_8     , RST_NIF_8    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 43    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_8},
-    [9]   ={ABS_NIF_9    , LPMODE_NIF_9     , RST_NIF_9    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 44    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_9},
-    [10]  ={ABS_NIF_10   , LPMODE_NIF_10    , RST_NIF_10   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 45    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_10},
-    [11]  ={ABS_NIF_11   , LPMODE_NIF_11    , RST_NIF_11   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 46    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_11},
-    [12]  ={ABS_NIF_12   , LPMODE_NIF_12    , RST_NIF_12   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 47    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_12},
-    [13]  ={ABS_NIF_13   , LPMODE_NIF_13    , RST_NIF_13   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 48    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_13},
-    [14]  ={ABS_NIF_14   , LPMODE_NIF_14    , RST_NIF_14   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 49    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_14},
-    [15]  ={ABS_NIF_15   , LPMODE_NIF_15    , RST_NIF_15   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 50    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_15},
-    [16]  ={ABS_NIF_16   , LPMODE_NIF_16    , RST_NIF_16   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 51    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_16},
-    [17]  ={ABS_NIF_17   , LPMODE_NIF_17    , RST_NIF_17   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 52    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_17},
-    [18]  ={ABS_NIF_18   , LPMODE_NIF_18    , RST_NIF_18   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 53    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_18},
-    [19]  ={ABS_NIF_19   , LPMODE_NIF_19    , RST_NIF_19   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 54    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_19},
-    [20]  ={ABS_NIF_20   , LPMODE_NIF_20    , RST_NIF_20   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 65    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_20},
-    [21]  ={ABS_NIF_21   , LPMODE_NIF_21    , RST_NIF_21   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 66    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_21},
-    [22]  ={ABS_NIF_22   , LPMODE_NIF_22    , RST_NIF_22   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 67    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_22},
-    [23]  ={ABS_NIF_23   , LPMODE_NIF_23    , RST_NIF_23   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 68    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_23},
-    [24]  ={ABS_NIF_24   , LPMODE_NIF_24    , RST_NIF_24   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 69    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_24},
-    [25]  ={ABS_NIF_25   , LPMODE_NIF_25    , RST_NIF_25   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 70    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_25},
-    [26]  ={ABS_NIF_26   , LPMODE_NIF_26    , RST_NIF_26   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 71    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_26},
-    [27]  ={ABS_NIF_27   , LPMODE_NIF_27    , RST_NIF_27   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 72    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_27},
-    [28]  ={ABS_NIF_28   , LPMODE_NIF_28    , RST_NIF_28   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 73    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_28},
-    [29]  ={ABS_NIF_29   , LPMODE_NIF_29    , RST_NIF_29   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 74    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_29},
-    [30]  ={ABS_NIF_30   , LPMODE_NIF_30    , RST_NIF_30   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 75    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_30},
-    [31]  ={ABS_NIF_31   , LPMODE_NIF_31    , RST_NIF_31   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 76    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_31},
-    [32]  ={ABS_NIF_32   , LPMODE_NIF_32    , RST_NIF_32   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 77    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_32},
-    [33]  ={ABS_NIF_33   , LPMODE_NIF_33    , RST_NIF_33   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 78    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_33},
-    [34]  ={ABS_NIF_34   , LPMODE_NIF_34    , RST_NIF_34   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 79    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_34},
-    [35]  ={ABS_NIF_35   , LPMODE_NIF_35    , RST_NIF_35   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 80    , TYPE_QSFPDD_NIF , 0 , INTR_NIF_35},
-    [36]  ={ABS_SFP_36   , CPLD_NONE        ,RST_SFP_36    , RXLOS_SFP_36   , TXFLT_SFP_36   , TXDIS_SFP_36 , 83    , TYPE_SFP        , 0 , CPLD_NONE},
-    [37]  ={ABS_SFP_37   , CPLD_NONE        ,RST_SFP_37    , RXLOS_SFP_37   , TXFLT_SFP_37   , TXDIS_SFP_37 , 84    , TYPE_SFP        , 0 , CPLD_NONE},
-    [38]  ={ABS_FAB_0    , LPMODE_FAB_0     , RST_FAB_0    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 25    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_0},
-    [39]  ={ABS_FAB_1    , LPMODE_FAB_1     , RST_FAB_1    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 26    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_1},
-    [40]  ={ABS_FAB_2    , LPMODE_FAB_2     , RST_FAB_2    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 27    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_2},
-    [41]  ={ABS_FAB_3    , LPMODE_FAB_3     , RST_FAB_3    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 28    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_3},
-    [42]  ={ABS_FAB_4    , LPMODE_FAB_4     , RST_FAB_4    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 29    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_4},
-    [43]  ={ABS_FAB_5    , LPMODE_FAB_5     , RST_FAB_5    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 30    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_5},
-    [44]  ={ABS_FAB_6    , LPMODE_FAB_6     , RST_FAB_6    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 31    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_6},
-    [45]  ={ABS_FAB_7    , LPMODE_FAB_7     , RST_FAB_7    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 32    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_7},
-    [46]  ={ABS_FAB_8    , LPMODE_FAB_8     , RST_FAB_8    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 33    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_8},
-    [47]  ={ABS_FAB_9    , LPMODE_FAB_9     , RST_FAB_9    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 34    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_9},
-    [48]  ={ABS_FAB_10   , LPMODE_FAB_10    , RST_FAB_10   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 55    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_10},
-    [49]  ={ABS_FAB_11   , LPMODE_FAB_11    , RST_FAB_11   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 56    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_11},
-    [50]  ={ABS_FAB_12   , LPMODE_FAB_12    , RST_FAB_12   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 57    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_12},
-    [51]  ={ABS_FAB_13   , LPMODE_FAB_13    , RST_FAB_13   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 58    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_13},
-    [52]  ={ABS_FAB_14   , LPMODE_FAB_14    , RST_FAB_14   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 59    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_14},
-    [53]  ={ABS_FAB_15   , LPMODE_FAB_15    , RST_FAB_15   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 60    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_15},
-    [54]  ={ABS_FAB_16   , LPMODE_FAB_16    , RST_FAB_16   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 61    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_16},
-    [55]  ={ABS_FAB_17   , LPMODE_FAB_17    , RST_FAB_17   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 62    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_17},
-    [56]  ={ABS_FAB_18   , LPMODE_FAB_18    , RST_FAB_18   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 63    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_18},
-    [57]  ={ABS_FAB_19   , LPMODE_FAB_19    , RST_FAB_19   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 64    , TYPE_QSFPDD_FAB , 0 , INTR_FAB_19},
+    [0]   ={ABS_NIF_0    , LPMODE_NIF_0     , RST_NIF_0    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 35    , TYPE_QSFPDD     , 0 , INTR_NIF_0},
+    [1]   ={ABS_NIF_1    , LPMODE_NIF_1     , RST_NIF_1    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 36    , TYPE_QSFPDD     , 0 , INTR_NIF_1},
+    [2]   ={ABS_NIF_2    , LPMODE_NIF_2     , RST_NIF_2    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 37    , TYPE_QSFPDD     , 0 , INTR_NIF_2},
+    [3]   ={ABS_NIF_3    , LPMODE_NIF_3     , RST_NIF_3    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 38    , TYPE_QSFPDD     , 0 , INTR_NIF_3},
+    [4]   ={ABS_NIF_4    , LPMODE_NIF_4     , RST_NIF_4    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 39    , TYPE_QSFPDD     , 0 , INTR_NIF_4},
+    [5]   ={ABS_NIF_5    , LPMODE_NIF_5     , RST_NIF_5    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 40    , TYPE_QSFPDD     , 0 , INTR_NIF_5},
+    [6]   ={ABS_NIF_6    , LPMODE_NIF_6     , RST_NIF_6    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 41    , TYPE_QSFPDD     , 0 , INTR_NIF_6},
+    [7]   ={ABS_NIF_7    , LPMODE_NIF_7     , RST_NIF_7    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 42    , TYPE_QSFPDD     , 0 , INTR_NIF_7},
+    [8]   ={ABS_NIF_8    , LPMODE_NIF_8     , RST_NIF_8    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 43    , TYPE_QSFPDD     , 0 , INTR_NIF_8},
+    [9]   ={ABS_NIF_9    , LPMODE_NIF_9     , RST_NIF_9    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 44    , TYPE_QSFPDD     , 0 , INTR_NIF_9},
+    [10]  ={ABS_NIF_10   , LPMODE_NIF_10    , RST_NIF_10   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 45    , TYPE_QSFPDD     , 0 , INTR_NIF_10},
+    [11]  ={ABS_NIF_11   , LPMODE_NIF_11    , RST_NIF_11   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 46    , TYPE_QSFPDD     , 0 , INTR_NIF_11},
+    [12]  ={ABS_NIF_12   , LPMODE_NIF_12    , RST_NIF_12   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 47    , TYPE_QSFPDD     , 0 , INTR_NIF_12},
+    [13]  ={ABS_NIF_13   , LPMODE_NIF_13    , RST_NIF_13   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 48    , TYPE_QSFPDD     , 0 , INTR_NIF_13},
+    [14]  ={ABS_NIF_14   , LPMODE_NIF_14    , RST_NIF_14   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 49    , TYPE_QSFPDD     , 0 , INTR_NIF_14},
+    [15]  ={ABS_NIF_15   , LPMODE_NIF_15    , RST_NIF_15   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 50    , TYPE_QSFPDD     , 0 , INTR_NIF_15},
+    [16]  ={ABS_NIF_16   , LPMODE_NIF_16    , RST_NIF_16   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 51    , TYPE_QSFPDD     , 0 , INTR_NIF_16},
+    [17]  ={ABS_NIF_17   , LPMODE_NIF_17    , RST_NIF_17   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 52    , TYPE_QSFPDD     , 0 , INTR_NIF_17},
+    [18]  ={ABS_NIF_18   , LPMODE_NIF_18    , RST_NIF_18   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 53    , TYPE_QSFPDD     , 0 , INTR_NIF_18},
+    [19]  ={ABS_NIF_19   , LPMODE_NIF_19    , RST_NIF_19   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 54    , TYPE_QSFPDD     , 0 , INTR_NIF_19},
+    [20]  ={ABS_NIF_20   , LPMODE_NIF_20    , RST_NIF_20   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 65    , TYPE_QSFPDD     , 0 , INTR_NIF_20},
+    [21]  ={ABS_NIF_21   , LPMODE_NIF_21    , RST_NIF_21   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 66    , TYPE_QSFPDD     , 0 , INTR_NIF_21},
+    [22]  ={ABS_NIF_22   , LPMODE_NIF_22    , RST_NIF_22   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 67    , TYPE_QSFPDD     , 0 , INTR_NIF_22},
+    [23]  ={ABS_NIF_23   , LPMODE_NIF_23    , RST_NIF_23   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 68    , TYPE_QSFPDD     , 0 , INTR_NIF_23},
+    [24]  ={ABS_NIF_24   , LPMODE_NIF_24    , RST_NIF_24   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 69    , TYPE_QSFPDD     , 0 , INTR_NIF_24},
+    [25]  ={ABS_NIF_25   , LPMODE_NIF_25    , RST_NIF_25   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 70    , TYPE_QSFPDD     , 0 , INTR_NIF_25},
+    [26]  ={ABS_NIF_26   , LPMODE_NIF_26    , RST_NIF_26   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 71    , TYPE_QSFPDD     , 0 , INTR_NIF_26},
+    [27]  ={ABS_NIF_27   , LPMODE_NIF_27    , RST_NIF_27   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 72    , TYPE_QSFPDD     , 0 , INTR_NIF_27},
+    [28]  ={ABS_NIF_28   , LPMODE_NIF_28    , RST_NIF_28   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 73    , TYPE_QSFPDD     , 0 , INTR_NIF_28},
+    [29]  ={ABS_NIF_29   , LPMODE_NIF_29    , RST_NIF_29   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 74    , TYPE_QSFPDD     , 0 , INTR_NIF_29},
+    [30]  ={ABS_NIF_30   , LPMODE_NIF_30    , RST_NIF_30   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 75    , TYPE_QSFPDD     , 0 , INTR_NIF_30},
+    [31]  ={ABS_NIF_31   , LPMODE_NIF_31    , RST_NIF_31   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 76    , TYPE_QSFPDD     , 0 , INTR_NIF_31},
+    [32]  ={ABS_NIF_32   , LPMODE_NIF_32    , RST_NIF_32   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 77    , TYPE_QSFPDD     , 0 , INTR_NIF_32},
+    [33]  ={ABS_NIF_33   , LPMODE_NIF_33    , RST_NIF_33   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 78    , TYPE_QSFPDD     , 0 , INTR_NIF_33},
+    [34]  ={ABS_NIF_34   , LPMODE_NIF_34    , RST_NIF_34   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 79    , TYPE_QSFPDD     , 0 , INTR_NIF_34},
+    [35]  ={ABS_NIF_35   , LPMODE_NIF_35    , RST_NIF_35   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 80    , TYPE_QSFPDD     , 0 , INTR_NIF_35},
+    [36]  ={ABS_SFP_36   , CPLD_NONE        , RST_SFP_36   ,  RXLOS_SFP_36  ,  TXFLT_SFP_36  , TXDIS_SFP_36 , 83    , TYPE_SFP        , 0 , CPLD_NONE},
+    [37]  ={ABS_SFP_37   , CPLD_NONE        , RST_SFP_37   ,  RXLOS_SFP_37  ,  TXFLT_SFP_37  , TXDIS_SFP_37 , 84    , TYPE_SFP        , 0 , CPLD_NONE},
+    [38]  ={ABS_FAB_0    , LPMODE_FAB_0     , RST_FAB_0    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 25    , TYPE_QSFPDD     , 0 , INTR_FAB_0},
+    [39]  ={ABS_FAB_1    , LPMODE_FAB_1     , RST_FAB_1    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 26    , TYPE_QSFPDD     , 0 , INTR_FAB_1},
+    [40]  ={ABS_FAB_2    , LPMODE_FAB_2     , RST_FAB_2    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 27    , TYPE_QSFPDD     , 0 , INTR_FAB_2},
+    [41]  ={ABS_FAB_3    , LPMODE_FAB_3     , RST_FAB_3    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 28    , TYPE_QSFPDD     , 0 , INTR_FAB_3},
+    [42]  ={ABS_FAB_4    , LPMODE_FAB_4     , RST_FAB_4    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 29    , TYPE_QSFPDD     , 0 , INTR_FAB_4},
+    [43]  ={ABS_FAB_5    , LPMODE_FAB_5     , RST_FAB_5    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 30    , TYPE_QSFPDD     , 0 , INTR_FAB_5},
+    [44]  ={ABS_FAB_6    , LPMODE_FAB_6     , RST_FAB_6    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 31    , TYPE_QSFPDD     , 0 , INTR_FAB_6},
+    [45]  ={ABS_FAB_7    , LPMODE_FAB_7     , RST_FAB_7    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 32    , TYPE_QSFPDD     , 0 , INTR_FAB_7},
+    [46]  ={ABS_FAB_8    , LPMODE_FAB_8     , RST_FAB_8    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 33    , TYPE_QSFPDD     , 0 , INTR_FAB_8},
+    [47]  ={ABS_FAB_9    , LPMODE_FAB_9     , RST_FAB_9    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 34    , TYPE_QSFPDD     , 0 , INTR_FAB_9},
+    [48]  ={ABS_FAB_10   , LPMODE_FAB_10    , RST_FAB_10   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 55    , TYPE_QSFPDD     , 0 , INTR_FAB_10},
+    [49]  ={ABS_FAB_11   , LPMODE_FAB_11    , RST_FAB_11   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 56    , TYPE_QSFPDD     , 0 , INTR_FAB_11},
+    [50]  ={ABS_FAB_12   , LPMODE_FAB_12    , RST_FAB_12   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 57    , TYPE_QSFPDD     , 0 , INTR_FAB_12},
+    [51]  ={ABS_FAB_13   , LPMODE_FAB_13    , RST_FAB_13   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 58    , TYPE_QSFPDD     , 0 , INTR_FAB_13},
+    [52]  ={ABS_FAB_14   , LPMODE_FAB_14    , RST_FAB_14   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 59    , TYPE_QSFPDD     , 0 , INTR_FAB_14},
+    [53]  ={ABS_FAB_15   , LPMODE_FAB_15    , RST_FAB_15   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 60    , TYPE_QSFPDD     , 0 , INTR_FAB_15},
+    [54]  ={ABS_FAB_16   , LPMODE_FAB_16    , RST_FAB_16   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 61    , TYPE_QSFPDD     , 0 , INTR_FAB_16},
+    [55]  ={ABS_FAB_17   , LPMODE_FAB_17    , RST_FAB_17   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 62    , TYPE_QSFPDD     , 0 , INTR_FAB_17},
+    [56]  ={ABS_FAB_18   , LPMODE_FAB_18    , RST_FAB_18   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 63    , TYPE_QSFPDD     , 0 , INTR_FAB_18},
+    [57]  ={ABS_FAB_19   , LPMODE_FAB_19    , RST_FAB_19   ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 64    , TYPE_QSFPDD     , 0 , INTR_FAB_19},
     // MGMT    abs           lp mode            reset           rxlos            txfault        txdis        eeprom     type          bit      intr
     [58]  ={ABS_MGMT_0   , CPLD_NONE        ,RST_MGMT_0    , RXLOS_MGMT_0   , TXFLT_MGMT_0   , TXDIS_MGMT_0 , 81    , TYPE_MGMT       , 0 , CPLD_NONE},
     [59]  ={ABS_MGMT_1   , CPLD_NONE        ,RST_MGMT_1    , RXLOS_MGMT_1   , TXFLT_MGMT_1   , TXDIS_MGMT_1 , 82    , TYPE_MGMT       , 0 , CPLD_NONE}
@@ -243,8 +268,6 @@ static const port_attr_t port_attr[] = {
 #define IS_QSFPX(_port)       (port_attr[_port].port_type == TYPE_QSFPDD || port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFP(_port)        (port_attr[_port].port_type == TYPE_QSFP)
 #define IS_QSFPDD(_port)      (port_attr[_port].port_type == TYPE_QSFPDD)
-#define IS_QSFPDD_NIF(_port)  (port_attr[_port].port_type == TYPE_QSFPDD_NIF)
-#define IS_QSFPDD_FAB(_port)  (port_attr[_port].port_type == TYPE_QSFPDD_FAB)
 
 #define VALIDATE_PORT(p) { if ((p < 0) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
@@ -483,22 +506,22 @@ static int get_port_sysfs(cpld_attr_idx_t idx, char** str)
         case INTR_FAB_18: *str = SYSFS_CPLD2 "qsfpdd_fab_p18_intr" ; break;
         case INTR_FAB_19: *str = SYSFS_CPLD2 "qsfpdd_fab_p19_intr" ; break;
         //SFP / MGMT
-        case ABS_MGMT_0:  *str = SYSFS_FPGA "mgmt_p0_abs"          ; break;
-        case ABS_MGMT_1:  *str = SYSFS_FPGA "mgmt_p1_abs"          ; break;
-        case ABS_SFP_36:  *str = SYSFS_FPGA "sfp28_p36_abs"        ; break;
-        case ABS_SFP_37:  *str = SYSFS_FPGA "sfp28_p37_abs"        ; break;
-        case RXLOS_MGMT_0:*str = SYSFS_FPGA "mgmt_p0_rx_los"       ; break;
-        case RXLOS_MGMT_1:*str = SYSFS_FPGA "mgmt_p1_rx_los"       ; break;
-        case RXLOS_SFP_36:*str = SYSFS_FPGA "sfp28_p36_rx_los"     ; break;
-        case RXLOS_SFP_37:*str = SYSFS_FPGA "sfp28_p37_rx_los"     ; break;
-        case TXFLT_MGMT_0:*str = SYSFS_FPGA "mgmt_p0_tx_flt"       ; break;
-        case TXFLT_MGMT_1:*str = SYSFS_FPGA "mgmt_p1_tx_flt"       ; break;
-        case TXFLT_SFP_36:*str = SYSFS_FPGA "sfp28_p36_tx_flt"     ; break;
-        case TXFLT_SFP_37:*str = SYSFS_FPGA "sfp28_p37_tx_flt"     ; break;
-        case TXDIS_MGMT_0:*str = SYSFS_FPGA "mgmt_p0_tx_dis"       ; break;
-        case TXDIS_MGMT_1:*str = SYSFS_FPGA "mgmt_p1_tx_dis"       ; break;
-        case TXDIS_SFP_36:*str = SYSFS_FPGA "sfp28_p36_tx_dis"     ; break;
-        case TXDIS_SFP_37:*str = SYSFS_FPGA "sfp28_p37_tx_dis"     ; break;
+        case ABS_MGMT_0:   *str = SYSFS_FPGA "mgmt_p0_abs"          ; break;
+        case ABS_MGMT_1:   *str = SYSFS_FPGA "mgmt_p1_abs"          ; break;
+        case ABS_SFP_36:   *str = SYSFS_FPGA "sfp28_p36_abs"        ; break;
+        case ABS_SFP_37:   *str = SYSFS_FPGA "sfp28_p37_abs"        ; break;
+        case RXLOS_MGMT_0: *str = SYSFS_FPGA "mgmt_p0_rx_los"       ; break;
+        case RXLOS_MGMT_1: *str = SYSFS_FPGA "mgmt_p1_rx_los"       ; break;
+        case RXLOS_SFP_36: *str = SYSFS_FPGA "sfp28_p36_rx_los"     ; break;
+        case RXLOS_SFP_37: *str = SYSFS_FPGA "sfp28_p37_rx_los"     ; break;
+        case TXFLT_MGMT_0: *str = SYSFS_FPGA "mgmt_p0_tx_flt"       ; break;
+        case TXFLT_MGMT_1: *str = SYSFS_FPGA "mgmt_p1_tx_flt"       ; break;
+        case TXFLT_SFP_36: *str = SYSFS_FPGA "sfp28_p36_tx_flt"     ; break;
+        case TXFLT_SFP_37: *str = SYSFS_FPGA "sfp28_p37_tx_flt"     ; break;
+        case TXDIS_MGMT_0: *str = SYSFS_FPGA "mgmt_p0_tx_dis"       ; break;
+        case TXDIS_MGMT_1: *str = SYSFS_FPGA "mgmt_p1_tx_dis"       ; break;
+        case TXDIS_SFP_36: *str = SYSFS_FPGA "sfp28_p36_tx_dis"     ; break;
+        case TXDIS_SFP_37: *str = SYSFS_FPGA "sfp28_p37_tx_dis"     ; break;
 
         default:
             *str = "";
@@ -513,6 +536,133 @@ static int ufi_port_to_eeprom_bus(int port)
 
     bus=port_attr[port].eeprom_bus;
     return bus;
+}
+
+/**
+ * @brief Get device class for a port
+ *
+ * This function get the device class for a given port.
+ *
+ * @param port The port number
+ * @return An error condition or ONLP_STATUS_OK.
+ */
+int onlp_sfpi_dev_class_get(int port, int *dev_class)
+{
+    int rv, bus;
+
+    bus = ufi_port_to_eeprom_bus(port);
+
+    //read dev_class
+    rv = onlp_file_read_int(dev_class, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS);
+    if(rv < 0) {
+        AIM_LOG_ERROR("Unable to read "SYS_FMT", error=%d", bus, EEPROM_ADDR, SYSFS_DEV_CLASS, rv);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Set device class for QSFP ports
+ *
+ * This function set the device class for a given QSFP port.
+ *
+ * @param port The port number
+ * @param dev_class The device class to set
+ * @return An error condition or ONLP_STATUS_OK.
+ */
+int onlp_sfpi_dev_class_set(int port, int dev_class)
+{
+    int bus=0;
+
+    bus = ufi_port_to_eeprom_bus(port);
+
+    // set dev_class
+    ONLP_TRY(onlp_file_write_int(dev_class, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Update device class for QSFPDD ports
+ *
+ * This function updates the device class for a given QSFPDD port.
+ * It reads the current device class and module type, then checks against a dev type list
+ * to determine the correct device class.
+ * If the device class needs to be updated, it writes the new value to dev_class.
+ *
+ * @param port The port number
+ * @return An error condition or current port dev_class.
+ */
+int onlp_sfpi_dev_class_update_port(int port)
+{
+    int dev_class, type, i;
+
+    if (!IS_QSFPX(port) || !onlp_sfpi_is_present(port)) { // not QSFPX or module absent
+        return ONLP_STATUS_OK;
+    }
+
+    //read dev_class
+    ONLP_TRY(onlp_sfpi_dev_class_get(port, &dev_class));
+
+    //read module type
+    type = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 0);
+    if (type < 0) {
+        AIM_LOG_ERROR("Port[%d] Addr(0x%02x): invalid module type=%d.\n", port, EEPROM_ADDR, type);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    for (i = 0; i < PORT_TYPE_DICT_SIZE ; ++i) {
+        if (type != port_type_dict[i].key) {
+            continue;
+        }
+        if (port_type_dict[i].value != dev_class) {
+            ONLP_TRY(onlp_sfpi_dev_class_set(port, port_type_dict[i].value));
+            AIM_LOG_INFO("Port[%d] Type(0x%02x): %d to %d.\n", port, type, dev_class, port_type_dict[i].value);
+            break;
+        } else { //dev_class is the same.
+            break;
+        }
+    }
+
+    if (i == PORT_TYPE_DICT_SIZE) {
+        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return port_type_dict[i].value;
+}
+
+/**
+ * @brief Update device class for QSFPDD ports
+ *
+ * This function updates the device class for a given QSFPDD port.
+ * It reads the current device class and module type, then checks against a dev type list
+ * to determine the correct device class.
+ * If the device class needs to be updated, it writes the new value to dev_class.
+ *
+ * @param port The port number. -1 for all ports.
+ * @return An error condition or current port dev_class.
+ */
+int onlp_sfpi_dev_class_update(int port)
+{
+    int rv = ONLP_STATUS_OK;
+
+    // single port update
+    if (port != ALL_PORTS) {
+        return onlp_sfpi_dev_class_update_port(port);
+    }
+
+    // Check all ports and only update all QSFPX ports
+    for (int i = 0; i < PORT_NUM; ++i) {
+        if(IS_QSFPX(i)) {
+            if (onlp_sfpi_dev_class_update_port(i) < 0) {
+                rv = ONLP_STATUS_E_INTERNAL;
+            }
+        }
+    }
+
+    return rv;
 }
 
 static int ufi_file_seek_writeb(const char *file, long offset, uint8_t value)
@@ -571,6 +721,66 @@ static int ufi_file_seek_readb(const char *file, long offset, uint8_t *value)
     }
 
     close(fd);
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Get SFF-8636 Port TX Disable Status by EEPROM
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_sff8636_txdisable_status_get(int port, int* status)
+{
+    uint8_t value = 0;
+
+    if (onlp_sfpi_is_present(port) != 1) {
+        return ONLP_STATUS_OK;
+    }
+
+    ONLP_TRY(value = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
+    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+    if (value == SFF8636_EEPROM_TX_DIS) {
+        *status = 1;
+    } else {
+        *status = 0;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Set SFF-8636 Port TX Disable Status by EEPROM
+ * @param port: The port number.
+ * @param status: 1 if tx disable (turn on)
+ * @param status: 0 if normal (turn off)
+ * @returns An error condition.
+ */
+static int ufi_sff8636_txdisable_status_set(int port, int status)
+{
+    uint8_t value = 0, readback = 0;
+
+    if (status == 0) {
+        value = SFF8636_EEPROM_TX_EN;
+    } else if (status == 1) {
+        value = SFF8636_EEPROM_TX_DIS;
+    } else {
+        AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+        return ONLP_STATUS_E_PARAM;
+    }
+
+    if (onlp_sfpi_is_present(port) != 1) {
+        return ONLP_STATUS_OK;
+    }
+
+    ONLP_TRY(onlp_sfpi_dev_writeb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS, value));
+    ONLP_TRY(readback = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
+    if (value != readback) {
+        AIM_LOG_ERROR("[%s] compare failed, write value=%d, readback=%d\n", __FUNCTION__, value, readback);
+        return ONLP_STATUS_E_INTERNAL;
+    }
 
     return ONLP_STATUS_OK;
 }
@@ -766,7 +976,7 @@ static int xfr_ctrl_to_sysfs(int port, onlp_sfp_control_t control , char **sysfs
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
-            if (IS_QSFPDD_NIF(port)||IS_QSFPDD_FAB(port)){
+            if (IS_QSFPX(port)){
                 
                 *sysfs = "";
                 *attr = port_attr[port].txdis;
@@ -811,6 +1021,7 @@ int onlp_sfpi_init(void)
 int onlp_sfpi_bitmap_get(onlp_sfp_bitmap_t* bmap)
 {
     int p;
+    AIM_BITMAP_CLR_ALL(bmap);
     for(p = 0; p < PORT_NUM; p++) {
         AIM_BITMAP_SET(bmap, p);
     }
@@ -1137,13 +1348,13 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int *rv)
 
     switch (control) {
         case ONLP_SFP_CONTROL_RESET:
-            if (IS_QSFPDD_FAB(port) || IS_QSFPDD_NIF(port)) {
+            if (IS_QSFPX(port)) {
                 *rv = 1;
             }
             break;
         case ONLP_SFP_CONTROL_RESET_STATE:
         case ONLP_SFP_CONTROL_LP_MODE:
-            if (IS_QSFPDD_FAB(port) || IS_QSFPDD_NIF(port)) {
+            if (IS_QSFPX(port)) {
                 *rv = 1;
             }
             break;
@@ -1158,7 +1369,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int *rv)
             }
             break;
         case ONLP_SFP_CONTROL_TX_DISABLE:
-            if (IS_QSFPDD_NIF(port) || IS_QSFPDD_FAB(port)) {
+            if (IS_QSFPX(port)) {
                 *rv = 1;
             }
             if (IS_SFP(port)) {
@@ -1184,6 +1395,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     int reg_val = 0;
     char *sysfs = NULL;
     int attr = 0;
+    int dev_class = 0;
 
     VALIDATE_PORT(port);
 
@@ -1192,7 +1404,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     {
         case ONLP_SFP_CONTROL_RESET:
             {
-                if (IS_QSFPX(port)||IS_QSFPDD_NIF(port) || IS_QSFPDD_FAB(port)) {
+                if (IS_QSFPX(port)) {
                     //reverse value
                     value = (value == 0) ? 1:0;
                 } else {
@@ -1203,18 +1415,23 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
-                if (IS_QSFPDD_NIF(port) || IS_QSFPDD_FAB(port)) {
-                    ONLP_TRY(ufi_cmis_txdisable_status_set(port, value));
-                    if (rc != ONLP_STATUS_OK) {
-                        return rc; 
+                if (IS_QSFPX(port)) {
+                    ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(port));
+
+                    if (dev_class == 1) { //SFF8636 module
+                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_set(port, value));
+                    } else if (dev_class == 3) { //CMIS module
+                        ONLP_TRY(rc = ufi_cmis_txdisable_status_set(port, value));
+                    } else {
+                        AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", port, dev_class);
+                        return ONLP_STATUS_E_UNSUPPORTED;
                     }
-                    return ONLP_STATUS_OK; 
                 }
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                if (IS_QSFPX(port)||IS_QSFPDD_NIF(port) || IS_QSFPDD_FAB(port)) {
+                if (IS_QSFPX(port)) {
                     break;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
@@ -1262,14 +1479,25 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
     int rc = ONLP_STATUS_OK;
     char *sysfs = NULL;
     int attr = 0;
+    int dev_class = 0;
 
     VALIDATE_PORT(port);
 
     //get sysfs
     ONLP_TRY(xfr_ctrl_to_sysfs(port, control, &sysfs, &attr));
 
-    if (control == ONLP_SFP_CONTROL_TX_DISABLE && (IS_QSFPDD_NIF(port)||IS_QSFPDD_FAB(port))) {
-        return ufi_cmis_txdisable_status_get(port, value);
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE && (IS_QSFPX(port))) {
+        ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(port));
+
+        if (dev_class == 1) { //SFF8636 module
+            ONLP_TRY(rc = ufi_sff8636_txdisable_status_get(port, value));
+        } else if (dev_class == 3) { //CMIS module
+            rc = ufi_cmis_txdisable_status_get(port, value);
+        } else {
+            AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", port, dev_class);
+            rc = ONLP_STATUS_E_UNSUPPORTED;
+        }
+        return rc;
     } 
     else {
         //read sysfs value

@@ -47,6 +47,7 @@
  *            |----[02] ONLP_LED_PSU0
  *            |----[03] ONLP_LED_PSU1
  *            |----[04] ONLP_LED_FAN
+ *            |----[05] ONLP_LED_ID
  *            |----[01] ONLP_PSU0----[13] ONLP_PSU0_FAN1
  *            |                 |----[07] ONLP_THERMAL_PSU0
  *            |
@@ -194,7 +195,8 @@ enum onlp_led_id {
     ONLP_LED_PSU0      = 2,
     ONLP_LED_PSU1      = 3,
     ONLP_LED_FAN       = 4,
-    ONLP_LED_MAX       = ONLP_LED_FAN+1,
+    ONLP_LED_ID        = 5,
+    ONLP_LED_MAX       = ONLP_LED_ID+1,
 };
 
 /* PSU definitions*/

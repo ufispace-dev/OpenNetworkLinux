@@ -397,10 +397,21 @@ int read_bmc_sensor(int bmc_cache_index, int sensor_type, bmc_info_t *data)
 
                 if (bmc_cache[i].plat & plat)
                 {
-                    char tmp_str[1024] = {0};
-                    int copy_size = (sizeof(bmc_token) - strlen(bmc_token) - 1) >= 0 ? (sizeof(bmc_token) - strlen(bmc_token) - 1) : 0;
-                    snprintf(tmp_str, sizeof(tmp_str), " %s", bmc_cache[i].name);
-                    snprintf(bmc_token + strlen(bmc_token), copy_size, "%s", tmp_str);
+                    int len = strlen(bmc_token);
+                    int remaining_size = sizeof(bmc_token) - len;
+
+                    if (remaining_size <= 1) {
+                        AIM_LOG_ERROR("%s() insufficient buffer space for attr id %d", __func__, i);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
+                    }
+
+                    int written = snprintf(bmc_token + len, remaining_size, " %s", bmc_cache[i].name);
+                    if (written < 0 || written >= remaining_size) {
+                        AIM_LOG_ERROR("%s() snprintf truncated for attr id %d", __func__, i);
+                        rv = ONLP_STATUS_E_INTERNAL;
+                        goto done;
+                    }
                 }
             }
 

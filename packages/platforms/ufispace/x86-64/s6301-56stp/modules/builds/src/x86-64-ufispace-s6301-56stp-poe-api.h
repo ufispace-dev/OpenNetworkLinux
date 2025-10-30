@@ -102,6 +102,10 @@
 /* output buffer size */
 #define OUT_BUF_SIZE 512
 
+/* for debug cmd */
+#define POE_CMD_BUF_SIZE 1024
+extern u8 g_poe_cmd_response_buf[POE_CMD_BUF_SIZE];
+
 /*=========================================================================
  *
  *      Type and Structure Definition Segment
@@ -942,6 +946,31 @@ s32 ufi_poe_SetPortDisconnectType(struct device *dev, u32 lport, E_BCM_POE_DISCO
  *--------------------------------------------------------------------------
  */
 s32 ufi_poe_SetPowerSourceConfiguration(struct device *dev, BCM_POE_BUDGE_T powerSourceInfo);
+
+/*--------------------------------------------------------------------------
+ *
+ *  FUNCTION NAME :
+ *      ufi_poe_SetPowerManagementMode
+ *
+ *  DESCRIPTION :
+ *      a API to get power management mode of PoE
+ *
+ *
+ *  INPUT :
+ *      dev - i2c device
+ *
+ *  OUTPUT :
+ *      powerManageMode - power management mode
+ *
+ *  RETURN :
+ *      error code
+ *
+ *  COMMENT :
+ *      none
+ *
+ *--------------------------------------------------------------------------
+ */
+s32 ufi_poe_GetPowerManagementMode(struct device *dev, u32 *powerManageMode);
 
 /*--------------------------------------------------------------------------
  *
