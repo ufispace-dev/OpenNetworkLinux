@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.0"
+TS_VERSION="1.0.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -95,7 +95,7 @@ OPT_BYPASS_I2C_COMMAND=${FALSE}
 
 function _echo {
     str="$@"
-    
+
     if [ "${LOG_FILE_ENABLE}" == "1" ] && [ -f "${LOG_FILE_PATH}" ]; then
         echo "${str}" >> "${LOG_FILE_PATH}"
     else
@@ -300,14 +300,14 @@ function _show_system_info {
     x86_uptime=`uptime`
     bmc_date=$(eval "ipmitool sel time get ${LOG_REDIRECT}")
     last_login=`last`
-    
+
     _echo "[X86 Date Time ]: ${x86_date}"
     _echo "[BMC Date Time ]: ${bmc_date}"
     _echo "[X86 Up Time   ]: ${x86_uptime}"
     _echo "[X86 Last Login]: "
     _echo "${last_login}"
     _echo ""
-    
+
     cmd_array=("uname -a" "cat /proc/cmdline" "cat /proc/ioports" \
                "cat /proc/iomem" "cat /proc/meminfo" \
                "cat /proc/sys/kernel/printk" \
@@ -510,7 +510,7 @@ function _cpld_version_i2c {
         mb_cpld2_ver=""
         mb_cpld3_ver=""
         mb_fpga_ver=""
-        
+
         mb_cpld1_build=""
         mb_cpld2_build=""
         mb_cpld3_build=""
@@ -547,7 +547,7 @@ function _cpld_version_i2c {
                 _printf "[MB FPGA  Version]: %d.%02d.%03d\n" $(( (mb_fpga_ver & 2#11000000) >> 6)) $(( mb_fpga_ver & 2#00111111 )) $((mb_fpga_build))
             fi
 
-            
+
 
             i2cset -y -f ${mux_i2c_bus} ${mux_i2c_addr} 0x0
         fi
@@ -747,7 +747,7 @@ function _show_i2c_tree_bus_mux_i2c {
             done
         fi
 
-   
+
         chip_addr1="0x73"
         _check_i2c_device "${bus}" "${chip_addr1}"
         ret=$?
@@ -1082,7 +1082,7 @@ function _get_port_attr_bit {
 function _show_port_status_sysfs {
     _banner "Show Port Status / EEPROM"
 
-    if [ "${MODEL_NAME}" == "${PLAT}" ]; then      
+    if [ "${MODEL_NAME}" == "${PLAT}" ]; then
 
         port_name_array=(
             "0"   "1"   "2"   "3"   "4"   "5"   "6"   "7"
@@ -1091,7 +1091,7 @@ function _show_port_status_sysfs {
             "24"  "25"  "26"  "27"  "28"  "29"  "30"  "31"
             "32"  "33"  "34"  "35"  "36"  "37"  "38"  "39"
             "40"  "41"  "42"  "43"  "44"  "45"  "46"  "47"
-            "48"  "49"  "50"  "51"  "52"  "53"  
+            "48"  "49"  "50"  "51"  "52"  "53"
         )
 
 
@@ -1105,29 +1105,29 @@ function _show_port_status_sysfs {
         #      8         9        10        11        12        13       14         15
             ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
         #      16        17       18        19        20        21       22         23
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
+            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
         #      24        25       26        27        28        29       30         31
             ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
 	    #      32        33       34        35        36        37       38         39
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
+            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
 	    #      40        41       42        43        45        46       47         48
-            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}  
-	    #      48        49       50        51        52        53          
+            ${SFP}    ${SFP}    ${SFP}    ${SFP}   ${SFP}    ${SFP}    ${SFP}    ${SFP}
+	    #      48        49       50        51        52        53
             ${QSFP}   ${QSFP}   ${QSFP}   ${QSFP}  ${QSFPDD} ${QSFPDD}
 
         )
 
         port_absent_array=(
-            "${SYSFS_CPLD2}/sfp28_p0_abs"             #0 
-            "${SYSFS_CPLD2}/sfp28_p1_abs"             #1 
-            "${SYSFS_CPLD2}/sfp28_p2_abs"             #2 
-            "${SYSFS_CPLD2}/sfp28_p3_abs"             #3 
-            "${SYSFS_CPLD2}/sfp28_p4_abs"             #4 
-            "${SYSFS_CPLD2}/sfp28_p5_abs"             #5 
-            "${SYSFS_CPLD2}/sfp28_p6_abs"             #6 
-            "${SYSFS_CPLD2}/sfp28_p7_abs"             #7 
-            "${SYSFS_CPLD2}/sfp28_p8_abs"             #8 
-            "${SYSFS_CPLD2}/sfp28_p9_abs"             #9 
+            "${SYSFS_CPLD2}/sfp28_p0_abs"             #0
+            "${SYSFS_CPLD2}/sfp28_p1_abs"             #1
+            "${SYSFS_CPLD2}/sfp28_p2_abs"             #2
+            "${SYSFS_CPLD2}/sfp28_p3_abs"             #3
+            "${SYSFS_CPLD2}/sfp28_p4_abs"             #4
+            "${SYSFS_CPLD2}/sfp28_p5_abs"             #5
+            "${SYSFS_CPLD2}/sfp28_p6_abs"             #6
+            "${SYSFS_CPLD2}/sfp28_p7_abs"             #7
+            "${SYSFS_CPLD2}/sfp28_p8_abs"             #8
+            "${SYSFS_CPLD2}/sfp28_p9_abs"             #9
             "${SYSFS_CPLD2}/sfp28_p10_abs"            #10
             "${SYSFS_CPLD2}/sfp28_p11_abs"            #11
             "${SYSFS_CPLD2}/sfp28_p12_abs"            #12
@@ -1342,7 +1342,7 @@ function _show_port_status_sysfs {
             ""                                          #50
             ""                                          #51
             ""                                          #52
-            ""                                          #53       
+            ""                                          #53
         )
 
         port_lp_mode_array=(
@@ -1512,8 +1512,8 @@ function _show_port_status_sysfs {
             "${SYSFS_CPLD3}/qsfp28_p49_intr"            #49
             "${SYSFS_CPLD3}/qsfp28_p50_intr"            #50
             "${SYSFS_CPLD3}/qsfp28_p51_intr"            #51
-            "${SYSFS_CPLD3}/qsfpdd_p52_intr"            #52 
-            "${SYSFS_CPLD3}/qsfpdd_p53_intr"            #53  
+            "${SYSFS_CPLD3}/qsfpdd_p52_intr"            #52
+            "${SYSFS_CPLD3}/qsfpdd_p53_intr"            #53
         )
 
         port_eeprom_bus_array=(
@@ -1529,8 +1529,8 @@ function _show_port_status_sysfs {
              50    51    52    53    54    55    56    57
         #    40    41    42    43    44    45    46    47
              58    59    60    61    62    63    64    65
-        #    48    49    50    51    52    53    
-             66    67    68    69    70    71   
+        #    48    49    50    51    52    53
+             66    67    68    69    70    71
         )
 
         # original port_abs
@@ -1539,7 +1539,7 @@ function _show_port_status_sysfs {
             local reg=""
             # Port Absent Status (0: Present, 1:Absence)
             local sysfs_path=${port_absent_array[i]}
-            
+
             if [ "${port_absent_array[${i}]}" != "-1" ] && _check_filepath ${sysfs_path}; then
                 reg=$(cat "${sysfs_path}")
                 port_absent="${reg}"
@@ -1547,7 +1547,7 @@ function _show_port_status_sysfs {
             fi
 
             # Port Tx Fault Status (0:normal, 1:tx fault)
-            
+
             sysfs_path=${port_tx_fault_array[i]}
 
             if [ "${port_type_array[${i}]}" == "${SFP}" ] && _check_filepath ${sysfs_path}; then
@@ -1706,7 +1706,7 @@ function _show_system_led_sysfs {
             "system_led_status"
             "sync_led_status"
             "fan_led_status"
-            "id_led_status"      
+            "id_led_status"
         )
 
         local desc_color=("Yellow" "Green" "Blue")
@@ -1763,7 +1763,7 @@ function _show_beacon_led_sysfs {
     #                      504   507   509   510   508   505   506
     local sgg7_right_off=( 7     4     2     1     3     6     5  )
     local sgg7_mum=( "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F")
-    local sgg7_value=( 
+    local sgg7_value=(
             "0000001"  # 0
             "1001111"  # 1
             "0010010"  # 2
@@ -1842,7 +1842,7 @@ function _show_ioport {
         _echo "${ret}"
     done
 
-    
+
 }
 
 function _show_cpld_reg_sysfs {
@@ -1858,7 +1858,7 @@ function _show_cpld_reg_sysfs {
         _echo "[CPLD 1 Register]:"
         _echo "${reg_dump}"
     fi
-     
+
     if _check_dirpath "$SYSFS_CPLD2"; then
         reg_dump=$(eval "i2cdump -f -y 2 0x31 ${LOG_REDIRECT}")
         _echo "[CPLD 2 Register]:"
@@ -1870,7 +1870,7 @@ function _show_cpld_reg_sysfs {
         _echo "[CPLD 3 Register]:"
         _echo "${reg_dump}"
     fi
-    
+
     if _check_dirpath "$SYSFS_FPGA"; then
         reg_dump=$(eval "i2cdump -f -y 2 0x37 ${LOG_REDIRECT}")
         _echo "[FPGA   Register]:"
@@ -2058,14 +2058,21 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/sda"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
+        local smartctl_commands=(
+        "smartctl -a /dev/sda"
+        "smartctl -x /dev/sda"
+        )
+
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
     fi
 
 }
@@ -2249,16 +2256,17 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
     fi
 }
 
@@ -2365,7 +2373,7 @@ function _main {
     _show_cpu_temperature
 #   _show_cpld_interrupt # Not support
     _show_system_led
-#    _show_beacon_led 
+#    _show_beacon_led
     _show_ioport
     _show_cpld_reg
     _show_onlpdump

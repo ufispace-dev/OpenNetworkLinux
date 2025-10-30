@@ -6,9 +6,38 @@ if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.3-bsp"
 silence=0
 MAC_RP="15:05.0"
+
+function _get_i2c_root {
+
+    i801_bus="-1"
+    ismt_bus="-1"
+    if [ -f "/sys/bus/i2c/devices/i2c-0/name" ]; then
+        i2c_root=`cat /sys/bus/i2c/devices/i2c-0/name`
+    fi
+
+    if echo "$i2c_root" | grep -q "I801"; then
+        i801_bus="0"
+    fi
+
+    if echo "$i2c_root" | grep -q "iSMT"; then
+        ismt_bus="0"
+    fi
+
+    if [ -f "/sys/bus/i2c/devices/i2c-1/name" ]; then
+        i2c_root=`cat /sys/bus/i2c/devices/i2c-1/name`
+    fi
+
+    if echo "$i2c_root" | grep -q "I801"; then
+        i801_bus="1"
+    fi
+
+    if echo "$i2c_root" | grep -q "iSMT"; then
+        ismt_bus="1"
+    fi
+}
 
 bus_num_check()
 {
@@ -17,8 +46,8 @@ bus_num_check()
         print_log "SYSFS exists, skip to set i2c mux...\n"
         i2c_bus_f="-f 1"
     else
-        i2cset -y 0 0x71 ${set_value}
-        i2c_bus_f="0"
+        i2cset -y ${i801_bus} 0x71 ${set_value}
+        i2c_bus_f=${i801_bus}
     fi
 }
 
@@ -99,7 +128,7 @@ remove_dev()
 {
     case "${1}" in
     "mac")
-        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 15:05.0 0x19.b)\:00.0/remove
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s ${MAC_RP} 0x19.b)\:00.0/remove
         sleep 1
         ;;
     *)
@@ -140,6 +169,27 @@ enable_common_clk()
     "mac")
         setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b=0x40
         sleep 0.1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+retrain_link()
+{
+    case "${1}" in
+    "mac")
+        # Read Link Control Register (LNKCTL)
+        lc_val=$(setpci -s ${MAC_RP} LNKCTL)
+
+        # Set Bit 5 (Retrain Link, 0x20) to 1
+        new_lc_val=$(printf "%04x" $(("0x$lc_val" | 0x20)))
+
+        # Write the new value back to the Link Control Register to trigger the retrain
+        setpci -s ${MAC_RP} LNKCTL=${new_lc_val}
+        sleep 1
         ;;
     *)
         print_log "Invalid Parameters\n"
@@ -302,6 +352,10 @@ reset_mac()
     enable_common_clk mac
     print_log "done\n"
 
+    print_log "Retrain MAC PCIe Link......"
+    retrain_link mac
+    print_log "done\n"
+
     print_log "\nAfter MAC Warm Reset ...\n"
     get_pcie_status mac
 
@@ -357,6 +411,7 @@ main()
     esac
 }
 
+_get_i2c_root
 main ${1} ${2} ${3} ${4} ${5} ${6} ${7} ${8} ${9} ${10}
 
 exit 0

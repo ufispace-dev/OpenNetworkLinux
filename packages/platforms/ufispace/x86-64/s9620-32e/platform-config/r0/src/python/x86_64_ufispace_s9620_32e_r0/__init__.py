@@ -92,6 +92,84 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
     PATH_FPGA_PCI_EN=PATH_LPC_GRP_BSP+"/bsp_fpga_pci_enable"
     FPGA_PCI_ENABLE=0
 
+    port_type_dict = {
+        0x03: [2, 'SFP/SFP+/SFP28'],  # [dev_class, type_str]
+        0x0B: [2, 'DWDM-SFP/SFP+'],
+        0x0C: [1, 'QSFP'],
+        0x0D: [1, 'QSFP+'],
+        0x11: [1, 'QSFP28'],
+        0x18: [3, 'QSFP-DD Double Density 8x (INF-8628)'],
+        0x19: [3, 'OSFP 8x Pluggable Transceiver'],
+        0x1E: [3, 'QSFP+ or later with CMIS spec'],
+        0x1F: [3, 'SFP-DD Double Density 2X Pluggable Transceiver with CMIS spec'],
+    }
+
+    port_conf = {
+        0:  {"type": "QSFPDD_NIF" , "bus": 18, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p0_abs" }},
+        1:  {"type": "QSFPDD_NIF" , "bus": 19, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p1_abs" }},
+        2:  {"type": "QSFPDD_NIF" , "bus": 20, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p2_abs" }},
+        3:  {"type": "QSFPDD_NIF" , "bus": 21, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p3_abs" }},
+        4:  {"type": "QSFPDD_NIF" , "bus": 22, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p4_abs" }},
+        5:  {"type": "QSFPDD_NIF" , "bus": 23, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p5_abs" }},
+        6:  {"type": "QSFPDD_NIF" , "bus": 24, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p6_abs" }},
+        7:  {"type": "QSFPDD_NIF" , "bus": 25, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p7_abs" }},
+        8:  {"type": "QSFPDD_NIF" , "bus": 26, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p8_abs" }},
+        9:  {"type": "QSFPDD_NIF" , "bus": 27, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p9_abs" }},
+        10: {"type": "QSFPDD_NIF" , "bus": 28, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p10_abs"}},
+        11: {"type": "QSFPDD_NIF" , "bus": 29, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p11_abs"}},
+        12: {"type": "QSFPDD_NIF" , "bus": 30, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p12_abs"}},
+        13: {"type": "QSFPDD_NIF" , "bus": 31, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p13_abs"}},
+        14: {"type": "QSFPDD_NIF" , "bus": 32, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p14_abs"}},
+        15: {"type": "QSFPDD_NIF" , "bus": 33, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD2+"/qsfpdd_p15_abs"}},
+        16: {"type": "QSFPDD_NIF" , "bus": 34, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p16_abs"}},
+        17: {"type": "QSFPDD_NIF" , "bus": 35, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p17_abs"}},
+        18: {"type": "QSFPDD_NIF" , "bus": 36, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p18_abs"}},
+        19: {"type": "QSFPDD_NIF" , "bus": 37, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p19_abs"}},
+        20: {"type": "QSFPDD_NIF" , "bus": 38, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p20_abs"}},
+        21: {"type": "QSFPDD_NIF" , "bus": 39, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p21_abs"}},
+        22: {"type": "QSFPDD_NIF" , "bus": 40, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p22_abs"}},
+        23: {"type": "QSFPDD_NIF" , "bus": 41, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p23_abs"}},
+        24: {"type": "QSFPDD_NIF" , "bus": 42, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p24_abs"}},
+        25: {"type": "QSFPDD_NIF" , "bus": 43, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p25_abs"}},
+        26: {"type": "QSFPDD_NIF" , "bus": 44, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p26_abs"}},
+        27: {"type": "QSFPDD_NIF" , "bus": 45, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p27_abs"}},
+        28: {"type": "QSFPDD_NIF" , "bus": 46, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p28_abs"}},
+        29: {"type": "QSFPDD_NIF" , "bus": 47, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p29_abs"}},
+        30: {"type": "QSFPDD_NIF" , "bus": 48, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p30_abs"}},
+        31: {"type": "QSFPDD_NIF" , "bus": 49, "driver": "optoe3", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD3+"/qsfpdd_p31_abs"}},
+        32: {"type": "SFP"        , "bus": 52, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/sfp_p32_abs"   }},
+        33: {"type": "SFP"        , "bus": 53, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/sfp_p33_abs"   }},
+        34: {"type": "SFP"        , "bus": 54, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/sfp_p34_abs"   }},
+        35: {"type": "SFP"        , "bus": 55, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/sfp_p35_abs"   }},
+        36: {"type": "MGMT"       , "bus": 50, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/mgmt_p0_abs"   }},
+        37: {"type": "MGMT"       , "bus": 51, "driver": "optoe2", "abs": {'type': 'sysfs', 'data': PATH_I2C_CPLD4+"/mgmt_p1_abs"   }},
+    }
+
+    gpio_map = {
+        # 511:{'offset':  0  , 'dir': 'low'   , 'desc': "ID LED"},
+    }
+
+    def get_conf(self, board=None):
+        if board is None:
+            gpio_map = self.gpio_map
+            port_conf = self.port_conf
+        elif board['hw_rev'] == 0:
+            gpio_map = self.gpio_map_proto if hasattr(self, 'gpio_map_proto') else self.gpio_map
+            port_conf = self.port_conf_proto if hasattr(self, 'port_conf_proto') else self.port_conf
+        elif board['hw_rev'] == 1:
+            gpio_map = self.gpio_map_alpha if hasattr(self, 'gpio_map_alpha') else self.gpio_map
+            port_conf = self.port_conf_alpha if hasattr(self, 'port_conf_alpha') else self.port_conf
+        elif board['hw_rev'] == 2:
+            gpio_map = self.gpio_map_beta if hasattr(self, 'gpio_map_beta') else self.gpio_map
+            port_conf = self.port_conf_beta if hasattr(self, 'port_conf_beta') else self.port_conf
+        elif board['hw_rev'] == 3:
+            gpio_map = self.gpio_map_pvt if hasattr(self, 'gpio_map_pvt') else self.gpio_map
+            port_conf = self.port_conf_pvt if hasattr(self, 'port_conf_pvt') else self.port_conf
+        else:
+            gpio_map = self.gpio_map
+            port_conf = self.port_conf
+        return (port_conf, gpio_map)
+
     def check_bmc_enable(self):
         return 1
 
@@ -256,57 +334,92 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
 
     def init_eeprom(self):
         data = None
-        port_eeprom = {
-            0:  {"type": "QSFPDD_NIF" , "bus": 18, "driver": "optoe3"},
-            1:  {"type": "QSFPDD_NIF" , "bus": 19, "driver": "optoe3"},
-            2:  {"type": "QSFPDD_NIF" , "bus": 20, "driver": "optoe3"},
-            3:  {"type": "QSFPDD_NIF" , "bus": 21, "driver": "optoe3"},
-            4:  {"type": "QSFPDD_NIF" , "bus": 22, "driver": "optoe3"},
-            5:  {"type": "QSFPDD_NIF" , "bus": 23, "driver": "optoe3"},
-            6:  {"type": "QSFPDD_NIF" , "bus": 24, "driver": "optoe3"},
-            7:  {"type": "QSFPDD_NIF" , "bus": 25, "driver": "optoe3"},
-            8:  {"type": "QSFPDD_NIF" , "bus": 26, "driver": "optoe3"},
-            9:  {"type": "QSFPDD_NIF" , "bus": 27, "driver": "optoe3"},
-            10: {"type": "QSFPDD_NIF" , "bus": 28, "driver": "optoe3"},
-            11: {"type": "QSFPDD_NIF" , "bus": 29, "driver": "optoe3"},
-            12: {"type": "QSFPDD_NIF" , "bus": 30, "driver": "optoe3"},
-            13: {"type": "QSFPDD_NIF" , "bus": 31, "driver": "optoe3"},
-            14: {"type": "QSFPDD_NIF" , "bus": 32, "driver": "optoe3"},
-            15: {"type": "QSFPDD_NIF" , "bus": 33, "driver": "optoe3"},
-            16: {"type": "QSFPDD_NIF" , "bus": 34, "driver": "optoe3"},
-            17: {"type": "QSFPDD_NIF" , "bus": 35, "driver": "optoe3"},
-            18: {"type": "QSFPDD_NIF" , "bus": 36, "driver": "optoe3"},
-            19: {"type": "QSFPDD_NIF" , "bus": 37, "driver": "optoe3"},
-            20: {"type": "QSFPDD_NIF" , "bus": 38, "driver": "optoe3"},
-            21: {"type": "QSFPDD_NIF" , "bus": 39, "driver": "optoe3"},
-            22: {"type": "QSFPDD_NIF" , "bus": 40, "driver": "optoe3"},
-            23: {"type": "QSFPDD_NIF" , "bus": 41, "driver": "optoe3"},
-            24: {"type": "QSFPDD_NIF" , "bus": 42, "driver": "optoe3"},
-            25: {"type": "QSFPDD_NIF" , "bus": 43, "driver": "optoe3"},
-            26: {"type": "QSFPDD_NIF" , "bus": 44, "driver": "optoe3"},
-            27: {"type": "QSFPDD_NIF" , "bus": 45, "driver": "optoe3"},
-            28: {"type": "QSFPDD_NIF" , "bus": 46, "driver": "optoe3"},
-            29: {"type": "QSFPDD_NIF" , "bus": 47, "driver": "optoe3"},
-            30: {"type": "QSFPDD_NIF" , "bus": 48, "driver": "optoe3"},
-            31: {"type": "QSFPDD_NIF" , "bus": 49, "driver": "optoe3"},
-            32: {"type": "SFP"        , "bus": 50, "driver": "optoe2"},
-            33: {"type": "SFP"        , "bus": 51, "driver": "optoe2"},
-            34: {"type": "SFP"        , "bus": 52, "driver": "optoe2"},
-            35: {"type": "SFP"        , "bus": 53, "driver": "optoe2"},
-            36: {"type": "MGMT"       , "bus": 54, "driver": "optoe2"},
-            37: {"type": "MGMT"       , "bus": 55, "driver": "optoe2"},
-        }
 
         with open(self.PATH_PORT_CONFIG, 'r') as yaml_file:
             data = yaml.safe_load(yaml_file)
 
         # config eeprom
-        for port, config in port_eeprom.items():
+        port_conf, _ = self.get_conf()
+        for port, config in port_conf.items():
             addr=0x50
             self.new_i2c_device(config["driver"], addr, config["bus"])
             port_name = data[config["type"]][port]["port_name"]
             sysfs=self.PATH_SYS_I2C_DEV_ATTR.format( config["bus"], addr, "port_name")
             os.system("echo {} > {}".format(port_name, sysfs))
+
+    def get_port_presence(self, port, gpio_max=511, gpio_base=0, board=None):
+        try:
+            port_conf, gpio_map = self.get_conf(board)
+            if port not in port_conf:
+                return False
+
+            abs_type = port_conf[port]['abs'].get('type')
+            abs_data = port_conf[port]['abs'].get('data')
+            abs_bit = port_conf[port]['abs'].get('bit', 0)
+            if abs_type == 'gpio':
+                if gpio_max < 0:
+                    gpio_num = gpio_base + gpio_map[abs_data]['offset'].get("base")
+                else:
+                    gpio_num = gpio_max - gpio_map[abs_data]['offset'].get("max")
+                    sysfs = "{}/gpio{}/value".format(self.PATH_SYS_GPIO, gpio_num)
+            elif abs_type == 'sysfs':
+                sysfs = abs_data
+            else:
+                return False
+
+            with open(sysfs, "r") as f:
+                present_raw = f.read().strip()
+
+            reg_val = (int(present_raw, 0) & (1 << abs_bit))
+            pres_status = True if reg_val == 0 else False
+
+            return pres_status
+
+        except:
+            return False
+
+    def update_dev_class(self, gpio_max=511, gpio_base=0, board=None):
+        port_conf, _ = self.get_conf(board)
+
+        for port, config in port_conf.items():  # QSFPX ports
+
+            if config.get('type') not in ['QSFPDD_NIF']:
+                continue
+
+            # check module presence
+            if not self.get_port_presence(port, gpio_max, gpio_base, board):
+                continue
+
+            bus = config.get('bus')
+            # get dev_class
+            sysfs = "/sys/bus/i2c/devices/{}-0050/dev_class".format(bus)
+            cmd = ["cat", sysfs]
+            dev_class_str = subprocess.check_output(cmd)
+            dev_class = int(dev_class_str, 10)
+
+            # get port type
+            cmd = ["dd", "if=/sys/bus/i2c/devices/{}-0050/eeprom".format(bus), "bs=1", "count=1", "skip=0", "status=none"]
+            output = subprocess.check_output(cmd)
+            hex_str = unpack('B', output)[0]
+            type_str = "{:02x}".format(hex_str)
+            if type_str == "": #i2c maybe stuck
+                self.check_i2c_status()
+                continue
+            port_type = int(type_str, 16)
+
+            # check if port_type is in port_type_dict
+            if port_type not in self.port_type_dict:
+                self.bsp_pr("Port[{}] Type: {} is Unknown.".format(port, hex(port_type)))
+                continue
+
+            # check if dev_class matches port_type_dev_class
+            port_type_dev_class = self.port_type_dict.get(port_type)[0]
+            if dev_class != port_type_dev_class:
+                with open(sysfs, "w") as f:
+                    f.write("{}".format(port_type_dev_class))
+                self.bsp_pr("Port[{}] dev_class is changed from {} to {}".format(port, dev_class, port_type_dev_class))
+
+        self.bsp_pr("Please run ONLP API onlp_sfpi_dev_class_update() after inserting QSFP/QSFPDD modules at runtime")
 
     def enable_ipmi_maintenance_mode(self):
         ipmi_ioctl = IPMI_Ioctl()
@@ -549,6 +662,9 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")
+
+        # init dev_class for CMIS/non-CMIS modules
+        self.update_dev_class()
 
         self.bsp_pr("Init done")
 

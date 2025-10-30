@@ -37,8 +37,8 @@ static const warm_reset_data_t warm_reset_data[] = {
 //                           unit_max | dev | unit
     [WARM_RESET_ALL]      = {-1,      "all", NULL},
     [WARM_RESET_MAC]      = {MAC_MAX, "mac", mac_unit_str},
-    [WARM_RESET_PHY]      = {-1,      "phy", NULL},
-    [WARM_RESET_RETIMER]  = {-1,      "retimer", NULL},
+    [WARM_RESET_PHY]      = {-1,      "phy", NULL}, 
+    [WARM_RESET_RETIMER]  = {-1,      NULL, NULL}, //not support
     [WARM_RESET_MUX]      = {-1,      NULL, NULL}, //not support
     [WARM_RESET_OP2]      = {-1,      NULL, NULL}, //not support
     [WARM_RESET_GB]       = {-1,      NULL, NULL}, //not support

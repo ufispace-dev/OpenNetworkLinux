@@ -6,6 +6,7 @@ if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
+VER="0.0.2-bsp"
 silence=0
 
 print_log()
@@ -52,24 +53,24 @@ get_model()
 help()
 {
     echo ""
-    echo "== Utility for reset operation =="
-    echo "Format: ${0} <target> [<silent>]"
+    echo "== Utility for reset operation (Version ${VER}) =="
+    echo "Format: ${0} <target|help|version> [<silent>]"
     echo "  target:"
     echo "    mac  : Reset MAC"
     if [ "${model}" == "NCP1-3_OP2" ]; then
         echo "    op2  : Reset OP2"
     fi
     echo "    gb   : Reset BCM81724"
+    echo "  help: Show command help"
+    echo "  version: Show script version"
     echo "  silent(optional): Don't display reset result"
     echo ""
 }
 
-#print_log()
-#{
-#    if [ ${silence} -ne 1 ]; then
-#        printf "${1}"
-#    fi
-#}
+show_ver()
+{
+    echo "== Utility for reset operation (Version ${VER}) =="
+}
 
 get_pcie_status()
 {
@@ -143,13 +144,13 @@ set_2nd_bus_reset()
             #sleep 0.1
             bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
             setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-            sleep 0.1
+            sleep 1
         else
             #setpci -s 16:00.0 0x3e.b
             #sleep 0.1
             bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
             setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-            sleep 0.1
+            sleep 1
         fi
         ;;
     "op2")
@@ -158,13 +159,13 @@ set_2nd_bus_reset()
             #sleep 0.1
             bc=$(setpci -s 16:01.0 BRIDGE_CONTROL)
             setpci -s 16:01.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-            sleep 0.1
+            sleep 1
         else
             #setpci -s 16:01.0 0x3e.b
             #sleep 0.1
             bc=$(setpci -s 16:01.0 BRIDGE_CONTROL)
             setpci -s 16:01.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-            sleep 0.1
+            sleep 1
         fi
         ;;
     *)
@@ -364,10 +365,12 @@ main()
 
     case ${1} in
     "mac")
+        show_ver
         reset_mac
         ;;
     "op2")
         if [ "${model}" == "NCP1-3_OP2" ]; then
+            show_ver
             reset_op2
         else
             print_log "\n"
@@ -377,9 +380,11 @@ main()
         fi
         ;;
     "gb")
+        show_ver
         reset_gb
         ;;
     "all")
+        show_ver
         if [ "${model}" == "NCP1-3_OP2" ]; then
             reset_op2
             sleep 1
@@ -391,6 +396,9 @@ main()
         ;;
     "help")
         help
+        ;;
+    "version")
+        show_ver
         ;;
     *)
         print_log "\n"

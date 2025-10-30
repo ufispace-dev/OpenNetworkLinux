@@ -203,7 +203,7 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
 
     def init_dev_class(self):
         # init dev_class
-        for bus in range(25, 65):  # QSFP
+        for bus in range(25, 73):  # QSFP+QSFPDD
             # get dev_class
             port = bus - 25
             dev_class_sysfs_path = "/sys/bus/i2c/devices/{}-0050/dev_class".format(bus)

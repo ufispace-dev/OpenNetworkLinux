@@ -19,7 +19,7 @@
  */
 
 #ifndef UFISPACE_S6301_56STP_POE_MODULE_H
-#define UFISPACE_S6301_56STP_POE_MODUEL_H
+#define UFISPACE_S6301_56STP_POE_MODULE_H
 
 /* POE device index value */
 enum poe_id
@@ -73,6 +73,10 @@ enum poe_sysfs_attributes
     POE_PSE_TEMPERATURE = 10008,
     POE_PSE_STATUS = 10009,
     POE_PSE_POWER_LIMIT_MODE = 10010,
+    /* internal debug */
+    POE_CMD_DEBUG = 10011, 
+    POE_POWER_MANAGEMENT_MODE = 10012,
+    /* port */
     POE_PORT_ATTR_INDEX(0, 1),
     POE_PORT_ATTR_INDEX(1, 2),
     POE_PORT_ATTR_INDEX(2, 3),

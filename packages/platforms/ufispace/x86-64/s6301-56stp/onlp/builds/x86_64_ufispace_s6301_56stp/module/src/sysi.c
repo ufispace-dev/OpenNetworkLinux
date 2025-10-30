@@ -91,6 +91,32 @@ static onlp_oid_t __onlp_oid_info[] = {
     //ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
 };
 
+static onlp_oid_t __onlp_oid_info_1psu[] = {
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FAN1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_FAN2),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSUDB),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_INLET),
+    //ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU0),
+    //ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_PSU1),
+    ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_CPU_PKG),
+
+    ONLP_LED_ID_CREATE(ONLP_LED_ID),
+    ONLP_LED_ID_CREATE(ONLP_LED_SYS),
+    ONLP_LED_ID_CREATE(ONLP_LED_POE),
+    ONLP_LED_ID_CREATE(ONLP_LED_SPD),
+    ONLP_LED_ID_CREATE(ONLP_LED_FAN),
+    ONLP_LED_ID_CREATE(ONLP_LED_LNK),
+    ONLP_LED_ID_CREATE(ONLP_LED_PWR1),
+
+    ONLP_PSU_ID_CREATE(ONLP_PSU_1),
+
+    ONLP_FAN_ID_CREATE(ONLP_FAN_0),
+    ONLP_FAN_ID_CREATE(ONLP_FAN_1),
+    //ONLP_FAN_ID_CREATE(ONLP_PSU_0_FAN),
+    //ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
+};
+
 static int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     uint8_t mb_cpld_ver_h[16];
@@ -287,8 +313,14 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
  */
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
-    memset(table, 0, max*sizeof(onlp_oid_t));
-    memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
+
+    if(get_hw_ext_id() == SKU_POE_1PSU) {
+        memset(table, 0, max*sizeof(onlp_oid_t));
+        memcpy(table, __onlp_oid_info_1psu, sizeof(__onlp_oid_info_1psu));
+    } else {
+        memset(table, 0, max*sizeof(onlp_oid_t));
+        memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
+    }
 
     return ONLP_STATUS_OK;
 }

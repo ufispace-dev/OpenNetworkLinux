@@ -88,6 +88,14 @@
 //I2C Alert
 #define REG_ALERT_STATUS                  (REG_BASE_I2C_ALERT + 0x80)
 
+//Thermal
+#define REG_TEMP_MAC0_PVT0               (REG_BASE_MB + 0xC0)
+#define REG_TEMP_MAC0_PVT1               (REG_BASE_MB + 0xC1)
+#define REG_TEMP_MAC0_PVT2               (REG_BASE_MB + 0xC2)
+#define REG_TEMP_MAC0_PVT3               (REG_BASE_MB + 0xC3)
+#define REG_TEMP_MAC0_PVT4               (REG_BASE_MB + 0xC4)
+#define REG_TEMP_MAC0_HBM0               (REG_BASE_MB + 0xC5)
+
 #define MASK_ALL             (0xFF)
 #define MASK_NONE            (0x00)
 #define MASK_0000_0011       (0x03)
@@ -137,6 +145,14 @@ enum lpc_sysfs_attributes {
 
     //I2C Alert
     ATT_ALERT_STATUS,
+
+    //Thermal
+    ATT_TEMP_MAC0_PVT0,
+    ATT_TEMP_MAC0_PVT1,
+    ATT_TEMP_MAC0_PVT2,
+    ATT_TEMP_MAC0_PVT3,
+    ATT_TEMP_MAC0_PVT4,
+    ATT_TEMP_MAC0_HBM0,
 
     //BSP
     ATT_BSP_VERSION,
@@ -195,6 +211,14 @@ attr_reg_map_t attr_reg[]= {
     //I2C Alert
     [ATT_ALERT_STATUS]        = {REG_ALERT_STATUS     , MASK_0010_0000, DATA_DEC},
 
+    //Thermal
+    [ATT_TEMP_MAC0_PVT0]      = {REG_TEMP_MAC0_PVT0   , MASK_ALL     , DATA_S_DEC},
+    [ATT_TEMP_MAC0_PVT1]      = {REG_TEMP_MAC0_PVT1   , MASK_ALL     , DATA_S_DEC},
+    [ATT_TEMP_MAC0_PVT2]      = {REG_TEMP_MAC0_PVT2   , MASK_ALL     , DATA_S_DEC},
+    [ATT_TEMP_MAC0_PVT3]      = {REG_TEMP_MAC0_PVT3   , MASK_ALL     , DATA_S_DEC},
+    [ATT_TEMP_MAC0_PVT4]      = {REG_TEMP_MAC0_PVT4   , MASK_ALL     , DATA_S_DEC},
+    [ATT_TEMP_MAC0_HBM0]      = {REG_TEMP_MAC0_HBM0   , MASK_ALL     , DATA_S_DEC},
+
     //BSP
     [ATT_BSP_VERSION]         = {REG_NONE         , MASK_NONE, DATA_UNK},
     [ATT_BSP_DEBUG]           = {REG_NONE         , MASK_NONE, DATA_UNK},
@@ -230,6 +254,7 @@ char bsp_reg[8]="0x0";
 u8 enable_log_read  = LOG_DISABLE;
 u8 enable_log_write = LOG_DISABLE;
 u8 enable_log_sys   = LOG_ENABLE;
+u8 mailbox_inited=0;
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -275,6 +300,8 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
         return sprintf(buf, "0x%02x", data);
     } else if(data_type == DATA_DEC) {
         return sprintf(buf, "%u", data);
+    } else if(data_type == DATA_S_DEC) {
+        return sprintf(buf, "%d", (s8)data);
     } else {
         return -1;
     }
@@ -328,6 +355,52 @@ static void _outb(u8 data, u16 port)
 {
     outb(data, port);
     mdelay(LPC_MDELAY);
+}
+
+/* init bmc mailbox */
+static int bmc_mailbox_init(void)
+{
+    if (mailbox_inited) {
+        return mailbox_inited;
+    }
+
+    //Enable super io writing
+    _outb(0xa5, 0x2e);
+    _outb(0xa5, 0x2e);
+
+    //Logic device number
+    _outb(0x07, 0x2e);
+    _outb(0x0e, 0x2f);
+
+    //Disable mailbox
+    _outb(0x30, 0x2e);
+    _outb(0x00, 0x2f);
+
+    //Set base address bit
+    _outb(0x60, 0x2e);
+    _outb(0x0e, 0x2f);
+    _outb(0x61, 0x2e);
+    _outb(0xc0, 0x2f);
+
+    //Select bit[3:0] of SIRQ
+    _outb(0x70, 0x2e);
+    _outb(0x07, 0x2f);
+
+    //Low level trigger
+    _outb(0x71, 0x2e);
+    _outb(0x01, 0x2f);
+
+    //Enable mailbox
+    _outb(0x30, 0x2e);
+    _outb(0x01, 0x2f);
+
+    //Disable super io writing
+    _outb(0xaa, 0x2e);
+
+    //set mailbox_inited
+    mailbox_inited = 1;
+
+    return mailbox_inited;
 }
 
 /* get lpc register value */
@@ -532,6 +605,14 @@ static ssize_t lpc_callback_show(struct device *dev,
         //BSP
         case ATT_BSP_GPIO_MAX:
         case ATT_BSP_GPIO_BASE:
+
+        //Thermal
+        case ATT_TEMP_MAC0_PVT0:
+        case ATT_TEMP_MAC0_PVT1:
+        case ATT_TEMP_MAC0_PVT2:
+        case ATT_TEMP_MAC0_PVT3:
+        case ATT_TEMP_MAC0_PVT4:
+        case ATT_TEMP_MAC0_HBM0:
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
             data_type = attr_reg[attr->index].data_type;
@@ -545,6 +626,16 @@ static ssize_t lpc_callback_show(struct device *dev,
         default:
             return -EINVAL;
     }
+
+    if(attr->index == ATT_TEMP_MAC0_PVT0 ||
+       attr->index == ATT_TEMP_MAC0_PVT1 ||
+       attr->index == ATT_TEMP_MAC0_PVT2 ||
+       attr->index == ATT_TEMP_MAC0_PVT3 ||
+       attr->index == ATT_TEMP_MAC0_PVT4 ||
+       attr->index == ATT_TEMP_MAC0_HBM0) {
+            bmc_mailbox_init();
+    }
+
     return lpc_reg_read(reg, mask, buf, data_type);
 }
 
@@ -560,6 +651,14 @@ static ssize_t lpc_callback_store(struct device *dev,
     switch (attr->index) {
         // MB CPLD
         case ATT_MB_MUX_CTRL:
+
+        //Thermal
+        case ATT_TEMP_MAC0_PVT0:
+        case ATT_TEMP_MAC0_PVT1:
+        case ATT_TEMP_MAC0_PVT2:
+        case ATT_TEMP_MAC0_PVT3:
+        case ATT_TEMP_MAC0_PVT4:
+        case ATT_TEMP_MAC0_HBM0:
             reg = attr_reg[attr->index].reg;
             mask= attr_reg[attr->index].mask;
             data_type = attr_reg[attr->index].data_type;
@@ -567,6 +666,16 @@ static ssize_t lpc_callback_store(struct device *dev,
         default:
             return -EINVAL;
     }
+
+    if(attr->index == ATT_TEMP_MAC0_PVT0 ||
+       attr->index == ATT_TEMP_MAC0_PVT1 ||
+       attr->index == ATT_TEMP_MAC0_PVT2 ||
+       attr->index == ATT_TEMP_MAC0_PVT3 ||
+       attr->index == ATT_TEMP_MAC0_PVT4 ||
+       attr->index == ATT_TEMP_MAC0_HBM0) {
+            bmc_mailbox_init();
+    }
+
     return lpc_reg_write(reg, mask, buf, count, data_type);
 
 }
@@ -767,6 +876,14 @@ static SENSOR_DEVICE_ATTR_RO(bsp_reg_value       , lpc_callback     , ATT_BSP_RE
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_max        , gpio_max         , ATT_BSP_GPIO_MAX);
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_base       , gpio_base        , ATT_BSP_GPIO_BASE);
 
+//SENSOR_DEVICE_ATTR - Thermal
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt0      , lpc_callback     , ATT_TEMP_MAC0_PVT0);
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt1      , lpc_callback     , ATT_TEMP_MAC0_PVT1);
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt2      , lpc_callback     , ATT_TEMP_MAC0_PVT2);
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt3      , lpc_callback     , ATT_TEMP_MAC0_PVT3);
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_pvt4      , lpc_callback     , ATT_TEMP_MAC0_PVT4);
+static SENSOR_DEVICE_ATTR_RW(temp_mac0_hbm0      , lpc_callback     , ATT_TEMP_MAC0_HBM0);
+
 static struct attribute *mb_cpld_attrs[] = {
     _DEVICE_ATTR(board_id_0),
     _DEVICE_ATTR(board_sku_id),
@@ -808,6 +925,16 @@ static struct attribute *i2c_alert_attrs[] = {
     NULL,
 };
 
+static struct attribute *temp_attrs[] = {
+    _DEVICE_ATTR(temp_mac0_pvt0),
+    _DEVICE_ATTR(temp_mac0_pvt1),
+    _DEVICE_ATTR(temp_mac0_pvt2),
+    _DEVICE_ATTR(temp_mac0_pvt3),
+    _DEVICE_ATTR(temp_mac0_pvt4),
+    _DEVICE_ATTR(temp_mac0_hbm0),
+    NULL,
+};
+
 static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_version),
     _DEVICE_ATTR(bsp_debug),
@@ -840,6 +967,11 @@ static struct attribute_group i2c_alert_attr_grp = {
     .attrs = i2c_alert_attrs,
 };
 
+static struct attribute_group temp_attr_grp = {
+    .name = "temp",
+    .attrs = temp_attrs,
+};
+
 static struct attribute_group bsp_attr_grp = {
     .name = "bsp",
     .attrs = bsp_attrs,
@@ -860,8 +992,8 @@ static struct platform_device lpc_dev = {
 
 static int lpc_drv_probe(struct platform_device *pdev)
 {
-    int i = 0, grp_num = 5;
-    int err[5] = {0};
+    int i = 0, grp_num = 6;
+    int err[6] = {0};
     struct attribute_group *grp;
 
     lpc_data = devm_kzalloc(&pdev->dev, sizeof(struct lpc_data_s),
@@ -887,6 +1019,9 @@ static int lpc_drv_probe(struct platform_device *pdev)
                 break;
             case 4:
                 grp = &bsp_attr_grp;
+                break;
+            case 5:
+                grp = &temp_attr_grp;
                 break;
             default:
                 break;
@@ -921,6 +1056,9 @@ exit:
             case 4:
                 grp = &bsp_attr_grp;
                 break;
+            case 5:
+                grp = &temp_attr_grp;
+                break;
             default:
                 break;
         }
@@ -944,6 +1082,7 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
+    sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
 
     return 0;
 }

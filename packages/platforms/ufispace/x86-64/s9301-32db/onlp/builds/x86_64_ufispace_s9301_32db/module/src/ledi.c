@@ -32,11 +32,13 @@
  *            |----[02] ONLP_LED_PSU0
  *            |----[03] ONLP_LED_PSU1
  *            |----[04] ONLP_LED_FAN
+ *            |----[05] ONLP_LED_ID
  */
 
 #define LED_STATUS ONLP_LED_STATUS_PRESENT
 #define LED_CAPS   ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_YELLOW | ONLP_LED_CAPS_YELLOW_BLINKING | \
                    ONLP_LED_CAPS_GREEN | ONLP_LED_CAPS_GREEN_BLINKING
+#define ID_LED_CAPS ONLP_LED_CAPS_ON_OFF | ONLP_LED_CAPS_BLUE | ONLP_LED_CAPS_BLUE_BLINKING
 #define LED_MODE   ONLP_LED_MODE_OFF
 #define VALIDATE(_id)                           \
     do {                                        \
@@ -56,6 +58,7 @@
 /* SYSFS */
 #define LED_STATUS_1_ATTR   "cpld_sys_led_ctrl_1"
 #define LED_STATUS_2_ATTR   "cpld_sys_led_ctrl_2"
+#define LED_STATUS_ID_ATTR  "cpld_beacon_led_ctrl"
 
 static onlp_led_info_t led_info[] =
 {
@@ -64,6 +67,16 @@ static onlp_led_info_t led_info[] =
     CHASSIS_LED_INFO(ONLP_LED_PSU0,   "CHASSIS LED 2 (PSU0 LED)"),
     CHASSIS_LED_INFO(ONLP_LED_PSU1,   "CHASSIS LED 3 (PSU1 LED)"),
     CHASSIS_LED_INFO(ONLP_LED_FAN,    "CHASSIS LED 4 (FAN LED)"),
+    {
+        .hdr = {
+            .id = ONLP_LED_ID_CREATE(ONLP_LED_ID),
+            .description = "Chassis LED 5 (ID LED)",
+            .poid = POID_0,
+        },
+        .status = LED_STATUS,
+        .caps = ID_LED_CAPS,
+
+    }
 };
 
 /**
@@ -96,6 +109,11 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
         led_val_color = (led_reg_value & 0b00000001) >> 0; //1: Green, 0: Yellow
         led_val_blink = (led_reg_value & 0b00000100) >> 2; //1: Blinking, 0: Solid
         led_val_onoff = (led_reg_value & 0b00001000) >> 3; //1: On,       0: Off
+    } else if(local_id == ONLP_LED_ID) {
+        ONLP_TRY(file_read_hex(&led_reg_value, CPLD1_SYSFS_PATH "/" LED_STATUS_ID_ATTR));
+        led_val_color = 2; // 2 for color Blue
+        led_val_blink = (led_reg_value & 0b00000010) >> 1; //1: Blinking, 0: Solid
+        led_val_onoff = (led_reg_value & 0b00000100) >> 2; //1: On,       0: Off
     } else {
         AIM_LOG_ERROR("unknown LED id, local_id(%d), func=%s\n", local_id, __FUNCTION__);
         return ONLP_STATUS_E_PARAM;
@@ -116,6 +134,10 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
             info->mode = ONLP_LED_MODE_GREEN_BLINKING;
         } else if(led_val_color == 1 && led_val_blink == 0) {
             info->mode = ONLP_LED_MODE_GREEN;
+        } else if(led_val_color == 2 && led_val_blink == 1) {
+            info->mode = ONLP_LED_MODE_BLUE_BLINKING;
+        } else if(led_val_color == 2 && led_val_blink == 0) {
+            info->mode = ONLP_LED_MODE_BLUE;
         } else {
             info->mode = ONLP_LED_MODE_ON;
             AIM_LOG_ERROR("unknown LED color local_id(%d), led_val_color(%d), led_val_blink(%d), func=%s\n",
@@ -196,7 +218,20 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* hdr)
  */
 int onlp_ledi_set(onlp_oid_t id, int on_or_off)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    int local_id;
+    VALIDATE(id);
+
+    local_id = ONLP_OID_ID_GET(id);
+
+    if(on_or_off) {
+        // id led case
+        if(local_id == ONLP_LED_ID) {
+            return onlp_ledi_mode_set(id, ONLP_LED_MODE_BLUE);
+        }
+        return onlp_ledi_mode_set(id, ONLP_LED_MODE_GREEN);
+    } else {
+        return onlp_ledi_mode_set(id, ONLP_LED_MODE_OFF);
+    }
 }
 
 /**
@@ -217,7 +252,70 @@ int onlp_ledi_ioctl(onlp_oid_t id, va_list vargs)
  */
 int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
-    return ONLP_STATUS_E_UNSUPPORTED;
+    int local_id;
+    
+    VALIDATE(id);
+
+    local_id = ONLP_OID_ID_GET(id);
+
+    char *sysfs;
+    int led_val = 0,led_color = 0, led_blink = 0, led_onoff = 0;
+    int color_mask, blink_mask, onoff_mask;
+
+    // only led_id support set function
+    switch(local_id) {
+        case ONLP_LED_ID:
+            sysfs = CPLD1_SYSFS_PATH "/" LED_STATUS_ID_ATTR;
+            color_mask = 0b00000000;
+            blink_mask = 0b00000010;
+            onoff_mask = 0b00000100;
+            break;
+        default:
+            return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    switch(mode) {
+        case ONLP_LED_MODE_GREEN:
+        case ONLP_LED_MODE_BLUE:
+            led_color=1;
+            led_blink=0;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_YELLOW:
+            led_color=0;
+            led_blink=0;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_YELLOW_BLINKING:
+            led_color=0;
+            led_blink=1;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_GREEN_BLINKING:
+        case ONLP_LED_MODE_BLUE_BLINKING:
+            led_color=1;
+            led_blink=1;
+            led_onoff=1;
+            break;
+        case ONLP_LED_MODE_OFF:
+            led_color=0;
+            led_blink=0;
+            led_onoff=0;
+            break;
+        default:
+            return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+
+    ONLP_TRY(file_read_hex(&led_val, sysfs));
+
+    led_val = (led_color) ? led_val|color_mask: led_val&(~color_mask);
+    led_val = (led_blink) ? led_val|blink_mask: led_val&(~blink_mask);
+    led_val = (led_onoff) ? led_val|onoff_mask: led_val&(~onoff_mask);
+
+    ONLP_TRY(onlp_file_write_int(led_val, sysfs));
+
+    return ONLP_STATUS_OK;
 }
 
 /**

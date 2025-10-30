@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="2.0.1"
+TS_VERSION="2.0.3"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -307,15 +307,15 @@ function _show_board_info {
 
     MODEL_NAME=${model_name}
     HW_REV=${hw_rev}
-    
+
     if [ "${MODEL_NAME}" == "NCP1-1" ] || [ "${MODEL_NAME}" == "NCP2-1" ]; then
         _echo "[Board Type/Rev Reg Raw ]: ${board_info}"
         _echo "[Board Type and Revision]: ${model_name} ${hw_rev} ${build_rev}"
     elif [ "${model_name}" == "NCF" ]; then
-    _echo "[Board Type/Rev Reg Raw  (BOT)]: ${board_info}"
-    _echo "[Board Type and Revision (BOT)]: ${model_name} ${hw_rev} ${build_rev}"
+        _echo "[Board Type/Rev Reg Raw  (BOT)]: ${board_info}"
+        _echo "[Board Type and Revision (BOT)]: ${model_name} ${hw_rev} ${build_rev}"
 
-    
+
         if [ "${OPT_BYPASS_I2C_COMMAND}" == "${TRUE}" ]; then
             _echo "[Board Type/Rev Reg Raw  (TOP)]: (Bypass)"
             _echo "[Board Type and Revision (TOP)]: (Bypass)"
@@ -1737,10 +1737,10 @@ function _show_cpld_interrupt_sysfs {
 
         # CPLD to CPU Interrupt
         if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-8))/value"
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
-        cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-8))/value ${LOG_REDIRECT}")
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-8))/value"
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+            cpld34_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-8))/value ${LOG_REDIRECT}")
         elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+7))/value"
@@ -1797,14 +1797,14 @@ function _show_cpld_interrupt_sysfs {
         # CPLD to CPU Interrupt
 
         if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-5))/value"
-        _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-6))/value"
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
-        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
-        cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-5))/value ${LOG_REDIRECT}")
-        cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-6))/value ${LOG_REDIRECT}")
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-5))/value"
+            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-6))/value"
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+            cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
+            cpld4_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-5))/value ${LOG_REDIRECT}")
+            cpld5_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-6))/value ${LOG_REDIRECT}")
         elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+11))/value"
@@ -1873,8 +1873,8 @@ function _show_cpld_interrupt_sysfs {
         if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-3))/value"
             _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-4))/value"
-        cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
-        cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
+            cpld12_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-3))/value ${LOG_REDIRECT}")
+            cpld3_to_cpu_interrupt_l=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-4))/value ${LOG_REDIRECT}")
         elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+12))/value"
             _check_filepath "/sys/class/gpio/gpio$((GPIO_BASE+11))/value"
@@ -1976,20 +1976,20 @@ function _show_beacon_led_sysfs {
     elif [ "${MODEL_NAME}" == "NCP1-1" ] || [ "${MODEL_NAME}" == "NCP2-1" ]; then
         if [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
             # Left LED
-        for ((i=31;i>=25;i--))
-        do
-            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_lled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_lled}"
-        done
+            for ((i=31;i>=25;i--))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
+                beacon_lled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Left Beacon LED$((GPIO_MAX-i))]: ${beacon_lled}"
+            done
 
-        # Right LED
-        for ((i=23;i>=17;i--))
-        do
-            _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
-            beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
-            _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
-        done
+            # Right LED
+            for ((i=23;i>=17;i--))
+            do
+                _check_filepath "/sys/class/gpio/gpio$((GPIO_MAX-i))/value"
+                beacon_rled=$(eval "cat /sys/class/gpio/gpio$((GPIO_MAX-i))/value ${LOG_REDIRECT}")
+                _echo "[Right Beacon LED$((GPIO_MAX-i))]: ${beacon_rled}"
+            done
         elif [ "${GPIO_BASE_INIT_FLAG}" == "1" ]; then
             # Left LED
             for ((i=16;i<=22;i++))
@@ -2390,14 +2390,21 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/sda"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
+        local smartctl_commands=(
+        "smartctl -a /dev/sda"
+        "smartctl -x /dev/sda"
+        )
+
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
     fi
 
 }
@@ -3035,18 +3042,17 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
-        #_echo "copy /var/log/syslog* to ${LOG_FOLDER_PATH}"
-        #cp /var/log/syslog*  "${LOG_FOLDER_PATH}"
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
 
         if [ -f "/core/logs/node-manager/platform_utility.log" ]; then
             _echo "copy /core/logs/node-manager/platform_utility.log* to ${LOG_FOLDER_PATH}/node-manager"

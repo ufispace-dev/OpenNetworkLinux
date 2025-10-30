@@ -1,8 +1,7 @@
 #!/bin/bash
-# SKY S9600-102XC	Access BNG
-#     MAC:  Separate CommClk-
-#     OP2:  Separate CommClk-
-#     I210: Common   CommClk+
+# Icelake S9601-102XC Vampire (w/ OP2)
+#         MAC:  Separate CommClk+
+#         OP2:  Separate CommClk+
 
 if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     #echo "Please set UFI_RESET_TOOL_PATH"
@@ -34,7 +33,6 @@ help()
     echo "    mac  : Reset MAC"
     echo "    op2  : Reset OP2"
     echo "    phy  : Reset BCM82752"
-    echo "    i210 : Reset I210"
     echo "    all  : Reset MAC, op2 and phy"
     echo "  silent(optional): Don't display reset result"
     echo ""
@@ -51,16 +49,16 @@ get_pcie_status()
 {
     case "${1}" in
     "mac")
-        echo "RP Status 64:03.0:"
-        lspci -vvv -s 64:03.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
-        printf "MAC Status %s:00.0:\n" $(setpci -s 64:03.0 0x19.b)
-        lspci -vvv -s $(setpci -s 64:03.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        echo "RP Status 15:05.0:"
+        lspci -vvv -s 15:05.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "MAC Status %s:00.0:\n" $(setpci -s 15:05.0 0x19.b)
+        lspci -vvv -s $(setpci -s 15:05.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
         ;;
     "op2")
-        echo "RP Status 16:00.0:"
-        lspci -vvv -s 16:00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
-        printf "OP2 Status %s:00.0:\n" $(setpci -s 16:00.0 0x19.b)
-        lspci -vvv -s $(setpci -s 16:00.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        echo "RP Status 15:02.0:"
+        lspci -vvv -s 15:02.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
+        printf "OP2 Status %s:00.0:\n" $(setpci -s 15:02.0 0x19.b)
+        lspci -vvv -s $(setpci -s 15:02.0 0x19.b):00.0 | grep -e DevSta: -e LnkSta: -e UESta: -e CESta: -e SERR
         ;;
     *)
         echo "Invalid Parameters"
@@ -85,25 +83,6 @@ remove_kmod()
             rmmod kbp_driver
         fi
         ;;
-    "i210")
-        kmod_cnt=`lsmod | grep igb | wc -l`
-        if [ ${kmod_cnt} -gt 2 ]; then
-            rmmod igb
-        fi
-        ;;
-    *)
-        print_log "Invalid Parameters\n"
-        help
-        ;;
-    esac
-}
-
-insert_kmod()
-{
-    case "${1}" in
-    "i210")
-        modprobe igb
-        ;;
     *)
         print_log "Invalid Parameters\n"
         help
@@ -115,15 +94,11 @@ remove_dev()
 {
     case "${1}" in
     "mac")
-        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 64:03.0 0x19.b)\:00.0/remove
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 15:05.0 0x19.b)\:00.0/remove
         sleep 1
         ;;
     "op2")
-        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 16:00.0 0x19.b)\:00.0/remove
-        sleep 1
-        ;;
-    "i210")
-        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 00:1c.4 0x19.b)\:00.0/remove
+        echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 15:02.0 0x19.b)\:00.0/remove
         sleep 1
         ;;
     *)
@@ -138,48 +113,73 @@ set_2nd_bus_reset()
     case "${1}" in
     "mac")
         if [ ${2} -eq 1 ]; then
-            #setpci -s 64:03.0 0x3e.b
+            #setpci -s 15:05.0 0x3e.b
             #sleep 0.1
-            bc=$(setpci -s 64:03.0 BRIDGE_CONTROL)
-            setpci -s 64:03.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            bc=$(setpci -s 15:05.0 BRIDGE_CONTROL)
+            setpci -s 15:05.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
             sleep 1
         else
-            #setpci -s 64:03.0 0x3e.b
+            #setpci -s 15:05.0 0x3e.b
             #sleep 0.1
-            bc=$(setpci -s 64:03.0 BRIDGE_CONTROL)
-            setpci -s 64:03.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            bc=$(setpci -s 15:05.0 BRIDGE_CONTROL)
+            setpci -s 15:05.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
             sleep 1
         fi
         ;;
     "op2")
         if [ ${2} -eq 1 ]; then
-            #setpci -s 16:00.0 0x3e.b
+            #setpci -s 15:02.0 0x3e.b
             #sleep 0.1
-            bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
-            setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
+            bc=$(setpci -s 15:02.0 BRIDGE_CONTROL)
+            setpci -s 15:02.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
             sleep 1
         else
-            #setpci -s 16:00.0 0x3e.b
+            #setpci -s 15:02.0 0x3e.b
             #sleep 0.1
-            bc=$(setpci -s 16:00.0 BRIDGE_CONTROL)
-            setpci -s 16:00.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
+            bc=$(setpci -s 15:02.0 BRIDGE_CONTROL)
+            setpci -s 15:02.0 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
             sleep 1
         fi
         ;;
-    "i210")
-        if [ ${2} -eq 1 ]; then
-            #setpci -s 00:1c.4 0x3e.b
-            #sleep 0.1
-            bc=$(setpci -s 00:1c.4 BRIDGE_CONTROL)
-            setpci -s 00:1c.4 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" | 0x40)))
-            sleep 1
-        else
-            #setpci -s 00:1c.4 0x3e.b
-            #sleep 0.1
-            bc=$(setpci -s 00:1c.4 BRIDGE_CONTROL)
-            setpci -s 00:1c.4 BRIDGE_CONTROL=$(printf "%04x" $(("0x$bc" & 0xBF)))
-            sleep 1
-        fi
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+enable_common_clk()
+{
+    case "${1}" in
+    "mac")
+        lc=$(setpci -s $(setpci -s 15:05.0 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s 15:05.0 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        sleep 1
+        ;;
+    "op2")
+        lc=$(setpci -s $(setpci -s 15:02.0 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s 15:02.0 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        sleep 1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+retrain_link()
+{
+    case "${1}" in
+    "mac")
+        lc=$(setpci -s $(setpci -s 15:05.0 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s 15:05.0 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 1
+        ;;
+    "op2")
+        lc=$(setpci -s $(setpci -s 15:02.0 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s 15:02.0 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 1
         ;;
     *)
         print_log "Invalid Parameters\n"
@@ -240,6 +240,14 @@ reset_mac()
         print_log "done\n"
     fi
 
+    print_log "Enable Common Clock......"
+    enable_common_clk mac
+    print_log  "done\n"
+
+    print_log "Retrain link......"
+    retrain_link mac
+    print_log  "done\n"
+
     print_log "After MAC Warm Reset ...\n"
     get_pcie_status mac
 
@@ -299,6 +307,14 @@ reset_op2()
         print_log "done\n"
     fi
 
+    print_log "Enable Common Clock......"
+    enable_common_clk op2
+    print_log "done\n"
+
+    print_log "Retrain link......"
+    retrain_link op2
+    print_log "done\n"
+
     print_log "After OP2 Warm Reset ...\n"
     get_pcie_status op2
 
@@ -331,67 +347,6 @@ reset_phy()
     print_log "Reset BCM82752 Done\n\n"
 }
 
-reset_i210()
-{
-    print_log "Reset I210...\n"
-    print_log "==============================\n"
-
-    print_log "Remove kernel module......"
-    remove_kmod i210
-    sleep 1
-    print_log "done\n"
-
-    print_log "Remove i210 from PCIe bus......"
-    remove_dev i210
-    sleep 1
-    print_log "done\n"
-
-    # set secondary bus reset to 1 before reset
-    set_2nd_bus_reset i210 1
-
-    # reset I210 (PCIe)
-    print_log "Reset Assertion......"
-    val=$(_ioget 0xe48 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    _ioset 0xe48 $(printf "0x%02x" $(("$val" & 0xf7)))
-    sleep 2
-    print_log "done\n"
-
-    # unreset I210 (PCIe)
-    print_log "Reset Deassertion......"
-    val=$(_ioget 0xe48 | awk -F' ' '{print $NF}')
-    sleep 0.1
-    _ioset 0xe48 $(printf "0x%02x" $(("$val" | 0x08)))
-    sleep 2
-    print_log "done\n"
-
-    # set secondary bus reset to 0 after reset
-    set_2nd_bus_reset i210 0
-    sleep 1
-
-    print_log "Rescan PCIe bus......"
-    echo 1 > /sys/bus/pci/rescan
-    sleep 1
-    print_log "done\n"
-
-    print_log "Insert kernel module......"
-    insert_kmod i210
-    sleep 1
-    print_log "done\n"
-
-    print_log "Check I210 status......"
-    i210_cnt=`lspci | grep I210 | wc -l`
-    if [ ${i210_cnt} -ne 1 ]; then
-        print_log "fail: After reset, I210 should be exist!\n"
-        lspci | grep I210 
-        exit 2  
-    fi
-    print_log "done\n"
-
-    print_log "==============================\n"
-    print_log "Reset I210 Done\n\n"
-}
-
 main()
 {
     case ${2} in
@@ -412,9 +367,6 @@ main()
         ;;
     "phy")
         reset_phy
-        ;;
-    "i210")
-        reset_i210
         ;;
     "all")
         reset_op2

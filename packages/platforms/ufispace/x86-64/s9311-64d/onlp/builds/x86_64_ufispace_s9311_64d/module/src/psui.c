@@ -78,6 +78,8 @@ static onlp_psu_info_t psu_info[] =
 static psu_support_info_t psu_support_list[] = {
     {"DELTA", "ECD14010030", ONLP_PSU_TYPE_AC},
     {"DELTA", "ECD25020028", ONLP_PSU_TYPE_DC48},
+    {"DELTA", "TDPS-2400MB C", ONLP_PSU_TYPE_AC},
+    {"DELTA", "TDPS-2400MB-3 A", ONLP_PSU_TYPE_AC},
 };
 
 static int get_node(int local_id, psu_node_t *node)

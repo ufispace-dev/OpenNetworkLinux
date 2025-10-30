@@ -292,6 +292,8 @@ static u8 g_violation_type[][32] =
         {"Class based"},
         {"User defined"}};
 
+u8 g_poe_cmd_response_buf[POE_CMD_BUF_SIZE];
+
 /*==========================================================================
  *
  *      Static Variable segment
@@ -475,11 +477,11 @@ s32 ufi_poe_PowerShow(struct device *dev, u32 lport, u8 *buf)
         return ret;
     }
 
-    portPowerInfo.vol = (BYTE_SWAP_16BIT(portPowerInfo.vol))*BCM_POE_TYPE_DATA_PORT_BYTE2VOLT; /* milli volt */
-    portPowerInfo.power = BYTE_SWAP_16BIT(portPowerInfo.power);                                /* walt */
+    portPowerInfo.vol = (BYTE_SWAP_16BIT(portPowerInfo.vol)) * BCM_POE_TYPE_DATA_PORT_BYTE2VOLT; /* milli volt */
+    portPowerInfo.power = BYTE_SWAP_16BIT(portPowerInfo.power);                                  /* walt */
     portPowerInfo.cur = BYTE_SWAP_16BIT(portPowerInfo.cur);
 
-    sprintf(buf, "Voltage = %d mV, Current = %d mA, Power = %d mW\n", 
+    sprintf(buf, "Voltage = %d mV, Current = %d mA, Power = %d mW\n",
             portPowerInfo.vol, portPowerInfo.cur, portPowerInfo.power * 100);
     return ret;
 }
@@ -519,9 +521,8 @@ s32 ufi_poe_DynamicPowerShow(struct device *dev, u32 lport, u8 *buf)
     portInfo.power = BYTE_SWAP_16BIT(portInfo.power);                                  /* walt */
     portInfo.cur = BYTE_SWAP_16BIT(portInfo.cur);
 
-
     snprintf(buf, OUT_BUF_SIZE, "Port %d : %d.%dV %d.%03dA %d.%dW\r\n", lport, portInfo.vol / 1000, portInfo.vol % 1000,
-            portInfo.cur / 1000, portInfo.cur % 1000, portInfo.power / 10, portInfo.power % 10);
+             portInfo.cur / 1000, portInfo.cur % 1000, portInfo.power / 10, portInfo.power % 10);
     return ret;
 }
 
@@ -1327,6 +1328,53 @@ s32 ufi_poe_SetPowerManagementMode(struct device *dev, u8 powerManageMode)
 /*--------------------------------------------------------------------------
  *
  *  FUNCTION NAME :
+ *      ufi_poe_SetPowerManagementMode
+ *
+ *  DESCRIPTION :
+ *      a API to get power management mode of PoE
+ *
+ *
+ *  INPUT :
+ *      dev - i2c device
+ *
+ *  OUTPUT :
+ *      powerManageMode - power management mode
+ *
+ *  RETURN :
+ *      error code
+ *
+ *  COMMENT :
+ *      none
+ *
+ *--------------------------------------------------------------------------
+ */
+s32 ufi_poe_GetPowerManagementMode(struct device *dev, u32 *powerManageMode)
+{
+    E_ERROR_TYPE ret = E_TYPE_FAILED;
+    u32 delay = 100;
+
+    BCM_POE_TYPE_PKTBUF_I2C_T *pCmd = (BCM_POE_TYPE_PKTBUF_I2C_T *)CmdBuffer;
+    BCM_POE_TYPE_PKTBUF_I2C_T *pResp = (BCM_POE_TYPE_PKTBUF_I2C_T *)RespBuffer;
+
+    /* fill poe message buffer */
+    memset(pCmd, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+    memset(pResp, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+
+    pCmd->command = BCM_POE_TYPE_COM_POWER_MANAGE_MODE_GET;
+
+    ufi_poe_halInsertCheckSum(pCmd);
+
+    if (ufi_poe_halBcmI2cCmd_get(dev, (u8 *)pCmd, (u8 *)pResp, delay) == E_BCM_SCP_SUCCESS)
+    {
+        ret = E_TYPE_SUCCESS;
+        *powerManageMode = (u32)pResp->data1;
+    }
+    return ret;
+}
+
+/*--------------------------------------------------------------------------
+ *
+ *  FUNCTION NAME :
  *      ufi_poe_SetPortEventMask
  *
  *  DESCRIPTION :
@@ -1947,44 +1995,69 @@ s32 ufi_poe_PoeCmd(struct device *dev, u8 cmd, u8 f1, u8 f2, u8 f3, u8 f4, u8 f5
                    u8 f7, u8 f8, u8 f9, u8 f10)
 {
     E_ERROR_TYPE ret = E_TYPE_SUCCESS;
-    BCM_POE_TYPE_PKTBUF_I2C_T *pCmd = (BCM_POE_TYPE_PKTBUF_I2C_T *)CmdBuffer;
+    E_BCM_SCP_RET_CODE result;
+    BCM_POE_TYPE_PKTBUF_I2C_T *pReq = (BCM_POE_TYPE_PKTBUF_I2C_T *)CmdBuffer;
     BCM_POE_TYPE_PKTBUF_I2C_T *pResp = (BCM_POE_TYPE_PKTBUF_I2C_T *)RespBuffer;
 
     /* fill poe message buffer */
-    memset(pCmd, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+    memset(pReq, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
     memset(pResp, BCM_POE_NA_FIELD_VALUE, I2C_MSG_LEN);
+    memset(g_poe_cmd_response_buf, 0, POE_CMD_BUF_SIZE);
 
-    pCmd->command = cmd;
-    pCmd->seqNo = f1;
-    pCmd->data1 = f2;
-    pCmd->data2 = f3;
-    pCmd->data3 = f4;
-    pCmd->data4 = f5;
-    pCmd->data5 = f6;
-    pCmd->data6 = f7;
-    pCmd->data7 = f8;
-    pCmd->data8 = f9;
-    pCmd->data9 = f10;
+    pReq->command = cmd;
+    pReq->seqNo = f1;
+    pReq->data1 = f2;
+    pReq->data2 = f3;
+    pReq->data3 = f4;
+    pReq->data4 = f5;
+    pReq->data5 = f6;
+    pReq->data6 = f7;
+    pReq->data7 = f8;
+    pReq->data8 = f9;
+    pReq->data9 = f10;
 
-    ufi_poe_halInsertCheckSum(pCmd);
+    ufi_poe_halInsertCheckSum(pReq);
 
-    dev_info(dev, "+-------+-------+------+------+------+------+------+------+------+------+---------+\n");
-    dev_info(dev, "|Command| Seq    |DATA0 |DATA1 |DATA2 |DATA3 |DATA4 |DATA5 |DATA6 |DATA7 |DATA8 | CheckSum |\n");
-    dev_info(dev, "|0x%-5.2x| 0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|\n",
-             pCmd->command, pCmd->seqNo, pCmd->data1, pCmd->data2, pCmd->data3, pCmd->data4, pCmd->data5, pCmd->data6,
-             pCmd->data7, pCmd->data8, pCmd->data9, pCmd->checksum);
-    dev_info(dev, "+-------+-------+------+------+------+------+------+------+------+------+---------+\n");
+    snprintf(g_poe_cmd_response_buf, POE_CMD_BUF_SIZE,
+             "+-------+-------+------+------+------+------+------+------+------+------+------+----------+\n"
+             "|Command| Seq   |DATA0 |DATA1 |DATA2 |DATA3 |DATA4 |DATA5 |DATA6 |DATA7 |DATA8 | CheckSum |\n"
+             "| 0x%-5.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-8.2x|\n"
+             "+-------+-------+------+------+------+------+------+------+------+------+------+----------+\n",
+             pReq->command, pReq->seqNo, pReq->data1, pReq->data2, pReq->data3, pReq->data4, pReq->data5, pReq->data6,
+             pReq->data7, pReq->data8, pReq->data9, pReq->checksum);
 
-    if (ufi_poe_halBcmI2cCmd_set(dev, (u8 *)pCmd, (u8 *)pResp, E_CHECK_ACK_NO) == E_BCM_SCP_SUCCESS)
+    if ((result = ufi_poe_halSCPPktTransmit(dev, (BCM_POE_TYPE_PKTBUF_I2C_T *)pReq)) == E_BCM_SCP_SUCCESS)
     {
-        dev_info(dev, "+-------+-------+------+------+------+------+------+------+------+------+---------+\n");
-        dev_info(dev, "|Respond| Seq    |DATA0 |DATA1 |DATA2 |DATA3 |DATA4 |DATA5 |DATA6 |DATA7 |DATA8 | CheckSum |\n");
-        dev_info(dev, "|0x%-5.2x| 0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|0x%-4.2x|\n",
-                 pResp->command, pResp->seqNo, pResp->data1, pResp->data2, pResp->data3, pResp->data4, pResp->data5, pResp->data6,
-                 pResp->data7, pResp->data8, pResp->data9, pResp->checksum);
-        dev_info(dev, "+-------+-------+------+------+------+------+------+------+------+------+---------+\n");
-        ret = E_TYPE_SUCCESS;
+        /*minimum delay between request frame and the response poll for PoE subsystem is 20 ms */
+        mdelay(20);
+        if ((result = ufi_poe_halSCPPktReceive(dev, (BCM_POE_TYPE_PKTBUF_I2C_T *)pResp)) == E_BCM_SCP_SUCCESS)
+        {
+            snprintf(g_poe_cmd_response_buf + strlen(g_poe_cmd_response_buf),
+                     POE_CMD_BUF_SIZE - strlen(g_poe_cmd_response_buf),
+                     "+-------+-------+------+------+------+------+------+------+------+------+------+----------+\n"
+                     "|Respond| Seq   |DATA0 |DATA1 |DATA2 |DATA3 |DATA4 |DATA5 |DATA6 |DATA7 |DATA8 | CheckSum |\n"
+                     "| 0x%-5.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-4.2x| 0x%-8.2x|\n"
+                     "+-------+-------+------+------+------+------+------+------+------+------+------+----------+\n",
+                     pResp->command, pResp->seqNo, pResp->data1, pResp->data2, pResp->data3, pResp->data4, pResp->data5, pResp->data6,
+                     pResp->data7, pResp->data8, pResp->data9, pResp->checksum);
+            ret = E_TYPE_SUCCESS;
+        }
+        else
+        {
+            snprintf(g_poe_cmd_response_buf + strlen(g_poe_cmd_response_buf),
+                     POE_CMD_BUF_SIZE - strlen(g_poe_cmd_response_buf),
+                     "Command receive failed.\n");
+            ret = E_TYPE_FAILED;
+        }
     }
+    else
+    {
+        snprintf(g_poe_cmd_response_buf + strlen(g_poe_cmd_response_buf),
+                 POE_CMD_BUF_SIZE - strlen(g_poe_cmd_response_buf),
+                 "Command send failed.\n");
+        ret = E_TYPE_FAILED;
+    }
+
     return ret;
 }
 
@@ -2570,7 +2643,7 @@ s32 ufi_poe_init(struct device *dev)
 
     /* show PoE software version */
     snprintf((u8 *)g_poefwversion, OUT_BUF_SIZE, "%x.%x.%x.%x", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
-            ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
+             ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
     dev_info(dev, "PoE software version %s, device id 0x%x\n", g_poefwversion, BYTE_SWAP_16BIT(sysInfo.deviceId));
     ;
     BCM_POE_DELAY(100); /*delay 100ms */
@@ -2630,8 +2703,9 @@ s32 ufi_poe_init(struct device *dev)
 
     BCM_POE_DELAY(20);
 
-    dev_info(dev, "Set power management mode %d...\n", E_BCM_POE_POWER_DYNAMIC_WITH_PORT_PRIORITY);
-    if (ufi_poe_SetPowerManagementMode(dev, E_BCM_POE_POWER_DYNAMIC_WITH_PORT_PRIORITY) != E_TYPE_SUCCESS)
+    // set default power management mode to static with priority
+    dev_info(dev, "Set power management mode %d...\n", E_BCM_POE_POWER_STATIC_WITH_PORT_PRIORITY);
+    if (ufi_poe_SetPowerManagementMode(dev, E_BCM_POE_POWER_STATIC_WITH_PORT_PRIORITY) != E_TYPE_SUCCESS)
     {
         dev_err(dev, "Set PoE power management mode dynamic with port priority failed\n");
         goto __FUN_RET;
@@ -2673,8 +2747,9 @@ s32 ufi_poe_init(struct device *dev)
             goto __FUN_RET;
         }
         BCM_POE_DELAY(20);
-        dev_info(dev, "Set Port %d violation type %d...\n", lport, E_THRESHOLD_CLASS_BASE);
-        if (ufi_poe_SetPortViolationType(dev, lport, E_THRESHOLD_CLASS_BASE) != E_TYPE_SUCCESS)
+        // change to port base as default 
+        dev_info(dev, "Set Port %d violation type %d...\n", lport, E_THRESHOLD_USER_DEFINED);
+        if (ufi_poe_SetPortViolationType(dev, lport, E_THRESHOLD_USER_DEFINED) != E_TYPE_SUCCESS)
         {
             dev_err(dev, "Set Port %d violation type %d fail\n", lport, E_THRESHOLD_CLASS_BASE);
             goto __FUN_RET;
@@ -2779,7 +2854,8 @@ s32 ufi_poe_GetPseTotalPower(struct device *dev, u32 *totalPower)
         return E_TYPE_FAILED;
     }
 
-    *totalPower = (u32)(pwr_info.pwr_availabe / 10);
+    // the origin value is 0.1 W/LSB
+    *totalPower = (u32)(BYTE_SWAP_16BIT(pwr_info.pwr_availabe) / 10);
     return E_TYPE_SUCCESS;
 }
 
@@ -2818,7 +2894,8 @@ s32 ufi_poe_GetPsePowerConsumption(struct device *dev, u32 *powerCons)
         return E_TYPE_FAILED;
     }
 
-    *powerCons = (u32)(pwr_info.total_pwr_alloc * 100);
+    // the origin value is 0.1 W/LSB, convert to mW for return
+    *powerCons = (u32)(BYTE_SWAP_16BIT(pwr_info.total_pwr_alloc) * 100);
     return E_TYPE_SUCCESS;
 }
 
@@ -2856,7 +2933,7 @@ s32 ufi_poe_GetPseSWVersion(struct device *dev, char *buf)
     }
 
     snprintf(buf, OUT_BUF_SIZE, "%x.%x.%x.%x\n", ((sysInfo.swVersion) >> 4), ((sysInfo.swVersion) & 0x0F),
-            ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
+             ((sysInfo.extSwVersion) >> 4), ((sysInfo.extSwVersion) & 0x0F));
 
     return E_TYPE_SUCCESS;
 }
@@ -3066,7 +3143,7 @@ s32 ufi_poe_SetPsePowerLimitMode(struct device *dev, sai_poe_device_limit_mode_t
     {
         if (ufi_poe_SetPortViolationType(dev, lport, mode_val) != E_TYPE_SUCCESS)
         {
-            dev_err(dev, "Set Port %d violation type %d fail\n", lport, E_THRESHOLD_CLASS_BASE);
+            dev_err(dev, "Set Port %d violation type %d fail\n", lport, mode_val);
             return E_TYPE_FAILED;
         }
         BCM_POE_DELAY(20);

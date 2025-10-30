@@ -4,7 +4,7 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.1-bsp"
+VER="0.0.2-bsp"
 silence=0
 MAC_RP_L="14:04.0"
 MAC_RP_R="14:05.0"
@@ -228,7 +228,26 @@ enable_common_clk()
     esac
 }
 
-check_interrupt_and_clear() {
+retrain_link()
+{
+    case "${1}" in
+    "mac")
+        lc=$(setpci -s $(setpci -s ${MAC_RP_L} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_L} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 0.1
+        lc=$(setpci -s $(setpci -s ${MAC_RP_R} 0x19.b):00.0 0xbc.b)
+        setpci -s $(setpci -s ${MAC_RP_R} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        sleep 1
+        ;;
+    *)
+        print_log "Invalid Parameters\n"
+        exit 1
+        ;;
+    esac
+}
+
+check_interrupt_and_clear()
+{
     local device=$1
 
     # check register: PAXB_0_PAXB_INTR_STATUS (0x292cf38)
@@ -255,8 +274,8 @@ check_interrupt_and_clear() {
         b3=$(printf "0x%02X" $(( (set_value >> 8) & 0xff )))
         b4=$(printf "0x%02X" $(( set_value & 0xff )))
 
-        # write to clear, clear all reported bits from previous read
-        print_log "Clear Interrupt (0x0292CF38) - PCIE_LINK_RESET_ASSERTED_STATUS\n"
+        # write to clear
+        print_log "Clear Interrupt (0x0292CF38) - PCIE_LINK_RESET_ASSERTED_STATUS: PCIE_LINK_RESET_ASSERTED_STATUS\n"
         ipmitool i2c bus=6 $device 0x0 0x2 0x92 0xCF 0x38 "$b1" "$b2" "$b3" "$b4" > /dev/null 2>&1
     fi
 }
@@ -351,6 +370,7 @@ reset_mac()
     i2cset -y ${i2c_bus_f} 0x30 0x40 $(printf "0x%02x" $(($val | 0x01)))
     sleep 2
     close_mux_to_cpld "cpld1"
+    sleep 0.1
     print_log "done\n"
 
     # clear MAC PCIe hotswap event - if MAC PCIe link reset asserted, try to clear it
@@ -378,6 +398,10 @@ reset_mac()
 
     print_log "Enable Common Clock......"
     enable_common_clk mac
+    print_log "done\n"
+
+    print_log "Retrain MAC PCIe Link......"
+    retrain_link mac
     print_log "done\n"
 
     print_log "\nAfter MAC Warm Reset ...\n"

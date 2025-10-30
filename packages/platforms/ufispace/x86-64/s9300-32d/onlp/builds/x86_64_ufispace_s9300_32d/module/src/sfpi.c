@@ -27,7 +27,6 @@
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
-#define REORG_DEV_CLASS_ENABLE  0
 #define SYSFS_EEPROM "eeprom"
 #define EEPROM_ADDR (0x50)
 #define SYSFS_DEV_CLASS "dev_class"
@@ -62,13 +61,15 @@
 #define SFP_TXDIS_ATTR          "cpld_sfp_tx_dis"
 
 #define QSFPDD_PORT_NUM         32
+#define QSFPX_PORT_NUM          QSFPDD_PORT_NUM
 #define SFP_PORT_NUM            4
 #define ALL_PORT_NUM            (QSFPDD_PORT_NUM+SFP_PORT_NUM) //36
+#define ALL_PORTS -1
 
 /* port order: QSFPDD(0-31), SFP(32-35) */
 #define IS_QSFPDD(_port)        (_port >= 0 && _port < QSFPDD_PORT_NUM)
 #define IS_SFP(_port)           (_port >= (QSFPDD_PORT_NUM) && _port < ALL_PORT_NUM)
-#define IS_QSFP(_port)          (0)
+#define IS_QSFPX(_port)         (_port >= 0 && _port < QSFPX_PORT_NUM)
 #define IS_SFP_P0(_port)        (_port == (QSFPDD_PORT_NUM))   //CPU
 #define IS_SFP_P1(_port)        (_port == (QSFPDD_PORT_NUM+1)) //CPU
 #define IS_SFP_P2(_port)        (_port == (QSFPDD_PORT_NUM+2)) //MAC
@@ -497,38 +498,78 @@ uint8_t shift_bit_mask(uint8_t val, uint8_t mask)
 }
 
 /**
- * @brief Reorganize device class for QSFP ports
+ * @brief Get device class for a port
  *
- * This function updates the device class for a given QSFP port.
+ * This function get the device class for a given port.
+ *
+ * @param port The port number
+ * @return An error condition or ONLP_STATUS_OK.
+ */
+int onlp_sfpi_dev_class_get(int port, int *dev_class)
+{
+    int rv, bus;
+
+    bus = qsfpdd_port_eeprom_bus_id_array[port];
+
+    // read dev_class
+    rv = onlp_file_read_int(dev_class, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS);
+    if (rv < 0) {
+        AIM_LOG_ERROR("Unable to read " SYS_FMT ", error=%d", bus, EEPROM_ADDR, SYSFS_DEV_CLASS, rv);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Set device class for QSFP ports
+ *
+ * This function set the device class for a given QSFP port.
+ *
+ * @param port The port number
+ * @param dev_class The device class to set
+ * @return An error condition or ONLP_STATUS_OK.
+ */
+int onlp_sfpi_dev_class_set(int port, int dev_class)
+{
+    int bus = 0;
+
+    bus = qsfpdd_port_eeprom_bus_id_array[port];
+
+    // set dev_class
+    ONLP_TRY(onlp_file_write_int(dev_class, SYS_FMT, bus, EEPROM_ADDR, SYSFS_DEV_CLASS));
+
+    return ONLP_STATUS_OK;
+}
+
+/**
+ * @brief Update device class for QSFPDD ports
+ *
+ * This function updates the device class for a given QSFPDD port.
  * It reads the current device class and module type, then checks against a dev type list
  * to determine the correct device class.
  * If the device class needs to be updated, it writes the new value to dev_class.
  *
  * @param port The port number
  * @return An error condition or current port dev_class.
- * @return ONLP_STATUS_OK is .
  */
-int ufi_reorg_dev_class(int port)
+int onlp_sfpi_dev_class_update_port(int port)
 {
-    int rv, dev_class, type, i;
-    int bus_id = qsfpdd_port_eeprom_bus_id_array[port];
+    int dev_class, type, i;
 
-    if (!IS_QSFP(port))
-    { // For QSFP only, skip other ports
+    if (!IS_QSFPX(port)) { // For QSFPX only, skip other ports
         return ONLP_STATUS_E_UNSUPPORTED;
+    } else if (!onlp_sfpi_is_present(port)) {
+        return ONLP_STATUS_E_MISSING;
     }
 
     // read dev_class
-    rv = onlp_file_read_int(&dev_class, SYS_FMT, bus_id, EEPROM_ADDR, SYSFS_DEV_CLASS);
-    if (rv < 0)
-    {
-        return ONLP_STATUS_E_INTERNAL;
-    }
+    ONLP_TRY(onlp_sfpi_dev_class_get(port, &dev_class));
+
     // read module type
     type = onlp_sfpi_dev_readb(port, EEPROM_ADDR, 0);
-    if (type < 0)
-    {
-        AIM_LOG_ERROR("Port[%d] Addr(0x%02x): type=%d.\n", port, EEPROM_ADDR, type);
+    if (type < 0) {
+        AIM_LOG_ERROR("Port[%d] Addr(0x%02x): invalid module type=%d.\n", port, EEPROM_ADDR, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -538,17 +579,15 @@ int ufi_reorg_dev_class(int port)
         {
             continue;
         }
-        if (port_type_dict[i].value != dev_class)
-        {
-            ONLP_TRY(onlp_file_write_int(port_type_dict[i].value, SYS_FMT, bus_id, EEPROM_ADDR, SYSFS_DEV_CLASS));
+        if (port_type_dict[i].value != dev_class) {
+            ONLP_TRY(onlp_sfpi_dev_class_set(port, port_type_dict[i].value));
             AIM_LOG_INFO("Port[%d] Type(0x%02x): %d to %d.\n", port, type, dev_class, port_type_dict[i].value);
             break;
-        }
-        else
-        { // dev_class is the same.
+        } else { // dev_class is the same.
             break;
         }
     }
+
     if (i == PORT_TYPE_DICT_SIZE)
     {
         AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
@@ -559,45 +598,36 @@ int ufi_reorg_dev_class(int port)
 }
 
 /**
- * @brief Retrieve the specific port device class.
+ * @brief Update device class for QSFPDD ports
  *
- * This function retrieves the specific port device class
+ * This function updates the device class for a given QSFPDD port.
+ * It reads the current device class and module type, then checks against a dev type list
+ * to determine the correct device class.
+ * If the device class needs to be updated, it writes the new value to dev_class.
  *
- * @param port The port number
+ * @param port The port number. -1 for all ports.
  * @return An error condition or current port dev_class.
- * @return ONLP_STATUS_OK is .
  */
-int ufi_get_dev_class(int port, int *dev_class)
+int onlp_sfpi_dev_class_update(int port)
 {
-    int rc = ONLP_STATUS_OK;
-    int bus_id = qsfpdd_port_eeprom_bus_id_array[port];
+    int rv = ONLP_STATUS_OK;
 
-    if (dev_class == NULL)
+    // single port update
+    if (port != ALL_PORTS)
     {
-        return ONLP_STATUS_E_PARAM;
+        return onlp_sfpi_dev_class_update_port(port);
     }
 
-    if (!IS_QSFP(port))
-    { // For QSFP only, skip other ports
-        return ONLP_STATUS_E_UNSUPPORTED;
-    }
-
-
-    if (REORG_DEV_CLASS_ENABLE)
+    // update all QSFPX ports
+    for (int i = 0; i < QSFPX_PORT_NUM; ++i)
     {
-        *dev_class = ufi_reorg_dev_class(port); // check dev type and reorg dev_class
-    }
-    else
-    {
-        rc = onlp_file_read_int(dev_class, SYS_FMT, bus_id, EEPROM_ADDR, SYSFS_DEV_CLASS);
-        if (rc < 0)
+        if (onlp_sfpi_dev_class_update_port(i) < 0)
         {
-            AIM_LOG_ERROR("Unable to read " SYS_FMT ", error=%d", bus_id, EEPROM_ADDR, SYSFS_DEV_CLASS, rc);
-            return ONLP_STATUS_E_INTERNAL;
+            rv = ONLP_STATUS_E_INTERNAL;
         }
     }
 
-    return ONLP_STATUS_OK;
+    return rv;
 }
 
 static int ufi_file_seek_writeb(const char *file, long offset, uint8_t value)
@@ -1416,24 +1446,21 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if(IS_SFP(local_id)) {
                 ONLP_TRY(set_sfpi_port_txdisable_status(local_id, value));
-            } else if (IS_QSFPDD(local_id)) {
-                ONLP_TRY(ufi_cmis_txdisable_status_set(local_id, value));
-            } else if (IS_QSFP(local_id)) {
+            } else if (IS_QSFPX(port)) {
                 int dev_class = 0;
-                ONLP_TRY(ufi_get_dev_class(local_id, &dev_class));
-                if (dev_class <= 0)
-                {
-                    return ONLP_STATUS_E_INTERNAL; // return error condition.
-                }
-                else if (dev_class == 1)
+                ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(local_id));
+                if (dev_class == 1)
                 { // SFF8636 module
                     ONLP_TRY(ufi_sff8636_txdisable_status_set(local_id, value));
-                    break;
                 }
                 else if (dev_class == 3)
                 { // CMIS module
                     ONLP_TRY(ufi_cmis_txdisable_status_set(local_id, value));
-                    break;
+                }
+                else
+                {
+                    AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", local_id, dev_class);
+                    return ONLP_STATUS_E_UNSUPPORTED;
                 }
             } else {
                 //do nothing
@@ -1506,19 +1533,29 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if(IS_SFP(local_id)) {
                 return get_sfpi_port_txdisable_status(local_id, value);
-            } else if (IS_QSFPDD(local_id)) {
-                return ufi_cmis_txdisable_status_get(local_id, value);
-            } else if (IS_QSFP(local_id)) {
+            } else if (IS_QSFPX(local_id)) {
                 int dev_class = 0;
-                ONLP_TRY(ufi_get_dev_class(local_id, &dev_class));
-                if (dev_class <= 0) {
-                    return ONLP_STATUS_E_INTERNAL; // return error condition.
-                } else if (dev_class == 1) {
-                    // SFF8636 module
-                    return ufi_sff8636_txdisable_status_get(local_id, value);
-                } else if (dev_class == 3) {
-                    // CMIS module
-                    return ufi_cmis_txdisable_status_get(local_id, value);
+                ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(local_id));
+
+                if (dev_class == 1)
+                { // SFF8636 module
+                    ONLP_TRY(ufi_sff8636_txdisable_status_get(local_id, value));
+                }
+                else if (dev_class == 3)
+                { // CMIS module
+                    int rc;
+                    rc = ufi_cmis_txdisable_status_get(local_id, value);
+                    // tx dis 0 for unsupport module 
+                    if (rc != ONLP_STATUS_OK)
+                    {
+                        *value = 0;
+                        return rc;
+                    } 
+                }
+                else
+                {
+                    AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", local_id, dev_class);
+                    return ONLP_STATUS_E_UNSUPPORTED;
                 }
             } else {
                 //do nothing
