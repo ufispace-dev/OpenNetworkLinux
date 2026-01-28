@@ -26,44 +26,48 @@
 #include <onlplib/file.h>
 #include "x86_64_ufispace_s9500_22xst_log.h"
 #include "platform_lib.h"
+
+#define ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD (ONLP_THERMAL_CAPS_GET_TEMPERATURE | \
+                             ONLP_THERMAL_CAPS_GET_ERROR_THRESHOLD | \
+                             ONLP_THERMAL_CAPS_GET_SHUTDOWN_THRESHOLD)
       
 static onlp_thermal_info_t thermal_info[] = {    
     { }, /* Not used */
     { { THERMAL_OID_CPU, "Temp_CPU", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {92000, 97000, 102000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 97000, 102000}
     },    
     { { THERMAL_OID_MAC, "Temp_MAC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {96000, 101000, 106000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 101000, 106000}
     },
     { { THERMAL_OID_BMC, "Temp_BMC", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {80000, 85000, 89000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 85000, 89000}
     },
     { { THERMAL_OID_100G_CAGE, "Temp_100GCage", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {79000, 82000, 85000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 82000, 85000}
     },
     { { THERMAL_OID_DDR4, "Temp_DDR4", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {85000, 90000, 92000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 90000, 92000}
     },
     { { THERMAL_OID_FANCARD1, "Temp_FANCARD1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {80000, 85000, 89000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 85000, 89000}
     },
     { { THERMAL_OID_FANCARD2, "Temp_FANCARD2", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {80000, 85000, 89000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 85000, 89000}
     },
     { { THERMAL_OID_PSU0, "PSU 1 - Thermal Sensor", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {86000, 90000, 95000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 90000, 95000}
     },
     { { THERMAL_OID_PSU1, "PSU 2 - Thermal Sensor", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {86000, 90000, 95000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 90000, 95000}
     },
     { { THERMAL_OID_CPU_PKG, "CPU Package", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
@@ -91,15 +95,15 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     { { THERMAL_OID_AMB, "Ambient Thermal", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {76000, 80000, 84000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 80000, 84000}
     },
     { { THERMAL_OID_PHY1, "Temp_PHY1", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {86000, 90000, 95000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 90000, 95000}
     },
     { { THERMAL_OID_HEATER, "Temp_Heater", 0},
                 ONLP_THERMAL_STATUS_PRESENT,
-                ONLP_THERMAL_CAPS_ALL, 0, {73000, 75000, 78000}
+                ONLP_THERMAL_CAPS_GET_HIGH_THRESHOLD, 0, {0, 75000, 78000}
     },
 };
 
