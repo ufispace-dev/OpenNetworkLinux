@@ -310,10 +310,10 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
     return reg_val;
 }
 
-static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+static int _parse_data(char *buf, unsigned int data, u8 data_type)
 {
     if (buf == NULL) {
-        return -1;
+        return -EINVAL;
     }
 
     if (data_type == DATA_HEX)
@@ -321,8 +321,7 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
     else if (data_type == DATA_DEC)
         return sprintf(buf, "%u", data);
     else
-        return -1;
-    return 0;
+        return -EINVAL;
 }
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
@@ -961,12 +960,18 @@ exit:
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 static int lpc_drv_remove(struct platform_device *pdev)
+#else
+static void lpc_drv_remove(struct platform_device *pdev)
+#endif
 {
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &ec_attr_grp);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
     return 0;
+#endif
 }
 
 static struct platform_driver lpc_drv = {

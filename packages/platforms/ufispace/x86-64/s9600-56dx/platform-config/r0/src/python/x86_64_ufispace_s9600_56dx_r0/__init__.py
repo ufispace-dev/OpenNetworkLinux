@@ -197,6 +197,8 @@ class OnlPlatform_x86_64_ufispace_s9600_56dx_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -309,25 +311,25 @@ class OnlPlatform_x86_64_ufispace_s9600_56dx_r0(OnlPlatformUfiSpace):
         rov_addrs=[0x60, 0x62]
         rov_reg=0x21
         rov_bus=4
-        
-        # vid to mac vdd value mapping 
+
+        # vid to mac vdd value mapping
         vdd_val_array=( 0.82, 0.82, 0.76, 0.78, 0.80, 0.84, 0.86, 0.88 )
-        # vid to rov reg value mapping 
+        # vid to rov reg value mapping
         rov_reg_array=( 0x73, 0x73, 0x67, 0x6B, 0x6F, 0x77, 0x7B, 0x7F )
 
         #get rov from cpld
         reg_val_str = subprocess.check_output("cat /sys/bus/i2c/devices/{}-00{}/cpld_mac_rov".format(cpld_bus, cpld_addr), shell=True)
         reg_val = int(reg_val_str, 16)
         msg("/sys/bus/i2c/devices/{}-00{}/cpld_mac_rov={}".format(cpld_bus, cpld_addr, reg_val_str))
-        
+
         for index, rov_addr in enumerate(rov_addrs):
             vid = (reg_val >> 3*index) & 0x7
             mac_vdd_val = vdd_val_array[vid]
-            rov_reg_val = rov_reg_array[vid]            
+            rov_reg_val = rov_reg_array[vid]
             #set rov to mac
             msg("Setting mac[%d] vdd %1.2f with rov register value 0x%x\n" % (index, mac_vdd_val, rov_reg_val) )
             os.system("i2cset -y {} {} {} {} w".format(rov_bus, rov_addr, rov_reg, rov_reg_val))
-        
+
         # enable event ctrl
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0030/cpld_evt_ctrl", shell=True)
         subprocess.call("echo 1 > /sys/bus/i2c/devices/1-0031/cpld_evt_ctrl", shell=True)

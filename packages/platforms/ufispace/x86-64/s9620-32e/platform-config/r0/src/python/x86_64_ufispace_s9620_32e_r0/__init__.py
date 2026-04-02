@@ -652,13 +652,12 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
         # init ice (need to have ice before bcm82399 init to avoid failure)
         self.bsp_pr("Init ice")
         self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        self.insmod("ice", False)
+        os.system("modprobe ice")
 
         # init bcm82399
         self.bsp_pr("Init bcm82399")
         os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
-        os.system("timeout 120s {} polarity set 0 line 1 0".format(self.PATH_EPDM_CLI))
-        os.system("timeout 120s {} polarity set 1 sys 0 0".format(self.PATH_EPDM_CLI))
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

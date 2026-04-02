@@ -168,6 +168,46 @@ int get_gpio_max() {
 }
 
 /**
+ * @brief Get gpio max
+ * @param gpio_max [out] GPIO max
+ */
+int ufi_get_gpio_max(int *gpio_max)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_max == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if(file_read_hex(gpio_max, GPIO_MAX_SYSFS) != ONLP_STATUS_OK)
+    {
+        *gpio_max = 511;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
+ * @brief Get gpio base
+ * @param gpio_base [out] GPIO base
+ */
+int ufi_get_gpio_base(int *gpio_base)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_base == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if(file_read_hex(gpio_base, GPIO_BASE_SYSFS) != ONLP_STATUS_OK)
+    {
+        *gpio_base = 512;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
  * @brief warm reset for mac
  * @param unit_id The warm reset device unit id
  * @param reset_dev The warm reset device id

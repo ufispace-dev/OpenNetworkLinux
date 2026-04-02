@@ -72,7 +72,7 @@ enum cpld_id {
 #define CPLD_TIMING_CTRL_REG              0x5E
 #define CPLD_QSPI_SEL_REG                 0x5F
 #define CPLD_SYSTEM_LED_BASE_REG          0x80
-#define CPLD_LED_CLEAR_REG                0x83
+#define CPLD_MGMT_LED_REG                 0x83
 #define DBG_CPLD_MAC_INTR_REG             0xE0
 #define DBG_CPLD_PHY_INTR_REG             0xE3
 #define DBG_CPLD_CPLDX_INTR_REG           0xE4

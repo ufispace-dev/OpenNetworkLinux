@@ -22,6 +22,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
 #include <linux/module.h>
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
@@ -519,3 +521,7 @@ MODULE_LICENSE("GPL");
 module_init(dps850_init);
 module_exit(dps850_exit);
 
+#else
+#include <linux/module.h>
+MODULE_LICENSE("GPL");
+#endif

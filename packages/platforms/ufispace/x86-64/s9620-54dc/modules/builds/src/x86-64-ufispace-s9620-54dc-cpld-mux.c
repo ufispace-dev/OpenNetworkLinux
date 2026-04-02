@@ -552,6 +552,7 @@ int mux_init(struct device *dev)
             ret = _cpld_reg_write(dev, CPLD_I2C_CONTROL_REG, reg_val);
             if (ret < 0) {
                 dev_err(dev, "Fail to enable mux functionality\n");
+                ret = reg_val;
                 goto exit;
             }
         }
@@ -572,7 +573,11 @@ int mux_init(struct device *dev)
 
     /* Now create an adapter for each channel */
     for (num = 0; num < data->chip->nchans; num++) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,10,0)
         ret = i2c_mux_add_adapter(muxc, 0, num, 0);
+#else
+        ret = i2c_mux_add_adapter(muxc, 0, num);
+#endif
         if (ret)
             goto exit;
     }

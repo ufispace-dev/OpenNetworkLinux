@@ -511,9 +511,8 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
-        os.system("rmmod gpio_ich")
-        os.system("rmmod pinctrl_cedarfork")
-        os.system("rmmod ee1004")
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -537,7 +536,8 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
 
         # get gpio max
         gpio_max = self.get_gpio_max()
-        self.bsp_pr("GPIO MAX: {}".format(gpio_max))
+        gpio_base = self.get_gpio_base()
+        self.bsp_pr("GPIO MAX: {}, BASE: {}".format(gpio_max, gpio_base))
 
         # check i2c bus status
         self.check_i2c_status(board)
@@ -573,7 +573,7 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
 
         # init gpio
         self.bsp_pr("Init gpio")
-        self.init_gpio(gpio_max, -1, board)
+        self.init_gpio(gpio_max, gpio_base, board)
 
         # init EEPROM
         self.bsp_pr("Init port eeprom")
@@ -588,7 +588,9 @@ class OnlPlatform_x86_64_ufispace_s9720_56ed_r0(OnlPlatformUfiSpace):
 
         #self.bsp_pr("Init bcm88860")
         self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        self.insmod("ice", False)
+        os.system("modprobe ice")
+
         # init BCM82399
         os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))
 

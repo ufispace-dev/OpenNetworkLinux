@@ -27,6 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -413,7 +414,11 @@ static ssize_t read_gpio_max(struct device *dev,
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 
     if (attr->index == ATT_BSP_GPIO_MAX) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
         return sprintf(buf, "%d\n", ARCH_NR_GPIOS-1);
+#else
+        return sprintf(buf, "%d\n", -1);
+#endif
     }
     return -1;
 }
@@ -993,7 +998,11 @@ exit:
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 static int lpc_drv_remove(struct platform_device *pdev)
+#else
+static void lpc_drv_remove(struct platform_device *pdev)
+#endif
 {
     sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
@@ -1001,8 +1010,9 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
     return 0;
+#endif
 }
 
 static struct platform_driver lpc_drv = {
@@ -1013,7 +1023,7 @@ static struct platform_driver lpc_drv = {
     },
 };
 
-int lpc_init(void)
+static int __init lpc_init(void)
 {
     int err = 0;
 
@@ -1036,7 +1046,7 @@ int lpc_init(void)
     return err;
 }
 
-void lpc_exit(void)
+static void __exit lpc_exit(void)
 {
     platform_driver_unregister(&lpc_drv);
     platform_device_unregister(&lpc_dev);

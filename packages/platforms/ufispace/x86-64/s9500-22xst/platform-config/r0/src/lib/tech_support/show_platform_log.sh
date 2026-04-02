@@ -124,7 +124,7 @@ function _check_env {
         mkdir -p "${LOG_FOLDER_PATH}"
         echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
     fi
-    
+
     # check BSP init
     _check_bsp_init
     _update_gpio_offset
@@ -195,7 +195,7 @@ function _show_system_info {
     cmd_array=("uname -a" "cat /proc/cmdline" "cat /proc/ioports" \
                "cat /proc/iomem" "cat /proc/meminfo" \
                "cat /proc/sys/kernel/printk" )
-    
+
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do
         _echo "[Command]: ${cmd_array[$i]}"
@@ -208,7 +208,7 @@ function _show_system_info {
 
 function _show_board_info {
     _banner "Show Board Info"
-        
+
     #check hw rev value
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         hw_rev_value=`i2cget -y -f 3 0x20 0x1`
@@ -219,7 +219,7 @@ function _show_board_info {
             _echo "0x75 does not exist, Exit!!"
             exit 255;
         fi
-        
+
         hw_rev_value=`i2cget -y 0 0x20 0x1`
         rov_raw_value=`i2cget -y 0 0x20 0x0`
     fi
@@ -233,7 +233,7 @@ function _show_board_info {
     else
         hw_rev="PROTO"
     fi
-    
+
     #check board id value
     if [ "$((hw_rev_value & 0xf0))" == "$((16#00))" ]; then
         model_name="S9500-22XST"
@@ -242,7 +242,7 @@ function _show_board_info {
         _echo "Not support platform, Exit!!"
         exit 255;
     fi
-    
+
     #check build rev value
     if [ "$((hw_rev_value & 0x3))" == 3 ]; then
         build_rev="3"
@@ -253,7 +253,7 @@ function _show_board_info {
     else
         build_rev="0"
     fi
-    
+
     # finish work
     if [ "${BSP_INIT_FLAG}" == "0" ]; then
         i2cset -y 0 0x75 0x0
@@ -301,8 +301,8 @@ function _cpld_version {
         exit $ret
     fi
 
-    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} " 
-    _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#01000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))" 
+    _echo "[CPU CPLD Reg Raw]: ${cpu_cpld_info} "
+    _echo "[CPU CPLD Version]: $(( (cpu_cpld_info & 2#01000000) >> 6)).$(( cpu_cpld_info & 2#00111111 ))"
 
     # Main CPLD
     mb_cpld_info=`${IOGET} 0x702`
@@ -314,9 +314,9 @@ function _cpld_version {
         exit $ret
     fi
 
-    _echo "[MB CPLD Reg Raw]: ${mb_cpld_info} " 
-    _echo "[MB CPLD Version]: $(( (mb_cpld_info & 2#01000000) >> 6)).$(( mb_cpld_info & 2#00111111 ))" 
-    
+    _echo "[MB CPLD Reg Raw]: ${mb_cpld_info} "
+    _echo "[MB CPLD Version]: $(( (mb_cpld_info & 2#01000000) >> 6)).$(( mb_cpld_info & 2#00111111 ))"
+
 }
 
 function _ucd_version {
@@ -328,43 +328,43 @@ function _ucd_version {
 
     #get ucd date via BMC
     ucd_date_raw=$(eval "ipmitool raw 0x3c 0x12 0x0 0x34 0x7 0x9d ${LOG_REDIRECT}")
-    
+
     ret=$?
-    
+
     #check return code
     if [ ! $ret -eq 0 ] ; then
         _echo "Get UCD date fail!"
         return $ret
     fi
-    
+
     #add prefix 0x for each byte
     ucd_date_hex=${ucd_date_raw// /0x}
-    
+
     #convert hex to ascii
     ucd_date_ascii=`echo $ucd_date_hex | xxd -r`
-    
+
     ucd_date_revision=${ucd_date_ascii}
-    
+
     #get ucd version via BMC
     ucd_ver_raw=$(eval "ipmitool raw 0x3c 0x12 0x0 0x34 0x6 0x9b ${LOG_REDIRECT}")
-    
+
     ret=$?
-    
+
     #check return code
     if [ ! $ret -eq 0 ] ; then
         _echo "Get UCD version fail!"
         return $ret
     fi
-    
+
     #add prefix 0x for each byte
     ucd_ver_hex=${ucd_ver_raw// /0x}
-    
+
     #convert hex to ascii
     ucd_ver_ascii=`echo $ucd_ver_hex | xxd -r`
-    
+
     #first len-6 char are for revision
     ucd_ver_revision=${ucd_ver_ascii}
-    
+
     _echo "[${brd[i]} MFR_REVISION]: ${ucd_ver_revision}"
     _echo "[${brd[i]} MFR_DATE    ]: ${ucd_date_revision}"
 }
@@ -410,7 +410,7 @@ function _show_i2c_mux_devices {
             ret=$(eval "i2cdetect -y 0 ${LOG_REDIRECT}")
             _echo "${ret}"
             # close mux channel
-            i2cset -y 0 ${chip_addr} 0x0 
+            i2cset -y 0 ${chip_addr} 0x0
             _echo ""
         done
     fi
@@ -426,10 +426,10 @@ function _show_i2c_tree_bus_mux_i2c {
     local chip_addr2_3=""
     local chip_addr2_4=""
 
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         ## ROOT-0x75
         _show_i2c_mux_devices "0x75" "8" "ROOT-0x75"
-        
+
         ## ROOT-0x76
         _show_i2c_mux_devices "0x76" "8" "ROOT-0x76"
 
@@ -447,19 +447,19 @@ function _show_i2c_tree_bus_mux_i2c {
             _show_i2c_mux_devices "${chip_addr2_1}" "8" "ROOT-${chip_addr1}-3-${chip_addr2_1}"
             # close mux channel - 0x72 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x0
-            
+
             # open mux channel - 0x76 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x8
             _show_i2c_mux_devices "${chip_addr2_2}" "8" "ROOT-${chip_addr1}-3-${chip_addr2_2}"
             # close mux channel - 0x72 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x0
-            
+
             # open mux channel - 0x76 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x8
             _show_i2c_mux_devices "${chip_addr2_3}" "8" "ROOT-${chip_addr1}-3-${chip_addr2_3}"
             # close mux channel - 0x72 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x0
-            
+
             # open mux channel - 0x76 (chip_addr1)
             i2cset -y 0 ${chip_addr1} 0x8
             _show_i2c_mux_devices "${chip_addr2_4}" "8" "ROOT-${chip_addr1}-3-${chip_addr2_4}"
@@ -474,10 +474,10 @@ function _show_i2c_tree_bus_mux_i2c {
 
 function _show_i2c_tree_bus_mux_sysfs {
     _banner "Show I2C Tree Bus MUX (sysfs)"
-    
+
     local i2c_bus=""
 
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         all_i2c_bus=`ls /dev/i2c-* | awk -F"-" '{print $2}'`
         for i2c_bus in ${all_i2c_bus}
         do
@@ -485,7 +485,7 @@ function _show_i2c_tree_bus_mux_sysfs {
             _echo "---------------------------------------------------"
             ret=$(eval "i2cdetect -y ${i2c_bus} ${LOG_REDIRECT}")
             _echo "${ret}"
-        done        
+        done
     else
         echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
@@ -496,7 +496,7 @@ function _show_i2c_tree {
     _banner "Show I2C Tree"
 
     _show_i2c_tree_bus_0
-    
+
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         _show_i2c_tree_bus_mux_sysfs
     else
@@ -515,13 +515,13 @@ function _show_i2c_device_info {
     _echo ""
 
     local pca954x_device_id=("")
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         pca954x_device_id=("0x75" "0x76")
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
-   
+
     for ((i=0;i<5;i++))
     do
         _echo "[DEV PCA9548 (${i})]"
@@ -540,7 +540,7 @@ function _show_sys_devices {
     _echo "[Command]: ls /sys/class/gpio/"
     ret=($(ls /sys/class/gpio/))
     _echo "#${ret[*]}"
-    
+
     # show all gpio value and direction
     dev_num=`ls /sys/class/gpio | grep -v 'gpiochip\|export'`
     for i in ${dev_num}
@@ -601,7 +601,7 @@ function _show_psu_status {
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
-    
+
     # Read PSU0 Power Good Status (1: power good, 0: not providing power)
     cpld_psu_status_0_reg=`${IOGET} 0x708 | awk -F'is ' '{print $2}'`
     psu0_power_ok=$(((cpld_psu_status_0_reg & 2#00001000) >> 3))
@@ -621,7 +621,7 @@ function _show_psu_status {
     _echo "[PSU0 Absent Status (L)]: ${psu0_absent_l}"
     _echo "[PSU1 Status Reg Raw   ]: ${cpld_psu_status_0_reg}"
     _echo "[PSU1 Power Good Status]: ${psu1_power_ok}"
-    _echo "[PSU1 Absent Status (L)]: ${psu1_absent_l}"    
+    _echo "[PSU1 Absent Status (L)]: ${psu1_absent_l}"
 }
 
 function _show_rov {
@@ -634,7 +634,7 @@ function _show_port_status_sysfs {
 
     bus_id=""
 
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         sfp_bus_id="7"
         qsfp_bus_id="5"
 
@@ -647,7 +647,7 @@ function _show_port_status_sysfs {
                                      "0x20" "0x20" "0x20" "0x20" "0x20" \
                                      "0x20" "0x20" "0x22" "0x22" "0x22" \
                                      "0x22" "0x22" "0x22" "0x22" "0x22" )
-                                     
+
         sfp_status_ioexp_reg_array=( "-1"  "-1"  "-1"  "-1"  "1" \
                                       "1"  "1"  "1"  "1"  "1" \
                                       "1" "1"  "0"  "0"  "0" \
@@ -707,11 +707,11 @@ function _show_port_status_sysfs {
             _echo "${port_eeprom_A2_2nd}"
             _echo ""
         done
-        
+
         qsfp_eeprom_bus_id_array=( "36" "35" )
 
         qsfp_status_ioexp_addr_array=( "0x21" "0x21" )
-                                     
+
         qsfp_status_ioexp_reg_array=( "0"  "0"  )
 
         qsfp_status_ioexp_index_array=( "20"  "10"  )
@@ -841,7 +841,7 @@ function _show_cpld_cpudebug_register {
     if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         mb_start_cpld_reg=0x700
         mb_end_cpld_reg=0x71c
-        
+
         # MB CPLD register value
         _echo "[MB CPLD]:"
         for (( i=${mb_start_cpld_reg}; i<=${mb_end_cpld_reg}; i++ ))
@@ -850,10 +850,10 @@ function _show_cpld_cpudebug_register {
             ret=$(eval "${IOGET} ${addr} ${LOG_REDIRECT}")
             _echo "${ret}"
         done
-        
+
         cpu_start_cpld_reg=0x600
         cpu_end_cpld_reg=0x606
-        
+
         # CPU CPLD register value
         _echo "[CPU CPLD]:"
         for (( i=${cpu_start_cpld_reg}; i<=${cpu_end_cpld_reg}; i++ ))
@@ -862,7 +862,7 @@ function _show_cpld_cpudebug_register {
             ret=$(eval "${IOGET} ${addr} ${LOG_REDIRECT}")
             _echo "${ret}"
         done
-        
+
         _run_echo "${IOGET} 0x501 ${LOG_REDIRECT}"
         _run_echo "${IOGET} 0xf000 ${LOG_REDIRECT}"
         _run_echo "${IOGET} 0xf011 ${LOG_REDIRECT}"
@@ -875,7 +875,7 @@ function _show_cpld_cpudebug_register {
 
 function _show_cpld_error_log {
     _banner "Show CPLD Error Log"
-    
+
     _echo "Register: 0xB7 0xB6 0xB5 0xB4"
     _echo "============================="
     for ((i=0;i<256;i++))
@@ -895,7 +895,7 @@ function _show_cpld_error_log {
     done
 }
 
-# Note: In order to prevent affecting MCE mechanism, 
+# Note: In order to prevent affecting MCE mechanism,
 #       the function will not clear the 0x425 and 0x429 registers at step 1.1/1.2,
 #       and only use to show the current correctable error count.
 function _show_memory_correctable_error_count {
@@ -966,7 +966,7 @@ function _show_usb_info {
     ret=$(eval "lsusb -v ${LOG_REDIRECT}")
     _echo "${ret}"
     _echo ""
-    
+
     _echo "[Command]: lsusb -t"
     ret=$(eval "lsusb -t ${LOG_REDIRECT}")
     _echo "${ret}"
@@ -1009,7 +1009,7 @@ function _show_onie_upgrade_info {
             mkdir /mnt/onie-boot
         fi
 
-        mount LABEL=ONIE-BOOT /mnt/onie-boot/ 
+        mount LABEL=ONIE-BOOT /mnt/onie-boot/
         onie_show_version=`/mnt/onie-boot/onie/tools/bin/onie-version`
         onie_show_pending=`/mnt/onie-boot/onie/tools/bin/onie-fwpkg show-pending`
         onie_show_result=`/mnt/onie-boot/onie/tools/bin/onie-fwpkg show-results`
@@ -1026,9 +1026,9 @@ function _show_onie_upgrade_info {
 
 function _show_disk_info {
     _banner "Show Disk Info"
-   
+
     cmd_array=("lsblk" "parted -l /dev/sda" "fdisk -l /dev/sda" "cat /sys/fs/*/*/errors_count")
-    
+
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do
         _echo "[Command]: ${cmd_array[$i]}"
@@ -1038,21 +1038,28 @@ function _show_disk_info {
     done
 
     # check smartctl command
-    cmd="smartctl -a /dev/sda"
     ret=`which smartctl`
     if [ ! $? -eq 0 ]; then
-        _echo "[command]: ($cmd) not found (SKIP)!!"
+        _echo "[command]: smartctl not found (SKIP)!!"
     else
-        ret=$(eval "$cmd ${LOG_REDIRECT}")
-        _echo "[command]: $cmd"
-        _echo "${ret}"
+        local smartctl_commands=(
+        "smartctl -a /dev/sda"
+        "smartctl -x /dev/sda"
+        )
+
+        for cmd in "${smartctl_commands[@]}"; do
+            ret=$(eval "$cmd ${LOG_REDIRECT}")
+            _echo "[command]: $cmd"
+            _echo "${ret}"
+            _echo ""
+        done
     fi
 
 }
 
 function _show_lspci {
     _banner "Show lspci Info"
-    
+
     ret=`lspci`
     _echo "${ret}"
     _echo ""
@@ -1060,7 +1067,7 @@ function _show_lspci {
     _echo "[PCI Bridge Hotplug Status]: "
     pci_device_id=($(lspci | grep "PLX Technology" | awk '{print $1}'))
     for i in "${pci_device_id[@]}"
-    do  
+    do
         ret=`lspci -vvv -s ${i} | grep HotPlug`
         _echo "${i} ${ret}"
     done
@@ -1068,7 +1075,7 @@ function _show_lspci {
 
 function _show_lspci_detail {
     _banner "Show lspci Detail Info"
-    
+
     ret=$(eval "lspci -xxxx -vvv ${LOG_REDIRECT}")
     _echo "${ret}"
 }
@@ -1093,7 +1100,7 @@ function _show_ipmi_info {
 
     if [ -d "${ipmi_folder}" ]; then
         ipmi_file_array=($(ls ${ipmi_folder}))
-        for (( i=0; i<${#ipmi_file_array[@]}; i++ ))           
+        for (( i=0; i<${#ipmi_file_array[@]}; i++ ))
         do
             _echo "[Command]: cat ${ipmi_folder}/${ipmi_file_array[$i]} "
             ret=$(eval "cat "${ipmi_folder}/${ipmi_file_array[$i]}" ${LOG_REDIRECT}")
@@ -1116,7 +1123,7 @@ function _show_bios_info {
                "dmidecode -t 1" \
                "dmidecode -t 2" \
                "dmidecode -t 3")
-    
+
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do
         _echo "[Command]: ${cmd_array[$i]} "
@@ -1134,7 +1141,7 @@ function _show_bmc_info {
                "ipmitool channel info 0xf" "ipmitool channel info 0x1" \
                "ipmitool sol info 0x1" "ipmitool i2c bus=2 0x80 0x1 0x45" \
                "ipmitool mc watchdog get" "ipmitool mc info -I usb")
-    
+
     for (( i=0; i<${#cmd_array[@]}; i++ ))
     do
         _echo "[Command]: ${cmd_array[$i]} "
@@ -1142,7 +1149,7 @@ function _show_bmc_info {
         _echo "${ret}"
         _echo ""
     done
-    
+
 }
 
 function _show_bmc_device_status {
@@ -1160,7 +1167,7 @@ function _show_bmc_device_status {
     # Step3: Check status register of UCD
     # Step4: Re-start IPMI polling
     _echo "[UCD Device Status (BMC) ]"
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         ## Step1: Stop IPMI Polling
         #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x0 ${LOG_REDIRECT}")
         #_echo "[Stop IPMI Polling ]: ${ret}"
@@ -1201,7 +1208,7 @@ function _show_bmc_device_status {
     # Step3: Switch I2C MUX to PSU1 Channel and Check Status Registers
     # Step4: Re-start IPMI polling
     _echo "[PSU Device Status (BMC) ]"
-    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then 
+    if [ "${MODEL_NAME}" == "S9500-22XST" ]; then
         ## Step1: Stop IPMI Polling
         #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x0 ${LOG_REDIRECT}")
         #_echo "[Stop IPMI Polling ]: ${ret}"
@@ -1239,13 +1246,13 @@ function _show_bmc_device_status {
         #ret=$(eval "ipmitool raw 0x3c 0x4 0x9 0x1 0x1 ${LOG_REDIRECT}")
         #_echo "[Start IPMI Polling]: ${ret}"
         #_echo ""
-        
+
         ret=$(eval "ipmitool raw 0x3c 0x12 0x2 0x33 0x1 0x6 0x40 ${LOG_REDIRECT}")
     else
         _echo "Unknown MODEL_NAME (${MODEL_NAME}), exit!!!"
         exit 1
     fi
-    
+
     # Step4: Re-start IPMI polling
     ret=$(eval "ipmitool raw 0x3c 0x07 0x0 ${LOG_REDIRECT}")
     _echo "[Start IPMI Polling]: ${ret}"
@@ -1265,7 +1272,7 @@ function _show_bmc_sensors {
 function _show_bmc_sel_raw_data {
     _banner "Show BMC SEL Raw Data"
     echo "    Show BMC SEL Raw Data, please wait..."
-    
+
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         _echo "[SEL RAW Data]:"
         ret=$(eval "ipmitool sel save ${LOG_FOLDER_PATH}/sel_raw_data.log ${LOG_REDIRECT}")
@@ -1275,7 +1282,7 @@ function _show_bmc_sel_raw_data {
 
 function _show_bmc_sel_elist {
     _banner "Show BMC SEL"
-    
+
     ret=$(eval "ipmitool sel elist ${LOG_REDIRECT}")
     _echo "[SEL Record]:"
     _echo "${ret}"
@@ -1335,7 +1342,7 @@ function _show_bmc_sel_elist_detail {
 
 function _show_dpll_register {
     _banner "Show DPLL all register"
-    
+
     if [ "${BSP_INIT_FLAG}" == "1" ]; then
         dpll_bus_num=4
     else
@@ -1344,42 +1351,42 @@ function _show_dpll_register {
             _echo "0x75 does not exist, Exit!!"
             exit 255;
         fi
-        
+
         dpll_bus_num=0
     fi
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 0"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 0
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 1"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 1
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 2"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 2
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 3"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 3
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 4"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 4
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 5"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 5
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 6"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 6
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     _echo "i2cset -y ${dpll_bus_num} 0x53 0x7f 7"
     i2cset -y ${dpll_bus_num} 0x53 0x7f 7
     _run_echo "i2cdump -y ${dpll_bus_num} 0x53 b"
-    
+
     if [ "${BSP_INIT_FLAG}" != "1" ]; then
         i2cset -y 0 0x75 0
     fi
@@ -1387,7 +1394,7 @@ function _show_dpll_register {
 
 function _show_dmesg {
     _banner "Show Dmesg"
-    
+
     ret=$(eval "dmesg ${LOG_REDIRECT}")
     _echo "${ret}"
 }
@@ -1399,24 +1406,23 @@ function _additional_log_collection {
         _echo "LOG_FOLDER_PATH (${LOG_FOLDER_PATH}) not found!!!"
         _echo "do nothing..."
     else
-        #_echo "copy /var/log/syslog* to ${LOG_FOLDER_PATH}"
-        #cp /var/log/syslog*  "${LOG_FOLDER_PATH}"
+        log_files_to_copy=("/var/log/kern.log"
+                           "/var/log/dmesg"
+                           "/var/log/onlpd.log"
+                           "/tmp/ipmitool_err_msg")
 
-        if [ -f "/var/log/kern.log" ]; then
-            _echo "copy /var/log/kern.log* to ${LOG_FOLDER_PATH}"
-            cp /var/log/kern.log*  "${LOG_FOLDER_PATH}"
-        fi
-        
-        if [ -f "/var/log/dmesg" ]; then
-            _echo "copy /var/log/dmesg* to ${LOG_FOLDER_PATH}"
-            cp /var/log/dmesg*  "${LOG_FOLDER_PATH}"
-        fi
+        for log_file in "${log_files_to_copy[@]}"; do
+            if [ -f "$log_file" ]; then
+                _echo "copy ${log_file}* to ${LOG_FOLDER_PATH}"
+                cp "${log_file}"* "${LOG_FOLDER_PATH}"
+            fi
+        done
     fi
 }
 
 function _compression {
     _banner "Compression"
-    
+
     if [ ! -z "${LOG_FOLDER_PATH}" ] && [ -d "${LOG_FOLDER_PATH}" ]; then
         cd "${LOG_FOLDER_ROOT}"
         tar -zcf "${LOG_FOLDER_NAME}".tgz "${LOG_FOLDER_NAME}"

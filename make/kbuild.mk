@@ -187,12 +187,13 @@ MODSYNCLIST := $(MODSYNCLIST_DEFAULT) $(MODSYNCLIST_EXTRA) $(K_MODSYNCLIST)
 # This file must be preserved for PPC module builds.
 MODSYNCKEEP := arch/powerpc/lib/crtsavres.o
 
+# Note: module-common.c was introduced in kernel 6.12 and is required, so it must not be removed from $(K_MBUILD_DIR)
 mbuild: build
 	rm -rf $(K_MBUILD_DIR)
 	mkdir -p $(K_MBUILD_DIR)
 	$(foreach f,$(MODSYNCLIST),$(ONL)/tools/scripts/tree-copy.sh $(K_SOURCE_DIR) $(f) $(K_MBUILD_DIR);)
 	find $(K_MBUILD_DIR) -name "*.o*" -delete
-	find $(K_MBUILD_DIR) -name "*.c" -delete
+	find $(K_MBUILD_DIR) -name "*.c" ! -name "module-common.c" -delete
 	find $(K_MBUILD_DIR) -name "*.ko" -delete
 ifeq ($(ARCH), powerpc)
 	$(foreach f,$(MODSYNCKEEP), cp $(K_SOURCE_DIR)/$(f) $(K_MBUILD_DIR)/$(f) || true;)

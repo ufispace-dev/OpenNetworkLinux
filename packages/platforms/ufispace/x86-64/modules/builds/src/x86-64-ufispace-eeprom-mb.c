@@ -192,22 +192,36 @@ static int mb_eeprom_detect(struct i2c_client *client, struct i2c_board_info *in
 	/* EDID EEPROMs are often 24C00 EEPROMs, which answer to all
 	   addresses 0x50-0x57, but we only care about 0x51 and 0x55. So decline
 	   attaching to addresses >= 0x56 on DDC buses */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
 	if (!(adapter->class & I2C_CLASS_SPD) && client->addr >= 0x56) {
 		return -ENODEV;
 	}
+#else
+    if (client->addr >= 0x56) {
+        return -ENODEV;
+    }
+#endif
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_READ_BYTE)
 	 && !i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WRITE_BYTE_DATA)) {
 		return -ENODEV;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 	strlcpy(info->type, "eeprom", I2C_NAME_SIZE);
+#else
+    strscpy(info->type, "eeprom", I2C_NAME_SIZE);
+#endif
 
 	return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int mb_eeprom_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
+#else
+static int mb_eeprom_probe(struct i2c_client *client)
+#endif
 {
 	struct eeprom_data *data;
 	int err;
@@ -262,7 +276,13 @@ static struct i2c_driver mb_eeprom_driver = {
 	.remove		= mb_eeprom_remove,
 	.id_table	= mb_eeprom_id,
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 	.class		= I2C_CLASS_DDC | I2C_CLASS_SPD,
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6, 10, 0)
+    .class      = I2C_CLASS_SPD,
+#else
+    .class      = 0,
+#endif
 	.detect		= mb_eeprom_detect,
 	.address_list	= normal_i2c,
 };

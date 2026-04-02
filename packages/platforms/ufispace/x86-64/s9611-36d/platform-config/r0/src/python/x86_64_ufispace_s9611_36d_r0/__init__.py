@@ -520,7 +520,8 @@ class OnlPlatform_x86_64_ufispace_s9611_36d_r0(OnlPlatformUfiSpace):
         # init ice (need to have ice before bcm82752 init to avoid failure)
         self.bsp_pr("Init ice")
         self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        self.insmod("ice", False)
+        os.system("modprobe ice")
 
         # init bcm82752
         self.bsp_pr("Init bcm82752")

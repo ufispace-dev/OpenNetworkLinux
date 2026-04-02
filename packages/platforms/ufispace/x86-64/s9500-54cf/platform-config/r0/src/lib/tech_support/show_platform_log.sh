@@ -80,7 +80,7 @@ function _banner {
 }
 
 function _pkg_version {
-    _banner "Package Version = 1.0.1"
+    _banner "Package Version = 1.0.2"
 }
 
 function _update_gpio_max {
@@ -1428,9 +1428,12 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
-
-    echo "#   done..."
 }
 
+function _trap_cleanup {
+    _compression
+    echo "#   The tech-support collection is completed. Please share the tech support log file."
+}
+
+trap '_trap_cleanup' EXIT ERR
 _main

@@ -108,6 +108,8 @@
 
 /* #define DEBUG 1 */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
 #undef EEPROM_CLASS
 #ifdef CONFIG_EEPROM_CLASS
 #define EEPROM_CLASS
@@ -1211,3 +1213,8 @@ module_exit(optoe_exit);
 MODULE_DESCRIPTION("Driver for optical transceiver (SFP, QSFP, ...) EEPROMs");
 MODULE_AUTHOR("DON BOLLINGER <don@thebollingers.org>");
 MODULE_LICENSE("GPL");
+
+#else
+#include <linux/module.h>
+MODULE_LICENSE("GPL");
+#endif

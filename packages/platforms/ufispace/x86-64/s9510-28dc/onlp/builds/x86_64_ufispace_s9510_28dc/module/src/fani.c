@@ -222,7 +222,7 @@ int onlp_fani_status_get(onlp_oid_t id, uint32_t* rv)
 
     //check presence for fantray 1-5
     if (local_id >= ONLP_FAN_0 && local_id <= ONLP_FAN_4) {
-        ONLP_TRY(file_read_hex(&presence, LPC_FMT "fan_present_%d", local_id - 1));
+        ONLP_TRY(file_read_hex(&presence, LPC_FMT "fan_present_%d", local_id - ONLP_FAN_0));
         if( presence == 0 ) {
             *rv |= ONLP_FAN_STATUS_PRESENT;
         } else {

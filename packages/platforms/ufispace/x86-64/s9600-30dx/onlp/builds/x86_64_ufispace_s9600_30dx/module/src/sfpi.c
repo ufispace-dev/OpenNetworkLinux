@@ -74,9 +74,10 @@ const int SFP_BIT_SHIFT[SFP_NUM] = {0, 3};
 #define MASK_0000_0010 0x02
 
 //SFF8636 TX Disable
-#define SFF8636_EEPROM_OFFSET_TXDIS    0x56
-#define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
-#define SFF8636_EEPROM_TX_EN           0x0
+#define SFF8636_EEPROM_OFFSET_TXDIS    (0x56)
+#define SFF8636_EEPROM_TX_DIS          (0x0f)  /* txdis valid bit(bit0-bit3), xxxx 1111 */
+#define SFF8636_EEPROM_TX_EN           (0x0)
+#define TX_DIS_INPUT_MAX               (0xff) /* for input value validation only */
 
 //CMIS TX Disable
 #define CMIS_PAGE_SIZE                        (128)
@@ -449,20 +450,31 @@ static int ufi_file_seek_readb(const char *file, long offset, uint8_t *value)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_sff8636_txdisable_status_get(int port, int* status)
+static int ufi_sff8636_txdisable_status_get(int port, int* status, onlp_sfp_control_t control)
 {
     uint8_t value = 0;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     if (onlp_sfpi_is_present(port) != 1) {
         return ONLP_STATUS_OK;
     }
 
     ONLP_TRY(value = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
-    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
-    if (value == SFF8636_EEPROM_TX_DIS) {
-        *status = 1;
-    } else {
-        *status = 0;
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        *status = value;
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+        if (value == SFF8636_EEPROM_TX_DIS) {
+            *status = 1;
+        } else {
+            *status = 0;
+        }
     }
 
     return ONLP_STATUS_OK;
@@ -475,21 +487,37 @@ static int ufi_sff8636_txdisable_status_get(int port, int* status)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_sff8636_txdisable_status_set(int port, int status)
+static int ufi_sff8636_txdisable_status_set(int port, int status, onlp_sfp_control_t control)
 {
     uint8_t value = 0, readback = 0;
 
-    if (status == 0) {
-        value = SFF8636_EEPROM_TX_EN;
-    } else if (status == 1) {
-        value = SFF8636_EEPROM_TX_DIS;
-    } else {
-        AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
         return ONLP_STATUS_E_PARAM;
     }
 
     if (onlp_sfpi_is_present(port) != 1) {
         return ONLP_STATUS_OK;
+    }
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        // check status range
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(status & SFF8636_EEPROM_TX_DIS);
+        }
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        if (status == 0) {
+            value = SFF8636_EEPROM_TX_EN;
+        } else if (status == 1) {
+            value = SFF8636_EEPROM_TX_DIS;
+        } else {
+            AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     ONLP_TRY(onlp_sfpi_dev_writeb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS, value));
@@ -558,13 +586,19 @@ static int ufi_cmis_txdisable_supported(int port)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_cmis_txdisable_status_get(int port, int* status)
+static int ufi_cmis_txdisable_status_get(int port, int* status, onlp_sfp_control_t control)
 {
     int ret = 0;
     uint8_t value = 0;
     char sysfs_path[256] = {0};
     int bus = 0;
     int length = 0;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
@@ -589,11 +623,15 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
-    if (value == CMIS_VAL_TX_DIS) {
-        *status = 1;
-    } else {
-        *status = 0;
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        *status = value;
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+        if (value == CMIS_VAL_TX_DIS) {
+            *status = 1;
+        } else {
+            *status = 0;
+        }
     }
 
     return ONLP_STATUS_OK;
@@ -606,12 +644,18 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_cmis_txdisable_status_set(int port, int status)
+static int ufi_cmis_txdisable_status_set(int port, int status, onlp_sfp_control_t control)
 {
     uint8_t value = 0, readback = 0;
     char sysfs_path[256] = {0};
     int bus = 0;
     int seek = CMIS_SEEK_TX_DIS;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
@@ -623,14 +667,23 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
-    // set value
-    if (status == 0) {
-        value = CMIS_VAL_TX_EN;
-    } else if (status == 1) {
-        value = CMIS_VAL_TX_DIS;
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(status);
+        }
     } else {
-        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
-        return ONLP_STATUS_E_PARAM;
+        // set value
+        if (status == 0) {
+            value = CMIS_VAL_TX_EN;
+        } else if (status == 1) {
+            value = CMIS_VAL_TX_DIS;
+        } else {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     // set sysfs_path
@@ -1176,9 +1229,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                     ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(port));
 
                     if (dev_class == 1) { //SFF8636 module
-                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_set(port, value));
+                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_set(port, value, control));
                     } else if (dev_class == 3) { //CMIS module
-                        ONLP_TRY(rc = ufi_cmis_txdisable_status_set(port, value));
+                        ONLP_TRY(rc = ufi_cmis_txdisable_status_set(port, value, control));
                     } else if (dev_class < 0) {
                         AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", port, dev_class);
                         return ONLP_STATUS_E_UNSUPPORTED;
@@ -1336,9 +1389,9 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                     ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(port));
 
                     if (dev_class == 1) { //SFF8636 module
-                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_get(port, value));
+                        ONLP_TRY(rc = ufi_sff8636_txdisable_status_get(port, value, control));
                     } else if (dev_class == 3) { //CMIS module
-                        rc = ufi_cmis_txdisable_status_get(port, value);
+                        rc = ufi_cmis_txdisable_status_get(port, value, control);
                     } else if (dev_class < 0) {
                         AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", port, dev_class);
                         return ONLP_STATUS_E_UNSUPPORTED;

@@ -73,7 +73,8 @@ enum cpld_id {
 #define CPLD_SYSTEM_LED_SYNC_ID_REG       0x82
 #define CPLD_HBM_PWR_CTRL_REG             0x95
 #define CPLD_HBM_PWR_FUNC_REG             0x9F
-
+#define CPLD_MGMT_0_1_LED_CTRL_REG        0x83
+#define CPLD_MGMT_2_3_LED_CTRL_REG        0x84
 #define DBG_CPLD_MAC_INTR_REG             0xE0
 #define DBG_CPLD_CPLDX_INTR_REG           0xE4
 #define DBG_CPLD_THERMAL_INTR_BASE_REG    0xE6

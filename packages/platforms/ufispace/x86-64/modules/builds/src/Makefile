@@ -1,19 +1,15 @@
 obj-m += x86-64-ufispace-eeprom-mb.o
 obj-m += x86-64-ufispace-sys-eeprom.o
 obj-m += x86-64-ufispace-irq-handler.o
+obj-m += optoe.o
 
 KVERSION := $(shell echo $(KERNELVERSION) | cut -d "." -f 1,2)
 KVERSION_MAJOR := $(shell echo $(KERNELVERSION) | cut -d "." -f 1)
 KVERSION_MINOR := $(shell echo $(KERNELVERSION) | cut -d "." -f 2)
+check_ge = $(shell [ "$(1)" -gt "$(3)" ] || [ "$(1)" -eq "$(3)" -a "$(2)" -ge "$(4)" ] && echo yes)
 
-# patch i2c-ismt if kernel < 5.0
-PATCH_MAJOR := 5
-PATCH_MINOR := 0
-KV_GE_PATCH := $(shell [ $(KVERSION_MAJOR) -gt $(PATCH_MAJOR) -o \( $(KVERSION_MAJOR) -eq $(PATCH_MAJOR) -a $(KVERSION_MINOR) -ge $(PATCH_MINOR) \) ] && echo true)
-ifneq ($(KV_GE_PATCH),true)
-	obj-m += i2c-ismt.o
-endif
-
+ifneq ($(call check_ge,$(KVERSION_MAJOR),$(KVERSION_MINOR),6,2),yes)
+# kernel < 6.2
 #i40e ccflags
 ccflags-y += -I$(src)/i40e -DUSE_INTEL_AUX_BUS
 
@@ -86,4 +82,22 @@ endif
 
 ifndef CONFIG_GNSS
 ice-objs += ice/kcompat_gnss.o
+endif
+
+else
+# kernel = 6.12
+$(info Please enable the following kernel configurations)
+$(info CONFIG_I40E=m)
+$(info CONFIG_ICE=m)
+$(info CONFIG_AUXILIARY_BUS=y)
+endif
+
+# patch i2c-ismt if kernel < 5.0
+ifneq ($(call check_ge,$(KVERSION_MAJOR),$(KVERSION_MINOR),5,0),yes)
+    obj-m += i2c-ismt.o
+endif
+
+# patch i2c-smbus if kernel >= 6.8
+ifeq ($(call check_ge,$(KVERSION_MAJOR),$(KVERSION_MINOR),6,8),yes)
+    obj-m += i2c-smbus.o
 endif

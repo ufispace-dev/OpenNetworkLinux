@@ -30,8 +30,11 @@ enum cpld_id {
     cpld5,
 };
 
-
-#define CPLD_NONE_REG                       0x00
+/* 
+ *  Normally, the CPLD register range is 0x00-0xff.
+ *  Therefore, we define the invalid address 0x100 as CPLD_NONE_REG
+ */
+#define CPLD_NONE_REG                       0x100
 
 /* CPLD Common */
 #define CPLD_VERSION_REG                    0x02

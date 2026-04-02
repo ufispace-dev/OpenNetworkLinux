@@ -224,6 +224,7 @@ enum cpld_id {
 #define MASK_0000_0100       (0x04)
 #define MASK_0000_0111       (0x07)
 #define MASK_0000_1101       (0x0D)
+#define MASK_0000_1111       (0x0F)
 #define MASK_0001_1000       (0x18)
 #define MASK_0010_0000       (0x20)
 #define MASK_0011_1000       (0x38)
@@ -231,6 +232,7 @@ enum cpld_id {
 #define MASK_1000_0000       (0x80)
 #define MASK_1100_0000       (0xC0)
 #define MASK_1101_0000       (0xD0)
+#define MASK_1111_0000       (0xF0)
 
 /* common manipulation */
 #define INVALID(i, min, max)    ((i < min) || (i > max) ? 1u : 0u)

@@ -6,12 +6,13 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.2-bsp"
+VER="0.0.4-bsp"
 silence=0
 #            MAC#L   MAC#R
 MAC_RP_ARR=(15:05.0 15:02.0)
 #            OP2#0   OP2#1   OP2#2   OP2#3
 OP2_RP_ARR=(15:04.0 15:03.0 90:05.0 90:04.0)
+LNKCTL_REG="CAP_EXP+10.w"
 
 bus_num_check()
 {
@@ -230,25 +231,25 @@ enable_common_clk()
 {
     case ${1} in
     mac)
-        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 1
         ;;
     op2)
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 1
         ;;
     *)
@@ -262,25 +263,25 @@ retrain_link()
 {
     case "${1}" in
     "mac")
-        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${MAC_RP_ARR[0]} ${LNKCTL_REG})
+        setpci -s ${MAC_RP_ARR[0]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${MAC_RP_ARR[1]} ${LNKCTL_REG})
+        setpci -s ${MAC_RP_ARR[1]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 1
         ;;
     "op2")
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[0]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_RP_ARR[0]} ${LNKCTL_REG})
+        setpci -s ${OP2_RP_ARR[0]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[1]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_RP_ARR[1]} ${LNKCTL_REG})
+        setpci -s ${OP2_RP_ARR[1]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[2]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_RP_ARR[2]} ${LNKCTL_REG})
+        setpci -s ${OP2_RP_ARR[2]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_RP_ARR[3]} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_RP_ARR[3]} ${LNKCTL_REG})
+        setpci -s ${OP2_RP_ARR[3]} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 1
         ;;
     *)

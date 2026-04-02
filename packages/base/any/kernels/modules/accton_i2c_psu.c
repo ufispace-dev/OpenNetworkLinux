@@ -3,6 +3,8 @@
  *
  */
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
 #include <linux/module.h>
 #include <linux/jiffies.h>
 #include <linux/i2c.h>
@@ -591,3 +593,8 @@ MODULE_LICENSE("GPL");
 
 module_init(accton_i2c_psu_init);
 module_exit(accton_i2c_psu_exit);
+
+#else
+#include <linux/module.h>
+MODULE_LICENSE("GPL");
+#endif

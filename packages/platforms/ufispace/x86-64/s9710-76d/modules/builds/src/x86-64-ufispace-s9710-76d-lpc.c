@@ -1210,7 +1210,11 @@ exit:
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 static int lpc_drv_remove(struct platform_device *pdev)
+#else
+static void lpc_drv_remove(struct platform_device *pdev)
+#endif
 {
     sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
@@ -1218,10 +1222,9 @@ static int lpc_drv_remove(struct platform_device *pdev)
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &temp_attr_grp);
-    sysfs_remove_group(&pdev->dev.kobj, &onie_attr_grp);
-    sysfs_remove_group(&pdev->dev.kobj, &bde_attr_grp);
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
     return 0;
+#endif
 }
 
 static struct platform_driver lpc_drv = {

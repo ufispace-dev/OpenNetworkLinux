@@ -465,7 +465,8 @@ class OnlPlatform_x86_64_ufispace_s9600_30dx_r0(OnlPlatformUfiSpace):
         # init i40e (need to have i40e before phy init to avoid failure)
         self.bsp_pr("Init i40e")
         self.insmod("intel_auxiliary", False)
-        self.insmod("i40e")
+        self.insmod("i40e", False)
+        os.system("modprobe i40e")
 
         # sets the System Event Log (SEL) timestamp to the current system time
         os.system ("timeout 5 ipmitool sel time set now > /dev/null 2>&1")

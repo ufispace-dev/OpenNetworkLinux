@@ -84,6 +84,18 @@ module_param(mux_en, bool, S_IWUSR|S_IRUSR);
     BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
+#define I2C_READ_BYTE_DATA_NOLOCK(ret, i2c_client, reg) \
+{ \
+    ret = i2c_smbus_read_byte_data(i2c_client, reg); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
+}
+
+#define I2C_WRITE_BYTE_DATA_NOLOCK(ret, i2c_client, reg, val) \
+{ \
+    ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
+    BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
+}
+
 #define _DEVICE_ATTR(_name)     \
     &sensor_dev_attr_##_name.dev_attr.attr
 
@@ -1636,7 +1648,9 @@ enum bsp_log_ctrl {
 /* CPLD sysfs attributes hook functions  */
 static ssize_t cpld_show(struct device *dev, struct device_attribute *da, char *buf);
 static ssize_t cpld_store(struct device *dev, struct device_attribute *da, const char *buf, size_t count);
-u8 _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_read_nolock(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_write_nolock(struct device *dev, u8 reg, u8 reg_val);
 static ssize_t cpld_reg_read(struct device *dev, char *buf, u8 reg, u8 mask, u8 data_type);
 static ssize_t cpld_reg_write(struct device *dev, const char *buf, size_t count, u8 reg, u8 mask, bool write_protect);
 static ssize_t _cpld_reg_write_with_protect(struct device *dev, u8 reg, u8 reg_val);
@@ -3255,10 +3269,10 @@ u8 _mask_shift(u8 val, u8 mask)
     return (val & mask) >> shift;
 }
 
-static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+static int _parse_data(char *buf, unsigned int data, u8 data_type)
 {
     if(buf == NULL) {
-        return -1;
+        return -EINVAL;
     }
 
     if(data_type == DATA_HEX) {
@@ -3266,7 +3280,7 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
     } else if(data_type == DATA_DEC) {
         return sprintf(buf, "%u", data);
     } else {
-        return -1;
+        return -EINVAL;
     }
     return 0;
 }
@@ -3546,7 +3560,7 @@ static ssize_t cpld_store(struct device *dev,
 }
 
 /* get cpld register value */
-u8 _cpld_reg_read(struct device *dev,
+int _cpld_reg_read(struct device *dev,
                     u8 reg,
                     u8 mask)
 {
@@ -3556,6 +3570,26 @@ u8 _cpld_reg_read(struct device *dev,
     int reg_val;
 
     I2C_READ_BYTE_DATA(reg_val, &data->access_lock, client, reg);
+
+    if (unlikely(reg_val < 0)) {
+        return reg_val;
+    } else {
+        reg_val=_mask_shift(reg_val, mask);
+        return reg_val;
+    }
+}
+
+/* get cpld register value without lock */
+int _cpld_reg_read_nolock(struct device *dev,
+                    u8 reg,
+                    u8 mask)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
+    int reg_val;
+
+    I2C_READ_BYTE_DATA_NOLOCK(reg_val, client, reg);
 
     if (unlikely(reg_val < 0)) {
         return reg_val;
@@ -3583,7 +3617,7 @@ static ssize_t cpld_reg_read(struct device *dev,
     }
 }
 
-u8 _cpld_reg_write(struct device *dev,
+int _cpld_reg_write(struct device *dev,
                     u8 reg,
                     u8 reg_val)
 {
@@ -3598,6 +3632,20 @@ u8 _cpld_reg_write(struct device *dev,
     return ret;
 }
 
+int _cpld_reg_write_nolock(struct device *dev,
+                    u8 reg,
+                    u8 reg_val)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
+    int ret = 0;
+
+    I2C_WRITE_BYTE_DATA_NOLOCK(ret, client, reg, reg_val);
+
+    return ret;
+}
+
 /* set cpld register value */
 static ssize_t cpld_reg_write(struct device *dev,
                     const char *buf,
@@ -3606,17 +3654,25 @@ static ssize_t cpld_reg_write(struct device *dev,
                     u8 mask,
                     bool write_protect)
 {
-    u8 reg_val, reg_val_now, shift;
+    u8 reg_val, shift;
+    int reg_val_now;
     int ret = 0;
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
         return -EINVAL;
 
+    // lock mutex during register access
+    mutex_lock(&data->access_lock);
+
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
-        reg_val_now = _cpld_reg_read(dev, reg, MASK_ALL);
+        reg_val_now = _cpld_reg_read_nolock(dev, reg, MASK_ALL);
         if (unlikely(reg_val_now < 0)) {
             dev_err(dev, "cpld_reg_write() error, reg_val_now=%d\n", reg_val_now);
+            mutex_unlock(&data->access_lock);
             return reg_val_now;
         } else {
             //clear bits in reg_val_now by the mask
@@ -3632,8 +3688,11 @@ static ssize_t cpld_reg_write(struct device *dev,
         ret = _cpld_reg_write_with_protect(dev, reg, reg_val);
     }
     else {
-        ret = _cpld_reg_write(dev, reg, reg_val);
+        ret = _cpld_reg_write_nolock(dev, reg, reg_val);
     }
+
+    // unlock mutex after register access
+    mutex_unlock(&data->access_lock);
 
     if (unlikely(ret < 0)) {
         dev_err(dev, "cpld_reg_write() error, return=%d\n", ret);
@@ -3653,19 +3712,14 @@ static ssize_t _cpld_reg_write_with_protect(struct device *dev,
     u8 reg_wp_val = 0;
     u8 reg_wp_mask = 0x01;
     struct i2c_client *i2c_client = to_i2c_client(dev);
-    struct i2c_mux_core *muxc = i2c_get_clientdata(i2c_client);
-    struct cpld_data *data = i2c_mux_priv(muxc);
 
     BSP_LOG_W("Writing protected cpld register, reg=0x%x, value=0x%x\n", reg, reg_val);
-
-    // lock the write protect session
-    mutex_lock(&data->access_lock);
 
     // read the write protect reg
     ret = i2c_smbus_read_byte_data(i2c_client, reg_wp);
     if (unlikely(ret < 0)) {
         dev_err(dev, "i2c_smbus_read_byte_data() error, reg=0x%x, return=%d\n", reg_wp, ret);
-        goto error;
+        goto exit;
     }
 
     reg_wp_val = ret;
@@ -3677,7 +3731,7 @@ static ssize_t _cpld_reg_write_with_protect(struct device *dev,
 
         if (unlikely(ret < 0)){
             dev_err(dev, "i2c_smbus_write_byte_data() error, reg=0x%x, value=0x%x, return=%d\n", reg, reg_val, ret);
-            goto error;
+            goto exit;
         }
     }
     else {
@@ -3687,7 +3741,7 @@ static ssize_t _cpld_reg_write_with_protect(struct device *dev,
 
         if (unlikely(ret < 0)) {
             dev_err(dev, "i2c_smbus_write_byte_data() error, reg=0x%x, value=0x%x, return=%d\n", reg_wp, reg_wp_val, ret);
-            goto error;
+            goto exit;
         }
 
         // write target reg
@@ -3702,7 +3756,7 @@ static ssize_t _cpld_reg_write_with_protect(struct device *dev,
             if (unlikely(ret < 0)) {
                 dev_err(dev, "i2c_smbus_write_byte_data() error, reg=0x%x, value=0x%x, return=%d\n", reg_wp, reg_wp_val, ret);
             }
-            goto error;
+            goto exit;
         }
 
         // disable reg write
@@ -3711,17 +3765,13 @@ static ssize_t _cpld_reg_write_with_protect(struct device *dev,
 
         if (unlikely(ret < 0)) {
             dev_err(dev, "i2c_smbus_write_byte_data() error, reg=0x%x, value=0x%x, return=%d\n", reg_wp, reg_wp_val, ret);
-            goto error;
+            goto exit;
         }
     }
 
-error:
-    // unlock the write protect session
-    mutex_unlock(&data->access_lock);
+exit:
     return ret;
 }
-
-
 
 /* get cpld/fpga verison human read */
 static ssize_t version_h_show(struct device *dev,
@@ -3757,7 +3807,7 @@ static ssize_t version_h_show(struct device *dev,
                 _cpld_reg_read(dev, attr_reg[minor].reg, attr_reg[minor].mask),
                 _cpld_reg_read(dev, attr_reg[build].reg, attr_reg[build].mask));
     }
-    return -1;
+    return EINVAL;
 }
 
 /* add valid cpld client to list */

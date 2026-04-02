@@ -79,6 +79,7 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
     PATH_LPC_GRP_BSP=PATH_LPC+"/bsp"
     PATH_LPC_GRP_MB_CPLD=PATH_LPC+"/mb_cpld"
     PATH_BSP_GPIO_MAX=PATH_LPC_GRP_BSP+"/bsp_gpio_max"
+    PATH_BSP_GPIO_BASE=PATH_LPC_GRP_BSP+"/bsp_gpio_base"
     PATH_MUX_RESET_ALL=PATH_LPC_GRP_MB_CPLD + "/mux_reset_all"
     PATH_BOARD_HW_ID=PATH_LPC_GRP_MB_CPLD+"/board_hw_id"
     PATH_BOARD_DEPH_ID=PATH_LPC_GRP_MB_CPLD+"/board_deph_id"
@@ -170,26 +171,26 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
     }
 
     gpio_map_alpha = {
-        511:{'offset':  0  , 'dir': 'in'   , 'desc': "reserve"},
-        510:{'offset': -1  , 'dir': 'low'  , 'desc': "7SEG_RD"},
-        509:{'offset': -2  , 'dir': 'low'  , 'desc': "7SEG_RC"},
-        508:{'offset': -3  , 'dir': 'low'  , 'desc': "7SEG_RE"},
-        507:{'offset': -4  , 'dir': 'low'  , 'desc': "7SEG_RB"},
-        506:{'offset': -5  , 'dir': 'high' , 'desc': "7SEG_RG"},
-        505:{'offset': -6  , 'dir': 'low'  , 'desc': "7SEG_RF"},
-        504:{'offset': -7  , 'dir': 'low'  , 'desc': "7SEG_RA"},
-        503:{'offset': -8  , 'dir': 'in'   , 'desc': "reserve"},
-        502:{'offset': -9  , 'dir': 'low'  , 'desc': "7SEG_LA"},
-        501:{'offset': -10 , 'dir': 'low'  , 'desc': "7SEG_LB"},
-        500:{'offset': -11 , 'dir': 'low'  , 'desc': "7SEG_LF"},
-        499:{'offset': -12 , 'dir': 'high' , 'desc': "7SEG_LG"},
-        498:{'offset': -13 , 'dir': 'low'  , 'desc': "7SEG_LD"},
-        497:{'offset': -14 , 'dir': 'low'  , 'desc': "7SEG_LE"},
-        496:{'offset': -15 , 'dir': 'low'  , 'desc': "7SEG_LC"},
+        511:{'offset': {"max": 0 , "base": 15}, 'dir': 'in'   , 'desc': "reserve"},
+        510:{'offset': {"max": 1 , "base": 14}, 'dir': 'low'  , 'desc': "7SEG_RD"},
+        509:{'offset': {"max": 2 , "base": 13}, 'dir': 'low'  , 'desc': "7SEG_RC"},
+        508:{'offset': {"max": 3 , "base": 12}, 'dir': 'low'  , 'desc': "7SEG_RE"},
+        507:{'offset': {"max": 4 , "base": 11}, 'dir': 'low'  , 'desc': "7SEG_RB"},
+        506:{'offset': {"max": 5 , "base": 10}, 'dir': 'high' , 'desc': "7SEG_RG"},
+        505:{'offset': {"max": 6 , "base": 9 }, 'dir': 'low'  , 'desc': "7SEG_RF"},
+        504:{'offset': {"max": 7 , "base": 8 }, 'dir': 'low'  , 'desc': "7SEG_RA"},
+        503:{'offset': {"max": 8 , "base": 7 }, 'dir': 'in'   , 'desc': "reserve"},
+        502:{'offset': {"max": 9 , "base": 6 }, 'dir': 'low'  , 'desc': "7SEG_LA"},
+        501:{'offset': {"max": 10, "base": 5 }, 'dir': 'low'  , 'desc': "7SEG_LB"},
+        500:{'offset': {"max": 11, "base": 4 }, 'dir': 'low'  , 'desc': "7SEG_LF"},
+        499:{'offset': {"max": 12, "base": 3 }, 'dir': 'high' , 'desc': "7SEG_LG"},
+        498:{'offset': {"max": 13, "base": 2 }, 'dir': 'low'  , 'desc': "7SEG_LD"},
+        497:{'offset': {"max": 14, "base": 1 }, 'dir': 'low'  , 'desc': "7SEG_LE"},
+        496:{'offset': {"max": 15, "base": 0 }, 'dir': 'low'  , 'desc': "7SEG_LC"},
     }
 
     gpio_map_beta = {
-        511:{'offset':  0  , 'dir': 'low'   , 'desc': "ID LED"},
+        511:{'offset': {"max": 0 , "base": 15}, 'dir': 'low'   , 'desc': "ID LED"},
     }
 
     gpio_map = gpio_map_beta
@@ -284,6 +285,18 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
         gpio_max = int(output, 10)
 
         return gpio_max
+
+    def get_gpio_base(self):
+        cmd = "cat {}".format(self.PATH_BSP_GPIO_BASE)
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio base failed, exception={}".format(e), self.LEVEL_ERR)
+            output="512"
+
+        gpio_base = int(output, 10)
+
+        return gpio_base
 
     def get_port_presence(self, port, gpio_max = 511, gpio_base = 0, board=None):
         try:
@@ -415,7 +428,7 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
             sysfs=self.PATH_SYS_I2C_DEV_ATTR.format( config["bus"], addr, "port_name")
             os.system("echo {} > {}".format(port_name, sysfs))
 
-    def init_gpio(self, gpio_max, board):
+    def init_gpio(self, gpio_max, gpio_base, board):
         self.new_i2c_devices(
             [
                 ('pca9555', 0x20, 4), #9555_IO_EXP_TCA9555_1 (9555_LED_BOARD)
@@ -424,7 +437,10 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
 
         _, gpio_map = self.get_conf(board)
         for _, conf in gpio_map.items():
-            gpio_num=gpio_max+conf['offset']
+            if gpio_max < 0:
+                gpio_num = gpio_base + conf['offset'].get("base")
+            else:
+                gpio_num = gpio_max - conf['offset'].get("max")
             gpio_dir=conf['dir']
             os.system("echo {} > {}/export".format(gpio_num, self.PATH_SYS_GPIO))
             os.system("echo {}   > {}/gpio{}/direction".format(gpio_dir, self.PATH_SYS_GPIO, gpio_num))
@@ -538,6 +554,8 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe i2c_mux")
@@ -554,6 +572,9 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
 
         gpio_max = self.get_gpio_max()
         self.bsp_pr("GPIO MAX: {}".format(gpio_max))
+
+        gpio_base = self.get_gpio_base()
+        self.bsp_pr("GPIO BASE: {}".format(gpio_base))
 
         self.check_i2c_status(board)
 
@@ -590,14 +611,14 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
             self.init_eeprom(board)
 
         self.bsp_pr("Init gpio")
-        self.init_gpio(gpio_max, board)
+        self.init_gpio(gpio_max, gpio_base, board)
 
         #config mac rov
         self.bsp_pr("Init MAC ROV")
         self.init_rov()
 
         # init dev_class for CMIS/non-CMIS modules
-        self.update_dev_class(gpio_max, 0, board)
+        self.update_dev_class(gpio_max, gpio_base, board)
 
         self.enable_ipmi_maintenance_mode()
 
@@ -616,7 +637,9 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
             # init ice (need to have ice before bcm81381 init to avoid failure)
             self.bsp_pr("Init ice")
             self.insmod("intel_auxiliary", False)
-            self.insmod("ice")
+            self.insmod("ice", False)
+            os.system("modprobe ice")
+
             # init bcm82399
             self.bsp_pr("Init bcm82399")
             os.system("timeout 120s {} init -s 10G".format(self.PATH_EPDM_CLI))

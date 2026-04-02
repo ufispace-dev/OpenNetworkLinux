@@ -82,6 +82,19 @@
     BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
+#define I2C_READ_BYTE_DATA_NOLOCK(ret, i2c_client, reg) \
+{ \
+    ret = i2c_smbus_read_byte_data(i2c_client, reg); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
+}
+
+#define I2C_WRITE_BYTE_DATA_NOLOCK(ret, i2c_client, reg, val) \
+{ \
+    ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
+    BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
+}
+
+
 #define _DEVICE_ATTR(_name)     \
     &sensor_dev_attr_##_name.dev_attr.attr
 
@@ -141,8 +154,10 @@ enum cpld_sysfs_attributes {
     CPLD_SYS_LED_CTRL_1,
     CPLD_SYS_LED_CTRL_2,
     CPLD_SYS_LED_CTRL_3,
+    CPLD_MGMT_P0_LED,
     CPLD_MGMT_PORT_0_LED_STATUS,
     CPLD_MGMT_PORT_0_LED_SPEED,
+    CPLD_MGMT_P1_LED,
     CPLD_MGMT_PORT_1_LED_STATUS,
     CPLD_MGMT_PORT_1_LED_SPEED,
     CPLD_MAC_PG,
@@ -323,8 +338,10 @@ static attr_reg_map_t attr_reg[]= {
     [CPLD_SYS_LED_CTRL_1]             = {CPLD_SYS_LED_CTRL_1_REG            , MASK_ALL      , DATA_HEX},
     [CPLD_SYS_LED_CTRL_2]             = {CPLD_SYS_LED_CTRL_2_REG            , MASK_ALL      , DATA_HEX},
     [CPLD_SYS_LED_CTRL_3]             = {CPLD_SYS_LED_CTRL_3_REG            , MASK_ALL      , DATA_HEX},
+    [CPLD_MGMT_P0_LED]                = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_0000_1111, DATA_DEC},
     [CPLD_MGMT_PORT_0_LED_STATUS]     = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_0000_1101, DATA_DEC},
     [CPLD_MGMT_PORT_0_LED_SPEED]      = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_0000_0010, DATA_DEC},
+    [CPLD_MGMT_P1_LED]                = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_1111_0000, DATA_DEC},
     [CPLD_MGMT_PORT_1_LED_STATUS]     = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_1101_0000, DATA_DEC},
     [CPLD_MGMT_PORT_1_LED_SPEED]      = {CPLD_SFP_MGMT_0_1_LED_REG          , MASK_0010_0000, DATA_DEC},
     [CPLD_MAC_PG]                     = {CPLD_MAC_PG_REG                    , MASK_ALL      , DATA_HEX},
@@ -556,8 +573,10 @@ static SENSOR_DEVICE_ATTR_RW(cpld_mux_ctrl              , cpld, CPLD_MUX_CTRL);
 static SENSOR_DEVICE_ATTR_RW(cpld_sys_led_ctrl_1        , cpld, CPLD_SYS_LED_CTRL_1);
 static SENSOR_DEVICE_ATTR_RW(cpld_sys_led_ctrl_2        , cpld, CPLD_SYS_LED_CTRL_2);
 static SENSOR_DEVICE_ATTR_RW(cpld_sys_led_ctrl_3        , cpld, CPLD_SYS_LED_CTRL_3);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p0_led           , cpld , CPLD_MGMT_P0_LED);
 static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_0_led_status, led , CPLD_MGMT_PORT_0_LED_STATUS);
 static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_0_led_speed , cpld, CPLD_MGMT_PORT_0_LED_SPEED);
+static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p1_led           , cpld , CPLD_MGMT_P1_LED);
 static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_1_led_status, led , CPLD_MGMT_PORT_1_LED_STATUS);
 static SENSOR_DEVICE_ATTR_RW(cpld_mgmt_port_1_led_speed , cpld, CPLD_MGMT_PORT_1_LED_SPEED);
 static SENSOR_DEVICE_ATTR_RO(cpld_mac_pg                , cpld, CPLD_MAC_PG);
@@ -728,8 +747,10 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_sys_led_ctrl_1),
     _DEVICE_ATTR(cpld_sys_led_ctrl_2),
     _DEVICE_ATTR(cpld_sys_led_ctrl_3),
+    _DEVICE_ATTR(cpld_mgmt_p0_led),
     _DEVICE_ATTR(cpld_mgmt_port_0_led_status),
     _DEVICE_ATTR(cpld_mgmt_port_0_led_speed),
+    _DEVICE_ATTR(cpld_mgmt_p1_led),
     _DEVICE_ATTR(cpld_mgmt_port_1_led_status),
     _DEVICE_ATTR(cpld_mgmt_port_1_led_speed),
     _DEVICE_ATTR(cpld_mac_pg),
@@ -925,6 +946,8 @@ static const struct attribute_group cpld5_group = {
 
 int _cpld_reg_write(struct device *dev, u8 reg, u8 reg_val);
 int _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_write_nolock(struct device *dev, u8 reg, u8 reg_val);
+int _cpld_reg_read_nolock(struct device *dev, u8 reg, u8 mask);
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -1160,7 +1183,9 @@ static ssize_t cpld_show(struct device *dev,
         case CPLD_SYS_LED_CTRL_1:
         case CPLD_SYS_LED_CTRL_2:
         case CPLD_SYS_LED_CTRL_3:
+        case CPLD_MGMT_P0_LED:
         case CPLD_MGMT_PORT_0_LED_SPEED:
+        case CPLD_MGMT_P1_LED:
         case CPLD_MGMT_PORT_1_LED_SPEED:
         case CPLD_MAC_PG:
         case CPLD_OP2_PG:
@@ -1331,7 +1356,9 @@ static ssize_t cpld_store(struct device *dev,
         case CPLD_SYS_LED_CTRL_1:
         case CPLD_SYS_LED_CTRL_2:
         case CPLD_SYS_LED_CTRL_3:
+        case CPLD_MGMT_P0_LED:
         case CPLD_MGMT_PORT_0_LED_SPEED:
+        case CPLD_MGMT_P1_LED:
         case CPLD_MGMT_PORT_1_LED_SPEED:
         case CPLD_HBM_PW_EN:
 
@@ -1401,6 +1428,25 @@ int _cpld_reg_read(struct device *dev, u8 reg, u8 mask)
     }
 }
 
+/* get cpld register value without lock */
+int _cpld_reg_read_nolock(struct device *dev,
+                    u8 reg,
+                    u8 mask)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    int reg_val;
+
+    I2C_READ_BYTE_DATA_NOLOCK(reg_val, client, reg);
+
+    if (unlikely(reg_val < 0)) {
+        return reg_val;
+    } else {
+        reg_val=_mask_shift(reg_val, mask);
+        return reg_val;
+    }
+}
+
 /* get cpld register value */
 static ssize_t cpld_reg_read(struct device *dev,
                     u8 *reg_val,
@@ -1437,6 +1483,19 @@ int _cpld_reg_write(struct device *dev,
     return ret;
 }
 
+int _cpld_reg_write_nolock(struct device *dev,
+                    u8 reg,
+                    u8 reg_val)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+    int ret = 0;
+
+    I2C_WRITE_BYTE_DATA_NOLOCK(ret, client, reg, reg_val);
+
+    return ret;
+}
+
 /* set cpld register value */
 static ssize_t cpld_reg_write(struct device *dev,
                     u8 reg_val,
@@ -1444,13 +1503,19 @@ static ssize_t cpld_reg_write(struct device *dev,
                     u8 reg,
                     u8 mask)
 {
-    u8 reg_val_now, shift;
+    int reg_val_now, shift;
     int ret = 0;
+    struct i2c_client *client = to_i2c_client(dev);
+    struct cpld_data *data = i2c_get_clientdata(client);
+
+    // lock mutex during register access
+    mutex_lock(&data->access_lock);
 
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
-        reg_val_now = _cpld_reg_read(dev, reg, MASK_ALL);
+        reg_val_now = _cpld_reg_read_nolock(dev, reg, MASK_ALL);
         if (unlikely(reg_val_now < 0)) {
+            mutex_unlock(&data->access_lock);
             dev_err(dev, "cpld_reg_write() error, reg_val_now=%d\n", reg_val_now);
             return reg_val_now;
         } else {
@@ -1463,7 +1528,10 @@ static ssize_t cpld_reg_write(struct device *dev,
         }
     }
 
-    ret = _cpld_reg_write(dev, reg, reg_val);
+    ret = _cpld_reg_write_nolock(dev, reg, reg_val);
+
+    // unlock mutex after register access
+    mutex_unlock(&data->access_lock);
 
     if (unlikely(ret < 0)) {
         dev_err(dev, "cpld_reg_write() error, return=%d\n", ret);

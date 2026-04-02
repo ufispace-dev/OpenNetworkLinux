@@ -53,8 +53,9 @@
 #define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9620_32e_lpc/bsp/"
 #define LPC_CPU_CPLD_FMT            "/sys/devices/platform/x86_64_ufispace_s9620_32e_lpc/cpu_cpld/"
 #define LPC_EC                      "/sys/devices/platform/x86_64_ufispace_s9620_32e_lpc/ec/"
-#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
-#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP            "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP_HWMON_FMT  SYS_CPU_CORETEMP "hwmon/hwmon%d/temp%d_input"
+#define SYS_CPU_CORETEMP_HWMON_MAX  (10)
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x71 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9620_32e_lpc/mb_cpld/mux_reset_all"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
@@ -63,6 +64,7 @@
 #define SYSFS_CPLD3                 SYSFS_DEVICES "2-0032/"
 #define SYSFS_CPLD4                 SYSFS_DEVICES "16-0033/"
 #define SYSFS_FPGA                  SYSFS_DEVICES "2-0037/"
+#define SYSFS_BSP_PR_ERR            LPC_BSP_FMT"bsp_pr_err"
 
 #define PSU_STATUS_ABS              0
 #define PSU_STATUS_PRES             1

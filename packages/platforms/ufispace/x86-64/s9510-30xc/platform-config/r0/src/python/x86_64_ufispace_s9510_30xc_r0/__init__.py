@@ -381,6 +381,18 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
 
         return gpio_max
 
+    def get_gpio_base(self):
+        cmd = "cat {}/bsp_gpio_base".format(self.PATH_LPC_GRP_BSP)
+        try:
+            output = subprocess.check_output(cmd.split())
+        except Exception as e:
+            self.bsp_pr("Get gpio base failed, exception={}".format(e), self.LEVEL_ERR)
+            output="512"
+
+        gpio_base = int(output, 10)
+
+        return gpio_base
+
     def init_i2c_mux_idle_state(self, muxs):
         IDLE_STATE_DISCONNECT = -2
 
@@ -574,6 +586,8 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")
@@ -596,9 +610,11 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
 
         hw_rev_id = int(output, 16)
 
-        # get gpio max
         gpio_max = self.get_gpio_max()
         self.bsp_pr("GPIO MAX: {}".format(gpio_max))
+
+        gpio_base = self.get_gpio_base()
+        self.bsp_pr("GPIO BASE: {}".format(gpio_base))
 
         ########### initialize I2C bus 0 ###########
         # i2c_i801 is built-in
@@ -639,10 +655,10 @@ class OnlPlatform_x86_64_ufispace_s9510_30xc_r0(OnlPlatformUfiSpace):
 
         # init GPIO sysfs
         self.bsp_pr("Init gpio");
-        self.init_gpio(gpio_max, -1)
+        self.init_gpio(gpio_max, gpio_base)
 
         # init dev_class for CMIS/non-CMIS modules
-        self.update_dev_class(gpio_max, 0, None)
+        self.update_dev_class(gpio_max, gpio_base, None)
 
         #enable ipmi maintenance mode
         self.enable_ipmi_maintenance_mode()

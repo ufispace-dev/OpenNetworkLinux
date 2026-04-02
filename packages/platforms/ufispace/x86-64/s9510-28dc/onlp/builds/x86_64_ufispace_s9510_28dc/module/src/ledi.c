@@ -195,6 +195,10 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
  */
 int onlp_ledi_init(void)
 {
+    if (gpio_max != -1 || gpio_base != -1) {
+        return ONLP_STATUS_OK;
+    }
+
     lock_init();
     ONLP_TRY(ufi_get_gpio_max(&gpio_max));
     ONLP_TRY(ufi_get_gpio_base(&gpio_base));
@@ -210,6 +214,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id];
     ONLP_TRY(onlp_ledi_status_get(id, &rv->status));
@@ -232,6 +237,7 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].status;
 
@@ -247,6 +253,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].hdr;
 
@@ -264,6 +271,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -296,6 +304,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;

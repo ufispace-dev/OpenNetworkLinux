@@ -257,7 +257,7 @@ static ssize_t read_cpld_callback(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-static u8 _read_cpld_reg(struct device *dev, u8 reg, u8 mask);
+static int _read_cpld_reg(struct device *dev, u8 reg, u8 mask);
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg, u8 mask);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg, u8 mask);
 static ssize_t read_bsp(char *buf, char *str);
@@ -1611,7 +1611,7 @@ static ssize_t write_cpld_callback(struct device *dev,
 }
 
 /* get cpld register value */
-static u8 _read_cpld_reg(struct device *dev,
+static int _read_cpld_reg(struct device *dev,
                     u8 reg,
                     u8 mask)
 {
@@ -1655,7 +1655,8 @@ static ssize_t write_cpld_reg(struct device *dev,
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg_val, reg_val_now, shift;
+    u8 reg_val, shift;
+    int reg_val_now;
     int ret = 0;
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
@@ -1694,14 +1695,21 @@ static ssize_t read_cpld_version_h(struct device *dev,
                     char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int major_val = -1;
+    int minor_val = -1;
+    int build_val = -1;
 
-    if (attr->index >= CPLD_VERSION_H) {
-        return sprintf(buf, "%d.%02d.%03d",
-                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MAJOR_VER),
-                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MINOR_VER),
-                _read_cpld_reg(dev, CPLD_BUILD_REG, MASK_ALL));
+    if (attr->index == CPLD_VERSION_H) {
+        if ((major_val = _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MAJOR_VER)) < 0)
+            return major_val;
+        if ((minor_val = _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MINOR_VER)) < 0)
+            return minor_val;
+        if ((build_val = _read_cpld_reg(dev, CPLD_BUILD_REG, MASK_ALL)) < 0)
+            return build_val;
+
+        return sprintf(buf, "%d.%02d.%03d", major_val, minor_val, build_val);
     }
-    return -1;
+    return -EINVAL;
 }
 
 /* add valid cpld client to list */
@@ -1750,9 +1758,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;

@@ -26,6 +26,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/hwmon-sysfs.h>
+#include <linux/version.h>
 
 #define BSP_LOG_R(fmt, args...) \
     _bsp_log (LOG_READ, KERN_INFO "%s:%s[%d]: " fmt "\r\n", \
@@ -130,6 +131,9 @@ char bsp_debug[2]="0";
 char bsp_reg[8]="0x0";
 u8 enable_log_read=LOG_DISABLE;
 u8 enable_log_write=LOG_DISABLE;
+
+int lpc_init(void);
+void lpc_exit(void);
 
 /* reg shift */
 static u8 _shift(u8 mask)
@@ -736,15 +740,20 @@ exit:
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 static int lpc_drv_remove(struct platform_device *pdev)
+#else
+static void lpc_drv_remove(struct platform_device *pdev)
+#endif
 {
     sysfs_remove_group(&pdev->dev.kobj, &cpu_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bios_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &i2c_alert_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
     return 0;
+#endif
 }
 
 static struct platform_driver lpc_drv = {

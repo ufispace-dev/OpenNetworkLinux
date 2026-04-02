@@ -23,6 +23,8 @@
  *
  ***********************************************************/
 #include <onlp/platformi/thermali.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "platform_lib.h"
 
 #define MILLI(cel)         (cel * 1000)
@@ -323,8 +325,6 @@ static int get_node(int id, thrm_node_t *node) {
 
 static int get_cpu_thermal_info(thrm_node_t node, onlp_thermal_info_t* info)
 {
-    int rv = 0;
-
     if(info == NULL) {
         return ONLP_STATUS_E_PARAM;
     }
@@ -336,16 +336,23 @@ static int get_cpu_thermal_info(thrm_node_t node, onlp_thermal_info_t* info)
 
     /* contents */
     if(info->status & ONLP_THERMAL_STATUS_PRESENT) {
-        rv = onlp_file_read_int(&info->mcelsius,
-                                SYS_CPU_CORETEMP_PREFIX "temp%d_input", node.temp_idx);
 
-        if(rv < 0) {
-            rv = onlp_file_read_int(&info->mcelsius,
-                                SYS_CPU_CORETEMP_PREFIX2 "temp%d_input", node.temp_idx);
-            if(rv < 0) {
-                return rv;
+        // read temperature from all possible hwmon paths since the index of hwmon can change due to nvme device
+        for (int i = 0; i <= SYS_CPU_CORETEMP_HWMON_MAX; i++) {
+            char sysfs[128] = {0};
+            snprintf(sysfs, sizeof(sysfs), SYS_CPU_CORETEMP_HWMON_FMT, i, node.temp_idx);
+            if (access(sysfs, F_OK) != 0) {
+                // file does not exist, try next hwmon index
+                continue;
             }
+
+            return onlp_file_read_int(&info->mcelsius, sysfs);
         }
+
+        // read temperature from default path if hwmon path does not work
+        return onlp_file_read_int(&info->mcelsius,
+                            SYS_CPU_CORETEMP "temp%d_input", node.temp_idx);
+
     }
 
     return ONLP_STATUS_OK;
