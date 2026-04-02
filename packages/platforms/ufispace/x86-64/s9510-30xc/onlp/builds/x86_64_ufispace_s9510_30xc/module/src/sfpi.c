@@ -42,9 +42,10 @@
 #define SYSFS_DEV_CLASS      "dev_class"
 #define EEPROM_ADDR         (0x50)
 #define EEPROM_SFP_DOM_ADDR (0x51)
-#define SFF8636_EEPROM_OFFSET_TXDIS    0x56
-#define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
-#define SFF8636_EEPROM_TX_EN           0x0
+#define TX_DIS_INPUT_MAX (0xff) /* for input value validation only */
+#define SFF8636_EEPROM_OFFSET_TXDIS (0x56)
+#define SFF8636_EEPROM_TX_DIS (0x0f) /* txdis valid bit(bit0-bit3), xxxx 1111 */
+#define SFF8636_EEPROM_TX_EN (0x0)
 
 //CMIS TX Disable
 #define CMIS_PAGE_SIZE                        (128)
@@ -105,47 +106,53 @@ PortTypeDictEntry port_type_dict[] = {
 typedef struct
 {
     int abs_gpin;
+    int abs_gpin_b;
     int lpmode_gpin;
+    int lpmode_gpin_b;
     int reset_gpin;
+    int reset_gpin_b;
     int rxlos_gpin;
+    int rxlos_gpin_b;
     int txfault_gpin;
+    int txfault_gpin_b;
     int txdis_gpin;
+    int txdis_gpin_b;
     int eeprom_bus;
     int port_type;
 } port_attr_t;
 
 static const port_attr_t port_attr[] = {
-/*  port  abs   lpmode reset rxlos txfault txdis eeprom type */
-    [0] ={26   ,22    ,18   ,-1   ,-1     ,-1   ,11    ,TYPE_QSFP},
-    [1] ={27   ,23    ,19   ,-1   ,-1     ,-1   ,10    ,TYPE_QSFP},
-    [2] ={136  ,-1    ,-1   ,168  ,72     ,40   ,14    ,TYPE_SFP },
-    [3] ={137  ,-1    ,-1   ,169  ,73     ,41   ,15    ,TYPE_SFP },
-    [4] ={138  ,-1    ,-1   ,170  ,74     ,42   ,16    ,TYPE_SFP },
-    [5] ={139  ,-1    ,-1   ,171  ,75     ,43   ,17    ,TYPE_SFP },
-    [6] ={140  ,-1    ,-1   ,172  ,76     ,44   ,18    ,TYPE_SFP },
-    [7] ={141  ,-1    ,-1   ,173  ,77     ,45   ,19    ,TYPE_SFP },
-    [8] ={142  ,-1    ,-1   ,174  ,78     ,46   ,20    ,TYPE_SFP },
-    [9] ={143  ,-1    ,-1   ,175  ,79     ,47   ,21    ,TYPE_SFP },
-    [10]={128  ,-1    ,-1   ,160  ,64     ,32   ,22    ,TYPE_SFP },
-    [11]={129  ,-1    ,-1   ,161  ,65     ,33   ,23    ,TYPE_SFP },
-    [12]={130  ,-1    ,-1   ,162  ,66     ,34   ,24    ,TYPE_SFP },
-    [13]={131  ,-1    ,-1   ,163  ,67     ,35   ,25    ,TYPE_SFP },
-    [14]={132  ,-1    ,-1   ,164  ,68     ,36   ,26    ,TYPE_SFP },
-    [15]={133  ,-1    ,-1   ,165  ,69     ,37   ,27    ,TYPE_SFP },
-    [16]={134  ,-1    ,-1   ,166  ,70     ,38   ,28    ,TYPE_SFP },
-    [17]={135  ,-1    ,-1   ,167  ,71     ,39   ,29    ,TYPE_SFP },
-    [18]={152  ,-1    ,-1   ,184  ,88     ,56   ,30    ,TYPE_SFP },
-    [19]={153  ,-1    ,-1   ,185  ,89     ,57   ,31    ,TYPE_SFP },
-    [20]={154  ,-1    ,-1   ,186  ,90     ,58   ,32    ,TYPE_SFP },
-    [21]={155  ,-1    ,-1   ,187  ,91     ,59   ,33    ,TYPE_SFP },
-    [22]={156  ,-1    ,-1   ,188  ,92     ,60   ,34    ,TYPE_SFP },
-    [23]={157  ,-1    ,-1   ,189  ,93     ,61   ,35    ,TYPE_SFP },
-    [24]={158  ,-1    ,-1   ,190  ,94     ,62   ,36    ,TYPE_SFP },
-    [25]={159  ,-1    ,-1   ,191  ,95     ,63   ,37    ,TYPE_SFP },
-    [26]={144  ,-1    ,-1   ,176  ,80     ,48   ,38    ,TYPE_SFP },
-    [27]={145  ,-1    ,-1   ,177  ,81     ,49   ,39    ,TYPE_SFP },
-    [28]={146  ,-1    ,-1   ,178  ,82     ,50   ,40    ,TYPE_SFP },
-    [29]={147  ,-1    ,-1   ,179  ,83     ,51   ,41    ,TYPE_SFP },
+/*  port  abs      lpmode  reset   rxlos     txfault txdis   eeprom type */
+    [0] ={26 , 21 ,22, 25 ,18, 29, -1 , -1  ,-1 ,-1 ,-1, -1, 11    ,TYPE_QSFP},
+    [1] ={27 , 20 ,23, 24 ,19, 28, -1 , -1  ,-1 ,-1 ,-1, -1, 10    ,TYPE_QSFP},
+    [2] ={136, 135,-1, -1 ,-1, -1, 168, 167 ,72 ,71 ,40, 39, 14    ,TYPE_SFP },
+    [3] ={137, 134,-1, -1 ,-1, -1, 169, 166 ,73 ,70 ,41, 38, 15    ,TYPE_SFP },
+    [4] ={138, 133,-1, -1 ,-1, -1, 170, 165 ,74 ,69 ,42, 37, 16    ,TYPE_SFP },
+    [5] ={139, 132,-1, -1 ,-1, -1, 171, 164 ,75 ,68 ,43, 36, 17    ,TYPE_SFP },
+    [6] ={140, 131,-1, -1 ,-1, -1, 172, 163 ,76 ,67 ,44, 35, 18    ,TYPE_SFP },
+    [7] ={141, 130,-1, -1 ,-1, -1, 173, 162 ,77 ,66 ,45, 34, 19    ,TYPE_SFP },
+    [8] ={142, 129,-1, -1 ,-1, -1, 174, 161 ,78 ,65 ,46, 33, 20    ,TYPE_SFP },
+    [9] ={143, 128,-1, -1 ,-1, -1, 175, 160 ,79 ,64 ,47, 32, 21    ,TYPE_SFP },
+    [10]={128, 143,-1, -1 ,-1, -1, 160, 175 ,64 ,79 ,32, 47, 22    ,TYPE_SFP },
+    [11]={129, 142,-1, -1 ,-1, -1, 161, 174 ,65 ,78 ,33, 46, 23    ,TYPE_SFP },
+    [12]={130, 141,-1, -1 ,-1, -1, 162, 173 ,66 ,77 ,34, 45, 24    ,TYPE_SFP },
+    [13]={131, 140,-1, -1 ,-1, -1, 163, 172 ,67 ,76 ,35, 44, 25    ,TYPE_SFP },
+    [14]={132, 139,-1, -1 ,-1, -1, 164, 171 ,68 ,75 ,36, 43, 26    ,TYPE_SFP },
+    [15]={133, 138,-1, -1 ,-1, -1, 165, 170 ,69 ,74 ,37, 42, 27    ,TYPE_SFP },
+    [16]={134, 137,-1, -1 ,-1, -1, 166, 169 ,70 ,73 ,38, 41, 28    ,TYPE_SFP },
+    [17]={135, 136,-1, -1 ,-1, -1, 167, 168 ,71 ,72 ,39, 40, 29    ,TYPE_SFP },
+    [18]={152, 151,-1, -1 ,-1, -1, 184, 183 ,88 ,87 ,56, 55, 30    ,TYPE_SFP },
+    [19]={153, 150,-1, -1 ,-1, -1, 185, 182 ,89 ,86 ,57, 54, 31    ,TYPE_SFP },
+    [20]={154, 149,-1, -1 ,-1, -1, 186, 181 ,90 ,85 ,58, 53, 32    ,TYPE_SFP },
+    [21]={155, 148,-1, -1 ,-1, -1, 187, 180 ,91 ,84 ,59, 52, 33    ,TYPE_SFP },
+    [22]={156, 147,-1, -1 ,-1, -1, 188, 179 ,92 ,83 ,60, 51, 34    ,TYPE_SFP },
+    [23]={157, 146,-1, -1 ,-1, -1, 189, 178 ,93 ,82 ,61, 50, 35    ,TYPE_SFP },
+    [24]={158, 145,-1, -1 ,-1, -1, 190, 177 ,94 ,81 ,62, 49, 36    ,TYPE_SFP },
+    [25]={159, 144,-1, -1 ,-1, -1, 191, 176 ,95 ,80 ,63, 48, 37    ,TYPE_SFP },
+    [26]={144, 159,-1, -1 ,-1, -1, 176, 191 ,80 ,95 ,48, 63, 38    ,TYPE_SFP },
+    [27]={145, 158,-1, -1 ,-1, -1, 177, 190 ,81 ,94 ,49, 62, 39    ,TYPE_SFP },
+    [28]={146, 157,-1, -1 ,-1, -1, 178, 189 ,82 ,93 ,50, 61, 40    ,TYPE_SFP },
+    [29]={147, 156,-1, -1 ,-1, -1, 179, 188 ,83 ,92 ,51, 60, 41    ,TYPE_SFP },
 };
 
 #define IS_PORT_INVALID(_port)  (_port < 0) || (_port >= PORT_NUM)
@@ -159,39 +166,55 @@ static const port_attr_t port_attr[] = {
 #define VALIDATE_PORT(p) { if (IS_PORT_INVALID(p)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (IS_PORT_INVALID(p) || !IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
+static int gpio_max = -1;
+static int gpio_base = -1;
+
 int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
 {
-    int gpio_max = 0;
     int gpio_num = -1;
 
-    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
-
+    ONLP_TRY(onlp_sfpi_init());
     switch(control)
     {
         case ONLP_SFP_CONTROL_RESET:
         case ONLP_SFP_CONTROL_RESET_STATE:
             {
-                gpio_num = gpio_max - port_attr[port].reset_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].reset_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].reset_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_RX_LOS:
             {
-                gpio_num = gpio_max - port_attr[port].rxlos_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].rxlos_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].rxlos_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_FAULT:
             {
-                gpio_num = gpio_max - port_attr[port].txfault_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].txfault_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].txfault_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
             {
-                gpio_num = gpio_max - port_attr[port].txdis_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].txdis_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].txdis_gpin;
                 break;
             }
         case ONLP_SFP_CONTROL_LP_MODE:
             {
-                gpio_num = gpio_max - port_attr[port].lpmode_gpin;
+                if(gpio_max < 0)
+                    gpio_num = gpio_base + port_attr[port].lpmode_gpin_b;
+                else 
+                    gpio_num = gpio_max - port_attr[port].lpmode_gpin;
                 break;
             }
         default:
@@ -411,20 +434,31 @@ static int ufi_file_seek_readb(const char *file, long offset, uint8_t *value)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_sff8636_txdisable_status_get(int port, int *status)
+static int ufi_sff8636_txdisable_status_get(int port, int* status, onlp_sfp_control_t control)
 {
     uint8_t value = 0;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     if (onlp_sfpi_is_present(port) != 1) {
         return ONLP_STATUS_OK;
     }
 
     ONLP_TRY(value = onlp_sfpi_dev_readb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS));
-    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
-    if (value == SFF8636_EEPROM_TX_DIS) {
-        *status = 1;
-    } else {
-        *status = 0;
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        *status = value;
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+        if (value == SFF8636_EEPROM_TX_DIS) {
+            *status = 1;
+        } else {
+            *status = 0;
+        }
     }
 
     return ONLP_STATUS_OK;
@@ -437,21 +471,37 @@ static int ufi_sff8636_txdisable_status_get(int port, int *status)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_sff8636_txdisable_status_set(int port, int status)
+static int ufi_sff8636_txdisable_status_set(int port, int status, onlp_sfp_control_t control)
 {
     uint8_t value = 0, readback = 0;
 
-    if (status == 0) {
-        value = SFF8636_EEPROM_TX_EN;
-    } else if (status == 1) {
-        value = SFF8636_EEPROM_TX_DIS;
-    } else {
-        AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
         return ONLP_STATUS_E_PARAM;
     }
 
     if (onlp_sfpi_is_present(port) != 1) {
         return ONLP_STATUS_OK;
+    }
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        // check status range
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(status & SFF8636_EEPROM_TX_DIS);
+        }
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        if (status == 0) {
+            value = SFF8636_EEPROM_TX_EN;
+        } else if (status == 1) {
+            value = SFF8636_EEPROM_TX_DIS;
+        } else {
+            AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     ONLP_TRY(onlp_sfpi_dev_writeb(port, EEPROM_ADDR, SFF8636_EEPROM_OFFSET_TXDIS, value));
@@ -521,13 +571,19 @@ static int ufi_cmis_txdisable_supported(int port)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_cmis_txdisable_status_get(int port, int* status)
+static int ufi_cmis_txdisable_status_get(int port, int* status, onlp_sfp_control_t control)
 {
     int ret = 0;
     uint8_t value = 0;
     char sysfs_path[256] = {0};
     int bus = 0;
     int length = 0;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
@@ -553,11 +609,15 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
         return ONLP_STATUS_E_INTERNAL;
     }
 
-    // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
-    if (value == CMIS_VAL_TX_DIS) {
-        *status = 1;
-    } else {
-        *status = 0;
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        *status = value;
+    } else { //ONLP_SFP_CONTROL_TX_DISABLE
+        // Check each bit of the 'value' has all bits set to 1 meets TX Disable condition (all channels disabled).
+        if (value == CMIS_VAL_TX_DIS) {
+            *status = 1;
+        } else {
+            *status = 0;
+        }
     }
 
     return ONLP_STATUS_OK;
@@ -570,12 +630,18 @@ static int ufi_cmis_txdisable_status_get(int port, int* status)
  * @param status: 0 if normal (turn off)
  * @returns An error condition.
  */
-static int ufi_cmis_txdisable_status_set(int port, int status)
+static int ufi_cmis_txdisable_status_set(int port, int status, onlp_sfp_control_t control)
 {
     uint8_t value = 0, readback = 0;
     char sysfs_path[256] = {0};
     int bus = 0;
     int seek = CMIS_SEEK_TX_DIS;
+
+    if (control != ONLP_SFP_CONTROL_TX_DISABLE &&
+        control != ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        AIM_LOG_ERROR("[%s] invalid control, port=%d, control=%d\n", __FUNCTION__, port, control);
+        return ONLP_STATUS_E_PARAM;
+    }
 
     // Check module present
     if (onlp_sfpi_is_present(port) != 1) {
@@ -587,14 +653,23 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
-    // set value
-    if (status == 0) {
-        value = CMIS_VAL_TX_EN;
-    } else if (status == 1) {
-        value = CMIS_VAL_TX_DIS;
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(status);
+        }
     } else {
-        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
-        return ONLP_STATUS_E_PARAM;
+        // set value
+        if (status == 0) {
+            value = CMIS_VAL_TX_EN;
+        } else if (status == 1) {
+            value = CMIS_VAL_TX_DIS;
+        } else {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     // set sysfs_path
@@ -631,7 +706,13 @@ static int ufi_cmis_txdisable_status_set(int port, int status)
  */
 int onlp_sfpi_init(void)
 {
+    if (gpio_max != -1 || gpio_base != -1) {
+        return ONLP_STATUS_OK;
+    }
+
     lock_init();
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+    ONLP_TRY(ufi_get_gpio_base(&gpio_base));
     return ONLP_STATUS_OK;
 }
 
@@ -659,14 +740,15 @@ int onlp_sfpi_is_present(int port)
 {
     int status=ONLP_STATUS_OK, gpio_num;
     int abs = 0, present = 0;
-    int gpio_max = 0;
 
+    ONLP_TRY(onlp_sfpi_init());
     VALIDATE_PORT(port);
 
-    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
-
     //set gpio_num by port
-    gpio_num = gpio_max - port_attr[port].abs_gpin;
+    if(gpio_max < 0)
+        gpio_num = gpio_base + port_attr[port].abs_gpin_b;
+    else 
+        gpio_num = gpio_max - port_attr[port].abs_gpin;
 
     if ((status = file_read_hex(&abs, SYS_GPIO_FMT, gpio_num)) < 0) {
         AIM_LOG_ERROR("onlp_sfpi_is_present() failed, error=%d, sysfs=%s, gpio_num=%d",
@@ -1078,9 +1160,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
             return rc;
         }
     } else if (op_type == OP_CMIS) {
-        ONLP_TRY(ufi_cmis_txdisable_status_set(port, value));
+        ONLP_TRY(ufi_cmis_txdisable_status_set(port, value, control));
     } else if (op_type == OP_8636) {
-        ONLP_TRY(ufi_sff8636_txdisable_status_set(port, value));
+        ONLP_TRY(ufi_sff8636_txdisable_status_set(port, value, control));
     }
 
     return ONLP_STATUS_OK;
@@ -1173,9 +1255,9 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             *value = !(*value);
         }
     } else if (op_type == OP_CMIS) {
-        return ufi_cmis_txdisable_status_get(port, value);
+        return ufi_cmis_txdisable_status_get(port, value, control);
     } else if (op_type == OP_8636) {
-        return ufi_sff8636_txdisable_status_get(port, value);
+        return ufi_sff8636_txdisable_status_get(port, value, control);
     }
 
     return ONLP_STATUS_OK;

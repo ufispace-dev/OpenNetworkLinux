@@ -126,6 +126,10 @@ enum cpld_sysfs_attributes {
     CPLD_SYSTEM_LED_ID,
     CPLD_HBM_PWR_CTRL,
     CPLD_HBM_PWR_FUNC,
+    CPLD_MGMT_P0_LED,
+    CPLD_MGMT_P1_LED,
+    CPLD_MGMT_P2_LED,
+    CPLD_MGMT_P3_LED,
     DBG_CPLD_MAC_INTR,
     DBG_CPLD_CPLDX_INTR,
     DBG_CPLD_MAC_THERMAL_INTR,
@@ -271,7 +275,7 @@ static ssize_t read_cpld_callback(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t write_cpld_callback(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
-static u8 _read_cpld_reg(struct device *dev, u8 reg, u8 mask);
+static int _read_cpld_reg(struct device *dev, u8 reg, u8 mask);
 static ssize_t read_cpld_reg(struct device *dev, char *buf, u8 reg, u8 mask);
 static ssize_t write_cpld_reg(struct device *dev, const char *buf, size_t count, u8 reg, u8 mask);
 static ssize_t read_bsp(char *buf, char *str);
@@ -370,6 +374,11 @@ static _SENSOR_DEVICE_ATTR_RW(cpld_system_led_id,    cpld_callback, CPLD_SYSTEM_
 
 static _SENSOR_DEVICE_ATTR_RW(cpld_hbm_pwr_ctrl,    cpld_callback, CPLD_HBM_PWR_CTRL);
 static _SENSOR_DEVICE_ATTR_RO(cpld_hbm_pwr_func,    cpld_callback, CPLD_HBM_PWR_FUNC);
+
+static _SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p0_led,      cpld_callback, CPLD_MGMT_P0_LED);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p1_led,      cpld_callback, CPLD_MGMT_P1_LED);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p2_led,      cpld_callback, CPLD_MGMT_P2_LED);
+static _SENSOR_DEVICE_ATTR_RW(cpld_mgmt_p3_led,      cpld_callback, CPLD_MGMT_P3_LED);
 
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_mac_intr,   cpld_callback, DBG_CPLD_MAC_INTR);
 static _SENSOR_DEVICE_ATTR_RO(dbg_cpld_cpldx_intr, cpld_callback, DBG_CPLD_CPLDX_INTR);
@@ -574,8 +583,15 @@ static struct attribute *cpld1_attributes[] = {
     _DEVICE_ATTR(cpld_system_led_psu_0),
     _DEVICE_ATTR(cpld_system_led_psu_1),
     _DEVICE_ATTR(cpld_system_led_id),
+
     _DEVICE_ATTR(cpld_hbm_pwr_ctrl),
-	_DEVICE_ATTR(cpld_hbm_pwr_func),
+    _DEVICE_ATTR(cpld_hbm_pwr_func),
+
+    _DEVICE_ATTR(cpld_mgmt_p0_led),
+    _DEVICE_ATTR(cpld_mgmt_p1_led),
+    _DEVICE_ATTR(cpld_mgmt_p2_led),
+    _DEVICE_ATTR(cpld_mgmt_p3_led),
+
     _DEVICE_ATTR(bsp_debug),
 
     _DEVICE_ATTR(dbg_cpld_mac_intr),
@@ -1154,6 +1170,22 @@ static ssize_t read_cpld_callback(struct device *dev,
             reg = CPLD_SYSTEM_LED_SYNC_ID_REG;
             mask = CPLD_SYSTEM_LED_ID_MASK;
             break;
+        case CPLD_MGMT_P0_LED:
+            reg = CPLD_MGMT_0_1_LED_CTRL_REG;
+            mask = MASK_LB;
+            break;
+        case CPLD_MGMT_P1_LED:
+            reg = CPLD_MGMT_0_1_LED_CTRL_REG;
+            mask = MASK_HB;
+            break;
+        case CPLD_MGMT_P2_LED:
+            reg = CPLD_MGMT_2_3_LED_CTRL_REG;
+            mask = MASK_LB;
+            break;
+        case CPLD_MGMT_P3_LED:
+            reg = CPLD_MGMT_2_3_LED_CTRL_REG;
+            mask = MASK_HB;
+            break;
         case CPLD_QSFP_INTR_PORT_0 ... CPLD_QSFP_INTR_PORT_2:
             reg = CPLD_QSFP_INTR_PORT_BASE_REG +
                  (attr->index - CPLD_QSFP_INTR_PORT_0);
@@ -1487,6 +1519,22 @@ static ssize_t write_cpld_callback(struct device *dev,
             reg = CPLD_SYSTEM_LED_SYNC_ID_REG;
             mask = CPLD_SYSTEM_LED_ID_MASK;
             break;
+        case CPLD_MGMT_P0_LED:
+            reg = CPLD_MGMT_0_1_LED_CTRL_REG;
+            mask = MASK_LB;
+            break;
+        case CPLD_MGMT_P1_LED:
+            reg = CPLD_MGMT_0_1_LED_CTRL_REG;
+            mask = MASK_HB;
+            break;
+        case CPLD_MGMT_P2_LED:
+            reg = CPLD_MGMT_2_3_LED_CTRL_REG;
+            mask = MASK_LB;
+            break;
+        case CPLD_MGMT_P3_LED:
+            reg = CPLD_MGMT_2_3_LED_CTRL_REG;
+            mask = MASK_HB;
+            break;
         case CPLD_QSFP_MASK_PORT_0 ... CPLD_QSFP_MASK_PORT_2:
             reg = CPLD_QSFP_MASK_PORT_BASE_REG +
                  (attr->index - CPLD_QSFP_MASK_PORT_0);
@@ -1648,7 +1696,7 @@ static ssize_t write_cpld_callback(struct device *dev,
 }
 
 /* get cpld register value */
-static u8 _read_cpld_reg(struct device *dev,
+static int _read_cpld_reg(struct device *dev,
                     u8 reg,
                     u8 mask)
 {
@@ -1692,7 +1740,8 @@ static ssize_t write_cpld_reg(struct device *dev,
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct cpld_data *data = i2c_get_clientdata(client);
-    u8 reg_val, reg_val_now, shift;
+    u8 reg_val, shift;
+    int reg_val_now;
     int ret = 0;
 
     if (kstrtou8(buf, 0, &reg_val) < 0)
@@ -1731,14 +1780,21 @@ static ssize_t read_cpld_version_h(struct device *dev,
                     char *buf)
 {
     struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int major_val = -1;
+    int minor_val = -1;
+    int build_val = -1;
 
-    if (attr->index >= CPLD_VERSION_H) {
-        return sprintf(buf, "%d.%02d.%03d",
-                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MAJOR_VER),
-                _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MINOR_VER),
-                _read_cpld_reg(dev, CPLD_BUILD_REG, MASK_ALL));
+    if (attr->index == CPLD_VERSION_H) {
+        if ((major_val = _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MAJOR_VER)) < 0)
+            return major_val;
+        if ((minor_val = _read_cpld_reg(dev, CPLD_VERSION_REG, MASK_CPLD_MINOR_VER)) < 0)
+            return minor_val;
+        if ((build_val = _read_cpld_reg(dev, CPLD_BUILD_REG, MASK_ALL)) < 0)
+            return build_val;
+
+        return sprintf(buf, "%d.%02d.%03d", major_val, minor_val, build_val);
     }
-    return -1;
+    return -EINVAL;
 }
 
 /* add valid cpld client to list */
@@ -1787,9 +1843,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -1914,6 +1976,7 @@ static void cpld_remove(struct i2c_client *client)
     }
 
     cpld_remove_client(client);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
     return 0;
 #endif

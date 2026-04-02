@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="1.1.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -2109,10 +2109,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

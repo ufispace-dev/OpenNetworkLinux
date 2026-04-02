@@ -68,7 +68,9 @@ typedef struct
     led_type_t type;
     led_act_t action;
     int g_gpin;
+    int g_gpin_b;
     int y_gpin;
+    int y_gpin_b;
     char *lpc_sysfs;
     int color_bit;
     int blink_bit;
@@ -76,13 +78,16 @@ typedef struct
 } led_attr_t;
 
 static const led_attr_t led_attr[] = {
-/*  led attribute          type                 action         g_gpin y_gpin lpc_sysfs              color blink onoff */
-    [ONLP_LED_SYS_GNSS] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    , -1   ,LPC_FMT "led_ctrl_1"  ,0    ,2    ,3},
-    [ONLP_LED_SYS_SYNC] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    , -1   ,LPC_FMT "led_ctrl_2"  ,0    ,2    ,3},
-    [ONLP_LED_SYS_SYS]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1    , -1   ,LPC_FMT "led_ctrl_1"  ,4    ,6    ,7},
-    [ONLP_LED_SYS_FAN]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    , -1   ,LPC_FMT "led_status_1",0    ,2    ,3},
-    [ONLP_LED_SYS_PWR]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1    , -1   ,LPC_FMT "led_status_1",4    ,6    ,7},
+/*  led attribute          type                 action         g_gpin y_gpin    lpc_sysfs              color blink onoff */
+    [ONLP_LED_SYS_GNSS] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1 ,-1 , -1, -1 ,LPC_FMT "led_ctrl_1"  ,0    ,2    ,3},
+    [ONLP_LED_SYS_SYNC] = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1 ,-1 , -1, -1 ,LPC_FMT "led_ctrl_2"  ,0    ,2    ,3},
+    [ONLP_LED_SYS_SYS]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RW ,-1 ,-1 , -1, -1 ,LPC_FMT "led_ctrl_1"  ,4    ,6    ,7},
+    [ONLP_LED_SYS_FAN]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1 ,-1 , -1, -1 ,LPC_FMT "led_status_1",0    ,2    ,3},
+    [ONLP_LED_SYS_PWR]  = {TYPE_LED_ATTR_SYSFS ,ACTION_LED_RO ,-1 ,-1 , -1, -1 ,LPC_FMT "led_status_1",4    ,6    ,7},
 };
+
+static int gpio_max = -1;
+static int gpio_base = -1;
 
 /**
  * @brief Get and check led local ID
@@ -143,13 +148,15 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
             }
         }
     } else if (led_attr[local_id].type == TYPE_LED_ATTR_GPIO) {
-        int gpio_max = 0;
         int g_val = 0, y_val = 0;
 
-        ONLP_TRY(ufi_get_gpio_max(&gpio_max));
-
-        ONLP_TRY(file_read_hex(&g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
-        ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
+        if(gpio_max < 0) {
+            ONLP_TRY(file_read_hex(&g_val, SYS_GPIO_FMT, gpio_base + led_attr[local_id].g_gpin_b));
+            ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, gpio_base + led_attr[local_id].y_gpin_b));
+        } else {
+            ONLP_TRY(file_read_hex(&g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
+            ONLP_TRY(file_read_hex(&y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
+        }
 
         if ((g_val == 1) && (y_val == 0)) {
             info->status |= ONLP_LED_STATUS_ON;
@@ -175,7 +182,13 @@ static int ufi_sys_led_info_get(int local_id, onlp_led_info_t* info)
  */
 int onlp_ledi_init(void)
 {
+    if (gpio_max != -1 || gpio_base != -1) {
+        return ONLP_STATUS_OK;
+    }
+
     lock_init();
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+    ONLP_TRY(ufi_get_gpio_base(&gpio_base));
     return ONLP_STATUS_OK;
 }
 
@@ -188,6 +201,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id];
     ONLP_TRY(onlp_ledi_status_get(id, &rv->status));
@@ -210,6 +224,7 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].status;
 
@@ -225,6 +240,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].hdr;
 
@@ -242,6 +258,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -274,6 +291,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     if (led_attr[local_id].action != ACTION_LED_RW) {
         return ONLP_STATUS_E_UNSUPPORTED;
@@ -320,7 +338,6 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
        ONLP_TRY(onlp_file_write_int(led_val, led_attr[local_id].lpc_sysfs));
 
     } else if (led_attr[local_id].type == TYPE_LED_ATTR_GPIO) {
-        int gpio_max = 0;
         int g_val = 0, y_val = 0;
         switch(mode) {
             case ONLP_LED_MODE_GREEN:
@@ -339,11 +356,13 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
                 return ONLP_STATUS_E_UNSUPPORTED;
         }
 
-
-        ONLP_TRY(ufi_get_gpio_max(&gpio_max));
-
-        ONLP_TRY(onlp_file_write_int(g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
-        ONLP_TRY(onlp_file_write_int(y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
+        if(gpio_max < 0) {
+            ONLP_TRY(onlp_file_write_int(g_val, SYS_GPIO_FMT, gpio_base + led_attr[local_id].g_gpin_b));
+            ONLP_TRY(onlp_file_write_int(y_val, SYS_GPIO_FMT, gpio_base + led_attr[local_id].y_gpin_b));
+        } else {
+            ONLP_TRY(onlp_file_write_int(g_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].g_gpin));
+            ONLP_TRY(onlp_file_write_int(y_val, SYS_GPIO_FMT, gpio_max - led_attr[local_id].y_gpin));
+        }
 
     } else {
             return ONLP_STATUS_E_INTERNAL;

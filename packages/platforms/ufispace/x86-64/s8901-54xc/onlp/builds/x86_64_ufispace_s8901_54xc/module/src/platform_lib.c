@@ -831,6 +831,39 @@ int ufi_port_base_get(int *base_num) {
 }
 
 /**
+ * @brief Check if NTM is supported.
+ * @param rv=1 if NTM is supported
+ */
+int ufi_is_ntm_supported() {
+    board_t board = {0};
+    ONLP_TRY(ufi_get_board_version(&board));
+
+    if(board.ext_id == 0 || board.ext_id == 1) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+/**
+ * @brief Get ONLP LED max number.
+ * @param
+ */
+int ufi_get_onlp_led_max() {
+    int is_ntm_supported = 0;
+    int onlp_led_max = 0;
+
+    is_ntm_supported = ufi_is_ntm_supported() == 1 ? 1 : 0;
+    if (is_ntm_supported) {
+        onlp_led_max = ONLP_LED_MAX_NTM;
+    } else {
+        onlp_led_max = ONLP_LED_MAX_NO_NTM;
+    }
+
+    return onlp_led_max;
+}
+
+/**
  * @brief Trim trailing whitespace
  * @param str [out] string without trailing whitespace
  */

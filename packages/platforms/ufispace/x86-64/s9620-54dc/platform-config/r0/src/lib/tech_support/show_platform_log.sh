@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -13,6 +13,9 @@ if [ ! $? -eq 0 ]; then
     SN=""
 elif [[ $SN = *" "* ]]; then
     #SN contains space charachater inside
+    SN=""
+elif [[  $SN = "None" ]]; then
+    #SN is None
     SN=""
 fi
 
@@ -143,18 +146,18 @@ function _update_gpio_max {
         GPIO_MAX_INIT_FLAG=1
     fi
 
-    #GPIO_BASE=$(cat ${sysfs_gpio_base})
-    #if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
-    #    GPIO_BASE_INIT_FLAG=0
-    #else
-    #    GPIO_BASE_INIT_FLAG=1
-    #fi
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
 
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 
-    # _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
-    # _echo "[GPIO_BASE]: ${GPIO_BASE}"
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _dd_read_byte {
@@ -892,8 +895,8 @@ function _show_gpio_sysfs {
 
     _banner "Show GPIO Status"
 
-    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | tail -n 1`
-    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sort -V | head -n 1`
+    max_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | tail -n 1`
+    min_gpio=`ls /sys/class/gpio/ | grep "gpio[[:digit:]]" | sed 's/gpio//g' | sort -V | head -n 1`
 
     if [ -z $max_gpio ] || [ -z $min_gpio ]  ;then
         _echo "No Contents!!!"
@@ -1892,17 +1895,18 @@ function _show_onlpdump {
 
     which onlpdump > /dev/null 2>&1
     ret_onlpdump=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlpdump} -eq 0 ]; then
-        cmd_array=("onlpdump -d" \
-                   "onlpdump -s" \
-                   "onlpdump -r" \
-                   "onlpdump -e" \
-                   "onlpdump -o" \
-                   "onlpdump -x" \
-                   "onlpdump -i" \
-                   "onlpdump -p" \
-                   "onlpdump -S")
+        cmd_array=("${timeout_cmd} onlpdump -d" \
+                   "${timeout_cmd} onlpdump -s" \
+                   "${timeout_cmd} onlpdump -r" \
+                   "${timeout_cmd} onlpdump -e" \
+                   "${timeout_cmd} onlpdump -o" \
+                   "${timeout_cmd} onlpdump -x" \
+                   "${timeout_cmd} onlpdump -i" \
+                   "${timeout_cmd} onlpdump -p" \
+                   "${timeout_cmd} onlpdump -S")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -1920,14 +1924,15 @@ function _show_onlps {
 
     which onlps > /dev/null 2>&1
     ret_onlps=$?
+    timeout_cmd="timeout 20s"
 
     if [ ${ret_onlps} -eq 0 ]; then
-        cmd_array=("onlps chassis onie show -" \
-                   "onlps chassis asset show -" \
-                   "onlps chassis env -" \
-                   "onlps sfp inventory -" \
-                   "onlps sfp bitmaps -" \
-                   "onlps chassis debug show -")
+        cmd_array=("${timeout_cmd} onlps chassis onie show -" \
+                   "${timeout_cmd} onlps chassis asset show -" \
+                   "${timeout_cmd} onlps chassis env -" \
+                   "${timeout_cmd} onlps sfp inventory -" \
+                   "${timeout_cmd} onlps sfp bitmaps -" \
+                   "${timeout_cmd} onlps chassis debug show -")
         for (( i=0; i<${#cmd_array[@]}; i++ ))
         do
             _echo "[Command]: ${cmd_array[$i]}"
@@ -2041,40 +2046,52 @@ function _show_onie_upgrade_info {
 function _show_disk_info {
     _banner "Show Disk Info"
 
-    cmd_array=("lsblk"
-                "lsblk -O"
-               "parted -l"
-               "fdisk -l /dev/sda"
-               "find /sys/fs/ -name errors_count -print -exec cat {} \;"
-               "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
-               "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"                "df -h")
+    local disks=($(lsblk -d -n -o NAME | grep -E "^(nvme|sd)"))
+    [ ${#disks[@]} -eq 0 ] && disks=("sda")
 
-    for (( i=0; i<${#cmd_array[@]}; i++ ))
-    do
-        _echo "[Command]: ${cmd_array[$i]}"
-        ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT}")
+    local cmd_array=(
+        "lsblk"
+        "lsblk -O"
+        "parted -s -l"
+    )
+
+    for dev in "${disks[@]}"; do
+        cmd_array+=("fdisk -l /dev/$dev")
+    done
+
+    cmd_array+=(
+        "find /sys/fs/ -name errors_count -print -exec cat {} \;"
+        "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
+        "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"
+        "df -h"
+    )
+
+    for cmd in "${cmd_array[@]}"; do
+        _echo "[Command]: $cmd"
+        local ret=$(eval "$cmd ${LOG_REDIRECT}")
         _echo "${ret}"
         _echo ""
     done
 
-    # check smartctl command
-    ret=`which smartctl`
-    if [ ! $? -eq 0 ]; then
+    if ! which smartctl >/dev/null 2>&1; then
         _echo "[command]: smartctl not found (SKIP)!!"
     else
-        local smartctl_commands=(
-        "smartctl -a /dev/sda"
-        "smartctl -x /dev/sda"
-        )
+        local smartctl_commands=()
+        
+        for dev in "${disks[@]}"; do
+            smartctl_commands+=(
+                "smartctl -a /dev/$dev"
+                "smartctl -x /dev/$dev"
+            )
+        done
 
         for cmd in "${smartctl_commands[@]}"; do
-            ret=$(eval "$cmd ${LOG_REDIRECT}")
             _echo "[command]: $cmd"
+            local ret=$(eval "$cmd ${LOG_REDIRECT}")
             _echo "${ret}"
             _echo ""
         done
     fi
-
 }
 
 function _show_lspci {
@@ -2300,12 +2317,17 @@ usage() {
     local f=$(basename "$0")
     echo ""
     echo "Usage:"
-    echo "    $f [-d D_DIR] [-i identifier] [-v]"
+    echo "    $f [-b] [-d D_DIR] [-h] [-i identifier] [-v]"
     echo "Description:"
+    echo "  -b                bypass i2c command (required when NOS vendor use their own platform bsp to control i2c devices)"
     echo "  -d                specify D_DIR as log destination instead of default path /tmp/log"
+    echo "  -h                show tech support script usage"
+    echo "  -i                insert an identifier in the log file name"
     echo "  -v                show tech support script version"
     echo "Example:"
+    echo "    $f -b"
     echo "    $f -d /var/log"
+    echo "    $f -h"
     echo "    $f -i identifier"
     echo "    $f -v"
     exit -1
@@ -2400,10 +2422,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

@@ -76,6 +76,9 @@
 //EC
 #define REG_BIOS_BOOT                     (REG_BASE_EC + 0x0C)
 #define REG_CPU_REV                       (REG_BASE_EC + 0x17)
+#define REG_EC_MAJOR_VER                  (REG_BASE_EC + 0x1D)
+#define REG_EC_MINOR_VER                  (REG_BASE_EC + 0x1E)
+#define REG_EC_BUILD_VER                  (REG_BASE_EC + 0x1F)
 
 // BMC mailbox
 #define REG_TEMP_MAC_HWM                  (REG_BASE_MB + 0xC0)
@@ -124,6 +127,12 @@ enum lpc_sysfs_attributes {
     ATT_CPU_DEPH_ID,
     ATT_CPU_BUILD_ID,
     ATT_BIOS_BOOT_ROM,
+
+    ATT_EC_VERSION_H,
+    ATT_EC_MAJOR_VER,
+    ATT_EC_MINOR_VER,
+    ATT_EC_BUILD_VER,
+
     //BMC mailbox
     ATT_TEMP_MAC_HWM,
 
@@ -195,6 +204,9 @@ static sysfs_info_t sysfs_info[] = {
     [ATT_CPU_DEPH_ID]   = {REG_CPU_REV,   MASK_DEPH_ID,       DATA_DEC},
     [ATT_CPU_BUILD_ID]  = {REG_CPU_REV,   MASK_BUILD_ID,      DATA_DEC},
     [ATT_BIOS_BOOT_ROM] = {REG_BIOS_BOOT, MASK_BIOS_BOOT_ROM, DATA_DEC},
+    [ATT_EC_MAJOR_VER]  = {REG_EC_MAJOR_VER,   MASK_ALL,      DATA_DEC},
+    [ATT_EC_MINOR_VER]  = {REG_EC_MINOR_VER,   MASK_ALL,      DATA_DEC},
+    [ATT_EC_BUILD_VER]  = {REG_EC_BUILD_VER,   MASK_ALL,      DATA_DEC},
 
     //BMC mailbox
     [ATT_TEMP_MAC_HWM] = {REG_TEMP_MAC_HWM , MASK_ALL, DATA_S_DEC},
@@ -244,10 +256,10 @@ static u8 _mask_shift(u8 val, u8 mask)
     return (val & mask) >> shift;
 }
 
-static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+static int _parse_data(char *buf, unsigned int data, u8 data_type)
 {
     if(buf == NULL) {
-        return -1;
+        return -EINVAL;
     }
 
     if(data_type == DATA_HEX) {
@@ -255,9 +267,8 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
     } else if(data_type == DATA_DEC) {
         return sprintf(buf, "%u", data);
     } else {
-        return -1;
+        return -EINVAL;
     }
-    return 0;
 }
 
 static int _bsp_log(u8 log_type, char *fmt, ...)
@@ -490,14 +501,28 @@ return -1;
 static ssize_t read_mb_cpld_version_h(struct device *dev,
         struct device_attribute *da, char *buf)
 {
-    ssize_t len=0;
-    u8 major = 0, minor = 0, build = 0;
-    major = _read_lpc_reg(REG_CPLD_VERSION, MASK_CPLD_MAJOR_VER);
-    minor = _read_lpc_reg(REG_CPLD_VERSION, MASK_CPLD_MINOR_VER);
-    build = _read_lpc_reg(REG_CPLD_BUILD, MASK_ALL);
-    len=sprintf(buf, "%u.%02u.%03u", major, minor, build);
-
-    return len;
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    unsigned int attr_major = 0;
+    unsigned int attr_minor = 0;
+    unsigned int attr_build = 0;
+    char *fmt=NULL;
+    switch (attr->index) {
+        case ATT_CPLD_VERSION_H:
+            attr_major = _read_lpc_reg(REG_CPLD_VERSION, MASK_CPLD_MAJOR_VER);
+            attr_minor = _read_lpc_reg(REG_CPLD_VERSION, MASK_CPLD_MINOR_VER);
+            attr_build = _read_lpc_reg(REG_CPLD_BUILD, MASK_ALL);
+            fmt="%u.%02u.%03u\n";
+            break;
+        case ATT_EC_VERSION_H:
+            attr_major = _read_lpc_reg(REG_EC_MAJOR_VER, MASK_ALL);
+            attr_minor = _read_lpc_reg(REG_EC_MINOR_VER, MASK_ALL);
+            attr_build = _read_lpc_reg(REG_EC_BUILD_VER, MASK_ALL);
+            fmt="%d.%d.%d\n";
+            break;
+        default:
+            return -1;
+    }
+    return sprintf(buf, fmt, attr_major, attr_minor, attr_build);
 }
 
 /* get lpc register value */
@@ -698,6 +723,10 @@ static _SENSOR_DEVICE_ATTR_RO(cpu_hw_id,     lpc_callback, ATT_CPU_HW_ID);
 static _SENSOR_DEVICE_ATTR_RO(cpu_deph_id,   lpc_callback, ATT_CPU_DEPH_ID);
 static _SENSOR_DEVICE_ATTR_RO(cpu_build_id,  lpc_callback, ATT_CPU_BUILD_ID);
 static _SENSOR_DEVICE_ATTR_RO(bios_boot_rom, lpc_callback, ATT_BIOS_BOOT_ROM);
+static _SENSOR_DEVICE_ATTR_RO(ec_version_h, mb_cpld_version_h, ATT_EC_VERSION_H);
+static _SENSOR_DEVICE_ATTR_RO(ec_major_ver, lpc_callback, ATT_EC_MAJOR_VER);
+static _SENSOR_DEVICE_ATTR_RO(ec_minor_ver, lpc_callback, ATT_EC_MINOR_VER);
+static _SENSOR_DEVICE_ATTR_RO(ec_build_ver, lpc_callback, ATT_EC_BUILD_VER);
 
 //SENSOR_DEVICE_ATTR - BSP
 static _SENSOR_DEVICE_ATTR_RW(bsp_version, bsp_callback,    ATT_BSP_VERSION);
@@ -742,6 +771,10 @@ static struct attribute *ec_attrs[] = {
     _DEVICE_ATTR(cpu_deph_id),
     _DEVICE_ATTR(cpu_build_id),
     _DEVICE_ATTR(bios_boot_rom),
+    _DEVICE_ATTR(ec_version_h),
+    _DEVICE_ATTR(ec_major_ver),
+    _DEVICE_ATTR(ec_minor_ver),
+    _DEVICE_ATTR(ec_build_ver),
     NULL,
 };
 
@@ -856,13 +889,19 @@ exit:
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 static int lpc_drv_remove(struct platform_device *pdev)
+#else
+static void lpc_drv_remove(struct platform_device *pdev)
+#endif
 {
     sysfs_remove_group(&pdev->dev.kobj, &mb_cpld_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bmc_mailbox_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &bsp_attr_grp);
     sysfs_remove_group(&pdev->dev.kobj, &ec_attr_grp);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
     return 0;
+#endif
 }
 
 static struct platform_driver lpc_drv = {

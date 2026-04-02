@@ -464,7 +464,7 @@ ssize_t idle_state_store(struct device *dev,
 int mux_init(struct device *dev)
 {
     int ret = 0;
-    u8 reg_val = 0;
+    int reg_val = 0;
     int num = 0;
     struct i2c_client *client = to_i2c_client(dev);
     struct i2c_mux_core *muxc = i2c_get_clientdata(client);
@@ -490,7 +490,13 @@ int mux_init(struct device *dev)
         // close multiplexer channel
         chan_off = CPLD_MUX_CHN_OFF;
         // enable mux functionality for the legacy I2C interface instead of using FPGA.
-        reg_val = _cpld_reg_read(dev, CPLD_I2C_CONTROL_REG, MASK_ALL);
+
+        if ((reg_val = _cpld_reg_read(dev, CPLD_I2C_CONTROL_REG, MASK_ALL)) < 0) {
+            dev_err(dev, "Fail to read CPLD I2C control register\n");
+            ret = reg_val;
+            goto exit;
+        }
+
         reg_val |= (CPLD_I2C_ENABLE_BRIDGE);
         ret = _cpld_reg_write(dev, CPLD_I2C_CONTROL_REG, reg_val);
         if (ret < 0) {
@@ -514,7 +520,11 @@ int mux_init(struct device *dev)
 
     /* Now create an adapter for each channel */
     for (num = 0; num < data->chip->nchans; num++) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,10,0)
         ret = i2c_mux_add_adapter(muxc, 0, num, 0);
+#else
+        ret = i2c_mux_add_adapter(muxc, 0, num);
+#endif
         if (ret)
             goto exit;
     }
@@ -528,16 +538,26 @@ exit:
 
 void mux_cleanup(struct device *dev)
 {
-    u8 reg_val = 0;
+    int reg_val = 0;
     struct i2c_client *client = to_i2c_client(dev);
     struct i2c_mux_core *muxc = i2c_get_clientdata(client);
-    //struct cpld_data *data = i2c_mux_priv(muxc);
 
-    _cpld_reg_write(dev, CPLD_I2C_RELAY_REG, CPLD_MUX_CHN_OFF);
+    if (_cpld_reg_write(dev, CPLD_I2C_RELAY_REG, CPLD_MUX_CHN_OFF) < 0) {
+        dev_err(dev, "Fail to write CPLD I2C relay register\n");
+        goto exit;
+    }
 
-    reg_val = _cpld_reg_read(dev, CPLD_I2C_CONTROL_REG, MASK_ALL);
+    if ((reg_val = _cpld_reg_read(dev, CPLD_I2C_CONTROL_REG, MASK_ALL)) < 0) {
+        dev_err(dev, "Fail to read CPLD I2C control register\n");
+        goto exit;
+    }
+
     reg_val &= ~(CPLD_I2C_ENABLE_BRIDGE);
-    _cpld_reg_write(dev, CPLD_I2C_CONTROL_REG, reg_val);
+    if (_cpld_reg_write(dev, CPLD_I2C_CONTROL_REG, reg_val) < 0) {
+        dev_err(dev, "Fail to write CPLD I2C control register\n");
+        goto exit;
+    }
 
+exit:
     i2c_mux_del_adapters(muxc);
 }

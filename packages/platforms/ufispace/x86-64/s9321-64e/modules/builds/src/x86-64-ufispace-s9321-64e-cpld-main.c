@@ -81,6 +81,18 @@ module_param(mux_en, bool, S_IWUSR|S_IRUSR);
     BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
 }
 
+#define I2C_READ_BYTE_DATA_NOLOCK(ret, i2c_client, reg) \
+{ \
+    ret = i2c_smbus_read_byte_data(i2c_client, reg); \
+    BSP_LOG_R("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, ret); \
+}
+
+#define I2C_WRITE_BYTE_DATA_NOLOCK(ret, i2c_client, reg, val) \
+{ \
+    ret = i2c_smbus_write_byte_data(i2c_client, reg, val); \
+    BSP_LOG_W("cpld[%d], reg=0x%03x, reg_val=0x%02x", data->index, reg, val); \
+}
+
 #define _DEVICE_ATTR(_name)     \
     &sensor_dev_attr_##_name.dev_attr.attr
 
@@ -415,7 +427,9 @@ static ssize_t cpld_show(struct device *dev,
         struct device_attribute *da, char *buf);
 static ssize_t cpld_store(struct device *dev,
         struct device_attribute *da, const char *buf, size_t count);
+int _cpld_reg_read_nolock(struct device *dev, u8 reg, u8 mask);
 static ssize_t cpld_reg_read(struct device *dev, u8 *reg_val, u8 reg, u8 mask);
+int _cpld_reg_write_nolock(struct device *dev, u8 reg, u8 reg_val);
 static ssize_t cpld_reg_write(struct device *dev, u8 reg_val, size_t count, u8 reg, u8 mask);
 static ssize_t bsp_read(char *buf, char *str);
 static ssize_t bsp_write(const char *buf, char *str, size_t str_len, size_t count);
@@ -1322,6 +1336,24 @@ int _cpld_reg_read(struct device *dev, u8 reg, u8 mask)
     }
 }
 
+/* get cpld register value without lock */
+int _cpld_reg_read_nolock(struct device *dev, u8 reg, u8 mask)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
+    int reg_val;
+
+    I2C_READ_BYTE_DATA_NOLOCK(reg_val, client, reg);
+
+    if (unlikely(reg_val < 0)) {
+        return reg_val;
+    } else {
+        reg_val=_mask_shift(reg_val, mask);
+        return reg_val;
+    }
+}
+
 /* get cpld register value */
 static ssize_t cpld_reg_read(struct device *dev,
                     u8 *reg_val,
@@ -1359,6 +1391,20 @@ int _cpld_reg_write(struct device *dev,
     return ret;
 }
 
+int _cpld_reg_write_nolock(struct device *dev,
+                    u8 reg,
+                    u8 reg_val)
+{
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
+    int ret = 0;
+
+    I2C_WRITE_BYTE_DATA_NOLOCK(ret, client, reg, reg_val);
+
+    return ret;
+}
+
 /* set cpld register value */
 static ssize_t cpld_reg_write(struct device *dev,
                     u8 reg_val,
@@ -1366,13 +1412,20 @@ static ssize_t cpld_reg_write(struct device *dev,
                     u8 reg,
                     u8 mask)
 {
-    u8 reg_val_now, shift;
+    int reg_val_now, shift;
     int ret = 0;
+    struct i2c_client *client = to_i2c_client(dev);
+    struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+    struct cpld_data *data = i2c_mux_priv(muxc);
+
+    // lock mutex during register access
+    mutex_lock(&data->access_lock);
 
     //apply continuous bits operation if mask is specified, discontinuous bits are not supported
     if (mask != MASK_ALL) {
-        reg_val_now = _cpld_reg_read(dev, reg, MASK_ALL);
+        reg_val_now = _cpld_reg_read_nolock(dev, reg, MASK_ALL);
         if (unlikely(reg_val_now < 0)) {
+            mutex_unlock(&data->access_lock);
             dev_err(dev, "cpld_reg_write() error, reg_val_now=%d\n", reg_val_now);
             return reg_val_now;
         } else {
@@ -1385,7 +1438,10 @@ static ssize_t cpld_reg_write(struct device *dev,
         }
     }
 
-    ret = _cpld_reg_write(dev, reg, reg_val);
+    ret = _cpld_reg_write_nolock(dev, reg, reg_val);
+
+    // unlock mutex after register access
+    mutex_unlock(&data->access_lock);
 
     if (unlikely(ret < 0)) {
         dev_err(dev, "cpld_reg_write() error, return=%d\n", ret);
@@ -1590,9 +1646,15 @@ static void cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct i2c_adapter *adap = client->adapter;
     struct device *dev = &client->dev;

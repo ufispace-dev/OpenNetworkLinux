@@ -51,8 +51,9 @@
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9601_102xc_lpc/mb_cpld/"
 #define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9601_102xc_lpc/bsp/"
 #define LPC_BSP_CPU_CPLD            "/sys/devices/platform/x86_64_ufispace_s9601_102xc_lpc/cpu_cpld/"
-#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
-#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP            "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP_HWMON_FMT  SYS_CPU_CORETEMP "hwmon/hwmon%d/temp%d_input"
+#define SYS_CPU_CORETEMP_HWMON_MAX  (10)
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9601_102xc_lpc/mb_cpld/mux_reset_all"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
 #define SYSFS_CPLD1                 SYSFS_DEVICES "1-0030/"

@@ -285,7 +285,7 @@ class OnlPlatform_x86_64_ufispace_s7801_54xs_r0(OnlPlatformUfiSpace):
                 os.system("echo {} > /sys/class/gpio/gpio{}/direction".format(gpio_dir[i],i))
 
     def get_gpio_base(self):
-        cmd = "cat /sys/devices/platform/x86_64_ufispace_s8901_54xc_lpc/bsp/bsp_gpio_base"
+        cmd = "cat /sys/devices/platform/x86_64_ufispace_s7801_54xs_lpc/bsp/bsp_gpio_base"
         output = ""
         try:
             output = subprocess.check_output(cmd.split())

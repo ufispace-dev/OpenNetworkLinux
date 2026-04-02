@@ -52,8 +52,9 @@
 #define LPC_FMT                     "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/mb_cpld/"
 #define LPC_BSP_FMT                 "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/bsp/"
 #define LPC_CPU_CPLD_FMT            "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/cpu_cpld/"
-#define SYS_CPU_CORETEMP_PREFIX     "/sys/devices/platform/coretemp.0/hwmon/hwmon0/"
-#define SYS_CPU_CORETEMP_PREFIX2    "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP            "/sys/devices/platform/coretemp.0/"
+#define SYS_CPU_CORETEMP_HWMON_FMT  SYS_CPU_CORETEMP "hwmon/hwmon%d/temp%d_input"
+#define SYS_CPU_CORETEMP_HWMON_MAX  (10)
 #define I2C_STUCK_CHECK_CMD         "i2cget -f -y 0 0x72 > /dev/null 2>&1"
 #define MUX_RESET_PATH              "/sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/mb_cpld/mux_reset"
 #define SYSFS_DEVICES               "/sys/bus/i2c/devices/"
@@ -497,6 +498,7 @@ int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int get_cpu_hw_rev_id(int *rev_id, int *dev_phase, int *build_id);
 int get_board_version(board_t *board);
 int get_gpio_max(int *gpio_max);
+int get_gpio_base(int *gpio_base);
 int trim_whitespace(char *str);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

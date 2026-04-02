@@ -826,7 +826,7 @@ int get_hw_rev_id(void)
     }
     /* Read the output a line at a time - output it. */
     fgets(buffer, sizeof(buffer), fp);
-    hw_rev = atoi(buffer);
+    hw_rev = (int)strtol(buffer, 0, 0);
 
     pclose(fp);
 
@@ -916,6 +916,26 @@ int get_gpio_max(int *gpio_max)
     if(read_file_hex(gpio_max, LPC_BSP_FMT "bsp_gpio_max") != ONLP_STATUS_OK)
     {
         *gpio_max = 511;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
+ * @brief Get gpio base
+ * @param gpio_base [out] GPIO base
+ */
+int get_gpio_base(int *gpio_base)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_base == NULL) {
+        return ONLP_STATUS_E_INVALID;
+    }
+
+    if(read_file_hex(gpio_base, LPC_BSP_FMT "bsp_gpio_base") != ONLP_STATUS_OK)
+    {
+        *gpio_base = 512;
         rv = ONLP_STATUS_E_INVALID;
     }
     return rv;

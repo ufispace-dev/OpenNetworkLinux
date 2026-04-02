@@ -1,13 +1,13 @@
 #!/bin/bash
 # Tech Support Version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
 FALSE=1
 
 # Device Serial Number
-SN=$(dmidecode -t 3 | grep "Serial Number" | cut -d : -f 2 | xargs)
+SN=$(dmidecode -s chassis-serial-number)
 if [ ! $? -eq 0 ]; then
     SN=""
 elif [[ $SN = *" "* ]]; then
@@ -70,6 +70,7 @@ SYSFS_CPLD2="${SYSFS_DEV}/1-0031"
 SYSFS_FPGA="${SYSFS_DEV}/1-0037"
 SYSFS_CPLD4="${SYSFS_DEV}/24-0032"
 SYSFS_CPLD5="${SYSFS_DEV}/24-0033"
+SYSFS_LPC="/sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc"
 
 # Port Type
 PORT_T_QSFPDD=1
@@ -124,28 +125,29 @@ function _show_ts_version {
 }
 
 function _update_gpio_max {
-    _banner "Update GPIO MAX"
+    _banner "Update GPIO MAX and GPIO BASE"
+    local sysfs_gpio_max="${SYSFS_LPC}/bsp/bsp_gpio_max"
+    local sysfs_gpio_base="${SYSFS_LPC}/bsp/bsp_gpio_base"
 
-    GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_gpio_max)
+    GPIO_MAX=$(cat ${sysfs_gpio_max})
     if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
-    # GPIO_BASE=$(cat /sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_gpio_base)
-    # if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
-    #     GPIO_BASE_INIT_FLAG=0
-    # else
-    #     GPIO_BASE_INIT_FLAG=1
-    # fi
+    GPIO_BASE=$(cat ${sysfs_gpio_base})
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
 
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
 
     _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
     _echo "[GPIO_BASE]: ${GPIO_BASE}"
-
 }
 
 function _dd_read_byte {
@@ -170,6 +172,12 @@ function _check_env {
 
     if [ "${LOG_FILE_ENABLE}" == "1" ]; then
         mkdir -p "${LOG_FOLDER_PATH}"
+
+        if [ ! -d "${LOG_FOLDER_PATH}" ]; then
+            _echo "[ERROR] invalid log path: ${LOG_FOLDER_PATH}"
+            exit 1
+        fi
+
         if [ "${HEADER_PROMPT}" == "1" ]; then
             echo "${LOG_FILE_NAME}" > "${LOG_FILE_PATH}"
         else
@@ -241,8 +249,8 @@ function _check_i2c_device {
 function _check_bsp_init {
     _banner "Check BSP Init"
 
-    # As our bsp init status, we look at bsp_version. 
-    if [ -f "/sys/devices/platform/x86_64_ufispace_s9720_56ed_lpc/bsp/bsp_version" ]; then
+    # As our bsp init status, we look at bsp_version.
+    if [ -f "${SYSFS_LPC}/bsp/bsp_version" ]; then
         BSP_INIT_FLAG=1
     else
         BSP_INIT_FLAG=0
@@ -346,17 +354,11 @@ function _show_board_info {
     deph_name_array=("NPI" "GA")
     model_id_array=($((2#00100010)))
     model_name_array=("S9720-56ED")
-    brd_id_array=(
-        "CSGR 4-bit/8-bit mode & DDC 8-bit mode" #0
-        ""                                       #1
-        "S9720-56ED and other new platform"      #2
-        "The earlies 4-bit mode (Apollo/SIAD)"   #3
-    )
+    model_name=""
 
     model_id=$(_dd_read_byte 0xE00)
     ret=$?
     if [ $ret -eq 0 ]; then
-        model_id=`echo ${model_id} | awk -F" " '{print $NF}'`
         model_id=$((model_id))
     else
         _echo "Get board model id failed ($ret), Exit!!"
@@ -366,22 +368,13 @@ function _show_board_info {
     board_rev_id=$(_dd_read_byte 0xE01)
     ret=$?
     if [ $ret -eq 0 ]; then
-        board_rev_id=`echo ${board_rev_id} | awk -F" " '{print $NF}'`
+
         board_rev_id=$((board_rev_id))
     else
         _echo "Get board hw/build revision id failed ($ret), Exit!!"
         exit $ret
     fi
 
-    # ext_byte=$(_dd_read_byte 0xED0)
-    # ret=$?
-    # if [ $ret -eq 0 ]; then
-    #     ext_byte=`echo ${ext_byte} | awk -F" " '{print $NF}'`
-    #     ext_byte=$((ext_byte))
-    # else
-    #     _echo "Get extended byte failed ($ret), Exit!!"
-    #     exit $ret
-    # fi
 
     # DEPH D[2]
     deph_id=$(((board_rev_id & 2#00000100) >> 2))
@@ -1921,40 +1914,52 @@ function _show_onie_upgrade_info {
 function _show_disk_info {
     _banner "Show Disk Info"
 
-    cmd_array=("lsblk"
-                "lsblk -O"
-               "parted -l"
-               "fdisk -l /dev/sda"
-               "find /sys/fs/ -name errors_count -print -exec cat {} \;"
-               "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
-               "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"                "df -h")
+    local disks=($(lsblk -d -n -o NAME | grep -E "^(nvme|sd)"))
+    [ ${#disks[@]} -eq 0 ] && disks=("sda")
 
-    for (( i=0; i<${#cmd_array[@]}; i++ ))
-    do
-        _echo "[Command]: ${cmd_array[$i]}"
-        ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT}")
+    local cmd_array=(
+        "lsblk"
+        "lsblk -O"
+        "parted -s -l"
+    )
+
+    for dev in "${disks[@]}"; do
+        cmd_array+=("fdisk -l /dev/$dev")
+    done
+
+    cmd_array+=(
+        "find /sys/fs/ -name errors_count -print -exec cat {} \;"
+        "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
+        "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"
+        "df -h"
+    )
+
+    for cmd in "${cmd_array[@]}"; do
+        _echo "[Command]: $cmd"
+        local ret=$(eval "$cmd ${LOG_REDIRECT}")
         _echo "${ret}"
         _echo ""
     done
 
-    # check smartctl command
-    ret=`which smartctl`
-    if [ ! $? -eq 0 ]; then
+    if ! which smartctl >/dev/null 2>&1; then
         _echo "[command]: smartctl not found (SKIP)!!"
     else
-        local smartctl_commands=(
-        "smartctl -a /dev/sda"
-        "smartctl -x /dev/sda"
-        )
+        local smartctl_commands=()
+        
+        for dev in "${disks[@]}"; do
+            smartctl_commands+=(
+                "smartctl -a /dev/$dev"
+                "smartctl -x /dev/$dev"
+            )
+        done
 
         for cmd in "${smartctl_commands[@]}"; do
-            ret=$(eval "$cmd ${LOG_REDIRECT}")
             _echo "[command]: $cmd"
+            local ret=$(eval "$cmd ${LOG_REDIRECT}")
             _echo "${ret}"
             _echo ""
         done
     fi
-
 }
 
 function _show_lspci {
@@ -2280,10 +2285,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
 
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

@@ -210,6 +210,7 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
 
         os.system("modprobe -rq i2c_ismt")
         os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         # load default kernel driver
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
@@ -296,7 +297,8 @@ class OnlPlatform_x86_64_ufispace_s9600_72xc_r0(OnlPlatformUfiSpace):
         self.bsp_pr("Init bcm82752");
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.insmod("intel_auxiliary", False)
-        self.insmod("i40e")
+        self.insmod("i40e", False)
+        os.system("modprobe i40e")
         # init bcm82752
         # epdm_cli ver 0.0.5
         os.system("timeout 120s /lib/platform-config/current/onl/epdm_cli init -s fix_10G -t copper")

@@ -338,6 +338,8 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")
@@ -451,7 +453,8 @@ class OnlPlatform_x86_64_ufispace_s9610_48dx_r0(OnlPlatformUfiSpace):
         # init ice (need to have ice before bcm81381 init to avoid failure)
         self.bsp_pr("Init ice")
         self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        self.insmod("ice", False)
+        os.system("modprobe ice")
 
         # init bcm81381
         self.bsp_pr("Init bcm81381")

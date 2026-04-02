@@ -70,8 +70,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_ENV0),
-            .description = "TEMP_MAC_ENV0",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC0),
+            .description = "TEMP_ENV_MAC0",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -79,8 +79,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_MAC_ENV1),
-            .description = "TEMP_MAC_ENV1",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MAC1),
+            .description = "TEMP_ENV_MAC1",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -133,8 +133,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_U78),
-            .description = "TEMP_U78",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_FRONT),
+            .description = "TEMP_ENV_FRONT",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -142,8 +142,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_U36),
-            .description = "TEMP_U36",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_MB),
+            .description = "TEMP_ENV_MB",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -151,8 +151,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_U52),
-            .description = "TEMP_U52",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_PHY),
+            .description = "TEMP_ENV_PHY",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -160,8 +160,8 @@ static onlp_thermal_info_t thermal_info[] = {
     },
     {
         .hdr = {
-            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_U9),
-            .description = "TEMP_U9",
+            .id = ONLP_THERMAL_ID_CREATE(ONLP_THERMAL_ENV_REAR),
+            .description = "TEMP_ENV_REAR",
             .poid = POID_0,
         },
         .status = ONLP_THERMAL_STATUS_PRESENT,
@@ -205,13 +205,13 @@ static int get_node(int id, thrm_node_t *node) {
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
             node->bmc = BMC_ATTR_ID_TEMP_CPU_PECI;
             break;
-        case ONLP_THERMAL_MAC_ENV0:
+        case ONLP_THERMAL_ENV_MAC0:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV0;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_MAC0;
             break;
-        case ONLP_THERMAL_MAC_ENV1:
+        case ONLP_THERMAL_ENV_MAC1:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_MAC_ENV1;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_MAC1;
             break;
         case ONLP_THERMAL_MAC_SCH:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
@@ -233,21 +233,21 @@ static int get_node(int id, thrm_node_t *node) {
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
             node->bmc = BMC_ATTR_ID_TEMP_MAC_PADS;
             break;
-        case ONLP_THERMAL_U78:
+        case ONLP_THERMAL_ENV_FRONT:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_U78;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_FRONT;
             break;
-        case ONLP_THERMAL_U36:
+        case ONLP_THERMAL_ENV_MB:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_U36;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_MB;
             break;
-        case ONLP_THERMAL_U52:
+        case ONLP_THERMAL_ENV_PHY:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_U52;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_PHY;
             break;
-        case ONLP_THERMAL_U9:
+        case ONLP_THERMAL_ENV_REAR:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;
-            node->bmc = BMC_ATTR_ID_TEMP_U9;
+            node->bmc = BMC_ATTR_ID_TEMP_ENV_REAR;
             break;
         case ONLP_THERMAL_PSU0_TEMP1:
             node->type = TYPE_THRM_ATTR_GENERAL_BMC;

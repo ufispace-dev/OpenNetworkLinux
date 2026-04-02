@@ -490,6 +490,7 @@ class OnlPlatform_x86_64_ufispace_s9600_102xc_r0(OnlPlatformUfiSpace):
         # load default kernel driver
         os.system("modprobe -rq i2c_ismt")
         os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe gpio_pca953x")

@@ -37,12 +37,12 @@
  *            |----[05] ONLP_THERMAL_ENV_FANCONN
  *            |----[06] ONLP_THERMAL_ENV_FANCARD
  *            |----[07] ONLP_THERMAL_ENV_BMC
- *            |----[01] ONLP_LED_SYS_SYNC
- *            |----[02] ONLP_LED_SYS_SYS
- *            |----[03] ONLP_LED_SYS_FAN
- *            |----[04] ONLP_LED_SYS_PSU_0
- *            |----[05] ONLP_LED_SYS_PSU_1
- *            |----[06] ONLP_LED_SYS_ID
+ *            |----[01] ONLP_LED_SYS_SYS
+ *            |----[02] ONLP_LED_SYS_FAN
+ *            |----[03] ONLP_LED_SYS_PSU_0
+ *            |----[04] ONLP_LED_SYS_PSU_1
+ *            |----[05] ONLP_LED_SYS_ID
+ *            |----[06] ONLP_LED_SYS_SYNC (w/NTM)
  *            |----[01] ONLP_PSU_0----[08] ONLP_THERMAL_PSU_0
  *            |                  |----[06] ONLP_PSU_0_FAN
  *            |----[02] ONLP_PSU_1----[09] ONLP_THERMAL_PSU_1
@@ -265,6 +265,8 @@ int onlp_sysi_onie_info_get(onlp_onie_info_t* onie)
 int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     int i = 0;
+    int onlp_led_min = ONLP_LED_MIN;
+    int onlp_led_max = ufi_get_onlp_led_max();
     onlp_oid_t* e = table;
     memset(table, 0, max*sizeof(onlp_oid_t));
 
@@ -274,7 +276,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
     }
 
     /* LED */
-    for (i = ONLP_LED_SYS_SYNC; i < ONLP_LED_MAX; i++) {
+    for (i = onlp_led_min; i < onlp_led_max; i++) {
         *e++ = ONLP_LED_ID_CREATE(i);
     }
 

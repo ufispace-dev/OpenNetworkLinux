@@ -373,8 +373,8 @@ typedef struct  {
 
 
 u8 _mask_shift(u8 val, u8 mask);
-u8 _cpld_reg_write(struct device *dev, u8 reg, u8 reg_val);
-u8 _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
+int _cpld_reg_write(struct device *dev, u8 reg, u8 reg_val);
+int _cpld_reg_read(struct device *dev, u8 reg, u8 mask);
 int mux_select_chan(struct i2c_mux_core *muxc, u32 chan);
 int mux_deselect_mux(struct i2c_mux_core *muxc, u32 chan);
 ssize_t idle_state_show(struct device *dev,

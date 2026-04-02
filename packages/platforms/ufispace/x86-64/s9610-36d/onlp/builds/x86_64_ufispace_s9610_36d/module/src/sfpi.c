@@ -62,9 +62,10 @@
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
 //SFF8636 TX Disable
-#define SFF8636_EEPROM_OFFSET_TXDIS    0x56
-#define SFF8636_EEPROM_TX_DIS          0x0f  /* txdis valid bit(bit0-bit3), xxxx 1111 */
-#define SFF8636_EEPROM_TX_EN           0x0
+#define SFF8636_EEPROM_OFFSET_TXDIS    (0x56)
+#define SFF8636_EEPROM_TX_DIS          (0x0f)  /* txdis valid bit(bit0-bit3), xxxx 1111 */
+#define SFF8636_EEPROM_TX_EN           (0x0)
+#define TX_DIS_INPUT_MAX               (0xff) /* for input value validation only */
 
 //CMIS TX Disable
 #define CMIS_PAGE_SIZE                        (128)
@@ -484,11 +485,11 @@ static int ufi_sff8636_txdisable_status_set(int port, int status, onlp_sfp_contr
 
     if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
         // check status range
-        if (status < 0 || status > SFF8636_EEPROM_TX_DIS) {
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
             AIM_LOG_ERROR("[%s] invalid status, port=%d, status=%d\n", __FUNCTION__, port, status);
             return ONLP_STATUS_E_PARAM;
         } else {
-            value = (uint8_t)(status);
+            value = (uint8_t)(status & SFF8636_EEPROM_TX_DIS);
         }
     } else { //ONLP_SFP_CONTROL_TX_DISABLE
         if (status == 0) {
@@ -649,7 +650,7 @@ static int ufi_cmis_txdisable_status_set(int port, int status, onlp_sfp_control_
     }
 
     if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
-        if (status < 0 || status > CMIS_VAL_TX_DIS) {
+        if (status < 0 || status > TX_DIS_INPUT_MAX) {
             AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
             return ONLP_STATUS_E_PARAM;
         } else {

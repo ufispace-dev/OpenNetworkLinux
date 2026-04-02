@@ -906,9 +906,14 @@ static void s6301_56stp_poe_remove_client(struct i2c_client *client)
 }
 
 /* poe drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int s6301_56stp_poe_probe(struct i2c_client *client,
                                  const struct i2c_device_id *dev_id)
 {
+#else
+static int s6301_56stp_poe_probe(struct i2c_client *client)
+{
+#endif
     int status;
     struct poe_data *data = NULL;
     int i;

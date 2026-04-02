@@ -280,13 +280,16 @@ enum onlp_psu_id {
 /* LED definitions*/
 enum onlp_led_id {
     ONLP_LED_RESERVED  = 0,
-    ONLP_LED_SYS_SYNC,
     ONLP_LED_SYS_SYS,
     ONLP_LED_SYS_FAN,
     ONLP_LED_SYS_PSU_0,
     ONLP_LED_SYS_PSU_1,
     ONLP_LED_SYS_ID,
-    ONLP_LED_MAX
+    ONLP_LED_SYS_SYNC,
+    ONLP_LED_MAX,
+    ONLP_LED_MAX_NTM = ONLP_LED_MAX,
+    ONLP_LED_MAX_NO_NTM = ONLP_LED_SYS_SYNC,
+    ONLP_LED_MIN = ONLP_LED_SYS_SYS,
 };
 
 enum onlp_psu_type_e {
@@ -367,4 +370,5 @@ int ufi_get_board_version(board_t *board);
 int trim_whitespace(char *str);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 int ufi_port_base_get(int *base_num);
+int ufi_get_onlp_led_max();
 #endif  /* __PLATFORM_LIB_H__ */

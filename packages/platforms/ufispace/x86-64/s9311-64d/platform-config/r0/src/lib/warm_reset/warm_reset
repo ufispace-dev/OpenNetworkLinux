@@ -6,7 +6,7 @@ if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
-VER="0.0.2-bsp"
+VER="0.0.3-bsp"
 silence=0
 
 function _ioget {
@@ -61,7 +61,8 @@ remove_kmod()
     case "${1}" in
     "mac")
         kmod_cnt=`lsmod | grep bde | wc -l`
-        if [ ${kmod_cnt} -eq 2 ]; then
+        if [ ${kmod_cnt} -eq 3 ]; then
+            rmmod linux_ngbde
             rmmod linux_user_bde
             rmmod linux_kernel_bde
         fi
@@ -79,7 +80,7 @@ remove_dev()
     "mac")
         echo 1 > /sys/bus/pci/devices/0000\:$(setpci -s 14:05.0 0x19.b)\:00.0/remove
         sleep 1
-		;;
+        ;;
     *)
         print_log "Invalid Parameters\n"
         help
@@ -160,19 +161,35 @@ reset_mac()
     # set secondary bus reset to 1 before MAC reset
     set_2nd_bus_reset mac 1
 
+    # de-assert write protection
+    ori=$(_ioget 0xe70 | awk -F' ' '{print $NF}')
+    _ioset 0xe70 $(printf "0x%02x" $(("$ori" | 0x01)))
+
     # reset MAC
     print_log "Reset Assertion......"
     val=$(_ioget 0xe40 | awk -F' ' '{print $NF}')
     sleep 0.1
     _ioset 0xe40 $(printf "0x%02x" $(("$val" & 0xFE)))
+
+    # assert write protection (Restore the original value)
+    _ioset 0xe70 $(printf "0x%02x" ${ori})
+
     sleep 2
     print_log "done\n"
 
-    # unreset MAC
     print_log "Reset Deassertion......"
+
+    # de-assert write protection
+    ori=$(_ioget 0xe70 | awk -F' ' '{print $NF}')
+    _ioset 0xe70 $(printf "0x%02x" $(("$ori" | 0x01)))
+
+    # unreset MAC
     val=$(_ioget 0xe40 | awk -F' ' '{print $NF}')
-    sleep 0.1
     _ioset 0xe40 $(printf "0x%02x" $(("$val" | 0x01)))
+
+    # assert write protection (Restore the original value)
+    _ioset 0xe70 $(printf "0x%02x" ${ori})
+
     sleep 2
     print_log "done\n"
 

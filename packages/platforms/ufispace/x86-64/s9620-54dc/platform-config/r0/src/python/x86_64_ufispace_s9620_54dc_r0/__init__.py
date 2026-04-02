@@ -479,9 +479,8 @@ class OnlPlatform_x86_64_ufispace_s9620_54dc_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
-        os.system("rmmod gpio_ich")
-        os.system("rmmod pinctrl_cedarfork")
-        os.system("rmmod ee1004")
+        os.system("modprobe -rq i2c_i801")
+        os.system("modprobe -rq i2c_ismt")
         self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         self.insmod("i2c-ismt", False)
@@ -538,7 +537,7 @@ class OnlPlatform_x86_64_ufispace_s9620_54dc_r0(OnlPlatformUfiSpace):
         # set bmc sel time now
         self.set_bmc_sel_time()
 
-        # init gpio
+        # init gpio (Q3U not support)
         # self.bsp_pr("Init gpio")
         # self.init_gpio(gpio_max, -1, board)
 
@@ -552,11 +551,12 @@ class OnlPlatform_x86_64_ufispace_s9620_54dc_r0(OnlPlatformUfiSpace):
 
         #self.bsp_pr("Init bcm88860")
         self.insmod("intel_auxiliary", False)
-        self.insmod("ice")
+        self.insmod("ice", False)
+        os.system("modprobe ice")
 
         # init dev_class for CMIS/non-CMIS modules
         self.update_dev_class()
-        # init bcm82399
+        # init bcm82399 (Q3U not support)
         # os.system("timeout 120s {} init -s auto_25G -d mdio".format(self.PATH_EPDM_CLI))
 
         # sets the System Event Log (SEL) timestamp to the current system time

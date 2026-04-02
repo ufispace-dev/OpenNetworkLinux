@@ -124,7 +124,7 @@ enum s9310_cpld_sysfs_attributes {
     CPLD_SFP_TS,
 
     //BSP DEBUG
-    BSP_DEBUG   
+    BSP_DEBUG
 };
 
 enum bsp_log_types {
@@ -937,9 +937,15 @@ static void s9310_cpld_remove_client(struct i2c_client *client)
 }
 
 /* cpld drvier probe */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
 static int s9310_cpld_probe(struct i2c_client *client,
                     const struct i2c_device_id *dev_id)
 {
+#else
+static int s9310_cpld_probe(struct i2c_client *client)
+{
+    const struct i2c_device_id *dev_id = i2c_client_get_device_id(client);
+#endif
     int status;
     struct cpld_data *data = NULL;
     int ret = -EPERM;
@@ -991,7 +997,7 @@ static int s9310_cpld_probe(struct i2c_client *client,
         status = sysfs_create_group(&client->dev.kobj,
                     &s9310_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
         status = sysfs_create_group(&client->dev.kobj,
                     &s9310_cpld2_group);
         break;
@@ -1017,7 +1023,7 @@ exit:
     case cpld1:
         sysfs_remove_group(&client->dev.kobj, &s9310_cpld1_group);
         break;
-    case cpld2:    	  
+    case cpld2:
         sysfs_remove_group(&client->dev.kobj, &s9310_cpld2_group);
         break;
     case cpld3:

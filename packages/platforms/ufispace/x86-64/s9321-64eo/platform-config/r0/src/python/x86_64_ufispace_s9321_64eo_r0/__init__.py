@@ -517,6 +517,8 @@ class OnlPlatform_x86_64_ufispace_s9321_64eo_r0(OnlPlatformUfiSpace):
 
         # load default kernel driver
         self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
         os.system("modprobe i2c_mux")
@@ -590,7 +592,8 @@ class OnlPlatform_x86_64_ufispace_s9321_64eo_r0(OnlPlatformUfiSpace):
         if board['hw_rev'] <= 2:
             self.bsp_pr("Init ice")
             self.insmod("intel_auxiliary", False)
-            self.insmod("ice")
+            self.insmod("ice", False)
+            os.system("modprobe ice")
 
             # init bcm82399
             self.bsp_pr("Init bcm82399")

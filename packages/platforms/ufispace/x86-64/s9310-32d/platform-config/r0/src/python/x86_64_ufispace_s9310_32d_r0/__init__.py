@@ -159,6 +159,9 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
 
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         # load default kernel driver
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
@@ -226,7 +229,8 @@ class OnlPlatform_x86_64_ufispace_s9310_32d_r0(OnlPlatformUfiSpace):
 
         # init i40e
         self.insmod("intel_auxiliary", False)
-        self.insmod("i40e")
+        self.insmod("i40e", False)
+        os.system("modprobe i40e")
 
         # enable port led
         self.enable_port_led()

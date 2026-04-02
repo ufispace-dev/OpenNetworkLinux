@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="1.1.4"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -64,6 +64,10 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+
+# GPIO_BASE: update by function _update_gpio_max
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 FPGA_PCI_ENABLE=0
 
@@ -136,14 +140,24 @@ function _update_gpio_max {
 
     GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/bsp/bsp_gpio_max)
 
-    if [ $? -eq 1 ]; then
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat /sys/devices/platform/x86_64_ufispace_s9321_64e_lpc/bsp/bsp_gpio_base)
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
 }
 
 function _dd_read_byte {
@@ -1692,7 +1706,7 @@ function _show_port_status_sysfs {
     esac
 }
 function _show_port_status {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_port_status_sysfs
     fi
 }
@@ -1850,9 +1864,14 @@ function _show_system_led_sysfs {
             done
 
             if [ "${HW_REV}" != "Alpha" ]; then
-                local gpio_led_id=$(( ${GPIO_MAX} - 0 ))
-                _check_filepath "/sys/class/gpio/gpio${gpio_led_id}/value"
-                system_led_id=$(eval "cat /sys/class/gpio/gpio${gpio_led_id}/value")
+                local gpio_path="0"
+                if [ "${GPIO_MAX_INIT_FLAG}" != "1" ]; then
+                    gpio_path=$(( ${GPIO_BASE} + 15 ))
+                else
+                    gpio_path=$(( ${GPIO_MAX} - 0 ))
+                fi
+                _check_filepath "/sys/class/gpio/gpio${gpio_path}/value"
+                system_led_id=$(eval "cat /sys/class/gpio/gpio${gpio_path}/value")
                 _echo "[System LED ID  ]: ${system_led_id}"
             fi
             ;;
@@ -1871,11 +1890,13 @@ function _show_system_led {
 
 function _show_beacon_led_sysfs {
     _banner "Show Beacon LED"
-    local sgg7=(           "A"   "B"   "C"   "D"   "E"   "F"   "G" )
-    #                      502   501   496   498   497   500   499
-    local sgg7_left_off=(  9     10    15    13    14    11    12 )
-    #                      504   507   509   510   508   505   506
-    local sgg7_right_off=( 7     4     2     1     3     6     5  )
+    local sgg7=(                "A"   "B"   "C"   "D"   "E"   "F"   "G" )
+    #                           502   501   496   498   497   500   499
+    local sgg7_left_off=(       9     10    15    13    14    11    12 )
+    local sgg7_left_base_off=(  6     5     0     2     1     4     3  )
+    #                           504   507   509   510   508   505   506
+    local sgg7_right_off=(      7     4     2     1     3     6     5  )
+    local sgg7_right_base_off=( 8     11    13    14    12    9     10 )
     local sgg7_mum=( "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F")
     local sgg7_value=(
             "0000001"  # 0
@@ -1903,10 +1924,17 @@ function _show_beacon_led_sysfs {
 
     for (( i=0; i<${#sgg7[@]}; i++))
     do
-        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_left_off[i] ))/value)
-        sgg7_left=$sgg7_left$num
-        num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_right_off[i] ))/value)
-        sgg7_right=$sgg7_right$num
+        if [ "${GPIO_MAX_INIT_FLAG}" != "1" ]; then
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_BASE + sgg7_left_base_off[i] ))/value)
+            sgg7_left=$sgg7_left$num
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_BASE + sgg7_right_base_off[i] ))/value)
+            sgg7_right=$sgg7_right$num
+        else
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_left_off[i] ))/value)
+            sgg7_left=$sgg7_left$num
+            num=$(cat /sys/class/gpio/gpio$(( GPIO_MAX - sgg7_right_off[i] ))/value)
+            sgg7_right=$sgg7_right$num
+        fi
     done
 
     for (( i=0; i<${#sgg7_value[@]}; i++))
@@ -1932,7 +1960,7 @@ function _show_beacon_led_sysfs {
 }
 
 function _show_beacon_led {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ] ; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         if [ "${HW_REV}" = "Alpha" ]; then
             _show_beacon_led_sysfs
         fi
@@ -2557,9 +2585,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
+
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

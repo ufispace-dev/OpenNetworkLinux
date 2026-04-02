@@ -360,7 +360,7 @@ static int is_fru_sup(void) {
     if(1) {
         board_t board = {0};
         ONLP_TRY(get_board_version(&board));
-        if(board.hw_rev >= BRD_BETA) {
+        if(board.hw_rev >= BRD_ALPHA) {
             return ONLP_STATUS_OK;
         } else {
             return ONLP_STATUS_E_UNSUPPORTED;

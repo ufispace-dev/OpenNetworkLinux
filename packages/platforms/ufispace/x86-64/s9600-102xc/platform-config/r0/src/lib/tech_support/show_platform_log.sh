@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.1.1"
+TS_VERSION="1.1.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -64,6 +64,10 @@ LOG_REDIRECT=""
 # GPIO_MAX: update by function _update_gpio_max
 GPIO_MAX=0
 GPIO_MAX_INIT_FLAG=0
+
+# GPIO_BASE: update by function _update_gpio_max
+GPIO_BASE=0
+GPIO_BASE_INIT_FLAG=0
 
 # I2C Bus
 i801_bus=""
@@ -134,14 +138,25 @@ function _update_gpio_max {
     _banner "Update GPIO MAX"
 
     GPIO_MAX=$(cat /sys/devices/platform/x86_64_ufispace_s9600_102xc_lpc/bsp/bsp_gpio_max)
-    if [ $? -eq 1 ]; then
+    if [ $? -eq 1 ]  || [ "$GPIO_MAX" == "-1" ]; then
         GPIO_MAX_INIT_FLAG=0
     else
         GPIO_MAX_INIT_FLAG=1
     fi
 
+    GPIO_BASE=$(cat /sys/devices/platform/x86_64_ufispace_s9600_102xc_lpc/bsp/bsp_gpio_base)
+    if [ $? -eq 1 ] || [ "$GPIO_BASE" == "-1" ]; then
+        GPIO_BASE_INIT_FLAG=0
+    else
+        GPIO_BASE_INIT_FLAG=1
+    fi
+
     _echo "[GPIO_MAX_INIT_FLAG]: ${GPIO_MAX_INIT_FLAG}"
     _echo "[GPIO_MAX]: ${GPIO_MAX}"
+
+    _echo "[GPIO_BASE_INIT_FLAG]: ${GPIO_BASE_INIT_FLAG}"
+    _echo "[GPIO_BASE]: ${GPIO_BASE}"
+
 }
 
 function _check_env {
@@ -1736,7 +1751,7 @@ function _show_port_status_sysfs {
 }
 
 function _show_port_status {
-    if [ "${BSP_INIT_FLAG}" == "1" ] && [ "${GPIO_MAX_INIT_FLAG}" == "1" ]; then
+    if [ "${BSP_INIT_FLAG}" == "1" ] && ([ "${GPIO_MAX_INIT_FLAG}" == "1" ] ||  [ "${GPIO_BASE_INIT_FLAG}" == "1" ]); then
         _show_port_status_sysfs
     fi
 }
@@ -2402,9 +2417,13 @@ function _main {
     _show_dmesg
     _additional_log_collection
     _show_time
-    _compression
+}
 
+function _trap_cleanup {
+    _compression
     echo "#   The tech-support collection is completed. Please share the tech support log file."
 }
+
 _getopts $@
+trap '_trap_cleanup' EXIT ERR
 _main

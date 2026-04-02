@@ -50,12 +50,12 @@
 static onlp_led_info_t led_info[] =
 {
     { }, // Not used *
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 1 (SYNC LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 2 (SYS LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 3 (FAN LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 4 (PSU0 LED)"),
-    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 5 (PSU1 LED)"),
-    CHASSIS_ID_LED_INFO(ONLP_LED_SYS_ID, "Chassis LED 6 (ID LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYS, "Chassis LED 1 (SYS LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_FAN, "Chassis LED 2 (FAN LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_0, "Chassis LED 3 (PSU0 LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_PSU_1, "Chassis LED 4 (PSU1 LED)"),
+    CHASSIS_ID_LED_INFO(ONLP_LED_SYS_ID, "Chassis LED 5 (ID LED)"),
+    CHASSIS_LED_INFO(ONLP_LED_SYS_SYNC, "Chassis LED 6 (SYNC LED)"),
 };
 
 typedef struct
@@ -68,12 +68,12 @@ typedef struct
 
 static const led_attr_t led_attr[] = {
     /*led attribute          sysfs             color blink onoff */
-    [ONLP_LED_SYS_SYNC]   = {LED_SYSFS "sync"  ,0    ,2    ,3},
     [ONLP_LED_SYS_SYS]    = {LED_SYSFS "sys"   ,0    ,2    ,3},
     [ONLP_LED_SYS_FAN]    = {LED_SYSFS "fan"   ,0    ,2    ,3},
     [ONLP_LED_SYS_PSU_0]  = {LED_SYSFS "psu_0" ,0    ,2    ,3},
     [ONLP_LED_SYS_PSU_1]  = {LED_SYSFS "psu_1" ,0    ,2    ,3},
     [ONLP_LED_SYS_ID]     = {LED_SYSFS "id"    ,0    ,2    ,3},
+    [ONLP_LED_SYS_SYNC]   = {LED_SYSFS "sync"  ,0    ,2    ,3},
 };
 
 /**
@@ -84,6 +84,8 @@ static const led_attr_t led_attr[] = {
 static int get_led_local_id(int id, int *local_id)
 {
     int tmp_id;
+    int onlp_led_min = ONLP_LED_MIN;
+    int onlp_led_max = ufi_get_onlp_led_max();
 
     if(local_id == NULL) {
         return ONLP_STATUS_E_PARAM;
@@ -94,13 +96,17 @@ static int get_led_local_id(int id, int *local_id)
     }
 
     tmp_id = ONLP_OID_ID_GET(id);
+    if (tmp_id < onlp_led_min || tmp_id >= onlp_led_max) {
+         return ONLP_STATUS_E_INVALID;
+    }
+
     switch (tmp_id) {
-        case ONLP_LED_SYS_SYNC:
         case ONLP_LED_SYS_SYS:
         case ONLP_LED_SYS_FAN:
         case ONLP_LED_SYS_PSU_0:
         case ONLP_LED_SYS_PSU_1:
         case ONLP_LED_SYS_ID:
+        case ONLP_LED_SYS_SYNC:
             *local_id = tmp_id;
             return ONLP_STATUS_OK;
         default:
@@ -114,7 +120,7 @@ static int update_ledi_info(int local_id, onlp_led_info_t* info)
 {
     int led_val = 0, led_val_color = 0, led_val_blink = 0, led_val_onoff = 0;
 
-    if (local_id <= ONLP_LED_RESERVED || local_id >= ONLP_LED_MAX) {
+    if (local_id < ONLP_LED_MIN || local_id >= ufi_get_onlp_led_max()) {
         return ONLP_STATUS_E_PARAM;
     }
 
@@ -175,7 +181,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
     *rv = led_info[led_id];
 
     switch (led_id) {
-        case ONLP_LED_SYS_SYNC ... (ONLP_LED_MAX-1):
+        case ONLP_LED_MIN ... (ONLP_LED_MAX-1):
             rc = update_ledi_info(led_id, rv);
             break;
         default:
@@ -218,7 +224,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
 
     ONLP_TRY(get_led_local_id(id, &led_id));
 
-    if(led_id >= ONLP_LED_MAX) {
+    if(led_id >= ufi_get_onlp_led_max()) {
         result = ONLP_STATUS_E_INVALID;
     } else {
         info = &led_info[led_id];

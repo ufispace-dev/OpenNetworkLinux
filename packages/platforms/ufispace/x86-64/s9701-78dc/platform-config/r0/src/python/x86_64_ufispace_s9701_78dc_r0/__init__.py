@@ -194,7 +194,9 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
                     f.write(str(IDLE_STATE_DISCONNECT))
 
     def baseconfig(self):
-
+        os.system("modprobe -rq i2c_ismt")
+        os.system("modprobe -rq i2c_i801")
+        self.insmod("i2c-smbus", False)
         # load default kernel driver
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
@@ -266,7 +268,8 @@ class OnlPlatform_x86_64_ufispace_s9701_78dc_r0(OnlPlatformUfiSpace):
 
         # init i40e (need to have i40e before bcm82752 init to avoid failure)
         self.insmod("intel_auxiliary", False)
-        self.insmod("i40e")
+        self.insmod("i40e", False)
+        os.system("modprobe i40e")
         # init bcm82752
         os.system("timeout 120s /lib/platform-config/x86-64-ufispace-s9701-78dc-r0/onl/epdm_cli init 10G")
 

@@ -306,5 +306,6 @@ int get_psu_present_status(int local_id, int *pw_present);
 int get_psu_type(int local_id, int *psu_type, bmc_fru_t *fru_in);
 int ufi_get_board_version(board_t *board);
 int ufi_get_gpio_max(int *gpio_max);
+int ufi_get_gpio_base(int *gpio_base);
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 #endif  /* __PLATFORM_LIB_H__ */

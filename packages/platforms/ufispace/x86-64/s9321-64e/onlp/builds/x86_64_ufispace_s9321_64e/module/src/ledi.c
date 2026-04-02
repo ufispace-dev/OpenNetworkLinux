@@ -63,7 +63,9 @@ typedef struct
     int type;
     char *sysfs;
     int gpin_off1;
+    int gpin_off1_b;
     int gpin_off2;
+    int gpin_off2_b;
     int action;
     color_obj_t color_obj[COLOR_VAL_MAX];
     short int color_mask;
@@ -146,6 +148,9 @@ static onlp_led_info_t led_info[] =
         .caps = ID_LED_CAPS
     },
 };
+
+static int gpio_max = -1;
+static int gpio_base = -1;
 
 static int get_node(int local_id, led_node_t *node)
 {
@@ -280,7 +285,9 @@ static int get_node(int local_id, led_node_t *node)
             break;
         case ONLP_LED_SYS_ID:
             node->gpin_off1 = 0;
+            node->gpin_off1_b = 15;
             node->gpin_off2 = GPIO_INVALID_OFFSET;
+            node->gpin_off2_b = GPIO_INVALID_OFFSET;
             node->action = ACTION_LED_RW;
             node->type = TYPE_LED_ATTR_GPIO;
             node->color_mask = VALUE_0000_0001;
@@ -397,12 +404,18 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
 
     if(IS_GPIO(node)) {
         int led_val2 = 0;
-        int gpio_max = 0;
-        ONLP_TRY(get_gpio_max(&gpio_max));
-        ONLP_TRY(read_file_hex(&led_val, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
-        if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
-            ONLP_TRY(read_file_hex(&led_val2, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
-            led_val = operate_bit(led_val, 1, led_val2);
+        if(gpio_max < 0) {
+            ONLP_TRY(read_file_hex(&led_val, SYS_GPIO_FMT, gpio_base + node.gpin_off1_b));
+            if(node.gpin_off2_b != GPIO_INVALID_OFFSET) {
+                ONLP_TRY(read_file_hex(&led_val2, SYS_GPIO_FMT, gpio_base + node.gpin_off2_b));
+                led_val = operate_bit(led_val, 1, led_val2);
+            }
+        } else {
+            ONLP_TRY(read_file_hex(&led_val, SYS_GPIO_FMT, gpio_max - node.gpin_off1));
+            if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
+                ONLP_TRY(read_file_hex(&led_val2, SYS_GPIO_FMT, gpio_max - node.gpin_off2));
+                led_val = operate_bit(led_val, 1, led_val2);
+            }
         }
     } else {
         ONLP_TRY(read_file_hex(&led_val, node.sysfs));
@@ -434,7 +447,13 @@ static int get_sys_led_info(int local_id, onlp_led_info_t* info)
  */
 int onlp_ledi_init(void)
 {
+    if (gpio_max != -1 || gpio_base != -1) {
+        return ONLP_STATUS_OK;
+    }
+
     init_lock();
+    ONLP_TRY(get_gpio_max(&gpio_max));
+    ONLP_TRY(get_gpio_base(&gpio_base));
     return ONLP_STATUS_OK;
 }
 
@@ -447,6 +466,7 @@ int onlp_ledi_info_get(onlp_oid_t id, onlp_led_info_t* rv)
 {
     int local_id;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     ONLP_TRY(get_sys_led_info(local_id, rv));
 
@@ -463,6 +483,7 @@ int onlp_ledi_status_get(onlp_oid_t id, uint32_t* rv)
     int local_id;
     onlp_led_info_t info ={0};
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     ONLP_TRY(get_sys_led_info(local_id, &info));
     *rv = info.status;
@@ -480,6 +501,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
     int local_id;
     led_node_t node = {0};
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     *rv = led_info[local_id].hdr;
 
@@ -501,6 +523,7 @@ int onlp_ledi_hdr_get(onlp_oid_t id, onlp_oid_hdr_t* rv)
     int local_id;
     led_node_t node = {0};
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     ONLP_TRY(get_node(local_id, &node));
     if (node.action != ACTION_LED_RW) {
@@ -539,6 +562,7 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
     int led_val = 0;
     int led_val2 = 0;
 
+    ONLP_TRY(onlp_ledi_init());
     ONLP_TRY(get_led_local_id(id, &local_id));
     ONLP_TRY(get_node(local_id, &node));
     if (node.action != ACTION_LED_RW) {
@@ -552,13 +576,19 @@ int onlp_ledi_mode_set(onlp_oid_t id, onlp_led_mode_t mode)
         if(mode == node.color_obj[i].mode) {
             found = 1;
             if(IS_GPIO(node)) {
-                int gpio_max = 0;
-                ONLP_TRY(get_gpio_max(&gpio_max));
                 led_val = get_bit_value(node.color_obj[i].val, 0);
-                ONLP_TRY(onlp_file_write_int(led_val, SYS_GPIO_FMT, gpio_max + node.gpin_off1));
-                if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
-                    led_val2 = get_bit_value(node.color_obj[i].val, 1);
-                    ONLP_TRY(onlp_file_write_int(led_val2, SYS_GPIO_FMT, gpio_max + node.gpin_off2));
+                if(gpio_max < 0) {
+                    ONLP_TRY(onlp_file_write_int(led_val, SYS_GPIO_FMT, gpio_base + node.gpin_off1_b));
+                    if(node.gpin_off2_b != GPIO_INVALID_OFFSET) {
+                        led_val2 = get_bit_value(node.color_obj[i].val, 1);
+                        ONLP_TRY(onlp_file_write_int(led_val2, SYS_GPIO_FMT, gpio_base + node.gpin_off2_b));
+                    }
+                } else {
+                    ONLP_TRY(onlp_file_write_int(led_val, SYS_GPIO_FMT, gpio_max - node.gpin_off1));
+                    if(node.gpin_off2 != GPIO_INVALID_OFFSET) {
+                        led_val2 = get_bit_value(node.color_obj[i].val, 1);
+                        ONLP_TRY(onlp_file_write_int(led_val2, SYS_GPIO_FMT, gpio_max - node.gpin_off2));
+                    }
                 }
             } else {
                 ONLP_TRY(read_file_hex(&led_val, node.sysfs));

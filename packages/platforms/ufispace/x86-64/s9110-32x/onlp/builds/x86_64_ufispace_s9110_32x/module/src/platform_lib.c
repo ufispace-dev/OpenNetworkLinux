@@ -851,7 +851,7 @@ int get_hw_rev_id(void)
     }
     /* Read the output a line at a time - output it. */
     fgets(buffer, sizeof(buffer), fp);
-    hw_rev = atoi(buffer);
+    hw_rev = (int)strtol(buffer, 0, 0);
 
     pclose(fp);
 
