@@ -424,7 +424,6 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
     def baseconfig(self):
 
         # load default kernel driver
-        self.init_i2c_bus_order()
         os.system("modprobe -rq i2c_i801")
         self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
@@ -435,6 +434,7 @@ class OnlPlatform_x86_64_ufispace_s9110_32x_r0(OnlPlatformUfiSpace):
         os.system("modprobe coretemp")
         os.system("modprobe ipmi_devintf")
         os.system("modprobe ipmi_si")
+        self.init_i2c_bus_order()
 
         bus_i801=0
         bus_ismt=1

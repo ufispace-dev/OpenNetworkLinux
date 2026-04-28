@@ -3,4 +3,4 @@ KMODULES := src
 VENDOR := ufispace
 BASENAME := common
 ARCH := x86_64
-include $(ONL)/make/kmodule.mk
+include $(ONL)/packages/platforms/ufispace/make/kmodule.mk

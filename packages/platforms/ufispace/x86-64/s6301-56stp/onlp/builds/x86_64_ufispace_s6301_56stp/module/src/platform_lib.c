@@ -163,24 +163,43 @@ int get_hw_ext_id()
 }
 
 /**
- * @brief init gpio max value
- * @param board [out] gpio max value
+ * @brief Get gpio max
+ * @param gpio_max [out] GPIO max
  */
-int get_gpio_max() {
+int ufi_get_gpio_max(int *gpio_max)
+{
+    int rv = ONLP_STATUS_OK;
 
-    int gpio_max;
-
-    //Get HW Version
-    if(onlp_file_read_int(&gpio_max, GPIO_MAX_SYSFS) != ONLP_STATUS_OK) {
-        gpio_max = 512;
+    if(gpio_max == NULL) {
+        return ONLP_STATUS_E_INVALID;
     }
 
-    if(gpio_max < MIN_GPIO_MAX) {
-      gpio_max = 512;
-      AIM_LOG_ERROR("GPIO_BASE %d is not enough for init, please check kernel config\n", gpio_max);
+    if(file_read_hex(gpio_max, GPIO_MAX_SYSFS) != ONLP_STATUS_OK)
+    {
+        *gpio_max = 511;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
+}
+
+/**
+ * @brief Get gpio base
+ * @param gpio_base [out] GPIO base
+ */
+int ufi_get_gpio_base(int *gpio_base)
+{
+    int rv = ONLP_STATUS_OK;
+
+    if(gpio_base == NULL) {
+        return ONLP_STATUS_E_INVALID;
     }
 
-    return gpio_max;
+    if(file_read_hex(gpio_base, GPIO_BASE_SYSFS) != ONLP_STATUS_OK)
+    {
+        *gpio_base = 512;
+        rv = ONLP_STATUS_E_INVALID;
+    }
+    return rv;
 }
 
 /**

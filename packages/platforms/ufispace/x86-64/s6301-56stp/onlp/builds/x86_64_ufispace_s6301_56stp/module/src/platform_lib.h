@@ -64,8 +64,8 @@
 #define LPC_MB_CPLD_PATH            SYS_LPC "mb_cpld/"
 #define LPC_BSP_PATH                SYS_LPC "bsp/"
 #define GPIO_MAX_SYSFS              LPC_BSP_PATH "bsp_gpio_max"
+#define GPIO_BASE_SYSFS             LPC_BSP_PATH "bsp_gpio_base"
 #define MUX_RESET_SYSFS             LPC_MB_CPLD_PATH "mux_reset"
-
 
 #define RJ45_NUM                    48
 #define SFP_PLUS_NUM                8
@@ -98,8 +98,6 @@
 #define PSU_PMBUS_ADDR_1            0x59
 
 /* FAN DIR */
-#define FAN0_DIR_GPIO_OFF           51
-#define FAN1_DIR_GPIO_OFF           52
 #define FAN_DIR_B2F                 0
 #define FAN_DIR_F2B                 1
 
@@ -249,7 +247,9 @@ int get_hw_rev_id();
 
 int get_hw_ext_id();
 
-int get_gpio_max();
+int ufi_get_gpio_max(int *gpio_max);
+
+int ufi_get_gpio_base(int *gpio_base);
 
 int onlp_data_path_reset(uint8_t unit_id, uint8_t reset_dev);
 

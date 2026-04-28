@@ -64,6 +64,17 @@ onlp_fan_info_t fan_info[] = {
 
 static bool fan_fru_supported = false;
 
+typedef struct {
+    int dir_gpin;
+    int dir_gpin_b;
+} fan_dir_attr_t;
+
+static const fan_dir_attr_t fan_dir_attr[] = {
+/*  fan   dir     */
+    [0] ={51,   52},
+    [1] ={52,   51},
+};
+
 static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
 {
     int result = ONLP_STATUS_OK;
@@ -85,16 +96,24 @@ static int ufi_fan_fru_update(int local_id, onlp_fan_info_t* info)
 int sys_fan_info_get(onlp_fan_info_t* info, int local_id)
 {
     int rpm = 0;
-    int hwm_id, sysfs_id, gpio_off, fan_dir;
-    int hw_rev_id, gpio_max;
+    int hwm_id, sysfs_id, gpio_num, fan_dir;
+    int hw_rev_id, gpio_max, gpio_base;
 
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+    ONLP_TRY(ufi_get_gpio_base(&gpio_base));
     hwm_id = UCD_HWM_ID;
     if( local_id == ONLP_FAN_0) {
         sysfs_id = 1;
-        gpio_off = FAN0_DIR_GPIO_OFF;
+        if(gpio_max < 0)
+            gpio_num = gpio_base + fan_dir_attr[0].dir_gpin_b;
+        else
+            gpio_num = gpio_max - fan_dir_attr[0].dir_gpin;
     } else {
         sysfs_id = 2;
-        gpio_off = FAN1_DIR_GPIO_OFF;
+        if(gpio_max < 0)
+            gpio_num = gpio_base + fan_dir_attr[1].dir_gpin_b;
+        else
+            gpio_num = gpio_max - fan_dir_attr[1].dir_gpin;
     }
 
     //get fan rpm
@@ -107,8 +126,7 @@ int sys_fan_info_get(onlp_fan_info_t* info, int local_id)
         goto SKIP_FAN_DIR_DETECT;
     }
 
-    gpio_max = get_gpio_max();
-    ONLP_TRY(onlp_file_read_int(&fan_dir, SYS_GPIO_FMT, gpio_max - gpio_off));
+    ONLP_TRY(onlp_file_read_int(&fan_dir, SYS_GPIO_FMT, gpio_num));
     if(fan_dir == FAN_DIR_F2B) {
         /* F2B */
         info->status |= ONLP_FAN_STATUS_F2B;

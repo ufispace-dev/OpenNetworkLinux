@@ -1,0 +1,3 @@
+_getopts $@
+trap '_trap_cleanup' EXIT ERR
+_main

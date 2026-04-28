@@ -4,7 +4,7 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.2-bsp"
+VER="0.0.3-bsp"
 silence=0
 MAC_RP_L="14:04.0"
 MAC_RP_R="14:05.0"
@@ -232,11 +232,20 @@ retrain_link()
 {
     case "${1}" in
     "mac")
-        lc=$(setpci -s $(setpci -s ${MAC_RP_L} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_L} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        # Read Link Control Register
+        lc_val=$(setpci -s ${MAC_RP_L} CAP_EXP+10.w)
+        # Set Bit 5 (Retrain Link, 0x20) to 1
+        new_lc_val=$(printf "%04x" $(("0x$lc_val" | 0x20)))
+        # Write the new value back to the Link Control Register to trigger the retrain
+        setpci -s ${MAC_RP_L} CAP_EXP+10.w=${new_lc_val}
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${MAC_RP_R} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP_R} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+
+        # Read Link Control Register
+        lc_val=$(setpci -s ${MAC_RP_R} CAP_EXP+10.w)
+        # Set Bit 5 (Retrain Link, 0x20) to 1
+        new_lc_val=$(printf "%04x" $(("0x$lc_val" | 0x20)))
+        # Write the new value back to the Link Control Register to trigger the retrain
+        setpci -s ${MAC_RP_R} CAP_EXP+10.w=${new_lc_val}
         sleep 1
         ;;
     *)

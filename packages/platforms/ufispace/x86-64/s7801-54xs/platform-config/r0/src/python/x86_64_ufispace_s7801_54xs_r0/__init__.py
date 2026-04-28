@@ -483,7 +483,6 @@ class OnlPlatform_x86_64_ufispace_s7801_54xs_r0(OnlPlatformUfiSpace):
     def baseconfig(self):
 
         # load default kernel driver
-        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")
@@ -492,6 +491,7 @@ class OnlPlatform_x86_64_ufispace_s7801_54xs_r0(OnlPlatformUfiSpace):
         os.system("modprobe coretemp")
         os.system("modprobe ipmi_devintf")
         os.system("modprobe ipmi_si")
+        self.init_i2c_bus_order()
 
         # lpc driver
         self.insmod(self.DRIVER[DriverType.LPC])

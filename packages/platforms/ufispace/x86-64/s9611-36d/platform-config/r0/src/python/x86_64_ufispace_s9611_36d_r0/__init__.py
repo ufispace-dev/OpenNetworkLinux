@@ -410,7 +410,6 @@ class OnlPlatform_x86_64_ufispace_s9611_36d_r0(OnlPlatformUfiSpace):
         os.system("rmmod gpio_ich")
         os.system("rmmod pinctrl_cedarfork")
         os.system("rmmod ee1004")
-        self.init_i2c_bus_order()
         self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_dev")
@@ -420,6 +419,7 @@ class OnlPlatform_x86_64_ufispace_s9611_36d_r0(OnlPlatformUfiSpace):
         os.system("modprobe lm75")
         os.system("modprobe ipmi_devintf")
         os.system("modprobe ipmi_si")
+        self.init_i2c_bus_order()
 
         # lpc driver
         self.insmod("x86-64-ufispace-s9611-36d-lpc")

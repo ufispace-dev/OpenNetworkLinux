@@ -1,0 +1,1 @@
+include $(ONL)/packages/platforms/ufispace/make/techsupport.mk
