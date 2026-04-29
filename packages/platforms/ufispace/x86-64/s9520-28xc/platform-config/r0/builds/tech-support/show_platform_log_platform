@@ -1,0 +1,95 @@
+#### platform specific
+function _plat_ts_version {
+    echo "1.0.0"
+}
+
+function _set_plat_vars {
+    PLAT="S9520-28XC"
+
+    _set_board_info
+    # CPU CPLD BIOS_BOOT_SEL: CPLD1 offset 0x5B Bit 0
+    # LPC Base is 0x700, so offset 0x5B is 0x75B
+    BIOS_BOOT_SEL_REG="0x75B,0"
+    BIOS_BOOT_SEL_REG_MASK=""
+
+    IOPORT_ADDRESS=(
+        "0x700-0x7FF"   # Main Board CPLD1
+        "0x600-0x6FF"
+        "0xE300-0xE3FF" # CPU EC
+    )
+
+
+    # I2C Mapping for CPLD1 and CPLD2 (via PCA9546 Mux 0x75 Channel 0)
+    CPLD_I2C_POSITION=(
+        "${I801_BUS},,,0x75,0,cpld1,2,0x32"
+        "${I801_BUS},,,0x75,0,cpld2,2,0x33"
+    )
+
+    # CPLD1 LPC Version Registers (0x02: Rev, 0x04: Build)
+    CPLD_DEV_LPC=(
+        "MB CPLD1,0x702,0x704"
+    )
+
+    I2C_DEV_INFO=(
+        "${I801_BUS},0x75"
+        "3,0x77"
+        "2,0x32" # CPLD1
+        "2,0x33" # CPLD2
+    )
+
+    I2C_TREE=(
+        "${I801_BUS},,,,,9546_ROOT_PORT-0x75,4,0x75"
+        "${I801_BUS},,,0x75,3,9546_CHILD-0x77,4,0x77"
+    )
+
+    SYS_EEPROM="${I801_BUS},,,,,0x56"
+    BMC_SUPPORT=1
+}
+
+function _show_extra_info {
+    :
+}
+
+function _set_board_info {
+    local model_id_array=( $((2#11101101)) )
+    local model_name_array=("Q3N S9520-28XC")
+    local ret=""
+    local found="0"
+    local i=0
+
+    # Read CPLD1 0x00 SKU ID Register via LPC
+    local model_id=$(_dd_read_byte 0x700)
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        MODEL_ID=$((model_id))
+        for (( i=0; i<${#model_id_array[@]}; i++ ))
+        do
+            if (( MODEL_ID == model_id_array[i] )); then
+                MODEL_NAME="${model_name_array[$i]}"
+                found="1"
+                break
+            fi
+        done
+
+        if [ "$found" = "0" ]; then
+            MODEL_NAME="S9520-28XC UNKNOWN"
+        fi
+    fi
+
+    # Read CPLD1 0x01 HW & Build Revision Register via LPC
+    local board_rev_id=$(_dd_read_byte 0x701)
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        board_rev_id=$((board_rev_id))
+        # DEPH D[2]
+        DEPH_ID=$(((board_rev_id & 2#00000100) >> 2))
+
+        # HW Rev D[0:1]
+        HW_REV_ID=$(((board_rev_id & 2#00000011) >> 0))
+
+        # Build Rev D[3:5]
+        BUILD_REV_ID=$(((board_rev_id & 2#00111000) >> 3))
+    fi
+}
+
+####

@@ -41,22 +41,26 @@ enum port_status_type_e {
 
 typedef struct {
     int abs_gpin;
+    int abs_gpin_b;
     int rxlos_gpin;
+    int rxlos_gpin_b;
     int txflt_gpin;
+    int txflt_gpin_b;
     int txdis_gpin;
+    int txdis_gpin_b;
     int eeprom_bus;
 } port_attr_t;
 
 static const port_attr_t port_attr[] = {
-/*  port abs    rxlos   txflt   txdis   bus */
-    [0] ={8,    32,     40,     16,     10},
-    [1] ={9,    33,     41,     17,     11},
-    [2] ={10,   34,     42,     18,     12},
-    [3] ={11,   35,     43,     19,     13},
-    [4] ={12,   36,     44,     20,     14},
-    [5] ={13,   37,     45,     21,     15},
-    [6] ={14,   38,     46,     22,     16},
-    [7] ={15,   39,     47,     23,     17},
+/*  port  abs      rxlos     txflt     txdis     bus */
+    [0] ={8,   7,  32,  47,  40,  39,  16,  31,  10},
+    [1] ={9,   6,  33,  46,  41,  38,  17,  30,  11},
+    [2] ={10,  5,  34,  45,  42,  37,  18,  29,  12},
+    [3] ={11,  4,  35,  44,  43,  36,  19,  28,  13},
+    [4] ={12,  3,  36,  43,  44,  35,  20,  27,  14},
+    [5] ={13,  2,  37,  42,  45,  34,  21,  26,  15},
+    [6] ={14,  1,  38,  41,  46,  33,  22,  25,  16},
+    [7] ={15,  0,  39,  40,  47,  32,  23,  24,  17},
 };
 
 int sfp_start_num = 0;
@@ -84,30 +88,42 @@ static void port_index_update() {
 }
 
 static int port_status_gpio_get(int port, int type, int* gpio_num) {
-    int port_index, offset;
-    int gpio_max;
+    int port_index;
+    int gpio_max, gpio_base;
 
-    gpio_max = get_gpio_max();
-
+    ONLP_TRY(ufi_get_gpio_max(&gpio_max));
+    ONLP_TRY(ufi_get_gpio_base(&gpio_base));
+  
     port_index = port - sfp_start_num;
     switch(type) {
         case PST_ABS:
-            offset = port_attr[port_index].abs_gpin;
+            if(gpio_max < 0)
+                *gpio_num = gpio_base + port_attr[port_index].abs_gpin_b;
+            else 
+                *gpio_num = gpio_max - port_attr[port_index].abs_gpin;
             break;
         case PST_RXLOS:
-            offset = port_attr[port_index].rxlos_gpin;
+            if(gpio_max < 0)
+                *gpio_num = gpio_base + port_attr[port_index].rxlos_gpin_b;
+            else 
+                *gpio_num = gpio_max - port_attr[port_index].rxlos_gpin;
             break;
         case PST_TXFLT:
-            offset = port_attr[port_index].txflt_gpin;
+            if(gpio_max < 0)
+                *gpio_num = gpio_base + port_attr[port_index].txflt_gpin_b;
+            else 
+                *gpio_num = gpio_max - port_attr[port_index].txflt_gpin;
             break;
         case PST_TXDIS:
-            offset = port_attr[port_index].txdis_gpin;
+            if(gpio_max < 0)
+                *gpio_num = gpio_base + port_attr[port_index].txdis_gpin_b;
+            else 
+                *gpio_num = gpio_max - port_attr[port_index].txdis_gpin;
             break;
         default:
             return ONLP_STATUS_E_INTERNAL;
     }
 
-    *gpio_num = gpio_max-offset;
     return ONLP_STATUS_OK;
 }
 

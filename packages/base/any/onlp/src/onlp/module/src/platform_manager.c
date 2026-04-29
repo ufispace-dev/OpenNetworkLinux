@@ -329,17 +329,17 @@ platform_psus_notify__(void)
             if ( !(pi.status & 0x1) ) {
                 AIM_SYSLOG_WARN("PSU <id> is not present.",
                                 "The given PSU is not present.",
-                                "PSU %d is not present.", pid);
+                                "%s is not present.", pi.hdr.description);
             }
             if ( pi.status & ONLP_PSU_STATUS_FAILED ) {
                 AIM_SYSLOG_CRIT("PSU <id> has failed.",
                                 "The given PSU has failed.",
-                                "PSU %d has failed.", pid);
+                                "%s has failed.", pi.hdr.description);
             }
             if ((pi.status & 0x01) && !(pi.status & ONLP_PSU_STATUS_FAILED) && (pi.status & ONLP_PSU_STATUS_UNPLUGGED)) {
                 AIM_SYSLOG_WARN("PSU <id> power cord not plugged.",
                                 "The given PSU does not have power cord plugged.",
-                                "PSU %d power cord not plugged.", pid);
+                                "%s power cord not plugged.", pi.hdr.description);
             }
             flag[i] = 1;
         }
@@ -355,26 +355,26 @@ platform_psus_notify__(void)
                 /* PSU Inserted */
                 AIM_SYSLOG_INFO("PSU <id> has been inserted.",
                                 "A PSU has been inserted in the given slot.",
-                                "PSU %d has been inserted.", pid);
+                                "%s has been inserted.", pi.hdr.description);
             }
             if( (old & 0x1) && !(new & 0x1) ) {
                 /* PSU Removed */
                 AIM_SYSLOG_WARN("PSU <id> has been removed.",
                                 "A PSU has been removed from the given slot.",
-                                "PSU %d has been removed.", pid);
+                                "%s has been removed.", pi.hdr.description);
             }
             if( (new & 0x1) && (old & ONLP_PSU_STATUS_FAILED) && !(new & ONLP_PSU_STATUS_FAILED) ) {
                 /* PSU recovery (seems unlikely) */
                 AIM_SYSLOG_INFO("PSU <id> has recovered.",
                                 "The given PSU has recovered from a failure.",
-                                "PSU %d has recovered.", pid);
+                                "%s has recovered.", pi.hdr.description);
             }
 
             if( !(old & ONLP_PSU_STATUS_FAILED) && (new & ONLP_PSU_STATUS_FAILED) ) {
                 /* PSU Failure */
                 AIM_SYSLOG_CRIT("PSU <id> has failed.",
                                 "The given PSU has failed.",
-                                "PSU %d has failed.", pid);
+                                "%s has failed.", pi.hdr.description);
             }
 
             if(!(new & ONLP_PSU_STATUS_FAILED) && (new & ONLP_PSU_STATUS_PRESENT)) {
@@ -382,14 +382,14 @@ platform_psus_notify__(void)
                     /* PSU has been plugged in */
                     AIM_SYSLOG_INFO("PSU <id> has been plugged in.",
                                     "The given PSU has been plugged in.",
-                                    "PSU %d has been plugged in.", pid);
+                                    "%s has been plugged in.", pi.hdr.description);
                 }
 
                 if(!(old & ONLP_PSU_STATUS_UNPLUGGED) && (new & ONLP_PSU_STATUS_UNPLUGGED)) {
                     /* PSU has been unplugged. */
                     AIM_SYSLOG_WARN("PSU <id> has been unplugged.",
                                     "The given PSU has been unplugged.",
-                                    "PSU %d has been unplugged.", pid);
+                                    "%s has been unplugged.", pi.hdr.description);
                 }
             }
 
@@ -442,12 +442,12 @@ platform_fans_notify__(void)
             if ( !(fi.status & 0x1) ) {
                     AIM_SYSLOG_WARN("Fan <id> is not present.",
                                 "The given Fan is not present.",
-                                "Fan %d is not present.", fid);
+                                "%s is not present.", fi.hdr.description);
             }
             if ( fi.status & ONLP_FAN_STATUS_FAILED ) {
                     AIM_SYSLOG_CRIT("Fan <id> has failed.",
                                 "The given fan has failed.",
-                                "Fan %d has failed.", fid);
+                                "%s has failed.", fi.hdr.description);
             }
            flag[i] = 1;
         }
@@ -463,25 +463,25 @@ platform_fans_notify__(void)
                 /* FAN Inserted */
                 AIM_SYSLOG_INFO("Fan <id> has been inserted.",
                                 "The given Fan has been inserted.",
-                                "Fan %d has been inserted.", fid);
+                                "%s has been inserted.", fi.hdr.description);
             }
             if( (old & 0x1) && !(new & 0x1) ) {
                 /* FAN Removed */
                 AIM_SYSLOG_WARN("Fan <id> has been removed.",
                                 "The given Fan has been removed.",
-                                "Fan %d has been removed.", fid);
+                                "%s has been removed.", fi.hdr.description);
             }
             if( (old & ONLP_FAN_STATUS_FAILED) && !(new & ONLP_FAN_STATUS_FAILED) ) {
                 AIM_SYSLOG_INFO("Fan <id> has recovered.",
                                 "The given Fan has recovered from failure.",
-                                "Fan %d has recovered.", fid);
+                                "%s has recovered.", fi.hdr.description);
             }
 
             if( !(old & ONLP_FAN_STATUS_FAILED) && (new & ONLP_FAN_STATUS_FAILED) ) {
                 /* FAN Failure */
                 AIM_SYSLOG_CRIT("Fan <id> has failed.",
                                 "The given fan has failed.",
-                                "Fan %d has failed.", fid);
+                                "%s has failed.", fi.hdr.description);
             }
 
             memcpy(fan_info_table+i, &fi, sizeof(fi));

@@ -541,7 +541,6 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
         self.insmod("x86-64-ufispace-irq-handler", params={"irq_num": 17})
 
         # load default kernel driver
-        self.init_i2c_bus_order()
         os.system("modprobe -rq i2c_ismt")
         os.system("modprobe -rq i2c_i801")
         os.system("modprobe -rq i2c_smbus")
@@ -553,6 +552,7 @@ class OnlPlatform_x86_64_ufispace_s9601_102xc_r0(OnlPlatformUfiSpace):
         os.system("modprobe coretemp")
         os.system("modprobe ipmi_devintf")
         os.system("modprobe ipmi_si")
+        self.init_i2c_bus_order()
 
         #lpc driver
         self.insmod("x86-64-ufispace-s9601-102xc-lpc")

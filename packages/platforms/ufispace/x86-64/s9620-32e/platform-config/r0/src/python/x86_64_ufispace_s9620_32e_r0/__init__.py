@@ -573,7 +573,7 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
         os.system("rmmod gpio_ich")
         os.system("rmmod pinctrl_cedarfork")
         os.system("rmmod ee1004")
-        self.init_i2c_bus_order()
+        os.system("modprobe -rq i2c_i801")
         self.insmod("i2c-smbus", False)
         os.system("modprobe i2c_i801")
         self.insmod("i2c-ismt", False)
@@ -585,6 +585,7 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
         os.system("modprobe coretemp")
         os.system("modprobe ipmi_devintf")
         os.system("modprobe ipmi_si")
+        self.init_i2c_bus_order()
 
         self.insmod("x86-64-ufispace-s9620-32e-lpc")
         # version setting

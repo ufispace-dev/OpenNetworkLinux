@@ -4,11 +4,12 @@ if [ -z "${UFI_DIAG_PATH}" ]; then
     export UFI_DIAG_PATH=$(pwd)
 fi
 
-VER="0.0.4-bsp"
+VER="0.0.6-bsp"
 silence=0
 MAC_RP="15:05.0"
 OP2_0_RP="15:04.0"
 OP2_1_RP="15:03.0"
+LNKCTL_REG="CAP_EXP+10.w"
 
 help()
 {
@@ -160,16 +161,16 @@ enable_common_clk()
 {
     case "${1}" in
     "mac")
-        lc=$(setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b)
-            setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 1
         ;;
     "op2")
-        lc=$(setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x40)))
+        lc=$(setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 ${LNKCTL_REG})
+        setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0040)))
         sleep 1
         ;;
     *)
@@ -215,8 +216,8 @@ retrain_link()
 {
     case "${1}" in
     "mac")
-        lc=$(setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${MAC_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${MAC_RP} ${LNKCTL_REG})
+        setpci -s ${MAC_RP} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 1
         ;;
     "op2")
@@ -225,11 +226,11 @@ retrain_link()
             print_log "wo/OP2, skip\n"
             return 1
         fi
-        lc=$(setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_0_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_0_RP} ${LNKCTL_REG})
+        setpci -s ${OP2_0_RP} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 0.1
-        lc=$(setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 0xbc.b)
-        setpci -s $(setpci -s ${OP2_1_RP} 0x19.b):00.0 0xbc.b=$(printf "%04x" $(("0x$lc" | 0x20)))
+        lc=$(setpci -s ${OP2_1_RP} ${LNKCTL_REG})
+        setpci -s ${OP2_1_RP} ${LNKCTL_REG}=$(printf "%04x" $(("0x$lc" | 0x0020)))
         sleep 1
         ;;
     *)

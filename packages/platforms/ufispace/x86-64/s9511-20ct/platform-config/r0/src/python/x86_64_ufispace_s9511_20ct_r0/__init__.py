@@ -248,11 +248,11 @@ class OnlPlatform_x86_64_ufispace_s9511_20ct_r0(OnlPlatformUfiSpace):
 
     def baseconfig(self):
         # Load default kernel drivers
-        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")
         os.system("modprobe coretemp")
+        self.init_i2c_bus_order()
 
         # Init bus number
         bus_i801=0

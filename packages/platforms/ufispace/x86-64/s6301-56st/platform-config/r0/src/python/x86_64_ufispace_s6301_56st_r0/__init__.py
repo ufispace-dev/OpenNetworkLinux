@@ -153,7 +153,6 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
     def baseconfig(self):
 
         # load default kernel driver
-        self.init_i2c_bus_order()
         os.system("modprobe i2c_i801")
         os.system("modprobe i2c_ismt")
         os.system("modprobe i2c_dev")
@@ -161,6 +160,7 @@ class OnlPlatform_x86_64_ufispace_s6301_56st_r0(OnlPlatformUfiSpace):
         os.system("modprobe i2c_mux_pca954x")
         os.system("modprobe coretemp")
         os.system("modprobe eeprom")
+        self.init_i2c_bus_order()
 
         #CPLD
         self.insmod("x86-64-ufispace-s6301-56st-lpc")

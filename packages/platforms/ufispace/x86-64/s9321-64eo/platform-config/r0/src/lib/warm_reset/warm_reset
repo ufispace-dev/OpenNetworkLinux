@@ -6,7 +6,7 @@ if [ -z "${UFI_RESET_TOOL_PATH}" ]; then
     export UFI_RESET_TOOL_PATH=$(pwd)
 fi
 
-VER="0.0.2-bsp"
+VER="0.0.3-bsp"
 silence=0
 
 function _ioget {
@@ -63,6 +63,10 @@ remove_kmod()
     "mac")
         kmod_cnt=`lsmod | grep bde | wc -l`
         if [ ${kmod_cnt} -eq 2 ]; then
+            rmmod linux_user_bde
+            rmmod linux_kernel_bde
+        elif [ ${kmod_cnt} -eq 3 ]; then
+            rmmod linux_ngbde.ko
             rmmod linux_user_bde
             rmmod linux_kernel_bde
         fi
