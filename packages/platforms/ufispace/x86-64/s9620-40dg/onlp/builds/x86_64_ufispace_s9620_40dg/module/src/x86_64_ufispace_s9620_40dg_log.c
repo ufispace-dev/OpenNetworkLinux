@@ -23,9 +23,9 @@
  *
  ***********************************************************/
 
-#include <x86_64_ufispace_s9620_40dg/x86_64_ufispace_s9620_40dg_config.h>
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_config.h>
 
-#include "x86_64_ufispace_s9620_40dg_log.h"
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_log.h>
 /*
  * x86_64_ufispace_s9620_40dg log struct.
  */

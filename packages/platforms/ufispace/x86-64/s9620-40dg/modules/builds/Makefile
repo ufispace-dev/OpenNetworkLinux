@@ -3,4 +3,4 @@ KMODULES := src
 VENDOR := ufispace
 BASENAME := x86-64-ufispace-s9620-40dg
 ARCH := x86_64
-include $(ONL)/make/kmodule.mk
+include $(ONL)/packages/platforms/ufispace/make/kmodule.mk

@@ -1,0 +1,144 @@
+MODEL: "s9620-40dg"
+SYS_OBJECT_ID: ".9620.40"
+PORT_COUNT: 40
+PORT_CONFIG: "12x100 4x400 24x50"
+PATH_LPC: "/sys/devices/platform/x86_64_ufispace_s9620_40dg_lpc"
+BMC_SUPPORT: 1
+
+# Anchors for common func types and stages
+_anchors:
+  pre_driver_install: &pre_driver_install
+    func: "driver_install"
+    stage: "pre"
+  pre_driver_install_params: &pre_driver_install_params
+    func: "driver_install_params"
+    stage: "pre"
+    params: ""
+  pre_driver_install_optional: &pre_driver_install_optional
+    func: "driver_install_optional"
+    stage: "pre"
+  pre_driver_install_optional_params: &pre_driver_install_optional_params
+    func: "driver_install_optional_params"
+    stage: "pre"
+    params: ""
+  pre_driver_install_modprobe: &pre_driver_install_modprobe
+    func: "driver_install_modprobe"
+    stage: "pre"
+  pre_driver_install_modprobe_params: &pre_driver_install_modprobe_params
+    func: "driver_install_modprobe_params"
+    stage: "pre"
+    params: ""
+  pre_driver_install_insmod_modprobe: &pre_driver_install_insmod_modprobe
+    func: "driver_install_insmod_modprobe"
+    stage: "pre"
+  pre_driver_install_insmod_modprobe_params: &pre_driver_install_insmod_modprobe_params
+    func: "driver_install_insmod_modprobe_params"
+    stage: "pre"
+    params: ""
+  pre_phase2_driver_install: &pre_phase2_driver_install
+    func: "driver_install"
+    stage: "pre_phase2"
+  pre_phase2_driver_install_params: &pre_phase2_driver_install_params
+    func: "driver_install_params"
+    stage: "pre_phase2"
+    params: ""
+  pre_phase2_driver_install_optional: &pre_phase2_driver_install_optional
+    func: "driver_install_optional"
+    stage: "pre_phase2"
+  pre_phase2_driver_install_optional_params: &pre_phase2_driver_install_optional_params
+    func: "driver_install_optional_params"
+    stage: "pre_phase2"
+    params: ""
+  pre_phase2_driver_install_modprobe: &pre_phase2_driver_install_modprobe
+    func: "driver_install_modprobe"
+    stage: "pre_phase2"
+  pre_phase2_driver_install_modprobe_params: &pre_phase2_driver_install_modprobe_params
+    func: "driver_install_modprobe_params"
+    stage: "pre_phase2"
+    params: ""
+  pre_phase2_driver_install_insmod_modprobe: &pre_phase2_driver_install_insmod_modprobe
+    func: "driver_install_insmod_modprobe"
+    stage: "pre_phase2"
+  pre_phase2_driver_install_insmod_modprobe_params: &pre_phase2_driver_install_insmod_modprobe_params
+    func: "driver_install_insmod_modprobe_params"
+    stage: "pre_phase2"
+    params: ""
+  post_driver_install: &post_driver_install
+    func: "driver_install"
+    stage: "post"
+  post_driver_install_params: &post_driver_install_params
+    func: "driver_install_params"
+    stage: "post"
+    params: ""
+  post_driver_install_optional: &post_driver_install_optional
+    func: "driver_install_optional"
+    stage: "post"
+  post_driver_install_optional_params: &post_driver_install_optional_params
+    func: "driver_install_optional_params"
+    stage: "post"
+    params: ""
+  post_driver_install_modprobe: &post_driver_install_modprobe
+    func: "driver_install_modprobe"
+    stage: "post"
+  post_driver_install_modprobe_params: &post_driver_install_modprobe_params
+    func: "driver_install_modprobe_params"
+    stage: "post"
+    params: ""
+  post_driver_install_insmod_modprobe: &post_driver_install_insmod_modprobe
+    func: "driver_install_insmod_modprobe"
+    stage: "post"
+  post_driver_install_insmod_modprobe_params: &post_driver_install_insmod_modprobe_params
+    func: "driver_install_insmod_modprobe_params"
+    stage: "post"
+    params: ""
+
+DRIVER_SUPPORT:
+- name: "x86-64-ufispace-irq-handler"
+  <<: *pre_driver_install_params
+  params:
+    irq_num: 17
+- name: "x86-64-ufispace-s9620-40dg-lpc"
+  <<: *pre_driver_install
+- name: "i2c-i801"
+  <<: *pre_driver_install_modprobe
+- name: "x86-64-ufispace-i2c-spd-quirk"
+  <<: *pre_driver_install
+- name: "i2c-ismt"
+  <<: *pre_driver_install_insmod_modprobe
+- name: "i2c-dev"
+  <<: *pre_driver_install_modprobe
+- name: "i2c-mux"
+  <<: *pre_driver_install_modprobe
+- name: "gpio-pca953x"
+  <<: *pre_driver_install_modprobe
+- name: "i2c-mux-pca954x"
+  <<: *pre_driver_install_modprobe
+- name: "coretemp"
+  <<: *pre_driver_install_modprobe
+- name: "ipmi-devintf"
+  <<: *pre_driver_install_modprobe
+- name: "ipmi-si"
+  <<: *pre_driver_install_modprobe
+- name: "x86-64-ufispace-s9620-40dg-cpld"
+  <<: *pre_phase2_driver_install_params
+  params:
+    mux_en: 1
+- name: "x86-64-ufispace-sys-eeprom"
+  <<: *pre_driver_install
+- name: "optoe"
+  <<: *pre_driver_install
+- name: "x86-64-ufispace-bmc"
+  <<: *pre_driver_install
+- name: "x86-64-ufispace-s9620-40dg-bmc-udf"
+  <<: *pre_driver_install
+- name: "intel_auxiliary"
+  <<: *post_driver_install_optional
+- name: "ice"
+  <<: *post_driver_install_modprobe
+
+DRIVER_CLEAN:
+- i2c-ismt
+- i2c-i801
+- gpio-ich
+- pinctrl-cedarfork
+- ee1004

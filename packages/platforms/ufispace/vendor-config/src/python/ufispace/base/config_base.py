@@ -99,6 +99,7 @@ class UFispaceBase:
     PATH_SYSTEM_LED = "/sys_switch/sysled/sys_led_status"
     PATH_PORT_PRESENCE = "/sys_switch/transceiver/eth{}/present"
     PATH_PORT_DEV_CLASS = "/sys_switch/transceiver/eth{}/dev_class"
+    PATH_I801_SPD_DO_CLEAN = "/sys/bus/platform/drivers/x86_64_ufispace_i2c_spd_quirk/do_clean"
 
     I2C_STUCK_STATUS_NORMAL = "0"
     I2C_STUCK_STATUS_ROOT_BUS = "1"
@@ -370,6 +371,26 @@ class UFispaceBase:
             board: The board SKU information.
         """
         return
+
+    def start_i2c_i801_spd_clean(self, board):
+        """
+        Starts the I2C i801 SPD cleanup process.
+
+        Args:
+            board: The board SKU information.
+        """
+        if not os.path.exists(self.PATH_I801_SPD_DO_CLEAN):
+            return
+
+        try:
+            file_stat = os.stat(self.PATH_I801_SPD_DO_CLEAN)
+            if not (file_stat.st_mode & stat.S_IWUSR):
+                return
+
+            with open(self.PATH_I801_SPD_DO_CLEAN, "w") as f:
+                f.write("1")
+        except (IOError, OSError) as e:
+            self.bsp_pr("Failed to clean I2C i801 SPD: {}".format(e))
 
     def start_port_eeprom_init(self, config, board):
         port_conf = config['ports']['layer1']['layer2']
@@ -847,6 +868,13 @@ class UFispaceBase:
     def init_s3ip(self, config):
         self.init_s3ip_symlink(config)
 
+    def deinit_s3ip(self, config):
+        sys_switch_path = config['sys_switch_path']
+
+        if os.path.exists(sys_switch_path):
+            self.bsp_pr("[S3IP] Cleaning up old directory '{}'...".format(sys_switch_path))
+            shutil.rmtree(sys_switch_path)
+
     def init_s3ip_symlink(self, config):
 
         sys_switch_path = config['sys_switch_path']
@@ -865,8 +893,8 @@ class UFispaceBase:
         ])
 
         # Clean up old directory structure
-        self.bsp_pr("[S3IP] Cleaning up old directory '{}'...".format(sys_switch_path))
         if os.path.exists(sys_switch_path):
+            self.bsp_pr("[S3IP] Cleaning up old directory '{}'...".format(sys_switch_path))
             shutil.rmtree(sys_switch_path)
 
         # Process components
@@ -936,11 +964,14 @@ class UFispaceBase:
         config = self.load_platform_config(board)
         self.stage_driver_init('pre_phase2', board, config)
         self.start_i2c_bus_order_init(board)
+        self.start_i2c_i801_spd_clean(board)
         return {'board': board, 'config': config}
 
     def pre_deinit(self):
         board = self.get_board_version()
         config = self.load_platform_config(board)
+
+        self.deinit_s3ip(config)
         self.stage_driver_deinit('post', board, config)
 
         return {'board': board, 'config': config}

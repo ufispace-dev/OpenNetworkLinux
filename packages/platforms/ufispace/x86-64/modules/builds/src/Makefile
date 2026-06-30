@@ -3,6 +3,7 @@ obj-m += x86-64-ufispace-sys-eeprom.o
 obj-m += x86-64-ufispace-irq-handler.o
 obj-m += x86-64-ufispace-gpio.o
 obj-m += x86-64-ufispace-bmc.o
+obj-m += x86-64-ufispace-i2c-spd-quirk.o
 obj-m += optoe.o
 
 KVERSION := $(shell echo $(KERNELVERSION) | cut -d "." -f 1,2)

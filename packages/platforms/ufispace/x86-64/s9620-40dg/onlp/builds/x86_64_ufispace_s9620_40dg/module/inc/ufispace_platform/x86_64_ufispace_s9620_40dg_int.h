@@ -1,7 +1,7 @@
 /************************************************************
  * <bsn.cl fy=2014 v=onl>
  *
- *           Copyright 2014 Big Switch Networks, Inc.
+ *        Copyright 2014, 2015 Big Switch Networks, Inc.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -19,21 +19,11 @@
  * </bsn.cl>
  ************************************************************
  *
- * Platform Library
+ * x86_64_ufispace_s9620_40dg_int.h
  *
  ***********************************************************/
-#include <ufispace_platform/platform_lib.h>
-#include <ufispace_common/platform_lib_main.h>
 
-const warm_reset_data_t warm_reset_data[] = {
-//                     unit_max | dev | unit
-    [WARM_RESET_ALL] = {-1,      "all", NULL},
-    [WARM_RESET_MAC] = {-1,      "mac", NULL},
-    [WARM_RESET_PHY] = {-1,      "phy", NULL},
-    [WARM_RESET_MUX] = {-1,      NULL, NULL}, //not support
-    [WARM_RESET_OP2] = {-1,      NULL, NULL}, //not support
-    [WARM_RESET_GB]  = {-1,      NULL, NULL}, //not support
-    [WARM_RESET_RT]  = {-1,      NULL, NULL}, //not support
-};
+#ifndef __x86_64_ufispace_s9620_40dg_INT_H__
+#define __x86_64_ufispace_s9620_40dg_INT_H__
 
-// Extra Feature
+#endif /* __x86_64_ufispace_s9620_40dg_INT_H__ */

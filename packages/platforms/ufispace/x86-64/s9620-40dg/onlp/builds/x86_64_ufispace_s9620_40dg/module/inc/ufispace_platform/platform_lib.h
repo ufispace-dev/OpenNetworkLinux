@@ -1,7 +1,7 @@
 /************************************************************
  * <bsn.cl fy=2014 v=onl>
  *
- *        Copyright 2014, 2015 Big Switch Networks, Inc.
+ *           Copyright 2014 Big Switch Networks, Inc.
  *
  * Licensed under the Eclipse Public License, Version 1.0 (the
  * "License"); you may not use this file except in compliance
@@ -19,14 +19,14 @@
  * </bsn.cl>
  ************************************************************
  *
- *
+ * Platform Library
  *
  ***********************************************************/
+#ifndef __PLATFORM_LIB_H__
+#define __PLATFORM_LIB_H__
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_log.h>
 
-#include <x86_64_ufispace_s9620_40dg/x86_64_ufispace_s9620_40dg_config.h>
+#define PLATFORM_NAME                    "x86-64-ufispace-s9620-40dg-r0"
+#define LPC_BSP_FMT                      "/sys/devices/platform/x86_64_ufispace_s9620_40dg_lpc/bsp/"
 
-/* <--auto.start.xmacro(ALL).define> */
-/* <auto.end.xmacro(ALL).define> */
-
-/* <--auto.start.xenum(ALL).define> */
-/* <auto.end.xenum(ALL).define> */
+#endif  /* __PLATFORM_LIB_H__ */
