@@ -847,7 +847,7 @@ int onlp_sfpi_dev_readb(int port, uint8_t devaddr, uint8_t addr)
     int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -867,7 +867,7 @@ int onlp_sfpi_dev_writeb(int port, uint8_t devaddr, uint8_t addr, uint8_t value)
     int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -891,7 +891,7 @@ int onlp_sfpi_dev_readw(int port, uint8_t devaddr, uint8_t addr)
     int bus = ufi_port_to_eeprom_bus(port);
 
     if(onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -911,7 +911,7 @@ int onlp_sfpi_dev_writew(int port, uint8_t devaddr, uint8_t addr, uint16_t value
     int bus = ufi_port_to_eeprom_bus(port);
 
     if(onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -934,7 +934,7 @@ int onlp_sfpi_dev_read(int port, uint8_t devaddr, uint8_t addr, uint8_t* rdata, 
     int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) != 1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -956,7 +956,7 @@ int onlp_sfpi_dev_write(int port, uint8_t devaddr, uint8_t addr, uint8_t* data, 
     int bus = ufi_port_to_eeprom_bus(port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 
@@ -986,7 +986,7 @@ int onlp_sfpi_dom_read(int port, uint8_t data[256])
     VALIDATE_SFP_PORT(port);
 
     if (onlp_sfpi_is_present(port) !=  1) {
-        AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
+        //AIM_LOG_INFO("sfp module (port=%d) is absent.\n", port);
         return ONLP_STATUS_OK;
     }
 

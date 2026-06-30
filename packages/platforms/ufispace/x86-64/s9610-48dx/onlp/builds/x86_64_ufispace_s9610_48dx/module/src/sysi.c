@@ -156,8 +156,8 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
 
     pi->other_versions = aim_fstrdup(
         "\n"
-        "[BIOS] %s\n"
-        "[BMC] %d.%d.%d\n"
+        "[BIOS ] %s\n"
+        "[BMC  ] %d.%d.%d\n"
         "[MU] %s (%s)\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
