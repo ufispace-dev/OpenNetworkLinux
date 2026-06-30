@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <ufispace_platform/platform_lib.h>
 #include <ufispace_common/platform_lib_main.h>
 
@@ -157,6 +158,39 @@ int ufi_file_read_int(int* value, const char* fmt, ...)
         *value = 0;
         return ONLP_STATUS_E_INVALID;
     }
+}
+
+int ufi_bsp_info(const char* fmt, ...)
+{
+    char buf[256];
+    va_list vargs;
+    int len;
+    int fd;
+
+    va_start(vargs, fmt);
+    len = vsnprintf(buf, sizeof(buf), fmt, vargs);
+    va_end(vargs);
+
+    if (len < 0) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    if (len >= (int)sizeof(buf)) {
+        len = sizeof(buf) - 1;
+    }
+
+    fd = open(PATH_BSP_PR_INFO, O_WRONLY);
+    if (fd < 0) {
+        return ONLP_STATUS_E_MISSING; 
+    }
+
+    if (write(fd, buf, len) < 0) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
 }
 
 /**

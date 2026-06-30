@@ -19,11 +19,14 @@
  * </bsn.cl>
  ************************************************************
  *
- * x86_64_ufispace_s9620_40dg_int.h
+ *
  *
  ***********************************************************/
 
-#ifndef __x86_64_ufispace_s9620_40dg_INT_H__
-#define __x86_64_ufispace_s9620_40dg_INT_H__
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_config.h>
 
-#endif /* __x86_64_ufispace_s9620_40dg_INT_H__ */
+/* <--auto.start.xmacro(ALL).define> */
+/* <auto.end.xmacro(ALL).define> */
+
+/* <--auto.start.xenum(ALL).define> */
+/* <auto.end.xenum(ALL).define> */

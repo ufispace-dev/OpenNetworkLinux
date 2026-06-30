@@ -23,15 +23,14 @@
  *
  ***********************************************************/
 
-#include <x86_64_ufispace_s9620_40dg/x86_64_ufispace_s9620_40dg_config.h>
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_config.h>
 
-#include "x86_64_ufispace_s9620_40dg_log.h"
-
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_log.h>
 static int
 datatypes_init__(void)
 {
 #define UFISPACE_S9620_40DG_ENUMERATION_ENTRY(_enum_name, _desc)     AIM_DATATYPE_MAP_REGISTER(_enum_name, _enum_name##_map, _desc,                               AIM_LOG_INTERNAL);
-#include <x86_64_ufispace_s9620_40dg/x86_64_ufispace_s9620_40dg.x>
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg.x>
     return 0;
 }
 

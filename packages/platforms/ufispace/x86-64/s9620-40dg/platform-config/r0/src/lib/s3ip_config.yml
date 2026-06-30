@@ -1,0 +1,3262 @@
+# ==============================================================================
+# YAML configuration for creating sysfs symbolic links for UfiSpace platforms.
+# ==============================================================================
+
+# Anchors for common device types and names
+_anchors:
+  static_normal: &static_normal
+    dev_type: "static_link_dev"
+    dev_name: "normal"
+  static_number: &static_number
+    dev_type: "static_link_dev"
+    dev_name: "number"
+  static_threshold: &static_threshold
+    dev_type: "static_link_dev"
+    dev_name: "threshold"
+  static_to_attr: &static_to_attr
+    dev_type: "static_link_dev"
+    dev_name: "to_attr"
+  static_number_component: &static_number_component
+    dev_type: "static_link_dev"
+    dev_name: "number_component"
+  bmc_common: &bmc_common
+    dev_type: "bmc_dev"
+    dev_name: "bmc"
+  i2c_cpld1: &i2c_cpld1
+    dev_type: "i2c_dev"
+    dev_name: "cpld1"
+  i2c_cpld2: &i2c_cpld2
+    dev_type: "i2c_dev"
+    dev_name: "cpld2"
+  i2c_cpld3: &i2c_cpld3
+    dev_type: "i2c_dev"
+    dev_name: "cpld3"
+  i2c_cpld4: &i2c_cpld4
+    dev_type: "i2c_dev"
+    dev_name: "cpld4"
+  i2c_cpld5: &i2c_cpld5
+    dev_type: "i2c_dev"
+    dev_name: "cpld5"
+  i2c_eeprom: &i2c_eeprom
+    dev_type: "i2c_dev"
+    source: "eeprom"
+  lpc_mb: &lpc_mb
+    dev_type: "lpc_dev"
+    dev_name: "mb_cpld"
+  lpc_bsp: &lpc_bsp
+    dev_type: "lpc_dev"
+    dev_name: "bsp"
+  lpc_cpu_cpld: &lpc_cpu_cpld
+    dev_type: "lpc_dev"
+    dev_name: "cpu_cpld"
+  gpio_func: &gpio_func
+    dev_type: "gpio_dev"
+    dev_name: "gpio_function"
+  ref_rename: &ref_rename
+    dev_type: "ref_link_dev"
+    dev_name: "rename"
+  ref_same: &ref_same
+    dev_type: "ref_link_dev"
+    dev_name: "same_name"
+
+# Base path for the custom sysfs structure
+sys_switch_path: "/sys_switch"
+
+# --- Temperature Sensor Configuration ---
+temperature_sensors:
+  # Path template for each sensor directory. {i} will be the 1-based index.
+  layer1:
+    normal_dir_type: "/temp_sensor"
+    description:
+      <<: *static_normal
+      params: "Temperature information"
+    number:
+      <<: *static_number
+      params: "temperature_sensors.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/temp{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_ENV0"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_env0_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_env0_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_env0"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env0_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env0_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env0_upper_none_recoverable"
+      2:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_CORE"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_core_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_core_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_core"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_core_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_core_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_core_upper_none_recoverable"
+      3:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_NIF50"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_nif50_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_nif50_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_nif50"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif50_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif50_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif50_upper_none_recoverable"
+      4:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_ENV1"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_env1_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_env1_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_env1"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env1_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env1_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env1_upper_none_recoverable"
+      5:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_PADS"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_pads_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_pads_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_pads"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_pads_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_pads_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_pads_upper_none_recoverable"
+      6:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_ENV2"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_env2_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_env2_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_env2"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env2_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env2_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_env2_upper_none_recoverable"
+      7:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_NIF100"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_nif100_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_nif100_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_nif100"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif100_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif100_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_nif100_upper_none_recoverable"
+      8:
+        description:
+          <<: *static_normal
+          params: "TEMP_MAC_SCH"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_mac_sch_max"
+        min:
+          <<: *bmc_common
+          source: "temp_mac_sch_min"
+        value:
+          <<: *bmc_common
+          source: "temp_mac_sch"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_mac_sch_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_mac_sch_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_mac_sch_upper_none_recoverable"
+      9:
+        description:
+          <<: *static_normal
+          params: "TEMP_CPU_PECI"
+        alias:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *static_normal
+          params: "bmc"
+        max:
+          <<: *bmc_common
+          source: "temp_cpu_peci_max"
+        min:
+          <<: *bmc_common
+          source: "temp_cpu_peci_min"
+        value:
+          <<: *bmc_common
+          source: "temp_cpu_peci"
+        max_warning_threshold:
+          <<: *bmc_common
+          source: "temp_cpu_peci_upper_none_critical"
+        max_error_threshold:
+          <<: *bmc_common
+          source: "temp_cpu_peci_upper_critical"
+        max_shutdown_threshold:
+          <<: *bmc_common
+          source: "temp_cpu_peci_upper_none_recoverable"
+      10:
+        description:
+          <<: *static_normal
+          params: "CPU Package"
+        alias:
+          <<: *static_normal
+          params: "cpu package"
+        type:
+          <<: *static_normal
+          params: "coretemp"
+        max:
+          <<: *ref_rename
+          source: "/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_max"
+        min:
+          <<: *ref_rename
+          source: "/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_min"
+        value:
+          <<: *ref_rename
+          source: "/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_input"
+        max_warning_threshold:
+          <<: *static_normal
+          params: "77000"
+        max_error_threshold:
+          <<: *static_normal
+          params: "95000"
+        max_shutdown_threshold:
+          <<: *static_normal
+          params: "105000"
+
+# --- Fan Configuration ---
+fan_trays:
+  layer1:
+    normal_dir_type: "/fan"
+    description:
+      <<: *static_normal
+      params: "FAN information"
+    number:
+      <<: *static_number
+      params: "fan_trays.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/fan{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "Fan tray 0"
+        status:
+          <<: *bmc_common
+          source: "fan0_prsnt_l"
+        manufacturer:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        motor_number:
+          <<: *static_number
+          params: "fan_trays.layer1.layer2.1.layer3"
+        layer3:
+          one_param_dir_type: "/motor{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 0 UPPER"
+            speed:
+              <<: *bmc_common
+              source: "fan0_rpm_u"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "16300"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+          2:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 0 LOWER"
+            speed:
+              <<: *bmc_common
+              source: "fan0_rpm_d"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "15500"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+      2:
+        description:
+          <<: *static_normal
+          params: "Fan tray 1"
+        status:
+          <<: *bmc_common
+          source: "fan1_prsnt_l"
+        manufacturer:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        motor_number:
+          <<: *static_number
+          params: "fan_trays.layer1.layer2.2.layer3"
+        layer3:
+          one_param_dir_type: "/motor{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 1 UPPER"
+            speed:
+              <<: *bmc_common
+              source: "fan1_rpm_u"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "16300"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+          2:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 1 LOWER"
+            speed:
+              <<: *bmc_common
+              source: "fan1_rpm_d"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "15500"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+      3:
+        description:
+          <<: *static_normal
+          params: "Fan tray 2"
+        status:
+          <<: *bmc_common
+          source: "fan2_prsnt_l"
+        manufacturer:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        motor_number:
+          <<: *static_number
+          params: "fan_trays.layer1.layer2.3.layer3"
+        layer3:
+          one_param_dir_type: "/motor{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 2 UPPER"
+            speed:
+              <<: *bmc_common
+              source: "fan2_rpm_u"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "16300"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+          2:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 2 LOWER"
+            speed:
+              <<: *bmc_common
+              source: "fan2_rpm_d"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "15500"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+      4:
+        description:
+          <<: *static_normal
+          params: "Fan tray 3"
+        status:
+          <<: *bmc_common
+          source: "fan3_prsnt_l"
+        manufacturer:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        motor_number:
+          <<: *static_number
+          params: "fan_trays.layer1.layer2.4.layer3"
+        layer3:
+          one_param_dir_type: "/motor{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 3 UPPER"
+            speed:
+              <<: *bmc_common
+              source: "fan3_rpm_u"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "16300"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+          2:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 3 LOWER"
+            speed:
+              <<: *bmc_common
+              source: "fan3_rpm_d"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "15500"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+      5:
+        description:
+          <<: *static_normal
+          params: "Fan tray 4"
+        status:
+          <<: *bmc_common
+          source: "fan4_prsnt_l"
+        manufacturer:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        motor_number:
+          <<: *static_number
+          params: "fan_trays.layer1.layer2.4.layer3"
+        layer3:
+          one_param_dir_type: "/motor{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 4 UPPER"
+            speed:
+              <<: *bmc_common
+              source: "fan4_rpm_u"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "16300"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+          2:
+            description:
+              <<: *static_normal
+              params: "CHASSIS FAN 4 LOWER"
+            speed:
+              <<: *bmc_common
+              source: "fan4_rpm_d"
+            speed_tolerance:
+              <<: *static_normal
+              params: "NA"
+            speed_target:
+              <<: *static_normal
+              params: "NA"
+            speed_max:
+              <<: *static_normal
+              params: "15500"
+            speed_min:
+              <<: *static_normal
+              params: "NA"
+            ratio:
+              <<: *static_normal
+              params: "NA"
+            direction:
+              <<: *static_normal
+              params: "0"
+
+# --- PSU Configuration ---
+psus:
+  layer1:
+    normal_dir_type: "/psu"
+    description:
+      <<: *static_normal
+      params: "PSU information"
+    number:
+      <<: *static_number
+      params: "psus.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/psu{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "PSU 0"
+        present:
+          <<: *bmc_common
+          source: "psu0_prsnt_l"
+        out_status:
+          <<: *bmc_common
+          source: "psu0_pwrok_h"
+        in_curr:
+          <<: *bmc_common
+          source: "psu0_iin"
+        in_vol:
+          <<: *bmc_common
+          source: "psu0_vin"
+        in_power:
+          <<: *bmc_common
+          source: "psu0_pin"
+        out_curr:
+          <<: *bmc_common
+          source: "psu0_iout"
+        out_vol:
+          <<: *bmc_common
+          source: "psu0_vout"
+        out_power:
+          <<: *bmc_common
+          source: "psu0_pout"
+        stbout_curr:
+          <<: *static_normal
+          params: "NA"
+        stbout_vol:
+          <<: *static_normal
+          params: "NA"
+        manufacturer:
+          <<: *bmc_common
+          source: "psu0_fru_mf"
+        model_name:
+          <<: *bmc_common
+          source: "psu0_fru_pn"
+        product_name:
+          <<: *bmc_common
+          source: "psu0_fru_pname"
+        part_number:
+          <<: *bmc_common
+          source: "psu0_fru_pn"
+        serial_number:
+          <<: *bmc_common
+          source: "psu0_fru_sn"
+        fan_speed:
+          <<: *bmc_common
+          source: "psu0_fan1"
+        fan_speed_ac_max:
+          <<: *static_normal
+          params: "26500"
+        fan_speed_dc_max:
+          <<: *static_normal
+          params: "29000"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *bmc_common
+          source: "psu0_type"
+        in_status:
+          <<: *static_normal
+          params: "NA"
+        fan_direction:
+          <<: *bmc_common
+          source: "psu0_fan_dir"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        out_max_power:
+          <<: *static_normal
+          params: "1300000000"
+        num_temp_sensors:
+          <<: *static_number
+          params: "psus.layer1.layer2.1.layer3"
+        layer3:
+          one_param_dir_type: "/temp{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "PSU 0 THERMAL 1"
+            value:
+              <<: *bmc_common
+              source: "psu0_temp1"
+            max_warning_threshold:
+              <<: *bmc_common
+              source: "psu0_temp1_upper_none_critical"
+            max_error_threshold:
+              <<: *bmc_common
+              source: "psu0_temp1_upper_critical"
+            max_shutdown_threshold:
+              <<: *bmc_common
+              source: "psu0_temp1_upper_none_recoverable"
+      2:
+        description:
+          <<: *static_normal
+          params: "PSU 1"
+        present:
+          <<: *i2c_cpld1
+          source: "psu1_present"
+        out_status:
+          <<: *bmc_common
+          source: "psu1_pwrok_h"
+        in_curr:
+          <<: *bmc_common
+          source: "psu1_iin"
+        in_vol:
+          <<: *bmc_common
+          source: "psu1_vin"
+        in_power:
+          <<: *bmc_common
+          source: "psu1_pin"
+        out_curr:
+          <<: *bmc_common
+          source: "psu1_iout"
+        out_vol:
+          <<: *bmc_common
+          source: "psu1_vout"
+        out_power:
+          <<: *bmc_common
+          source: "psu1_pout"
+        stbout_curr:
+          <<: *static_normal
+          params: "NA"
+        stbout_vol:
+          <<: *static_normal
+          params: "NA"
+        manufacturer:
+          <<: *bmc_common
+          source: "psu1_fru_mf"
+        model_name:
+          <<: *bmc_common
+          source: "psu1_fru_pn"
+        product_name:
+          <<: *bmc_common
+          source: "psu1_fru_pname"
+        part_number:
+          <<: *bmc_common
+          source: "psu1_fru_pn"
+        serial_number:
+          <<: *bmc_common
+          source: "psu1_fru_sn"
+        fan_speed:
+          <<: *bmc_common
+          source: "psu1_fan1"
+        fan_speed_ac_max:
+          <<: *static_normal
+          params: "26500"
+        fan_speed_dc_max:
+          <<: *static_normal
+          params: "29000"
+        hardware_version:
+          <<: *static_normal
+          params: "NA"
+        type:
+          <<: *bmc_common
+          source: "psu1_type"
+        in_status:
+          <<: *static_normal
+          params: "NA"
+        fan_direction:
+          <<: *bmc_common
+          source: "psu1_fan_dir"
+        led_status:
+          <<: *static_normal
+          params: "NA"
+        out_max_power:
+          <<: *static_normal
+          params: "1300000000"
+        num_temp_sensors:
+          <<: *static_number
+          params: "psus.layer1.layer2.2.layer3"
+        layer3:
+          one_param_dir_type: "/temp{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "PSU 1 THERMAL 1"
+            value:
+              <<: *bmc_common
+              source: "psu1_temp1"
+            max_warning_threshold:
+              <<: *bmc_common
+              source: "psu1_temp1_upper_none_critical"
+            max_error_threshold:
+              <<: *bmc_common
+              source: "psu1_temp1_upper_critical"
+            max_shutdown_threshold:
+              <<: *bmc_common
+              source: "psu1_temp1_upper_none_recoverable"
+
+# --- System-wide Links ---
+system_links:
+  layer1:
+    syseeprom:
+      <<: *i2c_eeprom
+      dev_name: "syseeprom"
+
+# --- Ports Configuration ---
+ports:
+  layer1:
+    normal_dir_type: "/transceiver"
+    description:
+      <<: *static_normal
+      params: "Port information"
+    number:
+      <<: *static_number
+      params: "ports.layer1.layer2"
+    power_on:
+      <<: *static_normal
+      params: "NA"
+    led_control:
+      <<: *static_normal
+      params: "NA"
+    port_base:
+      <<: *static_normal
+      params: "0"
+    layer2:
+      one_param_dir_type: "/eth{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "QSFP port 0"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_0_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_0_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_0_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_0_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_0_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_0_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_1"
+          alias: 1
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_1.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_1"
+          source: "dev_class"
+      2:
+        description:
+          <<: *static_normal
+          params: "QSFP port 1"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_1_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_1_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_1_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_1_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_1_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_1_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_2"
+          alias: 2
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_2.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_2"
+          source: "dev_class"
+      3:
+        description:
+          <<: *static_normal
+          params: "QSFP port 2"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_2_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_2_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_2_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_2_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_2_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_2_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_3"
+          alias: 3
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_3.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_3"
+          source: "dev_class"
+      4:
+        description:
+          <<: *static_normal
+          params: "QSFP port 3"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_3_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_3_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_3_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_3_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_3_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_3_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_4"
+          alias: 4
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_4.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_4"
+          source: "dev_class"
+      5:
+        description:
+          <<: *static_normal
+          params: "QSFP port 4"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_4_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_4_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_4_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_4_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_4_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_4_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_5"
+          alias: 5
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_5.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_5"
+          source: "dev_class"
+      6:
+        description:
+          <<: *static_normal
+          params: "QSFP port 5"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_5_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_5_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_5_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_5_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_5_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_5_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_6"
+          alias: 6
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_6.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_6"
+          source: "dev_class"
+      7:
+        description:
+          <<: *static_normal
+          params: "QSFP port 6"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_6_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_6_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_6_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_6_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_6_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_6_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_7"
+          alias: 7
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_7.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_7"
+          source: "dev_class"
+      8:
+        description:
+          <<: *static_normal
+          params: "QSFP port 7"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_7_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_7_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_7_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_7_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_7_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_7_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_8"
+          alias: 8
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_8.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_8"
+          source: "dev_class"
+      9:
+        description:
+          <<: *static_normal
+          params: "QSFP port 8"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_8_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_8_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_8_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_8_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_8_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_8_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_9"
+          alias: 9
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_9.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_9"
+          source: "dev_class"
+      10:
+        description:
+          <<: *static_normal
+          params: "QSFP port 9"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_9_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_9_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_9_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_9_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_9_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_9_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_10"
+          alias: 10
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_10.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_10"
+          source: "dev_class"
+      11:
+        description:
+          <<: *static_normal
+          params: "QSFP port 10"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_10_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_10_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_10_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_10_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_10_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_10_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_11"
+          alias: 11
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_11.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_11"
+          source: "dev_class"
+      12:
+        description:
+          <<: *static_normal
+          params: "QSFP port 11"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld3
+          source: "eth_11_present"
+        present_event:
+          <<: *i2c_cpld3
+          source: "eth_11_present_event"
+        interrupt:
+          <<: *i2c_cpld3
+          source: "eth_11_intr"
+        low_power_mode:
+          <<: *i2c_cpld3
+          source: "eth_11_lpmode"
+        reset:
+          <<: *i2c_cpld3
+          source: "eth_11_reset"
+        i2c_stuck:
+          <<: *i2c_cpld3
+          source: "eth_11_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_12"
+          alias: 12
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_12.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_12"
+          source: "dev_class"
+      13:
+        description:
+          <<: *static_normal
+          params: "QSFPDD port 12"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_12_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_12_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_12_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_12_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_12_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_12_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_13"
+          alias: 13
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFPDD"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_13.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_13"
+          source: "dev_class"
+      14:
+        description:
+          <<: *static_normal
+          params: "QSFPDD port 13"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_13_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_13_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_13_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_13_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_13_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_13_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_14"
+          alias: 14
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFPDD"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_14.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_14"
+          source: "dev_class"
+      15:
+        description:
+          <<: *static_normal
+          params: "QSFPDD port 14"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_14_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_14_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_14_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_14_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_14_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_14_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_15"
+          alias: 15
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFPDD"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_15.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_15"
+          source: "dev_class"
+      16:
+        description:
+          <<: *static_normal
+          params: "QSFPDD port 15"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld2
+          source: "eth_15_present"
+        present_event:
+          <<: *i2c_cpld2
+          source: "eth_15_present_event"
+        interrupt:
+          <<: *i2c_cpld2
+          source: "eth_15_intr"
+        low_power_mode:
+          <<: *i2c_cpld2
+          source: "eth_15_lpmode"
+        reset:
+          <<: *i2c_cpld2
+          source: "eth_15_reset"
+        i2c_stuck:
+          <<: *i2c_cpld2
+          source: "eth_15_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_16"
+          alias: 16
+          driver: "optoe3"
+        type:
+          <<: *static_normal
+          params: "QSFPDD"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_16.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_16"
+          source: "dev_class"
+      17:
+        description:
+          <<: *static_normal
+          params: "SFP port 16"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_16_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_16_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_16_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_16_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_16_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_16_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_16_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_17"
+          alias: 17
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_17.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_17"
+          source: "dev_class"
+      18:
+        description:
+          <<: *static_normal
+          params: "SFP port 17"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_17_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_17_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_17_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_17_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_17_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_17_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_17_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_18"
+          alias: 18
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_18.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_18"
+          source: "dev_class"
+      19:
+        description:
+          <<: *static_normal
+          params: "SFP port 18"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_18_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_18_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_18_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_18_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_18_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_18_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_18_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_19"
+          alias: 19
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_19.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_19"
+          source: "dev_class"
+      20:
+        description:
+          <<: *static_normal
+          params: "SFP port 19"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_19_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_19_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_19_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_19_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_19_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_19_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_19_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_20"
+          alias: 20
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_20.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_20"
+          source: "dev_class"
+      21:
+        description:
+          <<: *static_normal
+          params: "SFP port 20"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_20_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_20_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_20_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_20_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_20_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_20_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_20_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_21"
+          alias: 21
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_21.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_21"
+          source: "dev_class"
+      22:
+        description:
+          <<: *static_normal
+          params: "SFP port 21"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_21_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_21_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_21_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_21_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_21_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_21_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_21_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_22"
+          alias: 22
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_22.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_22"
+          source: "dev_class"
+      23:
+        description:
+          <<: *static_normal
+          params: "SFP port 22"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_22_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_22_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_22_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_22_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_22_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_22_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_22_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_23"
+          alias: 23
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_23.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_23"
+          source: "dev_class"
+      24:
+        description:
+          <<: *static_normal
+          params: "SFP port 23"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_23_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_23_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_23_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_23_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_23_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_23_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_23_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_24"
+          alias: 24
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_24.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_24"
+          source: "dev_class"
+      25:
+        description:
+          <<: *static_normal
+          params: "SFP port 24"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_24_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_24_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_24_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_24_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_24_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_24_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_24_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_25"
+          alias: 25
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_25.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_25"
+          source: "dev_class"
+      26:
+        description:
+          <<: *static_normal
+          params: "SFP port 25"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_25_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_25_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_25_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_25_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_25_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_25_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_25_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_26"
+          alias: 26
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_26.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_26"
+          source: "dev_class"
+      27:
+        description:
+          <<: *static_normal
+          params: "SFP port 26"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_26_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_26_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_26_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_26_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_26_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_26_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_26_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_27"
+          alias: 27
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_27.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_27"
+          source: "dev_class"
+      28:
+        description:
+          <<: *static_normal
+          params: "SFP port 27"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_27_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_27_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_27_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_27_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_27_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_27_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_27_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_28"
+          alias: 28
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_28.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_28"
+          source: "dev_class"
+      29:
+        description:
+          <<: *static_normal
+          params: "SFP port 28"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_28_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_28_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_28_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_28_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_28_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_28_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_28_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_29"
+          alias: 29
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_29.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_29"
+          source: "dev_class"
+      30:
+        description:
+          <<: *static_normal
+          params: "SFP port 29"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_29_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_29_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_29_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_29_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_29_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_29_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_29_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_30"
+          alias: 30
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_30.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_30"
+          source: "dev_class"
+      31:
+        description:
+          <<: *static_normal
+          params: "SFP port 30"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_30_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_30_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_30_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_30_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_30_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_30_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_30_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_31"
+          alias: 31
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_31.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_31"
+          source: "dev_class"
+      32:
+        description:
+          <<: *static_normal
+          params: "SFP port 31"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_31_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_31_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_31_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_31_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_31_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_31_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_31_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_32"
+          alias: 32
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_32.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_32"
+          source: "dev_class"
+      33:
+        description:
+          <<: *static_normal
+          params: "SFP port 32"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_32_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_32_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_32_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_32_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_32_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_32_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_32_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_33"
+          alias: 33
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_33.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_33"
+          source: "dev_class"
+      34:
+        description:
+          <<: *static_normal
+          params: "SFP port 33"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_33_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_33_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_33_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_33_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_33_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_33_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_33_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_34"
+          alias: 34
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_34.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_34"
+          source: "dev_class"
+      35:
+        description:
+          <<: *static_normal
+          params: "SFP port 34"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_34_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_34_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_34_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_34_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_34_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_34_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_34_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_35"
+          alias: 35
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_35.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_35"
+          source: "dev_class"
+      36:
+        description:
+          <<: *static_normal
+          params: "SFP port 35"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_35_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_35_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_35_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_35_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_35_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_35_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_35_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_36"
+          alias: 36
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_36.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_36"
+          source: "dev_class"
+      37:
+        description:
+          <<: *static_normal
+          params: "SFP port 36"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_36_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_36_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_36_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_36_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_36_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_36_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_36_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_37"
+          alias: 37
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_37.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_37"
+          source: "dev_class"
+      38:
+        description:
+          <<: *static_normal
+          params: "SFP port 37"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_37_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_37_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_37_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_37_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_37_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_37_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_37_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_38"
+          alias: 38
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_38.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_38"
+          source: "dev_class"
+      39:
+        description:
+          <<: *static_normal
+          params: "SFP port 38"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_38_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_38_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_38_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_38_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_38_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_38_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_38_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_39"
+          alias: 39
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_39.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_39"
+          source: "dev_class"
+      40:
+        description:
+          <<: *static_normal
+          params: "SFP port 39"
+        power_on:
+          <<: *static_normal
+          params: "NA"
+        present:
+          <<: *i2c_cpld4
+          source: "eth_39_present"
+        present_event:
+          <<: *i2c_cpld4
+          source: "eth_39_present_event"
+        rx_los:
+          <<: *i2c_cpld4
+          source: "eth_39_rx_los"
+        tx_fault:
+          <<: *i2c_cpld4
+          source: "eth_39_tx_fault"
+        tx_disable:
+          <<: *i2c_cpld4
+          source: "eth_39_tx_disable"
+        rate_select:
+          <<: *i2c_cpld4
+          source: "eth_39_rate_sel"
+        i2c_stuck:
+          <<: *i2c_cpld4
+          source: "eth_39_i2c_stuck"
+        eeprom:
+          <<: *i2c_eeprom
+          dev_name: "port_eeprom_40"
+          alias: 40
+          driver: "optoe2"
+        type:
+          <<: *static_normal
+          params: "SFP"
+        bus:
+          <<: *static_to_attr
+          params: "i2c_dev.port_eeprom_40.bus"
+        dev_class:
+          dev_type: "i2c_dev"
+          dev_name: "port_eeprom_40"
+          source: "dev_class"
+
+# --- SYS LED Configuration ---
+sys_leds:
+  layer1:
+    normal_dir_type: "/sysled"
+    description:
+      <<: *static_normal
+      params: "System LED information"
+    number:
+      <<: *static_number
+      params: "sys_leds.layer1.layer2"
+    gnss_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_gnss"
+    sys_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_sys"
+    sync_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_sync"
+    fan_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_fan"
+    psu_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_pwr"
+    id_led_status:
+      <<: *i2c_cpld1
+      source: "cpld_system_led_id"
+    layer2:
+      one_param_dir_type: "/led{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 1 (GNSS LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_gnss"
+        capability:
+          <<: *static_normal
+          params: "green,green_blink,yellow,yellow_blink"
+        on_color:
+          <<: *static_normal
+          params: "green"
+      2:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 2 (SYNC LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_sync"
+        capability:
+          <<: *static_normal
+          params: "green,green_blink,yellow,yellow_blink"
+        on_color:
+          <<: *static_normal
+          params: "green"
+      3:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 3 (SYS LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_sys"
+        capability:
+          <<: *static_normal
+          params: "green,green_blink,yellow,yellow_blink"
+        on_color:
+          <<: *static_normal
+          params: "green"
+      4:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 4 (FAN LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_fan"
+        capability:
+          <<: *static_normal
+          params: "green,green_blink,yellow,yellow_blink"
+        on_color:
+          <<: *static_normal
+          params: "NA"
+      5:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 5 (PSU LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_pwr"
+        capability:
+          <<: *static_normal
+          params: "green,green_blink,yellow,yellow_blink"
+        on_color:
+          <<: *static_normal
+          params: "NA"
+      6:
+        description:
+          <<: *static_normal
+          params: "Chassis LED 6 (ID LED)"
+        status:
+          <<: *i2c_cpld1
+          source: "cpld_system_led_id"
+        capability:
+          <<: *static_normal
+          params: "blue,blue_blink"
+        on_color:
+          <<: *static_normal
+          params: "blue"
+
+# --- CPLD Configuration ---
+cplds:
+  layer1:
+    normal_dir_type: "/cpld"
+    description:
+      <<: *static_normal
+      params: "CPLD components information"
+    number:
+      <<: *static_number
+      params: "cplds.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/cpld{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "MB CPLD1"
+        alias:
+          <<: *static_normal
+          params: "1"
+        type:
+          <<: *static_normal
+          params: "NA"
+        firmware_version:
+          <<: *i2c_cpld1
+          source: "cpld_version_h"
+        board_version:
+          <<: *static_normal
+          params: "NA"
+        reg_test:
+          <<: *static_normal
+          params: "NA"
+      2:
+        description:
+          <<: *static_normal
+          params: "MB CPLD2"
+        alias:
+          <<: *static_normal
+          params: "2"
+        type:
+          <<: *static_normal
+          params: "NA"
+        firmware_version:
+          <<: *i2c_cpld2
+          source: "cpld_version_h"
+        board_version:
+          <<: *static_normal
+          params: "NA"
+        reg_test:
+          <<: *static_normal
+          params: "NA"
+      3:
+        description:
+          <<: *static_normal
+          params: "MB CPLD3"
+        alias:
+          <<: *static_normal
+          params: "3"
+        type:
+          <<: *static_normal
+          params: "NA"
+        firmware_version:
+          <<: *i2c_cpld3
+          source: "cpld_version_h"
+        board_version:
+          <<: *static_normal
+          params: "NA"
+        reg_test:
+          <<: *static_normal
+          params: "NA"
+      4:
+        description:
+          <<: *static_normal
+          params: "MB CPLD4"
+        alias:
+          <<: *static_normal
+          params: "4"
+        type:
+          <<: *static_normal
+          params: "NA"
+        firmware_version:
+          <<: *i2c_cpld4
+          source: "cpld_version_h"
+        board_version:
+          <<: *static_normal
+          params: "NA"
+        reg_test:
+          <<: *static_normal
+          params: "NA"
+
+# --- VOL Configuration ---
+vols:
+  layer1:
+    normal_dir_type: "/vol_sensor"
+    description:
+      <<: *static_normal
+      params: "VOL components information"
+    number:
+      <<: *static_number
+      params: "vols.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/vol{}"
+
+# --- Current Sensors Configuration ---
+curr_sensors:
+  layer1:
+    normal_dir_type: "/curr_sensor"
+    description:
+      <<: *static_normal
+      params: "Current sensors information"
+    number:
+      <<: *static_number
+      params: "curr_sensors.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/curr{}"
+
+# --- FPGA Configuration ---
+fpgas:
+  layer1:
+    normal_dir_type: "/fpga"
+    description:
+      <<: *static_normal
+      params: "FPGA components information"
+    number:
+      <<: *static_number
+      params: "fpgas.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/fpga{}"
+
+# --- Slot Configuration ---
+slots:
+  layer1:
+    normal_dir_type: "/slot"
+    description:
+      <<: *static_normal
+      params: "Slots information"
+    number:
+      <<: *static_number
+      params: "slots.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/slot{}"
+      1:
+        description:
+          <<: *static_normal
+          params: "NA"
+        model_name:
+          <<: *static_normal
+          params: "s9620-40dg"
+        hardware_version:
+          <<: *lpc_mb
+          source: "board_hw_id"
+        serial_number:
+          <<: *static_normal
+          params: "NA"
+        part_number:
+          <<: *static_normal
+          params: "NA"
+        status:
+          <<: *static_normal
+          params: "1"
+        led_status:
+          <<: *static_normal
+          params: "1"
+        num_temp_sensors:
+          <<: *ref_rename
+          source: "/sys_switch/temp_sensor/number"
+        temp_sensor:
+          <<: *ref_same
+          source: "/sys_switch/temp_sensor/temp*"
+        num_vol_sensors:
+          <<: *ref_rename
+          source: "/sys_switch/vol_sensor/number"
+        vol_sensor:
+          <<: *ref_same
+          source: "/sys_switch/vol_sensor/vol*"
+        num_curr_sensors:
+          <<: *ref_rename
+          source: "/sys_switch/curr_sensor/number"
+        curr_sensor:
+          <<: *ref_same
+          source: "/sys_switch/curr_sensor/curr*"
+        num_cplds:
+          <<: *ref_rename
+          source: "/sys_switch/cpld/number"
+        cpld:
+          <<: *ref_same
+          source: "/sys_switch/cpld/cpld*"
+        num_fpgas:
+          <<: *ref_rename
+          source: "/sys_switch/fpga/number"
+        fpga:
+          <<: *ref_same
+          source: "/sys_switch/fpga/fpga*"
+        model:
+          <<: *lpc_mb
+          source: "board_sku_id"
+        design_phase:
+          <<: *lpc_mb
+          source: "board_deph_id"
+        build_revision:
+          <<: *lpc_mb
+          source: "board_build_id"
+        i2c_stuck:
+          <<: *lpc_bsp
+          source: "i2c_stuck"
+        mux_reset_all:
+          <<: *lpc_mb
+          source: "mux_reset_all"
+        reset_number:
+          <<: *static_number
+          params: "slots.layer1.layer2.1.layer3_1"
+        num_extra_components:
+          <<: *static_number
+          params: "slots.layer1.layer2.1.layer3_2"
+        layer3_1:
+          one_param_dir_type: "/reset{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "MUX reset"
+            reset:
+              <<: *lpc_mb
+              source: "mux_reset_all"
+        layer3_2:
+          one_param_dir_type: "/extra_component{}"
+          1:
+            description:
+              <<: *static_normal
+              params: "EC"
+            alias:
+              <<: *static_normal
+              params: "1"
+            type:
+              <<: *static_normal
+              params: "ec"
+            firmware_version:
+              dev_type: "lpc_dev"
+              dev_name: "ec"
+              source: "ec_version_h"
+        layer3_3:
+          normal_dir_type: "/num_components"
+          num_temp_sensors:
+            <<: *static_number_component
+            params: "temperature"
+          num_fans:
+            <<: *static_number_component
+            params: "fan"
+          num_psus:
+            <<: *static_number_component
+            params: "psu"
+          num_leds:
+            <<: *static_number_component
+            params: "led"
+          num_transceivers:
+            <<: *static_number_component
+            params: "sfp"
+
+# --- Watchdog Configuration ---
+watchdogs:
+  layer1:
+    normal_dir_type: "/watchdog"
+    description:
+      <<: *static_normal
+      params: "WDT 1"
+    layer2:
+      one_param_dir_type: "watchdogs.layer1.layer2"
+    enable:
+      <<: *bmc_common
+      source: "watchdog_enable"
+    identify:
+      <<: *static_normal
+      params: "NA"
+    state:
+      <<: *bmc_common
+      source: "watchdog_state"
+    timeleft:
+      <<: *bmc_common
+      source: "watchdog_timeleft"
+    timeout:
+      <<: *bmc_common
+      source: "watchdog_timeout"
+
+# --- POE Configuration ---
+poes:
+  layer1:
+    normal_dir_type: "/poe"
+    description:
+      <<: *static_normal
+      params: "POE_description"
+    number:
+      <<: *static_number
+      params: "poes.layer1.layer2"
+    layer2:
+      one_param_dir_type: "/poe{}"
+
+# --- Dev Class Base Definitions ---
+i2c_dev:
+  path_template: "/sys/bus/i2c/devices/{bus}-{addr:0>4x}"
+  cpld1:
+    bus: 2
+    addr: 0x26
+  cpld2:
+    bus: 2
+    addr: 0x27
+  cpld3:
+    bus: 5
+    addr: 0x25
+  cpld4:
+    bus: 5
+    addr: 0x24
+  syseeprom:
+    addr: 0x57
+    bus: 1
+  port_eeprom_1:
+    bus: 6
+    addr: 0x50
+  port_eeprom_2:
+    bus: 7
+    addr: 0x50
+  port_eeprom_3:
+    bus: 8
+    addr: 0x50
+  port_eeprom_4:
+    bus: 9
+    addr: 0x50
+  port_eeprom_5:
+    bus: 10
+    addr: 0x50
+  port_eeprom_6:
+    bus: 11
+    addr: 0x50
+  port_eeprom_7:
+    bus: 16
+    addr: 0x50
+  port_eeprom_8:
+    bus: 17
+    addr: 0x50
+  port_eeprom_9:
+    bus: 18
+    addr: 0x50
+  port_eeprom_10:
+    bus: 19
+    addr: 0x50
+  port_eeprom_11:
+    bus: 20
+    addr: 0x50
+  port_eeprom_12:
+    bus: 21
+    addr: 0x50
+  port_eeprom_13:
+    bus: 12
+    addr: 0x50
+  port_eeprom_14:
+    bus: 13
+    addr: 0x50
+  port_eeprom_15:
+    bus: 14
+    addr: 0x50
+  port_eeprom_16:
+    bus: 15
+    addr: 0x50
+  port_eeprom_17:
+    bus: 22
+    addr: 0x50
+  port_eeprom_18:
+    bus: 23
+    addr: 0x50
+  port_eeprom_19:
+    bus: 24
+    addr: 0x50
+  port_eeprom_20:
+    bus: 25
+    addr: 0x50
+  port_eeprom_21:
+    bus: 26
+    addr: 0x50
+  port_eeprom_22:
+    bus: 27
+    addr: 0x50
+  port_eeprom_23:
+    bus: 28
+    addr: 0x50
+  port_eeprom_24:
+    bus: 29
+    addr: 0x50
+  port_eeprom_25:
+    bus: 30
+    addr: 0x50
+  port_eeprom_26:
+    bus: 31
+    addr: 0x50
+  port_eeprom_27:
+    bus: 32
+    addr: 0x50
+  port_eeprom_28:
+    bus: 33
+    addr: 0x50
+  port_eeprom_29:
+    bus: 34
+    addr: 0x50
+  port_eeprom_30:
+    bus: 35
+    addr: 0x50
+  port_eeprom_31:
+    bus: 36
+    addr: 0x50
+  port_eeprom_32:
+    bus: 37
+    addr: 0x50
+  port_eeprom_33:
+    bus: 38
+    addr: 0x50
+  port_eeprom_34:
+    bus: 39
+    addr: 0x50
+  port_eeprom_35:
+    bus: 40
+    addr: 0x50
+  port_eeprom_36:
+    bus: 41
+    addr: 0x50
+  port_eeprom_37:
+    bus: 42
+    addr: 0x50
+  port_eeprom_38:
+    bus: 43
+    addr: 0x50
+  port_eeprom_39:
+    bus: 44
+    addr: 0x50
+  port_eeprom_40:
+    bus: 45
+    addr: 0x50
+
+lpc_dev:
+  path_template: "/sys/bus/platform/devices/x86_64_ufispace_s9620_40dg_lpc/{dev}"
+  mb_cpld:
+    name: "mb_cpld"
+  ec:
+    name: "ec"
+  bios:
+    name: "bios"
+  cpu_cpld:
+    name: "cpu_cpld"
+  bsp:
+    name: "bsp"
+
+bmc_dev:
+  path_template: "/sys/bus/platform/devices/x86_64_ufispace_bmc/{dev}"
+  bmc:
+    name: "bmc"
+
+gpio_dev:
+  path_template: "/sys/bus/platform/devices/x86_64_ufispace_gpio/{dev}"
+  gpio_function:
+    name: "gpio_function"
+
+ref_link_dev:
+  path_template: ""
+  same_name:
+    func: ref_link_dev
+  rename:
+    func: ref_link_dev
+
+static_link_dev:
+  normal:
+    func: "static_link_dev_normal"
+  number:
+    func: "static_link_dev_number"
+  threshold:
+    func: "static_link_dev_threshold"
+  to_attr:
+    func: "static_link_dev_to_dev_attr"
+  number_component:
+    func: "static_link_dev_number_component"

@@ -23,7 +23,7 @@
  *
  ***********************************************************/
 
-#include <x86_64_ufispace_s9620_40dg/x86_64_ufispace_s9620_40dg_config.h>
+#include <ufispace_platform/x86_64_ufispace_s9620_40dg_config.h>
 
 #if X86_64_UFISPACE_S9620_40DG_CONFIG_INCLUDE_UCLI == 1
 

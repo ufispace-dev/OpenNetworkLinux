@@ -40,8 +40,10 @@
         }                                                               \
     } while(0)
 
-#define BSP_PR_REDIRECT_ERR              " 2>>"LPC_BSP_FMT"bsp_pr_err"
-#define BSP_PR_REDIRECT_INFO             " 1>>"LPC_BSP_FMT"bsp_pr_info"
+#define PATH_BSP_PR_ERR                  LPC_BSP_FMT"bsp_pr_err"
+#define PATH_BSP_PR_INFO                 LPC_BSP_FMT"bsp_pr_info"
+#define BSP_PR_REDIRECT_ERR              " 2>>"PATH_BSP_PR_ERR
+#define BSP_PR_REDIRECT_INFO             " 1>>"PATH_BSP_PR_INFO
 #define COMM_STR_NOT_SUPPORTED           "not supported"
 #define COMM_STR_NOT_AVAILABLE           "not available"
 #define COMM_STR_NA                      "NA"
@@ -102,6 +104,7 @@ typedef struct warm_reset_data_s {
 void lock_init();
 int ufi_file_read_longlong(long long int* value, const char* fmt, ...);
 int ufi_file_read_int(int* value, const char* fmt, ...);
+int ufi_bsp_info(const char* fmt, ...);
 int ufi_get_board_version(board_t *board);
 int exec_cmd(char *cmd, char* out, int size);
 void check_and_do_i2c_mux_reset(int port);

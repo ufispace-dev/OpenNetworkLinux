@@ -20,12 +20,12 @@ common:
   support: opennetworklinux@googlegroups.com
 
 packages:
-  - name: onlp-${PLATFORM}-r0
-    summary: ONLP Package for the ${PLATFORM}-r0 platform.
-    platform-config: True
+- name: onlp-${PLATFORM}-r0
+  summary: ONLP Package for the ${PLATFORM}-r0 platform.
+  platform-config: True
 
-    files:
-      builds/lib/$BUILD_DIR/$TOOLCHAIN/bin/libonlp-${PLATFORM}.so : ${install_r0}/lib/
-      builds/onlpdump/$BUILD_DIR/$TOOLCHAIN/bin/onlps : ${install_r0}/bin/onlpdump
+  files:
+    builds/lib/$BUILD_DIR/$TOOLCHAIN/bin/libonlp-${PLATFORM}.so: ${install_r0}/lib/
+    builds/onlpdump/$BUILD_DIR/$TOOLCHAIN/bin/onlps: ${install_r0}/bin/onlpdump
 
-    changelog:  Change changes changes.,
+  changelog: Change changes changes.,

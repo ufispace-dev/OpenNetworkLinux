@@ -28,6 +28,7 @@
 #include <linux/hwmon-sysfs.h>
 #include <linux/gpio.h>
 #include <linux/version.h>
+#include <linux/i2c.h>
 
 #if !defined(SENSOR_DEVICE_ATTR_RO)
 #define SENSOR_DEVICE_ATTR_RO(_name, _func, _index)		\
@@ -90,23 +91,12 @@
 
 #define MASK_ALL                          (0xFF)
 #define MASK_NONE                         (0x00)
-#define MASK_0000_0011                    (0x03)
-#define MASK_0000_0100                    (0x04)
-#define MASK_0000_0111                    (0x07)
-#define MASK_0001_1000                    (0x18)
-#define MASK_0010_0000                    (0x20)
-#define MASK_0011_0111                    (0x37)
-#define MASK_0011_1000                    (0x38)
-#define MASK_0011_1111                    (0x3F)
-#define MASK_0100_0000                    (0x40)
-#define MASK_1000_0000                    (0x80)
-#define MASK_1100_0000                    (0xC0)
-#define MASK_0001_1111                    (0x1F)
-#define MASK_0111_1111                    (0x7F)
 
 #define LPC_MDELAY                        (5)
 #define MDELAY_RESET_INTERVAL             (100)
 #define MDELAY_RESET_FINISH               (500)
+
+#define MUX_RESET_TRIGGER_VAL             (1)
 
 /* LPC sysfs attributes index  */
 enum lpc_sysfs_attributes {
@@ -142,6 +132,7 @@ enum lpc_sysfs_attributes {
     BSP_GPIO_MAX,
     BSP_GPIO_BASE,
     BSP_WP_ACCESS_COUNT,
+    ATT_I2C_STUCK,
 
     //EC
     ATT_EC_BIOS_BOOT_ROM,
@@ -156,10 +147,32 @@ enum lpc_sysfs_attributes {
     ATT_MAX
 };
 
+enum i2c_stuck_status
+{
+    I2C_STUCK_STATUS_NORMAL,
+    I2C_STUCK_STATUS_ROOT_BUS,
+    I2C_STUCK_STATUS_TRANSCEIVER,
+    I2C_STUCK_STATUS_ROOT_BUS_NOT_READY
+};
+
+char *i2c_stuck_status_str[] = {
+    "0", //Normal
+    "1", //Root I2C bus stuck
+    "2"  //Transceiver stuck
+};
+
+enum i2c_stuck_dev
+{
+    I2C_STUCK_DEV_ROOT_BUS,
+    I2C_STUCK_DEV_MAX
+};
+
 enum data_type {
     DATA_HEX,
     DATA_DEC,
     DATA_S_DEC,
+    DATA_0_1,
+    DATA_0_1_INV,
     DATA_UNK,
 };
 
@@ -176,26 +189,32 @@ typedef struct  {
     bool write_protect;
 } attr_reg_map_t;
 
+typedef struct  {
+    u8 bus;
+    u8 addr;
+    u8 reg;
+} struct_i2c_dev;
+
 attr_reg_map_t attr_reg[]= {
 
-    [CPLD_MAJOR_VER]           =         {CPLD_VERSION_REG          , MASK_1100_0000, DATA_DEC,   REG_WP_DIS},
-    [CPLD_MINOR_VER]           =         {CPLD_VERSION_REG          , MASK_0011_1111, DATA_DEC,   REG_WP_DIS},
-    [CPLD_ID]                  =         {CPLD_ID_REG               , MASK_0000_0111, DATA_DEC,   REG_WP_DIS},
-    [CPLD_BUILD_VER]           =         {CPLD_BUILD_REG            , MASK_ALL      , DATA_DEC,   REG_WP_DIS},
-    [CPLD_VERSION_H]           =         {REG_NONE                  , MASK_NONE     , DATA_UNK,   REG_WP_DIS},
-    [BRD_SKU_ID]               =         {BRD_SKU_ID_REG            , MASK_ALL      , DATA_HEX,   REG_WP_DIS},
-    [BRD_HW_BUILD_ID]          =         {BRD_HW_BUILD_REV_REG      , MASK_ALL      , DATA_HEX,   REG_WP_DIS},
-    [BRD_HW_ID]                =         {BRD_HW_BUILD_REV_REG      , MASK_0000_0011, DATA_DEC,   REG_WP_DIS},
-    [BRD_DEPH_ID]              =         {BRD_HW_BUILD_REV_REG      , MASK_0000_0100, DATA_DEC,   REG_WP_DIS},
-    [BRD_BUILD_ID]             =         {BRD_HW_BUILD_REV_REG      , MASK_0011_1000, DATA_DEC,   REG_WP_DIS},
-    [BRD_ID_TYPE]              =         {BRD_HW_BUILD_REV_REG      , MASK_1000_0000, DATA_DEC,   REG_WP_DIS},
-    [CPLD_CHIP_TYPE]           =         {CPLD_CHIP_TYPE_REG        , MASK_0000_0011, DATA_DEC,   REG_WP_DIS},
-    [MUX_RESET_ALL]            =         {REG_NONE                  , MASK_NONE     , DATA_DEC,   REG_WP_EN },
-    [MUX_RESET_TOP_0_5_12_15]  =         {TOP_I2C_MUX_RESET_REG     , MASK_0001_1111, DATA_DEC,   REG_WP_EN },
-    [MUX_RESET_MAIN_6_11_16_39] =        {MAIN_I2C_MUX_RESET_REG    , MASK_0111_1111, DATA_DEC,   REG_WP_EN },
-    //[TOP_I2C_MUX_RST]          =         {MISC_RST_REG              , MASK_0001_0000, DATA_HEX},
-    [MUX_CTRL]                 =         {MUX_CTRL_REG              , MASK_ALL      , DATA_HEX,   REG_WP_EN },
-    [UART_CTRL]                =         {MUX_CTRL_REG              , MASK_1000_0000, DATA_HEX,   REG_WP_EN },
+    [CPLD_MAJOR_VER]           =         {CPLD_VERSION_REG          , 0b11000000,     DATA_DEC,   REG_WP_DIS},
+    [CPLD_MINOR_VER]           =         {CPLD_VERSION_REG          , 0b00111111,     DATA_DEC,   REG_WP_DIS},
+    [CPLD_ID]                  =         {CPLD_ID_REG               , 0b00000111,     DATA_DEC,   REG_WP_DIS},
+    [CPLD_BUILD_VER]           =         {CPLD_BUILD_REG            , MASK_ALL,       DATA_DEC,   REG_WP_DIS},
+    [CPLD_VERSION_H]           =         {REG_NONE                  , MASK_NONE,      DATA_UNK,   REG_WP_DIS},
+    [BRD_SKU_ID]               =         {BRD_SKU_ID_REG            , MASK_ALL,       DATA_HEX,   REG_WP_DIS},
+    [BRD_HW_BUILD_ID]          =         {BRD_HW_BUILD_REV_REG      , MASK_ALL,       DATA_HEX,   REG_WP_DIS},
+    [BRD_HW_ID]                =         {BRD_HW_BUILD_REV_REG      , 0b00000011,     DATA_DEC,   REG_WP_DIS},
+    [BRD_DEPH_ID]              =         {BRD_HW_BUILD_REV_REG      , 0b00000100,     DATA_DEC,   REG_WP_DIS},
+    [BRD_BUILD_ID]             =         {BRD_HW_BUILD_REV_REG      , 0b00111000,     DATA_DEC,   REG_WP_DIS},
+    [BRD_ID_TYPE]              =         {BRD_HW_BUILD_REV_REG      , 0b10000000,     DATA_DEC,   REG_WP_DIS},
+    [CPLD_CHIP_TYPE]           =         {CPLD_CHIP_TYPE_REG        , 0b00000011,     DATA_DEC,   REG_WP_DIS},
+    [MUX_RESET_ALL]            =         {REG_NONE                  , MASK_NONE,      DATA_DEC,   REG_WP_EN },
+    [MUX_RESET_TOP_0_5_12_15]  =         {TOP_I2C_MUX_RESET_REG     , 0b00011111,     DATA_DEC,   REG_WP_EN },
+    [MUX_RESET_MAIN_6_11_16_39] =        {MAIN_I2C_MUX_RESET_REG    , 0b01111111,     DATA_DEC,   REG_WP_EN },
+    //[TOP_I2C_MUX_RST]          =         {MISC_RST_REG              , 0b00010000,     DATA_HEX},
+    [MUX_CTRL]                 =         {MUX_CTRL_REG              , MASK_ALL,       DATA_HEX,   REG_WP_EN },
+    [UART_CTRL]                =         {MUX_CTRL_REG              , 0b01000000,     DATA_HEX,   REG_WP_EN },
 
     //BSP
     [BSP_VERSION]              =         {REG_NONE,                   MASK_NONE,      DATA_UNK,   REG_WP_DIS},
@@ -207,15 +226,20 @@ attr_reg_map_t attr_reg[]= {
     [BSP_GPIO_MAX]             =         {REG_NONE,                   MASK_NONE,      DATA_DEC,   REG_WP_DIS},
     [BSP_GPIO_BASE]            =         {REG_NONE,                   MASK_NONE,      DATA_DEC,   REG_WP_DIS},
     [BSP_WP_ACCESS_COUNT]      =         {REG_NONE,                   MASK_NONE,      DATA_UNK,   REG_WP_DIS},
+    [ATT_I2C_STUCK]            =         {REG_NONE,                   MASK_NONE,      DATA_UNK,   REG_WP_DIS},
 
     // EC
-    [ATT_EC_BIOS_BOOT_ROM]     =         {REG_MISC_CTRL,              MASK_0100_0000, DATA_DEC,   REG_WP_DIS},
-    [ATT_EC_CPU_REV_HW_REV]    =         {REG_EC_CPU_REV_ID,          MASK_0000_0011, DATA_DEC,   REG_WP_DIS},
-    [ATT_EC_CPU_REV_DEV_PHASE] =         {REG_EC_CPU_REV_ID,          MASK_0000_0100, DATA_DEC,   REG_WP_DIS},
-    [ATT_EC_CPU_REV_BUILD_ID]  =         {REG_EC_CPU_REV_ID,          MASK_0001_1000, DATA_DEC,   REG_WP_DIS},
+    [ATT_EC_BIOS_BOOT_ROM]     =         {REG_MISC_CTRL,              0b01000000,     DATA_DEC,   REG_WP_DIS},
+    [ATT_EC_CPU_REV_HW_REV]    =         {REG_EC_CPU_REV_ID,          0b00000011,     DATA_DEC,   REG_WP_DIS},
+    [ATT_EC_CPU_REV_DEV_PHASE] =         {REG_EC_CPU_REV_ID,          0b00000100,     DATA_DEC,   REG_WP_DIS},
+    [ATT_EC_CPU_REV_BUILD_ID]  =         {REG_EC_CPU_REV_ID,          0b00011000,     DATA_DEC,   REG_WP_DIS},
     [ATT_EC_MAJOR_VER]         =         {REG_EC_MAJOR_VER,           MASK_ALL,       DATA_DEC,   REG_WP_DIS},
     [ATT_EC_MINOR_VER]         =         {REG_EC_MINOR_VER,           MASK_ALL,       DATA_DEC,   REG_WP_DIS},
     [ATT_EC_BUILD_VER]         =         {REG_EC_BUILD_VER,           MASK_ALL,       DATA_DEC,   REG_WP_DIS},
+};
+
+struct_i2c_dev i2c_stuck_dev[]= {
+    [I2C_STUCK_DEV_ROOT_BUS]          = {1, 0x75, 0x00},
 };
 
 enum bsp_log_types {
@@ -280,10 +304,10 @@ static u8 _bit_operation(u8 reg_val, u8 bit, u8 bit_val)
     return reg_val;
 }
 
-static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
+static int _parse_data(char *buf, unsigned int data, u8 data_type)
 {
     if(buf == NULL) {
-        return -1;
+        return -EINVAL;
     }
 
     if(data_type == DATA_HEX) {
@@ -293,7 +317,7 @@ static u8 _parse_data(char *buf, unsigned int data, u8 data_type)
     } else if(data_type == DATA_S_DEC) {
         return sprintf(buf, "%d", (s8)data);
     } else {
-        return -1;
+        return -EINVAL;
     }
     return 0;
 }
@@ -783,24 +807,24 @@ static ssize_t mux_reset_all_store(struct device *dev,
     u16 reg = 0;
     u8 mask = MASK_NONE;
     u8 val = 0;
-    static int mux_reset_flag = 0;
+    u8 reg_val = 0;
+    u8 original_wp;
+    int i;
 
+    static atomic_t mux_reset_flag = ATOMIC_INIT(0);
 
-    const int mux_list[] = {
+    static const int mux_list[] = {
         MUX_RESET_TOP_0_5_12_15,
         MUX_RESET_MAIN_6_11_16_39
     };
 
-    // pointer to mux list
     const int *mux_targets = NULL;
     int num_targets = 0;
-    int i ;
 
     switch (attr->index) {
         case MUX_RESET_ALL:
-            // take mux_list as target
             mux_targets = mux_list;
-            num_targets = 2;
+            num_targets = ARRAY_SIZE(mux_list);
             break;
         case MUX_RESET_TOP_0_5_12_15:
         case MUX_RESET_MAIN_6_11_16_39:
@@ -815,49 +839,174 @@ static ssize_t mux_reset_all_store(struct device *dev,
     if (kstrtou8(buf, 0, &val) < 0)
         return -EINVAL;
 
-    if (mux_reset_flag == 0) {
-        if (val == 0) {
-            u8 reg_val = 0;
-            u8 original_wp;
+    if (val != MUX_RESET_TRIGGER_VAL)
+        return -EINVAL;
 
-            mux_reset_flag = 1;
-            BSP_LOG_W("i2c mux reset is triggered...");
-            original_wp = lpc_wp_begin();
+    if (atomic_cmpxchg(&mux_reset_flag, 0, 1) == 0) {
+        BSP_LOG_W("i2c mux reset is triggered...");
 
-            // reset all MUXes
-            for (i = 0; i < num_targets; i++) {
-                reg  = attr_reg[mux_targets[i]].reg;
-                mask = attr_reg[mux_targets[i]].mask;
-                if (reg != REG_NONE) {
-                    reg_val = inb(reg);
-                    _outb((reg_val & (u8)(~mask)), reg);
-                    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val & (u8)(~mask));
-                }
+        original_wp = lpc_wp_begin();
+        for (i = 0; i < num_targets; i++) {
+            reg  = attr_reg[mux_targets[i]].reg;
+            mask = attr_reg[mux_targets[i]].mask;
+            if (reg != REG_NONE) {
+                reg_val = inb(reg);
+                outb((reg_val & (u8)(~mask)), reg);
+                BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val & (u8)(~mask));
             }
-
-            mdelay(MDELAY_RESET_INTERVAL);
-
-            // Unset all MUXes
-            for (i = 0; i < num_targets; i++) {
-                reg  = attr_reg[mux_targets[i]].reg;
-                mask = attr_reg[mux_targets[i]].mask;
-                if (reg != REG_NONE) {
-                    _outb((reg_val | mask), reg);
-                    BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val | mask);
-                }
-            }
-
-            lpc_wp_end(original_wp);
-
-            mdelay(MDELAY_RESET_FINISH);
-            mux_reset_flag = 0;
-        } else {
-            return -EINVAL;
         }
+        lpc_wp_end(original_wp);
+
+        msleep(MDELAY_RESET_INTERVAL);
+
+        original_wp = lpc_wp_begin();
+        // Unset all MUXes
+        for (i = 0; i < num_targets; i++) {
+            reg  = attr_reg[mux_targets[i]].reg;
+            mask = attr_reg[mux_targets[i]].mask;
+            if (reg != REG_NONE) {
+                reg_val = inb(reg);
+                outb((reg_val | mask), reg);
+                BSP_LOG_W("reg=0x%03x, reg_val=0x%02x", reg, reg_val | mask);
+            }
+        }
+        lpc_wp_end(original_wp);
+
+        msleep(MDELAY_RESET_FINISH);
+
+        atomic_set(&mux_reset_flag, 0);
+
     } else {
         BSP_LOG_W("i2c mux is resetting... (ignore)");
     }
     return count;
+}
+
+/* read i2c device_reg by i2c_dev_id*/
+static int is_i2c_adapter_ready(int bus)
+{
+    struct i2c_adapter *adapter;
+
+    adapter = i2c_get_adapter(bus);
+    if (!adapter) {
+        return 0;
+    } else {
+        i2c_put_adapter(adapter);
+        return 1;
+    }
+}
+
+/* read i2c device */
+static int i2c_dev_read(int bus, int addr, u8 dev_reg)
+{
+    struct i2c_adapter *adapter;
+    struct i2c_client client;
+    int ret;
+
+    adapter = i2c_get_adapter(bus);
+    if (!adapter) {
+        BSP_PR(KERN_ERR, "i2c_get_adapter(bus %d) not loaded", bus);
+        return 0;
+    }
+
+    //avoid i2c_new_dummy_device() or device_register() to skip device occupied check by creating fake client
+    memset(&client, 0, sizeof(client));
+    client.adapter = adapter;
+    client.addr = addr;
+
+    mutex_lock(&lpc_data->access_lock);
+    ret = i2c_smbus_read_byte_data(&client, dev_reg);
+    mutex_unlock(&lpc_data->access_lock);
+
+    i2c_put_adapter(adapter);
+
+    if (ret < 0) {
+        BSP_PR(KERN_ERR, "i2c device Reader: Failed to read from device (%d-00%02x): %d\n", bus, addr, ret);
+        return ret;
+    }
+
+    return ret;
+}
+
+static int i2c_dev_read_by_id(int i2c_dev_id)
+{
+    int bus, addr, dev_reg;
+
+    if (i2c_dev_id < 0 || i2c_dev_id >= I2C_STUCK_DEV_MAX) {
+        return -EINVAL;
+    }
+
+    bus     = i2c_stuck_dev[i2c_dev_id].bus;
+    addr    = i2c_stuck_dev[i2c_dev_id].addr;
+    dev_reg = i2c_stuck_dev[i2c_dev_id].reg;
+
+    return i2c_dev_read(bus, addr, dev_reg);
+}
+
+/* get i2c stuck value */
+static ssize_t i2c_stuck_callback_show(struct device *dev,
+        struct device_attribute *da, char *buf)
+{
+    struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
+    int ret = I2C_STUCK_STATUS_NORMAL;
+    int mask_normal = MASK_ALL;
+    int i=0;
+    int is_root_bus_ready = 0;
+    int is_root_bus_stuck = 0;
+    int is_transceiver_stuck = 0;
+    struct_i2c_dev *i2c_stuck_devp = i2c_stuck_dev;
+
+    switch (attr->index) {
+        case ATT_I2C_STUCK:
+            // Check root i2c bus ready
+            if (is_i2c_adapter_ready(i2c_stuck_devp[I2C_STUCK_DEV_ROOT_BUS].bus)) {
+                is_root_bus_ready = 1;
+            }  else {
+                is_root_bus_ready = 0;
+                break;
+            }
+
+            // Check root i2c bus stuck
+            if (is_root_bus_ready && (ret = i2c_dev_read_by_id(I2C_STUCK_DEV_ROOT_BUS)) < 0) {
+                is_root_bus_stuck = 1;
+                break;
+            }
+
+            // Check transceiver stuck
+            for (i = I2C_STUCK_DEV_ROOT_BUS + 1; i < I2C_STUCK_DEV_MAX; i++) {
+
+                // Check i2c adapter ready before accessing i2c device
+                if (!is_i2c_adapter_ready(i2c_stuck_devp[i].bus)) {
+                    continue;
+                }
+
+                ret = i2c_dev_read_by_id(i);
+                if (ret < 0) {
+                    BSP_PR(KERN_ERR, "i2c_dev_read_by_id(%d) failed, bus=%d, addr=0x%02x, reg=0x%02x, ret=%d", i,
+                            i2c_stuck_devp[i].bus, i2c_stuck_devp[i].addr, i2c_stuck_devp[i].reg, ret);
+                    return ret;
+                } else if (ret != mask_normal) {
+                    BSP_PR(KERN_ERR, "i2c_dev_read_by_id(%d) transceiver stuck detected: bus=%d, addr=0x%02x, reg=0x%02x, reg_val=0x%02x", i,
+                            i2c_stuck_devp[i].bus, i2c_stuck_devp[i].addr, i2c_stuck_devp[i].reg, ret);
+                    is_transceiver_stuck = 1;
+                    break;
+                }
+            }
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    if (!is_root_bus_ready)
+        ret = I2C_STUCK_STATUS_ROOT_BUS_NOT_READY;
+    else if (is_root_bus_stuck)
+        ret = I2C_STUCK_STATUS_ROOT_BUS;
+    else if (is_transceiver_stuck)
+        ret = I2C_STUCK_STATUS_TRANSCEIVER;
+    else
+        ret = I2C_STUCK_STATUS_NORMAL;
+
+    return bsp_read(buf, i2c_stuck_status_str[ret]);
 }
 
 //SENSOR_DEVICE_ATTR - CPLD
@@ -890,6 +1039,7 @@ static SENSOR_DEVICE_ATTR_RO(bsp_reg_value              , lpc_callback     , BSP
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_max               , gpio_max         , BSP_GPIO_MAX);
 static SENSOR_DEVICE_ATTR_RO(bsp_gpio_base              , gpio_base        , BSP_GPIO_BASE);
 static SENSOR_DEVICE_ATTR_RO(bsp_wp_access_count        , bsp_callback     , BSP_WP_ACCESS_COUNT);
+static SENSOR_DEVICE_ATTR_RO(i2c_stuck                  , i2c_stuck_callback, ATT_I2C_STUCK);
 
 //SENSOR_DEVICE_ATTR - EC
 static SENSOR_DEVICE_ATTR_RO(bios_boot_rom              , lpc_callback     , ATT_EC_BIOS_BOOT_ROM);
@@ -940,6 +1090,7 @@ static struct attribute *bsp_attrs[] = {
     _DEVICE_ATTR(bsp_gpio_max),
     _DEVICE_ATTR(bsp_gpio_base),
     _DEVICE_ATTR(bsp_wp_access_count),
+    _DEVICE_ATTR(i2c_stuck),
     NULL,
 };
 

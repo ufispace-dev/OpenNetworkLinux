@@ -411,7 +411,7 @@ int __WEAK onlp_sysi_oids_get(onlp_oid_t* table, int max)
                 for(j=1; tmp_max >= 0 && j <= motor_number; j++) {
                     char *description = NULL;
                     int len1 = onlp_file_read_str(&description, "/sys_switch/fan/fan%d/motor%d/description", i, j);
-                    id = fan_oid_base + (i*j-1);
+                    id = fan_oid_base + ((i - 1) * motor_number + (j - 1));
                     if(!description || !len1) {
                         aim_free(description);
                         continue;
