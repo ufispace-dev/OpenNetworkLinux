@@ -219,29 +219,6 @@ extern u8 RespBuffer[I2C_MSG_LEN];
 /*--------------------------------------------------------------------------
  *
  *  FUNCTION NAME :
- *      ufi_poe_halCheckSumCmp
- *
- *  DESCRIPTION :
- *      a local API to verify the check sum of a received frame
- *
- *  INPUT :
- *      none
- *
- *  OUTPUT :
- *      *pCmd - Command frame structure
- *
- *  RETURN :
- *      none
- *
- *  COMMENT :
- *      none
- *
- *--------------------------------------------------------------------------
- */
-bool ufi_poe_halCheckSumCmp(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd);
-/*--------------------------------------------------------------------------
- *
- *  FUNCTION NAME :
  *      ufi_poe_halInsertCheckSum
  *
  *  DESCRIPTION :

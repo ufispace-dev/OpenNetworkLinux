@@ -426,6 +426,32 @@ static int ufi_file_seek_readb(const char *file, long offset, uint8_t *value)
 }
 
 /**
+ * @brief Read 256th (0-based) byte offset to force page select to 0 to avoid eeprom checksum failure caused by page mis-match
+ * @param sysfs_path: The sysfs path to the EEPROM.
+ * @returns An error condition.
+ */
+static int ufi_reset_page_select(char *sysfs_path)
+{
+    int fd = -1;
+    off_t offset_256 = 256;
+    uint8_t value = 0;
+
+    fd = open(sysfs_path, O_RDONLY);
+    if (fd == -1) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Read value
+    if (pread(fd, &value, sizeof(uint8_t), offset_256) != sizeof(uint8_t)) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Get SFF-8636 Port TX Disable Status by EEPROM
  * @param port: The port number.
  * @param status: 1 if tx disable (turn on)
@@ -812,16 +838,26 @@ int onlp_sfpi_rx_los_bitmap_get(onlp_sfp_bitmap_t* dst)
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0, bus = 0, rc = 0;
+    char sysfs_path[256] = {0};
 
     VALIDATE_PORT(port);
 
     memset(data, 0, 256);
     bus = ufi_port_to_eeprom_bus(port);
 
-    if((rc = onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
-        AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
-        AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+    // create and check sysfs_path
+    size = snprintf(sysfs_path, sizeof(sysfs_path),
+        SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
 
+    if (size < 0 || (size_t)size >= sizeof(sysfs_path)) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // reset page select to 0
+    ufi_reset_page_select(sysfs_path);
+
+    if((rc = onlp_file_read(data, 256, &size, sysfs_path)) < 0) {
+        AIM_LOG_ERROR("Unable to read eeprom from port(%d), sysfs_path=%s", port, sysfs_path);
         check_and_do_i2c_mux_reset(port);
         return rc;
     }

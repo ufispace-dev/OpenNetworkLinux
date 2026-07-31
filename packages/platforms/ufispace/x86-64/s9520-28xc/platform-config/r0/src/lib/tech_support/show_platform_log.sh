@@ -5,7 +5,7 @@
 #######################################################################
 
 #Tech Support script version
-TS_VERSION="1.0.0"
+TS_VERSION="1.0.1"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -113,6 +113,11 @@ I2C_TREE=()
 # parent address,parent channel,
 # address
 SYS_EEPROM=""
+
+#  "<ko_name>,<module_name>"
+DRIVER_ARRAY=(
+   "i2c-smbus.ko,i2c_smbus"
+)
 
 BMC_SUPPORT=0
 BMC_DEV_STAT_SUPPORT_VER=0
@@ -1263,6 +1268,101 @@ function _show_port_status {
     fi
 }
 
+function _show_eeprom_driver_name {
+    if [ "${BSP_INIT_FLAG}" != "1" ]; then
+        return
+    fi
+
+    _banner "Show EEPROM Driver Name"
+    local syseeprom_link=$(readlink /sys_switch/syseeprom)
+    if [ -n "$syseeprom_link" ]; then
+        local sysfs="${syseeprom_link%/eeprom}"
+        local driver_name="NA"
+        local full_sysfs="${sysfs}/name"
+        [ -f "$full_sysfs" ] && driver_name=$(cat "$full_sysfs")
+        _echo "[System EEPROM]: driver($driver_name) path($full_sysfs)"
+    else
+        _echo "[System EEPROM]: Not found"
+    fi
+
+    local num_eths=$(read_s3ip_sysfs_int "/sys_switch/transceiver/number" 0)
+    for (( i=1; i<=num_eths; i++ )); do
+        local eth_path="/sys_switch/transceiver/eth${i}/eeprom"
+        local port_link=$(readlink "$eth_path")
+        if [ -n "$port_link" ]; then
+            local sysfs="${port_link%/eeprom}"
+            local driver_name="NA"
+            local full_sysfs="${sysfs}/name"
+            [ -f "$full_sysfs" ] && driver_name=$(cat "$full_sysfs")
+            _echo "[Port$((i - 1)) EEPROM]: driver($driver_name) path($full_sysfs)"
+        else
+            _echo "[Port$((i - 1)) EEPROM]: path not linkable"
+        fi
+    done
+}
+
+function _show_driver_build_id {
+    local range=""
+    local ko_name=""
+    local module_name=""
+    local driver=""
+    local current_build_id=""
+    local is_printed="0"
+    local gnu_note_head="040000001400000003000000474e5500"
+
+    if [ "${BSP_INIT_FLAG}" != "1" ]; then
+        return
+    fi
+
+
+    if ! command -v hexdump >/dev/null 2>&1; then
+        return
+    fi
+
+    _banner "Show Driver Build ID"
+
+    for range in "${DRIVER_ARRAY[@]}"; do
+        IFS=',' read -r \
+            ko_name \
+            module_name \
+            <<< "$range"
+
+        local found_in_loop="0"
+        while IFS= read -r driver; do
+            [ -z "$driver" ] && continue
+
+            if [ "$found_in_loop" = "0" ]; then
+                _echo "[${ko_name}]"
+                found_in_loop="1"
+                is_printed="1"
+            fi
+
+            local driver_build_id=""
+
+            if [[ "$driver" == *.zst ]]; then
+                driver_build_id=$(zstd -dcf "$driver" 2>/dev/null | hexdump -ve '1/1 "%.2x"' | grep -o "${gnu_note_head}[0-9a-f]\{40\}" | head -n 1 | cut -c 33- 2>/dev/null)
+            else
+                driver_build_id=$(hexdump -ve '1/1 "%.2x"' "$driver" | grep -o "${gnu_note_head}[0-9a-f]\{40\}" | head -n 1 | cut -c 33- 2>/dev/null)
+            fi
+            _printf "%s:\n%s\n" "$driver" "$driver_build_id"
+        done < <(find "/lib/modules/$(uname -r)" -type f \( -name "${ko_name}" -o -name "${ko_name}.zst" \) 2>/dev/null)
+
+        if [ "$found_in_loop" = "1" ]; then
+            local sys_note="/sys/module/$module_name/notes/.note.gnu.build-id"
+            if [ -f "$sys_note" ]; then
+                current_build_id=$(hexdump -ve '1/1 "%.2x"' "$sys_note" | cut -c 33-)
+                _printf "Current running:\n%s\n" "$current_build_id"
+            else
+                _echo "Current running: NOT LOADED\n"
+            fi
+        fi
+    done
+
+    if [ "$is_printed" = "0" ]; then
+        _echo "No drivers specified in DRIVER_ARRAY were found in the system."
+    fi
+}
+
 function _show_cpu_info {
     _banner "Show lscpu Info"
     ret=$(lscpu)
@@ -1641,16 +1741,16 @@ function _show_disk_info {
     if [ ! $? -eq 0 ]; then
         _echo "[command]: smartctl not found (SKIP)!!"
     else
-    	local cmd=""
-	local disk=""
+        local cmd=""
+        local disk=""
         local smartctl_commands=(
             "smartctl -a"
             "smartctl -x"
         )
         local target_disks=( $(ls /sys/block/$storage_name/slaves/ 2>/dev/null) )
-	if [ "${#target_disks[@]}" -eq 0 ]; then
-            target_disks=("$storage_name")
-	fi
+        if [ "${#target_disks[@]}" -eq 0 ]; then
+                target_disks=("$storage_name")
+        fi
 
         for cmd in "${smartctl_commands[@]}"; do
             for disk in "${target_disks[@]}"; do
@@ -2003,6 +2103,8 @@ function _main {
     _show_psu_status_cpld
     _show_rov
     _show_port_status
+    _show_eeprom_driver_name
+    _show_driver_build_id
     _show_cpu_info
     _show_cpu_temperature
     _show_cpld_interrupt

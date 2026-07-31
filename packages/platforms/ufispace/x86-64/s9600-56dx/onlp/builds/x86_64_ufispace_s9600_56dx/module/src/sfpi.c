@@ -24,6 +24,8 @@
  ***********************************************************/
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 #define SFP_NUM               4
 #define QSFP_NUM              48
@@ -853,6 +855,32 @@ int onlp_sfpi_ioctl(int port, va_list vargs)
 }
 
 /**
+ * @brief Read 256th (0-based) byte offset to force page select to 0 to avoid eeprom checksum failure caused by page mis-match
+ * @param sysfs_path: The sysfs path to the EEPROM.
+ * @returns An error condition.
+ */
+static int ufi_reset_page_select(char *sysfs_path)
+{
+    int fd = -1;
+    off_t offset_256 = 256;
+    uint8_t value = 0;
+
+    fd = open(sysfs_path, O_RDONLY);
+    if (fd == -1) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Read value
+    if (pread(fd, &value, sizeof(uint8_t), offset_256) != sizeof(uint8_t)) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Read the SFP EEPROM.
  * @param port The port number.
  * @param data Receives the SFP data.
@@ -860,6 +888,7 @@ int onlp_sfpi_ioctl(int port, va_list vargs)
 int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0, expect_size = 256, bus = 0, rc = 0;
+    char sysfs_path[512];
     VALIDATE_PORT(port);
 
     memset(data, 0, expect_size);
@@ -870,9 +899,14 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
     }
 
     bus = ufi_port_to_eeprom_bus(port);
-    if((rc = onlp_file_read(data, expect_size, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM)) < 0) {
+    if (snprintf(sysfs_path, sizeof(sysfs_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM) >= sizeof(sysfs_path)) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+    ufi_reset_page_select(sysfs_path);
+
+    if((rc = onlp_file_read(data, expect_size, &size, "%s", sysfs_path)) < 0) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)", port);
-        AIM_LOG_ERROR(SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+        AIM_LOG_ERROR("%s", sysfs_path);
 
         check_and_do_i2c_mux_reset(port);
         return rc;

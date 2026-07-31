@@ -28,6 +28,8 @@
 
 #include "x86_64_ufispace_s9502_12sm_log.h"
 #include "platform_lib.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 #define IS_SFP(_port)   (_port >= SFP_START_NUM && _port < PORT_NUM)
 
@@ -96,6 +98,32 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
     return ONLP_STATUS_OK;
 }
 
+/**
+ * @brief Read 256th (0-based) byte offset to force page select to 0 to avoid eeprom checksum failure caused by page mis-match
+ * @param sysfs_path: The sysfs path to the EEPROM.
+ * @returns An error condition.
+ */
+static int ufi_reset_page_select(char *sysfs_path)
+{
+    int fd = -1;
+    off_t offset_256 = 256;
+    uint8_t value = 0;
+
+    fd = open(sysfs_path, O_RDONLY);
+    if (fd == -1) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Read value
+    if (pread(fd, &value, sizeof(uint8_t), offset_256) != sizeof(uint8_t)) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
+}
+
 /*
  * This function reads the SFPs idrom and returns in
  * in the data buffer provided.
@@ -104,6 +132,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
 {
     int size = 0;
     int bus = -1;
+    char eeprom_path[512];
 
     VALIDATE_PORT(port);
 
@@ -116,7 +145,12 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         return bus;
     }
 
-    if(onlp_file_read(data, 256, &size, SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM) != ONLP_STATUS_OK) {
+    memset(eeprom_path, 0, sizeof(eeprom_path));
+    snprintf(eeprom_path, sizeof(eeprom_path), SYS_FMT, bus, EEPROM_ADDR, SYSFS_EEPROM);
+
+    ufi_reset_page_select(eeprom_path);
+
+    if(onlp_file_read(data, 256, &size, "%s", eeprom_path) != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);
         return ONLP_STATUS_E_INTERNAL;
     }

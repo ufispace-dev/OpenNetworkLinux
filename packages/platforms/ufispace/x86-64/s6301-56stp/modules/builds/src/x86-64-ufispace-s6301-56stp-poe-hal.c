@@ -133,7 +133,7 @@ void ufi_poe_halInsertCheckSum(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
  *--------------------------------------------------------------------------
  */
 
-bool ufi_poe_halCheckSumCmp(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
+static bool ufi_poe_halCheckSumCmp(BCM_POE_TYPE_PKTBUF_I2C_T *pCmd)
 {
     u8 *data = (u8 *)pCmd;
     u8 checksum = 0;

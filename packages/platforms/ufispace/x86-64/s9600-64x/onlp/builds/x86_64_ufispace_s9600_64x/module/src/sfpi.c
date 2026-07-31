@@ -25,6 +25,8 @@
 #include <onlplib/file.h>
 #include <onlplib/i2c.h>
 #include <onlp/platformi/sfpi.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "x86_64_ufispace_s9600_64x_log.h"
 #include "platform_lib.h"
@@ -164,6 +166,32 @@ int onlp_sfpi_presence_bitmap_get(onlp_sfp_bitmap_t* dst)
 }
 
 /**
+ * @brief Read 256th (0-based) byte offset to force page select to 0 to avoid eeprom checksum failure caused by page mis-match
+ * @param sysfs_path: The sysfs path to the EEPROM.
+ * @returns An error condition.
+ */
+static int ufi_reset_page_select(char *sysfs_path)
+{
+    int fd = -1;
+    off_t offset_256 = 256;
+    uint8_t value = 0;
+
+    fd = open(sysfs_path, O_RDONLY);
+    if (fd == -1) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Read value
+    if (pread(fd, &value, sizeof(uint8_t), offset_256) != sizeof(uint8_t)) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Read the SFP EEPROM.
  * @param port The port number.
  * @param data Receives the SFP data.
@@ -215,6 +243,7 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         }
     }
 
+    ufi_reset_page_select(eeprom_path);
 
     if(onlp_file_read(data, 256, &size, eeprom_path) != ONLP_STATUS_OK) {
         AIM_LOG_ERROR("Unable to read eeprom from port(%d)\r\n", port);

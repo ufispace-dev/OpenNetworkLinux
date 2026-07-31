@@ -99,10 +99,10 @@ DRIVER_SUPPORT:
     irq_num: 17
 - name: "x86-64-ufispace-s9520-28xc-lpc"
   <<: *pre_driver_install
-- name: "i2c-smbus"
-  <<: *pre_driver_install_optional
 - name: "i2c-i801"
   <<: *pre_driver_install_modprobe
+- name: "x86-64-ufispace-i2c-spd-quirk"
+  <<: *pre_driver_install
 - name: "i2c-ismt"
   <<: *pre_driver_install_insmod_modprobe
 - name: "i2c-dev"
@@ -137,6 +137,8 @@ DRIVER_SUPPORT:
   <<: *post_driver_install_modprobe
 
 DRIVER_CLEAN:
+- i2c-ismt
+- i2c-i801
 - gpio-ich
 - pinctrl-cedarfork
 - ee1004
