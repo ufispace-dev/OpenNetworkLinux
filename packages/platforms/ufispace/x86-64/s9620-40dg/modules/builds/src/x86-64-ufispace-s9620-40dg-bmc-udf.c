@@ -64,7 +64,7 @@ static ssize_t class_psu_type_dir_show(uint8_t id, uint8_t sub_id, char *buf,
             .mf = "FSPGROUP",
             .pname = "YNEM1000DM",
             .pn = "YNEM1000DM-2R01N01",
-            .type = 1, // 0 DC, 1 AC
+            .type = 0, // 0 DC, 1 AC
             .dir = 0 // 0 F2B, 1 B2F
         },
         // An empty element must be left as a terminator.

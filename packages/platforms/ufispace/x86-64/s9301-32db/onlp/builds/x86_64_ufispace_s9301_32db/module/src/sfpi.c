@@ -766,6 +766,32 @@ static int ufi_file_seek_readb(const char *file, long offset, uint8_t *value)
 }
 
 /**
+ * @brief Read 256th (0-based) byte offset to force page select to 0 to avoid eeprom checksum failure caused by page mis-match
+ * @param sysfs_path: The sysfs path to the EEPROM.
+ * @returns An error condition.
+ */
+static int ufi_reset_page_select(char *sysfs_path)
+{
+    int fd = -1;
+    off_t offset_256 = 256;
+    uint8_t value = 0;
+
+    fd = open(sysfs_path, O_RDONLY);
+    if (fd == -1) {
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    // Read value
+    if (pread(fd, &value, sizeof(uint8_t), offset_256) != sizeof(uint8_t)) {
+        close(fd);
+        return ONLP_STATUS_E_INTERNAL;
+    }
+
+    close(fd);
+    return ONLP_STATUS_OK;
+}
+
+/**
  * @brief Get SFF-8636 Port TX Disable Status by EEPROM
  * @param port: The port number.
  * @param status: 1 if tx disable (turn on)
@@ -1195,12 +1221,16 @@ int onlp_sfpi_eeprom_read(int port, uint8_t data[256])
         port_id = local_id;
         bus_id = qsfp56_port_eeprom_bus_id_array[port_id];
         snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", bus_id);
+        // reset page select to 0
+        ufi_reset_page_select(eeprom_path);
         ret = onlp_file_read(data, 256, &size, eeprom_path);
     } else if(IS_QSFPDD(local_id)) {
         /* QSFPDD */
         port_id = local_id - QSFP56_PORT_NUM;
         bus_id = qsfpdd_port_eeprom_bus_id_array[port_id];
         snprintf(eeprom_path, sizeof(eeprom_path), "/sys/bus/i2c/devices/%d-0050/eeprom", bus_id);
+        // reset page select to 0
+        ufi_reset_page_select(eeprom_path);
         ret = onlp_file_read(data, 256, &size, eeprom_path);
     } else if(IS_SFP(local_id)) {
         /* SFP */

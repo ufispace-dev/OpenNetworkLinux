@@ -413,7 +413,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "16300"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -438,7 +438,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "15500"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -493,7 +493,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "16300"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -518,7 +518,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "15500"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -573,7 +573,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "16300"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -598,7 +598,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "15500"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -653,7 +653,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "16300"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -678,7 +678,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "15500"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -733,7 +733,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "16300"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
@@ -758,7 +758,7 @@ fan_trays:
               params: "NA"
             speed_max:
               <<: *static_normal
-              params: "15500"
+              params: "25000"
             speed_min:
               <<: *static_normal
               params: "NA"
