@@ -163,7 +163,8 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
         "[PSU1] %s\n"
         "[UCD] %s\n",
         bios_ver_h,
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result, 
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA",
         psu0_fw_ver_h, psu1_fw_ver_h, ucd_fw_ver_h);
 
     return ONLP_STATUS_OK;
@@ -239,7 +240,7 @@ int onlp_sysi_init(void)
  */
 int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
-    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
+    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE+1);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
         if(*size == SYS_EEPROM_SIZE) {
             *data = rdata;

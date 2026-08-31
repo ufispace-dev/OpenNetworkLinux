@@ -449,18 +449,6 @@ int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
         info->status |= ONLP_FAN_STATUS_PRESENT;
     }
 
-    if (!psu_pwgood) {
-        info->rpm = 0;
-        return ONLP_STATUS_OK;
-    }
-
-    tmp_fan_rpm = onlp_i2c_readw(i2c_bus, i2c_addr, PSU_PMBUS_FAN_RPM, ONLP_I2C_F_FORCE);
-
-    fan_rpm = (unsigned int)tmp_fan_rpm;
-    fan_rpm = (fan_rpm & 0x07FF) * (1 << ((fan_rpm >> 11) & 0x1F));
-    info->rpm = (int)fan_rpm;
-    info->percentage = (info->rpm*100)/max_fan_speed;
-
     // get fan dir
     /* Get psu fru from eeprom */
     ONLP_TRY(psu_fru_get(&fru, i2c_bus, eeprom_i2c_addr));
@@ -475,6 +463,17 @@ int psu_fan_info_get(onlp_fan_info_t* info, int local_id)
         info->status &= ~ONLP_FAN_STATUS_B2F;
     }
 
+    if (!psu_pwgood) {
+        info->rpm = 0;
+        return ONLP_STATUS_OK;
+    }
+
+    tmp_fan_rpm = onlp_i2c_readw(i2c_bus, i2c_addr, PSU_PMBUS_FAN_RPM, ONLP_I2C_F_FORCE);
+
+    fan_rpm = (unsigned int)tmp_fan_rpm;
+    fan_rpm = (fan_rpm & 0x07FF) * (1 << ((fan_rpm >> 11) & 0x1F));
+    info->rpm = (int)fan_rpm;
+    info->percentage = (info->rpm*100)/max_fan_speed;
 
     return ONLP_STATUS_OK;
 }

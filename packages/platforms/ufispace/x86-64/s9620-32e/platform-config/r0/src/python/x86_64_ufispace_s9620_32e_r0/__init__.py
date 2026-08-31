@@ -479,10 +479,17 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
         }
 
         for i, rov_addr in enumerate(rov_addrs):
-            # get rov from cpld
-            reg_val_str = subprocess.check_output("cat {}".format(self.PATH_MAC_ROV[i]).split())
-            reg_val = int(reg_val_str, 0)
-            self.bsp_pr("{}=0x{:02X}".format(self.PATH_MAC_ROV[i], reg_val))
+
+            if self._is_tr45_pass():
+                # VDDC 715mV
+                reg_val = 0x90
+                self.bsp_pr("TR45 Test Pass, Set MAC to fixed VDDC 715mV, reg_val=0x{:02X}".format(reg_val))
+            else:
+                # get rov from cpld
+                reg_val_str = subprocess.check_output("cat {}".format(self.PATH_MAC_ROV[i]).split())
+                reg_val = int(reg_val_str, 0)
+                self.bsp_pr("TR45 Test Fail or not configured, Set MAC to runtime ROV")
+                self.bsp_pr("{}=0x{:02X}".format(self.PATH_MAC_ROV[i], reg_val))
 
             if reg_val in rov_avs_array:
                 # set page to 0x0
@@ -564,6 +571,58 @@ class OnlPlatform_x86_64_ufispace_s9620_32e_r0(OnlPlatformUfiSpace):
                 self.bsp_pr("Open file failed, exception={}".format(e))
         else:
             self.bsp_pr("File not found: {}".format(path))
+
+    def _is_tr45_pass(self):
+        val = self._get_tr45_result()
+
+        if val is None:
+            self.bsp_pr("TR45 Test Value: None (fail)")
+            return False
+
+        try:
+            val = int(val, 16)
+        except ValueError:
+            self.bsp_pr("Failed to convert EEPROM data '{}' to integer.".format(val))
+            return False
+
+        if val == 1:
+            self.bsp_pr("TR45 Test Value: {} (pass)".format(val))
+            return True
+        else:
+            self.bsp_pr("TR45 Test Value: {} (fail or not configured)".format(val))
+            return False
+
+    def _get_tr45_result(self):
+        # Get EEPROM data (offset 0x500).
+        cmd = "ipmitool i2c bus=3 0xa0 0x1 0x5 0x0"
+
+        try:
+            with open(os.devnull, 'w') as devnull:
+                raw_out = subprocess.check_output(cmd.split(), stderr=devnull)
+                # Python 2 & 3 Compatible Fix:
+                if isinstance(raw_out, bytes):
+                    raw_out = raw_out.decode('utf-8')
+
+        except subprocess.CalledProcessError as e:
+            # This triggers if ipmitool returns anything other than 0
+            self.bsp_pr("Failed to read EEPROM. Exit code: {}".format(e.returncode))
+            return None
+        except OSError as e:
+            # This triggers if the ipmitool binary doesn't exist
+            self.bsp_pr("Failed to execute command: {}".format(e))
+            return None
+        except Exception as e:
+            # Catch-all for any other exceptions
+            self.bsp_pr("An unexpected error occurred: {}".format(e))
+            return None
+
+        if not raw_out.strip():
+            self.bsp_pr("Failed to read EEPROM data at offset 0x500 for tr45 result.")
+            return None
+
+        hex_val = raw_out.strip().splitlines()[0].replace(" ", "")
+
+        return hex_val
 
     def baseconfig(self):
         # init interrupt handler for IRQ 17

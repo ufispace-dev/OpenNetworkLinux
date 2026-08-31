@@ -769,7 +769,8 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
         "[UCD] %s\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result,
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA",
         ucd_ver);
 
     return ONLP_STATUS_OK;

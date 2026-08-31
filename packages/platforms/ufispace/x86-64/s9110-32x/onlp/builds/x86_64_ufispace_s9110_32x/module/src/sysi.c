@@ -56,7 +56,7 @@
  *            |----[06] ONLP_FAN_2_R
  *            |----[07] ONLP_FAN_3_F
  *            |----[08] ONLP_FAN_3_R
- * 
+ *
  * [01] CHASSIS - after Beta
  *            |----[01]ONLP_THERMAL_CPU_PKG
  *            |----[02]ONLP_THERMAL_MAC
@@ -86,7 +86,7 @@
  *            |----[04] ONLP_FAN_1_R
  *            |----[05] ONLP_FAN_2_F
  *            |----[06] ONLP_FAN_2_R
- * 
+ *
  */
 
 static onlp_oid_t __onlp_oid_beta_info[] = {
@@ -171,7 +171,7 @@ static int get_platform_info(onlp_platform_info_t* pi)
     pi->cpld_versions = aim_fstrdup(
         "\n"
         "[MB CPLD1] %s\n"
-        "[MB CPLD2] %s\n", 
+        "[MB CPLD2] %s\n",
         mb_cpld1_ver,
         mb_cpld2_ver);
 
@@ -225,7 +225,8 @@ static int get_platform_info(onlp_platform_info_t* pi)
         "[MU] %s (%s)\n",
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA");
 
     return ONLP_STATUS_OK;
 }
@@ -300,7 +301,7 @@ int onlp_sysi_init(void)
  */
 int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
-    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
+    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE+1);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
         if(*size == SYS_EEPROM_SIZE) {
             *data = rdata;

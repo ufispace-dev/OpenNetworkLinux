@@ -24,6 +24,7 @@
  ***********************************************************/
 #include <unistd.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
@@ -179,7 +180,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             {
                 if(gpio_max < 0)
                     gpio_num = gpio_base + port_attr[port].reset_gpin_b;
-                else 
+                else
                     gpio_num = gpio_max - port_attr[port].reset_gpin;
                 break;
             }
@@ -187,7 +188,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             {
                 if(gpio_max < 0)
                     gpio_num = gpio_base + port_attr[port].rxlos_gpin_b;
-                else 
+                else
                     gpio_num = gpio_max - port_attr[port].rxlos_gpin;
                 break;
             }
@@ -195,7 +196,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             {
                 if(gpio_max < 0)
                     gpio_num = gpio_base + port_attr[port].txfault_gpin_b;
-                else 
+                else
                     gpio_num = gpio_max - port_attr[port].txfault_gpin;
                 break;
             }
@@ -203,7 +204,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             {
                 if(gpio_max < 0)
                     gpio_num = gpio_base + port_attr[port].txdis_gpin_b;
-                else 
+                else
                     gpio_num = gpio_max - port_attr[port].txdis_gpin;
                 break;
             }
@@ -211,7 +212,7 @@ int ufi_port_to_gpio_num(int port, onlp_sfp_control_t control)
             {
                 if(gpio_max < 0)
                     gpio_num = gpio_base + port_attr[port].lpmode_gpin_b;
-                else 
+                else
                     gpio_num = gpio_max - port_attr[port].lpmode_gpin;
                 break;
             }
@@ -326,7 +327,7 @@ int onlp_sfpi_dev_class_update_port(int port)
     }
 
     if (i == PORT_TYPE_DICT_SIZE) {
-        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        syslog(LOG_ERR, "Port[%d] Type: %x is Unknown.\n", port, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -552,7 +553,7 @@ static int ufi_cmis_txdisable_supported(int port)
     //Check CMIS version on lower page 0x01
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
-        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+        syslog(LOG_INFO, "Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
             port, cmis_ver/16, cmis_ver%16, CMIS_VAL_VERSION_MIN/16, CMIS_VAL_VERSION_MAX/16);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -771,7 +772,7 @@ int onlp_sfpi_is_present(int port)
     //set gpio_num by port
     if(gpio_max < 0)
         gpio_num = gpio_base + port_attr[port].abs_gpin_b;
-    else 
+    else
         gpio_num = gpio_max - port_attr[port].abs_gpin;
 
     if ((status = file_read_hex(&abs, SYS_GPIO_FMT, gpio_num)) < 0) {

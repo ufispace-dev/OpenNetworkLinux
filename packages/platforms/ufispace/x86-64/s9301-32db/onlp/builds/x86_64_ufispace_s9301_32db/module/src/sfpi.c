@@ -24,6 +24,7 @@
  ***********************************************************/
 #include <fcntl.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
@@ -529,7 +530,7 @@ int shift_bit(uint8_t mask)
 
     for (i = 0; i < 8; ++i)
     {
-        if ((mask >> i) & mask_one) 
+        if ((mask >> i) & mask_one)
         {
             return i;
         }
@@ -659,7 +660,7 @@ int onlp_sfpi_dev_class_update_port(int port)
 
     if (i == PORT_TYPE_DICT_SIZE)
     {
-        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        syslog(LOG_ERR, "Port[%d] Type: %x is Unknown.\n", port, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -909,7 +910,7 @@ static int ufi_cmis_txdisable_supported(int port)
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX)
     {
-        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+        syslog(LOG_INFO, "Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
                      port, cmis_ver / 16, cmis_ver % 16, CMIS_VAL_VERSION_MIN / 16, CMIS_VAL_VERSION_MAX / 16);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -1694,12 +1695,12 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 { // CMIS module
                     int rc;
                     rc = ufi_cmis_txdisable_status_get(local_id, value, control);
-                    // tx dis 0 for unsupport module 
+                    // tx dis 0 for unsupport module
                     if (rc != ONLP_STATUS_OK)
                     {
                         *value = 0;
                         return rc;
-                    } 
+                    }
                 }
                 else
                 {

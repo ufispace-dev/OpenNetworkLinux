@@ -24,12 +24,13 @@
  ***********************************************************/
 #include <unistd.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include <onlp/platformi/sfpi.h>
 #include "platform_lib.h"
 
 #define SYSFS_DEV_CLASS       "dev_class"
 #define ALL_PORTS             -1
- 
+
 #define MGMT_NUM              2
 #define SFP_NUM               2
 #define QSFP_NUM              0
@@ -117,64 +118,64 @@ PortTypeDictEntry port_type_dict[] = {
 
 typedef enum cpld_attr_idx_e {
     // Network Interface (NIF) attributes
-    ABS_NIF_0 = 0,  LPMODE_NIF_0,    INTR_NIF_0,    RST_NIF_0,                           
-    ABS_NIF_1,      LPMODE_NIF_1,    INTR_NIF_1,    RST_NIF_1,                          
-    ABS_NIF_2,      LPMODE_NIF_2,    INTR_NIF_2,    RST_NIF_2,                          
-    ABS_NIF_3,      LPMODE_NIF_3,    INTR_NIF_3,    RST_NIF_3,                          
-    ABS_NIF_4,      LPMODE_NIF_4,    INTR_NIF_4,    RST_NIF_4,                          
-    ABS_NIF_5,      LPMODE_NIF_5,    INTR_NIF_5,    RST_NIF_5,                          
-    ABS_NIF_6,      LPMODE_NIF_6,    INTR_NIF_6,    RST_NIF_6,                          
-    ABS_NIF_7,      LPMODE_NIF_7,    INTR_NIF_7,    RST_NIF_7,                          
-    ABS_NIF_8,      LPMODE_NIF_8,    INTR_NIF_8,    RST_NIF_8,                          
-    ABS_NIF_9,      LPMODE_NIF_9,    INTR_NIF_9,    RST_NIF_9,                          
-    ABS_NIF_10,     LPMODE_NIF_10,   INTR_NIF_10,   RST_NIF_10,                                       
-    ABS_NIF_11,     LPMODE_NIF_11,   INTR_NIF_11,   RST_NIF_11,                                       
-    ABS_NIF_12,     LPMODE_NIF_12,   INTR_NIF_12,   RST_NIF_12,                                       
-    ABS_NIF_13,     LPMODE_NIF_13,   INTR_NIF_13,   RST_NIF_13,                                       
-    ABS_NIF_14,     LPMODE_NIF_14,   INTR_NIF_14,   RST_NIF_14,                                       
-    ABS_NIF_15,     LPMODE_NIF_15,   INTR_NIF_15,   RST_NIF_15,                                       
-    ABS_NIF_16,     LPMODE_NIF_16,   INTR_NIF_16,   RST_NIF_16,                                       
-    ABS_NIF_17,     LPMODE_NIF_17,   INTR_NIF_17,   RST_NIF_17,                                       
-    ABS_NIF_18,     LPMODE_NIF_18,   INTR_NIF_18,   RST_NIF_18,                                       
-    ABS_NIF_19,     LPMODE_NIF_19,   INTR_NIF_19,   RST_NIF_19,                                       
-    ABS_NIF_20,     LPMODE_NIF_20,   INTR_NIF_20,   RST_NIF_20,                                       
-    ABS_NIF_21,     LPMODE_NIF_21,   INTR_NIF_21,   RST_NIF_21,                                       
-    ABS_NIF_22,     LPMODE_NIF_22,   INTR_NIF_22,   RST_NIF_22,                                       
-    ABS_NIF_23,     LPMODE_NIF_23,   INTR_NIF_23,   RST_NIF_23,                                       
-    ABS_NIF_24,     LPMODE_NIF_24,   INTR_NIF_24,   RST_NIF_24,                                       
-    ABS_NIF_25,     LPMODE_NIF_25,   INTR_NIF_25,   RST_NIF_25,                                       
-    ABS_NIF_26,     LPMODE_NIF_26,   INTR_NIF_26,   RST_NIF_26,                                       
-    ABS_NIF_27,     LPMODE_NIF_27,   INTR_NIF_27,   RST_NIF_27,                                       
-    ABS_NIF_28,     LPMODE_NIF_28,   INTR_NIF_28,   RST_NIF_28,                                       
-    ABS_NIF_29,     LPMODE_NIF_29,   INTR_NIF_29,   RST_NIF_29,                                       
-    ABS_NIF_30,     LPMODE_NIF_30,   INTR_NIF_30,   RST_NIF_30,                                       
-    ABS_NIF_31,     LPMODE_NIF_31,   INTR_NIF_31,   RST_NIF_31,                                       
-    ABS_NIF_32,     LPMODE_NIF_32,   INTR_NIF_32,   RST_NIF_32,                                       
-    ABS_NIF_33,     LPMODE_NIF_33,   INTR_NIF_33,   RST_NIF_33,                                       
-    ABS_NIF_34,     LPMODE_NIF_34,   INTR_NIF_34,   RST_NIF_34,                                       
-    ABS_NIF_35,     LPMODE_NIF_35,   INTR_NIF_35,   RST_NIF_35,                                       
+    ABS_NIF_0 = 0,  LPMODE_NIF_0,    INTR_NIF_0,    RST_NIF_0,
+    ABS_NIF_1,      LPMODE_NIF_1,    INTR_NIF_1,    RST_NIF_1,
+    ABS_NIF_2,      LPMODE_NIF_2,    INTR_NIF_2,    RST_NIF_2,
+    ABS_NIF_3,      LPMODE_NIF_3,    INTR_NIF_3,    RST_NIF_3,
+    ABS_NIF_4,      LPMODE_NIF_4,    INTR_NIF_4,    RST_NIF_4,
+    ABS_NIF_5,      LPMODE_NIF_5,    INTR_NIF_5,    RST_NIF_5,
+    ABS_NIF_6,      LPMODE_NIF_6,    INTR_NIF_6,    RST_NIF_6,
+    ABS_NIF_7,      LPMODE_NIF_7,    INTR_NIF_7,    RST_NIF_7,
+    ABS_NIF_8,      LPMODE_NIF_8,    INTR_NIF_8,    RST_NIF_8,
+    ABS_NIF_9,      LPMODE_NIF_9,    INTR_NIF_9,    RST_NIF_9,
+    ABS_NIF_10,     LPMODE_NIF_10,   INTR_NIF_10,   RST_NIF_10,
+    ABS_NIF_11,     LPMODE_NIF_11,   INTR_NIF_11,   RST_NIF_11,
+    ABS_NIF_12,     LPMODE_NIF_12,   INTR_NIF_12,   RST_NIF_12,
+    ABS_NIF_13,     LPMODE_NIF_13,   INTR_NIF_13,   RST_NIF_13,
+    ABS_NIF_14,     LPMODE_NIF_14,   INTR_NIF_14,   RST_NIF_14,
+    ABS_NIF_15,     LPMODE_NIF_15,   INTR_NIF_15,   RST_NIF_15,
+    ABS_NIF_16,     LPMODE_NIF_16,   INTR_NIF_16,   RST_NIF_16,
+    ABS_NIF_17,     LPMODE_NIF_17,   INTR_NIF_17,   RST_NIF_17,
+    ABS_NIF_18,     LPMODE_NIF_18,   INTR_NIF_18,   RST_NIF_18,
+    ABS_NIF_19,     LPMODE_NIF_19,   INTR_NIF_19,   RST_NIF_19,
+    ABS_NIF_20,     LPMODE_NIF_20,   INTR_NIF_20,   RST_NIF_20,
+    ABS_NIF_21,     LPMODE_NIF_21,   INTR_NIF_21,   RST_NIF_21,
+    ABS_NIF_22,     LPMODE_NIF_22,   INTR_NIF_22,   RST_NIF_22,
+    ABS_NIF_23,     LPMODE_NIF_23,   INTR_NIF_23,   RST_NIF_23,
+    ABS_NIF_24,     LPMODE_NIF_24,   INTR_NIF_24,   RST_NIF_24,
+    ABS_NIF_25,     LPMODE_NIF_25,   INTR_NIF_25,   RST_NIF_25,
+    ABS_NIF_26,     LPMODE_NIF_26,   INTR_NIF_26,   RST_NIF_26,
+    ABS_NIF_27,     LPMODE_NIF_27,   INTR_NIF_27,   RST_NIF_27,
+    ABS_NIF_28,     LPMODE_NIF_28,   INTR_NIF_28,   RST_NIF_28,
+    ABS_NIF_29,     LPMODE_NIF_29,   INTR_NIF_29,   RST_NIF_29,
+    ABS_NIF_30,     LPMODE_NIF_30,   INTR_NIF_30,   RST_NIF_30,
+    ABS_NIF_31,     LPMODE_NIF_31,   INTR_NIF_31,   RST_NIF_31,
+    ABS_NIF_32,     LPMODE_NIF_32,   INTR_NIF_32,   RST_NIF_32,
+    ABS_NIF_33,     LPMODE_NIF_33,   INTR_NIF_33,   RST_NIF_33,
+    ABS_NIF_34,     LPMODE_NIF_34,   INTR_NIF_34,   RST_NIF_34,
+    ABS_NIF_35,     LPMODE_NIF_35,   INTR_NIF_35,   RST_NIF_35,
 
     // Fabric attributes
-    ABS_FAB_0,      LPMODE_FAB_0,    INTR_FAB_0,    RST_FAB_0,                                 
-    ABS_FAB_1,      LPMODE_FAB_1,    INTR_FAB_1,    RST_FAB_1,                                 
-    ABS_FAB_2,      LPMODE_FAB_2,    INTR_FAB_2,    RST_FAB_2,                                 
-    ABS_FAB_3,      LPMODE_FAB_3,    INTR_FAB_3,    RST_FAB_3,                                 
-    ABS_FAB_4,      LPMODE_FAB_4,    INTR_FAB_4,    RST_FAB_4,                                 
-    ABS_FAB_5,      LPMODE_FAB_5,    INTR_FAB_5,    RST_FAB_5,                                 
-    ABS_FAB_6,      LPMODE_FAB_6,    INTR_FAB_6,    RST_FAB_6,                                 
-    ABS_FAB_7,      LPMODE_FAB_7,    INTR_FAB_7,    RST_FAB_7,                                 
-    ABS_FAB_8,      LPMODE_FAB_8,    INTR_FAB_8,    RST_FAB_8,                                 
-    ABS_FAB_9,      LPMODE_FAB_9,    INTR_FAB_9,    RST_FAB_9,                                 
-    ABS_FAB_10,     LPMODE_FAB_10,   INTR_FAB_10,   RST_FAB_10,                                    
-    ABS_FAB_11,     LPMODE_FAB_11,   INTR_FAB_11,   RST_FAB_11,                                    
-    ABS_FAB_12,     LPMODE_FAB_12,   INTR_FAB_12,   RST_FAB_12,                                    
-    ABS_FAB_13,     LPMODE_FAB_13,   INTR_FAB_13,   RST_FAB_13,                                    
-    ABS_FAB_14,     LPMODE_FAB_14,   INTR_FAB_14,   RST_FAB_14,                                    
-    ABS_FAB_15,     LPMODE_FAB_15,   INTR_FAB_15,   RST_FAB_15,                                    
-    ABS_FAB_16,     LPMODE_FAB_16,   INTR_FAB_16,   RST_FAB_16,                                    
-    ABS_FAB_17,     LPMODE_FAB_17,   INTR_FAB_17,   RST_FAB_17,                                    
-    ABS_FAB_18,     LPMODE_FAB_18,   INTR_FAB_18,   RST_FAB_18,                                    
-    ABS_FAB_19,     LPMODE_FAB_19,   INTR_FAB_19,   RST_FAB_19,                                    
+    ABS_FAB_0,      LPMODE_FAB_0,    INTR_FAB_0,    RST_FAB_0,
+    ABS_FAB_1,      LPMODE_FAB_1,    INTR_FAB_1,    RST_FAB_1,
+    ABS_FAB_2,      LPMODE_FAB_2,    INTR_FAB_2,    RST_FAB_2,
+    ABS_FAB_3,      LPMODE_FAB_3,    INTR_FAB_3,    RST_FAB_3,
+    ABS_FAB_4,      LPMODE_FAB_4,    INTR_FAB_4,    RST_FAB_4,
+    ABS_FAB_5,      LPMODE_FAB_5,    INTR_FAB_5,    RST_FAB_5,
+    ABS_FAB_6,      LPMODE_FAB_6,    INTR_FAB_6,    RST_FAB_6,
+    ABS_FAB_7,      LPMODE_FAB_7,    INTR_FAB_7,    RST_FAB_7,
+    ABS_FAB_8,      LPMODE_FAB_8,    INTR_FAB_8,    RST_FAB_8,
+    ABS_FAB_9,      LPMODE_FAB_9,    INTR_FAB_9,    RST_FAB_9,
+    ABS_FAB_10,     LPMODE_FAB_10,   INTR_FAB_10,   RST_FAB_10,
+    ABS_FAB_11,     LPMODE_FAB_11,   INTR_FAB_11,   RST_FAB_11,
+    ABS_FAB_12,     LPMODE_FAB_12,   INTR_FAB_12,   RST_FAB_12,
+    ABS_FAB_13,     LPMODE_FAB_13,   INTR_FAB_13,   RST_FAB_13,
+    ABS_FAB_14,     LPMODE_FAB_14,   INTR_FAB_14,   RST_FAB_14,
+    ABS_FAB_15,     LPMODE_FAB_15,   INTR_FAB_15,   RST_FAB_15,
+    ABS_FAB_16,     LPMODE_FAB_16,   INTR_FAB_16,   RST_FAB_16,
+    ABS_FAB_17,     LPMODE_FAB_17,   INTR_FAB_17,   RST_FAB_17,
+    ABS_FAB_18,     LPMODE_FAB_18,   INTR_FAB_18,   RST_FAB_18,
+    ABS_FAB_19,     LPMODE_FAB_19,   INTR_FAB_19,   RST_FAB_19,
 
     // Management attributes
     ABS_MGMT_0,     ABS_MGMT_1,      ABS_SFP_36,    ABS_SFP_37,
@@ -200,7 +201,7 @@ static const port_attr_t port_attr[] = {
  *       txdis: bit 0
  */
 //  QSFPDD (NIF/FAB)
-//  port       abs            lpmode           reset            rxlos            txflt           txdis       eeprom      type          bit     intr 
+//  port       abs            lpmode           reset            rxlos            txflt           txdis       eeprom      type          bit     intr
     [0]   ={ABS_NIF_0    , LPMODE_NIF_0     , RST_NIF_0    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 35    , TYPE_QSFPDD     , 0 , INTR_NIF_0},
     [1]   ={ABS_NIF_1    , LPMODE_NIF_1     , RST_NIF_1    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 36    , TYPE_QSFPDD     , 0 , INTR_NIF_1},
     [2]   ={ABS_NIF_2    , LPMODE_NIF_2     , RST_NIF_2    ,  CPLD_NONE     ,  CPLD_NONE     , CPLD_NONE    , 37    , TYPE_QSFPDD     , 0 , INTR_NIF_2},
@@ -626,7 +627,7 @@ int onlp_sfpi_dev_class_update_port(int port)
     }
 
     if (i == PORT_TYPE_DICT_SIZE) {
-        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        syslog(LOG_ERR, "Port[%d] Type: %x is Unknown.\n", port, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -852,7 +853,7 @@ static int ufi_cmis_txdisable_supported(int port)
     //Check CMIS version on lower page 0x01
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
-        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+        syslog(LOG_INFO, "Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
             port, cmis_ver/16, cmis_ver%16, CMIS_VAL_VERSION_MIN/16, CMIS_VAL_VERSION_MAX/16);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -1055,7 +1056,7 @@ static int xfr_ctrl_to_sysfs(int port, onlp_sfp_control_t control , char **sysfs
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_QSFPX(port)){
-                
+
                 *sysfs = "";
                 *attr = port_attr[port].txdis;
             }
@@ -1541,9 +1542,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     //update reg_val
     //0 is normal, 1 is reset, reverse value to fit our platform
     if (value) {
-        reg_val |= 1;  // Set the bit 
+        reg_val |= 1;  // Set the bit
     } else {
-        reg_val &= ~1;  // Clear the bit 
+        reg_val &= ~1;  // Clear the bit
     }
 
     //write reg_val
@@ -1587,7 +1588,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             rc = ONLP_STATUS_E_UNSUPPORTED;
         }
         return rc;
-    } 
+    }
     else {
         //read sysfs value
         if ((rc = read_file_hex(value, sysfs)) < 0) {
@@ -1595,11 +1596,11 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             check_and_do_i2c_mux_reset(port);
             return rc;
         }
-        
+
     }
-    
+
     *value &= 1;
-    
+
     //reverse bit
     if (control == ONLP_SFP_CONTROL_RESET_STATE) {
         *value = !(*value);

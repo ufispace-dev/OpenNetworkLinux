@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include <onlp/platformi/sfpi.h>
 #include <sys/time.h>
 #include "platform_lib.h"
@@ -803,7 +804,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 66;
             node->port_type = TYPE_QSFP;
             node->cpld_bit = 4;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 5;
             break;
@@ -814,7 +815,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 67;
             node->port_type = TYPE_QSFP;
             node->cpld_bit = 5;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 6;
             break;
@@ -825,7 +826,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 68;
             node->port_type = TYPE_QSFP;
             node->cpld_bit = 6;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 7;
             break;
@@ -836,7 +837,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 69;
             node->port_type = TYPE_QSFP;
             node->cpld_bit = 7;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 8;
             break;
@@ -847,7 +848,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 70;
             node->port_type = TYPE_QSFPDD;
             node->cpld_bit = 8;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 9;
             break;
@@ -858,7 +859,7 @@ static int get_node(int port, port_node_t *node)
             node->eeprom_bus = 71;
             node->port_type = TYPE_QSFPDD;
             node->cpld_bit = 9;
-            node->ctrl_addr = 0x4000; 
+            node->ctrl_addr = 0x4000;
             node->mem_addr = 0x0;
             node->channel = 10;
             break;
@@ -1627,7 +1628,7 @@ int onlp_sfpi_dev_class_update_port(int port)
     }
 
     if (i == PORT_TYPE_DICT_SIZE) {
-        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        syslog(LOG_ERR, "Port[%d] Type: %x is Unknown.\n", port, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -1857,7 +1858,7 @@ static int ufi_cmis_txdisable_supported(int port)
     //Check CMIS version on lower page 0x01
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX) {
-        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+        syslog(LOG_INFO, "Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
             port, cmis_ver/16, cmis_ver%16, CMIS_VAL_VERSION_MIN/16, CMIS_VAL_VERSION_MAX/16);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -2686,7 +2687,7 @@ int onlp_sfpi_denit(void)
  */
 void onlp_sfpi_debug(int port, aim_pvs_t* pvs)
 {
-    
+
 }
 
 /**
