@@ -241,7 +241,8 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
             "[UCD-T] %s %s\n",
             bios_out,
             atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
-            strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result,
+            strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+            strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA",
             ucd_ver_b, ucd_date_b, ucd_ver_t, ucd_date_t);
 
     return ONLP_STATUS_OK;
@@ -346,7 +347,7 @@ int onlp_sysi_onie_data_phys_addr_get(void** physaddr)
  */
 int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
-    uint8_t* rdata = aim_zmalloc(512);
+    uint8_t* rdata = aim_zmalloc(512+1);
 
     if(onlp_file_read(rdata, 512, size, "/sys/bus/i2c/devices/0-0057/eeprom") == ONLP_STATUS_OK) {
         if(*size == 512) {

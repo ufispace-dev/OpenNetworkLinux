@@ -183,7 +183,8 @@ static int ufi_sysi_platform_info_get(onlp_platform_info_t* pi)
         bios_out,
         !bmc_out? "NA":bmc_out,
         extra_string,
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA");
 
     aim_free(bmc_out);
     return ONLP_STATUS_OK;
@@ -258,7 +259,7 @@ int __WEAK onlp_sysi_init(void)
  */
 int __WEAK onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
-    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
+    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE+1);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
         if(*size == SYS_EEPROM_SIZE) {
             *data = rdata;

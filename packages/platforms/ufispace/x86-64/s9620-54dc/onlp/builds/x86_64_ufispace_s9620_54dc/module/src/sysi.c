@@ -197,7 +197,8 @@ static int get_platform_info(onlp_platform_info_t* pi)
         bios_out,
         atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
         ec_ver,
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result);
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA");
 
     return ONLP_STATUS_OK;
 }
@@ -272,7 +273,7 @@ int onlp_sysi_init(void)
  */
 int onlp_sysi_onie_data_get(uint8_t** data, int* size)
 {
-    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE);
+    uint8_t* rdata = aim_zmalloc(SYS_EEPROM_SIZE+1);
     if(onlp_file_read(rdata, SYS_EEPROM_SIZE, size, SYS_EEPROM_PATH) == ONLP_STATUS_OK) {
         if(*size == SYS_EEPROM_SIZE) {
             *data = rdata;
@@ -322,7 +323,7 @@ int onlp_sysi_oids_get(onlp_oid_t* table, int max)
 {
     memset(table, 0, max*sizeof(onlp_oid_t));
     memcpy(table, __onlp_oid_info, sizeof(__onlp_oid_info));
- 
+
     return ONLP_STATUS_OK;
 }
 

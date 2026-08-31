@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Tech Support script version
-TS_VERSION="1.0.4"
+TS_VERSION="1.0.5"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -1604,16 +1604,22 @@ function _show_cpu_temperature_sysfs {
 
     for (( i=0; i<${#cpu_temp_array[@]}; i++ ))
     do
-        if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_input" ]; then
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_label"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_input"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_max"
-            _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_crit"
-            temp_label=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_label ${LOG_REDIRECT}")
-            temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
-            temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
-            temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon0/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
-        elif [ -f "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input" ]; then
+        for (( j=0; j<10; j++ ))
+        do
+            if [ -f "/sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_input" ]; then
+                _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_label"
+                _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_input"
+                _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_max"
+                _check_filepath "/sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_crit"
+                temp_label=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_label ${LOG_REDIRECT}")
+                temp_input=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
+                temp_max=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
+                temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/hwmon/hwmon${j}/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
+                break
+            fi
+        done
+
+        if [ -f "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input" ]; then
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_label"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input"
             _check_filepath "/sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max"
@@ -1622,7 +1628,9 @@ function _show_cpu_temperature_sysfs {
             temp_input=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_input ${LOG_REDIRECT}")
             temp_max=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_max ${LOG_REDIRECT}")
             temp_crit=$(eval "cat /sys/devices/platform/coretemp.0/temp${cpu_temp_array[${i}]}_crit ${LOG_REDIRECT}")
-        else
+        fi
+
+        if [ -z "${temp_label}" ] && [ -z "${temp_input}" ] && [ -z "${temp_max}" ] && [ -z "${temp_crit}" ]; then
             _echo "sysfs of CPU core temperature not found!!!"
         fi
 
@@ -2039,41 +2047,65 @@ function _show_onie_upgrade_info {
 function _show_disk_info {
     _banner "Show Disk Info"
 
-    cmd_array=("lsblk"
-               "lsblk -O"
-               "parted -s -l"
-               "fdisk -l /dev/sda"
-               "find /sys/fs/ -name errors_count -print -exec cat {} \;"
-               "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
-               "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"
-               "df -h")
+    # Define the target disk array to check (including sda and newly added disks)
+    local target_disks=("sda" "sdb" "nvme0" "nvme1" "md126")
 
-    for (( i=0; i<${#cmd_array[@]}; i++ ))
-    do
-        _echo "[Command]: ${cmd_array[$i]}"
-        ret=$(eval "${cmd_array[$i]} ${LOG_REDIRECT}")
+    # Filter target disks to only include those that actually exist in /dev/
+    local available_disks=()
+    for disk in "${target_disks[@]}"; do
+        if [ -e "/dev/${disk}" ]; then
+            available_disks+=("${disk}")
+        fi
+    done
+
+    local cmd_array=(
+        "lsblk"
+        "lsblk -O"
+        "parted -s -l"
+        "find /sys/fs/ -name errors_count -print -exec cat {} \;"
+        "find /sys/fs/ -name first_error_time -print -exec cat {} \; -exec echo '' \;"
+        "find /sys/fs/ -name last_error_time -print -exec cat {} \; -exec echo '' \;"
+        "df -h"
+    )
+
+    # Check if fdisk is available and dynamically append commands for available disks
+    if ! command -v fdisk >/dev/null 2>&1; then
+        _echo "[command]: fdisk not found (SKIP)!!"
+    else
+        for disk in "${available_disks[@]}"; do
+            cmd_array+=("fdisk -l /dev/${disk}")
+        done
+    fi
+
+    # Execute general disk information check commands
+    for cmd in "${cmd_array[@]}"; do
+        _echo "[Command]: ${cmd}"
+        local ret
+        ret=$(eval "${cmd} ${LOG_REDIRECT}")
         _echo "${ret}"
         _echo ""
     done
 
-    # check smartctl command
-    ret=`which smartctl`
-    if [ ! $? -eq 0 ]; then
+    # Check if smartctl is available and execute its commands
+    if ! command -v smartctl >/dev/null 2>&1; then
         _echo "[command]: smartctl not found (SKIP)!!"
     else
-        local smartctl_commands=(
-        "smartctl -a /dev/sda"
-        "smartctl -x /dev/sda"
-        )
+        local smartctl_commands=()
+
+        # Dynamically append smartctl commands for available target disks
+        for disk in "${available_disks[@]}"; do
+            smartctl_commands+=("smartctl -a /dev/${disk}")
+            smartctl_commands+=("smartctl -x /dev/${disk}")
+        done
 
         for cmd in "${smartctl_commands[@]}"; do
-            ret=$(eval "$cmd ${LOG_REDIRECT}")
-            _echo "[command]: $cmd"
+            _echo "[command]: ${cmd}"
+            local ret
+            ret=$(eval "${cmd} ${LOG_REDIRECT}")
             _echo "${ret}"
             _echo ""
         done
     fi
-
 }
 
 function _show_lspci {

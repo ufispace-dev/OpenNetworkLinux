@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <syslog.h>
 #include <onlp/platformi/sfpi.h>
 #include <sys/time.h>
 #include "platform_lib.h"
@@ -1830,7 +1831,7 @@ int onlp_sfpi_dev_class_update_port(int port)
 
     if (i == PORT_TYPE_DICT_SIZE)
     {
-        AIM_LOG_ERROR("Port[%d] Type: %x is Unknown.\n", port, type);
+        syslog(LOG_ERR, "Port[%d] Type: %x is Unknown.\n", port, type);
         return ONLP_STATUS_E_INTERNAL;
     }
 
@@ -2098,7 +2099,7 @@ static int ufi_cmis_txdisable_supported(int port)
     cmis_ver = onlp_sfpi_dev_readb(port, EEPROM_ADDR, CMIS_OFFSET_REVISION);
     if (cmis_ver < CMIS_VAL_VERSION_MIN || cmis_ver > CMIS_VAL_VERSION_MAX)
     {
-        AIM_LOG_INFO("Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
+        syslog(LOG_INFO, "Port[%d] CMIS version %x.%x is not supported (certified range is %x.x-%x.x)\n",
                      port, cmis_ver / 16, cmis_ver % 16, CMIS_VAL_VERSION_MIN / 16, CMIS_VAL_VERSION_MAX / 16);
         return ONLP_STATUS_E_UNSUPPORTED;
     }
@@ -2265,18 +2266,18 @@ static int ufi_cmis_txdisable_status_set(int port, int status, onlp_sfp_control_
         {
             AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, status);
             return ONLP_STATUS_E_PARAM;
-        } 
+        }
         else
         {
             value = (uint8_t)(status);
         }
-    } 
+    }
     else
     {
         if (status == 0)
         {
             value = CMIS_VAL_TX_EN;
-        } 
+        }
         else if (status == 1)
         {
             value = CMIS_VAL_TX_DIS;

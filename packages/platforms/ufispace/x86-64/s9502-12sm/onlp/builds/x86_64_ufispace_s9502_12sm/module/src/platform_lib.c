@@ -430,8 +430,8 @@ int sysi_platform_info_get(onlp_platform_info_t* pi)
         "[BIOS] %s\n"
         "[MU] %s (%s)\n",
         bios_out,
-        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA", mu_result
-        );
+        strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
+        strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA");
 
     return ONLP_STATUS_OK;
 }
