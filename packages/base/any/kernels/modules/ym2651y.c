@@ -309,19 +309,34 @@ static ssize_t show_linear(struct device *dev, struct device_attribute *da,
     switch (attr->index) {
     case PSU_V_IN:
         if ((strncmp(ptr, "DPS-850A", strlen("DPS-850A")) == 0)||
-            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)) {
+            (strncmp(ptr, "DPS-650AB-11 C", strlen("DPS-650AB-11 C")) == 0)||
+            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)||
+            (strncmp(ptr, "FSF019", strlen("FSF019")) == 0)||
+            (strncmp(ptr, "FSF045", strlen("FSF045")) == 0)||
+            (strncmp(ptr, "SPAACTN-04", strlen("SPAACTN-04")) == 0)||
+            (strncmp(ptr, "SPAACTN-03", strlen("SPAACTN-03")) == 0)) {
             value = data->v_in;
         }
         break;
     case PSU_I_IN:
         if ((strncmp(ptr, "DPS-850A", strlen("DPS-850A")) == 0)||
-            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)) {
+            (strncmp(ptr, "DPS-650AB-11 C", strlen("DPS-650AB-11 C")) == 0)||
+            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)||
+            (strncmp(ptr, "FSF019", strlen("FSF019")) == 0)||
+            (strncmp(ptr, "FSF045", strlen("FSF045")) == 0)||
+            (strncmp(ptr, "SPAACTN-04", strlen("SPAACTN-04")) == 0)||
+            (strncmp(ptr, "SPAACTN-03", strlen("SPAACTN-03")) == 0)) {
             value = data->i_in;
         }
         break;
     case PSU_P_IN:
         if ((strncmp(ptr, "DPS-850A", strlen("DPS-850A")) == 0)||
-            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)) {
+            (strncmp(ptr, "DPS-650AB-11 C", strlen("DPS-650AB-11 C")) == 0)||
+            (strncmp(ptr, "YM-2851J", strlen("YM-2851J")) == 0)||
+            (strncmp(ptr, "FSF019", strlen("FSF019")) == 0)||
+            (strncmp(ptr, "FSF045", strlen("FSF045")) == 0)||
+            (strncmp(ptr, "SPAACTN-04", strlen("SPAACTN-04")) == 0)||
+            (strncmp(ptr, "SPAACTN-03", strlen("SPAACTN-03")) == 0)) {
             value = data->p_in;
         }
         break;
@@ -426,7 +441,8 @@ static ssize_t show_ascii(struct device *dev, struct device_attribute *da,
         ptr = data->fan_dir + 1;  /* Skip the first byte since it is the length of string. */
         /* FAN direction for PTT1600's PSU, depends on 
         4th and 3rd bit of return value of 0xC3 command */
-        if (strncmp((data->mfr_model + 1),"PTT1600", strlen("PTT1600")) == 0) {
+        if ((strncmp((data->mfr_model + 1),"PTT1600", strlen("PTT1600")) == 0) ||
+            (strncmp((data->mfr_model + 1),"DPS-650AB-11 C", strlen("DPS-650AB-11 C")) == 0)){
             /* Check if 4th bit is '1' and 3rd bit is '0' for "F2B (AFO)" FAN direction */
             if((((data->fan_dir[0] >> 3) & 1) == 0) && (((data->fan_dir[0] >> 4) & 1) == 1)) {
                 strcpy(ptr,"AFO");
@@ -498,6 +514,9 @@ static ssize_t show_vout(struct device *dev, struct device_attribute *da,
 
     ptr = data->mfr_model + 1; /* The first byte is the count byte of string. */
     if (data->chip == YM2401) {
+        return show_vout_by_mode(dev, da, buf);
+    }
+    else if (data->chip == YM1921 && data->vout_mode != 0xff) {
         return show_vout_by_mode(dev, da, buf);
     }
     else if ((strncmp(ptr, "DPS-850A", strlen("DPS-850A")) == 0)||
@@ -769,7 +788,12 @@ static struct ym2651y_data *ym2651y_update_device(struct device *dev)
             command = 0xC3;
             status = ym2651y_read_block(client, command, data->fan_dir,
                                          ARRAY_SIZE(data->fan_dir)-1);
-            data->fan_dir[ARRAY_SIZE(data->fan_dir)-1] = '\0';
+            if (data->fan_dir[0] < ARRAY_SIZE(data->fan_dir)-2) {
+                data->fan_dir[data->fan_dir[0]+1] = '\0';
+            }
+            else {
+                data->fan_dir[ARRAY_SIZE(data->fan_dir)-1] = '\0';
+            }
 
             if (status < 0) {
                 dev_dbg(&client->dev, "reg %d, err %d\n", command, status);
@@ -780,7 +804,12 @@ static struct ym2651y_data *ym2651y_update_device(struct device *dev)
             command = 0x99;
             status = ym2651y_read_block(client, command, data->mfr_id,
                                             ARRAY_SIZE(data->mfr_id)-1);
-            data->mfr_id[ARRAY_SIZE(data->mfr_id)-1] = '\0';
+            if (data->mfr_id[0] < ARRAY_SIZE(data->mfr_id)-2) {
+                data->mfr_id[data->mfr_id[0]+1] = '\0';
+            }
+            else {
+                data->mfr_id[ARRAY_SIZE(data->mfr_id)-1] = '\0';
+            }
 
             if (status < 0) {
                 dev_dbg(&client->dev, "reg %d, err %d\n", command, status);
@@ -829,7 +858,12 @@ static struct ym2651y_data *ym2651y_update_device(struct device *dev)
             command = 0x9b;
             status = ym2651y_read_block(client, command, data->mfr_revsion,
                                             ARRAY_SIZE(data->mfr_revsion)-1);
-            data->mfr_revsion[ARRAY_SIZE(data->mfr_revsion)-1] = '\0';
+            if (data->mfr_revsion[0] < ARRAY_SIZE(data->mfr_revsion)-2) {
+                data->mfr_revsion[data->mfr_revsion[0] + 1] = '\0';
+            }
+            else{
+                data->mfr_revsion[ARRAY_SIZE(data->mfr_revsion)-1] = '\0';
+            }
 
             if (status < 0) {
                 dev_dbg(&client->dev, "reg %d, err %d\n", command, status);
@@ -848,7 +882,12 @@ static struct ym2651y_data *ym2651y_update_device(struct device *dev)
             }
 
             status = ym2651y_read_block(client, command, data->mfr_serial, buf+1);
-            data->mfr_serial[buf+1] = '\0';
+            if (data->mfr_serial[0] < ARRAY_SIZE(data->mfr_serial)-2) {
+                data->mfr_serial[data->mfr_serial[0] + 1] = '\0';
+            }
+            else {
+                data->mfr_serial[ARRAY_SIZE(data->mfr_serial)-1] = '\0';
+            }
 
             if (status < 0) {
                 dev_dbg(&client->dev, "reg %d, err %d\n", command, status);
