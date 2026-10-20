@@ -57,8 +57,8 @@ class OnlPlatform_x86_64_ufispace_s9321_64e_r0(OnlPlatformUfiSpace):
     PLATFORM='x86-64-ufispace-s9321-64e-r0'
     MODEL="S9321-64E"
     SYS_OBJECT_ID=".9321.64"
-    PORT_COUNT=48
-    PORT_CONFIG="40x100 + 8x400"
+    PORT_COUNT=64
+    PORT_CONFIG="64x800"
     LEVEL_INFO=1
     LEVEL_ERR=2
     PATH_SYS_I2C_DEV_ATTR="/sys/bus/i2c/devices/{}-{:0>4x}/{}"

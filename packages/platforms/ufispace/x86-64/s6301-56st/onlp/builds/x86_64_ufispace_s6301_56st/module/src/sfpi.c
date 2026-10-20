@@ -30,6 +30,7 @@
 #define IS_SFP(_port)   (_port >= sfp_start_num && _port <= sfp_end_num)
 
 #define EEPROM_ADDR     (0x50)
+#define TX_DIS_INPUT_MAX (0xff) /* for input value validation only */
 
 #define VALIDATE_PORT(p) { if ((p < sfp_start_num) || (p > sfp_end_num)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
@@ -549,6 +550,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if(IS_SFP(port)) {
                 *rv = 1;
             }
@@ -578,6 +580,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     switch(control)
     {
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if(IS_SFP(port)) {
                 //get txdis gpio_num by port
                 ONLP_TRY(port_status_gpio_get(port, PST_TXDIS, &gpio_num));
@@ -588,6 +591,20 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         default:
             rc = ONLP_STATUS_E_UNSUPPORTED;
             return rc;
+    }
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(!!value);
+        }
+    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+        if (value != 0 && value !=1) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     //write gpio value
@@ -623,6 +640,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             type =  PST_TXFLT;
             break;
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             type =  PST_TXDIS;
             break;
         default:

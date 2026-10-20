@@ -49,6 +49,7 @@
 #define MASK_SFP_TX_FAULT     0x02
 #define MASK_SFP_RX_LOS       0x04
 #define MASK_SFP_TX_DISABLE   0x01
+#define TX_DIS_INPUT_MAX      (0xff) /* for input value validation only */
 
 #define SYSFS_SFP_CONFIG     "cpld_sfp_config"
 #define SYSFS_SFP_STATUS     "cpld_sfp_status"
@@ -523,6 +524,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_SFP(port)) {
                 *rv = 1;
             }
@@ -590,8 +592,24 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port)) {
+
+                    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        } else {
+                            value = (uint8_t)(!!value);
+                        }
+                    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                        if (value != 0 && value !=1) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        }
+                    }
+
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, bus, cpld_addr, SYSFS_SFP_CONFIG) < 0) {
                         check_and_do_i2c_mux_reset(port);
@@ -746,6 +764,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port)) {
                     //read reg_val

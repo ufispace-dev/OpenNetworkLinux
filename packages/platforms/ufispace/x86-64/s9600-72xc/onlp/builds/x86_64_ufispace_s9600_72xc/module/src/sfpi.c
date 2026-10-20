@@ -89,6 +89,7 @@ typedef enum port_type_e {
 typedef struct port_type_info_s
 {
     port_type_t type;
+    int port_num;
     int port_index;
     int port_group;
     int eeprom_bus_index;
@@ -141,6 +142,7 @@ port_type_info_t port_num_to_type(int port)
 {
     port_type_info_t port_type_info;
 
+    port_type_info.port_num = port;
     if(port < SFP_NUM) { //SFP+
         port_type_info.type = TYPE_SFP;
         port_type_info.port_index = port % 8;
@@ -791,7 +793,7 @@ int qsfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control, int
     char *cpld_sysfs_path;
     int reg_val;
     int rc;
-    int port = SFP_NUM + port_info.eeprom_bus_index;
+    int port = port_info.port_num;
 
     cpld_sysfs_path = MB_CPLD4_SYSFS_PATH;
 
@@ -852,6 +854,7 @@ int sfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control, int 
     char attr[64];
     int reg_val;
     int rc;
+    int port = port_info.port_num;
 
     switch(port_info.port_group) {
         case 0:
@@ -880,6 +883,19 @@ int sfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control, int 
         return ONLP_STATUS_E_UNSUPPORTED;
     }
 
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(!!value);
+        }
+    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+        if (value != 0 && value !=1) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        }
+    }
 
     ONLP_TRY(file_read_hex(&reg_val, sysfs));
 
@@ -907,6 +923,7 @@ int mgmt_sfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control,
     int bit_index;
     int reg_val = 0;
     int rc;
+    int port = port_info.port_num;
 
     //sysfs path
     if(control == ONLP_SFP_CONTROL_TX_DISABLE || control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
@@ -915,6 +932,20 @@ int mgmt_sfp_control_set(port_type_info_t port_info, onlp_sfp_control_t control,
         bit_index = (port_info.port_index + 0)*4;
     } else {
         return ONLP_STATUS_E_UNSUPPORTED;
+    }
+
+    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        } else {
+            value = (uint8_t)(!!value);
+        }
+    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+        if (value != 0 && value !=1) {
+            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+            return ONLP_STATUS_E_PARAM;
+        }
     }
 
     ONLP_TRY(file_read_hex(&reg_val, sysfs));
@@ -942,7 +973,7 @@ int qsfp_control_get(port_type_info_t port_info, onlp_sfp_control_t control, int
     int reg_val = 0;
     char sysfs[128];
     char *cpld_sysfs_path;
-    int port = SFP_NUM + port_info.eeprom_bus_index;
+    int port = port_info.port_num;
 
     cpld_sysfs_path = MB_CPLD4_SYSFS_PATH;
 

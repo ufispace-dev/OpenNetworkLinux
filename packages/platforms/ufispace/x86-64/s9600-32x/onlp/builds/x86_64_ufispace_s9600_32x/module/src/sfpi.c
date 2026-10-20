@@ -38,6 +38,8 @@
 #define SYSFS_EEPROM    "eeprom"
 #define EEPROM_ADDR     (0x50)
 
+#define TX_DIS_INPUT_MAX      (0xff) /* for input value validation only */
+
 #define SYSFS_SFP_CONFIG     "cpld_sfp_config"
 #define SYSFS_SFP_STATUS     "cpld_sfp_status"
 #define SYSFS_QSFP_RESET     "cpld_qsfp_reset"
@@ -492,6 +494,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_SFP(port)) {
                 *rv = 1;
             }
@@ -565,7 +568,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             //INBAND sysfs path
             if (control == ONLP_SFP_CONTROL_RX_LOS || control == ONLP_SFP_CONTROL_TX_FAULT) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p0_p1_inband", I2C_BUS_1, cpld_addr);
-            } else if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            } else if (control == ONLP_SFP_CONTROL_TX_DISABLE || control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_config_p0_p1_inband", I2C_BUS_1, cpld_addr);
             } else {
                 return ONLP_STATUS_E_UNSUPPORTED;
@@ -575,7 +578,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
         case 3:
             if (control == ONLP_SFP_CONTROL_RX_LOS || control == ONLP_SFP_CONTROL_TX_FAULT) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_status_p2_p3_inband", I2C_BUS_1, cpld_addr);
-            } else if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            } else if (control == ONLP_SFP_CONTROL_TX_DISABLE || control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_config_p2_p3_inband", I2C_BUS_1, cpld_addr);
             } else {
             return ONLP_STATUS_E_UNSUPPORTED;
@@ -673,6 +676,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             }
 
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 switch(real_port){
                     case 0:
@@ -698,7 +702,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
                 //hex to int
                 data_value = (int) strtol((char *)data, NULL, 0);
 
-                *value = data_value & data_mask;
+                *value = (data_value & data_mask) ? 1 : 0;
                 rc = ONLP_STATUS_OK;
                 break;
             }
@@ -763,7 +767,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case 1:
             cpld_addr = 0x30;
             //CPU sysfs path
-            if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            if (control == ONLP_SFP_CONTROL_TX_DISABLE || control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_config_cpu", I2C_BUS_1, cpld_addr);
             } else {
                 return ONLP_STATUS_E_UNSUPPORTED;
@@ -772,7 +776,7 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case 2:
         case 3:
             cpld_addr = 0x31;
-            if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            if (control == ONLP_SFP_CONTROL_TX_DISABLE || control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
                 snprintf(sysfs_path, sizeof(sysfs_path), SYS_DEV "%d-%04x/cpld_sfp_config_inband", I2C_BUS_1, cpld_addr);
             } else {
             return ONLP_STATUS_E_UNSUPPORTED;
@@ -812,7 +816,22 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
+                if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                    if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    } else {
+                        value = (uint8_t)(!!value);
+                    }
+                } else if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                    if (value != 0 && value != 1) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    }
+                }
+
                 if ((rc = onlp_file_read(data, sizeof(data), &data_len, sysfs_path)) != ONLP_STATUS_OK) {
                     AIM_LOG_ERROR("onlp_file_read failed, error=%d, sysfs=%s", rc, sysfs_path);
                     check_and_do_i2c_mux_reset(port);

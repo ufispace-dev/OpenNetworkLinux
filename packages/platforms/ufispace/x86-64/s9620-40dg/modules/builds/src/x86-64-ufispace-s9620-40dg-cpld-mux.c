@@ -1,8 +1,8 @@
 /*
- * A i2c cpld driver for the ufispace_s9321_64e
+ * A i2c cpld driver for the ufispace_s9620_40dg
  *
- * Copyright (C) 2017-2019 UfiSpace Technology Corporation.
- * Nonodark Huang <nonodark.huang@ufispace.com>
+ * Copyright (C) 2026 UfiSpace Technology Corporation.
+ * Zack Yen <zack.yen@ufispace.com>
  *
  * Based on i2c-mux-pca954x.c
  * Copyright 2006 Stefan Roese <sr at denx.de>, DENX Software Engineering
@@ -129,49 +129,50 @@ typedef struct  {
     u16 reg;
     u16 evt_reg;
     u8 mask;
+    u8 block_status;
 } port_block_map_t;
 
-static const port_block_map_t ports_block_map[] = {
-    [0]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0001},
-    [1]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0010},
-    [2]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0100},
-    [3]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_1000},
-    [4]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0001_0000},
-    [5]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0010_0000},
-    [6]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001},
-    [7]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010},
-    [8]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100},
-    [9]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000},
-    [10]= {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000},
-    [11]= {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000},
-    [12]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0001},
-    [13]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0010},
-    [14]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0100},
-    [15]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_1000},
-    [16]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001},
-    [17]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010},
-    [18]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100},
-    [19]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000},
-    [20]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000},
-    [21]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000},
-    [22]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000},
-    [23]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000},
-    [24]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001},
-    [25]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010},
-    [26]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100},
-    [27]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000},
-    [28]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000},
-    [29]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000},
-    [30]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000},
-    [31]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000},
-    [32]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001},
-    [33]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010},
-    [34]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100},
-    [35]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000},
-    [36]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000},
-    [37]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000},
-    [38]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000},
-    [39]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000},
+static port_block_map_t ports_block_map[] = {
+    [0]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [1]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [2]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [3]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [4]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0001_0000, PORT_NONE_BLOCK},
+    [5]=  {.reg=QSFP28_0_5_I2C_STUCK_REG   , .evt_reg=QSFP28_0_5_I2C_STUCK_EVENT_REG    , .mask=MASK_0010_0000, PORT_NONE_BLOCK},
+    [6]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [7]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [8]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [9]=  {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [10]= {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000, PORT_NONE_BLOCK},
+    [11]= {.reg=QSFPDD_6_11_I2C_STUCK_REG  , .evt_reg=QSFPDD_6_11_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000, PORT_NONE_BLOCK},
+    [12]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [13]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [14]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [15]= {.reg=QSFPDD_12_15_I2C_STUCK_REG , .evt_reg=QSFPDD_12_15_I2C_STUCK_EVENT_REG  , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [16]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [17]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [18]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [19]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [20]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000, PORT_NONE_BLOCK},
+    [21]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000, PORT_NONE_BLOCK},
+    [22]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000, PORT_NONE_BLOCK},
+    [23]= {.reg=SFP56_16_23_I2C_STUCK_REG  , .evt_reg=SFP56_16_23_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000, PORT_NONE_BLOCK},
+    [24]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [25]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [26]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [27]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [28]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000, PORT_NONE_BLOCK},
+    [29]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000, PORT_NONE_BLOCK},
+    [30]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000, PORT_NONE_BLOCK},
+    [31]= {.reg=SFP56_24_31_I2C_STUCK_REG  , .evt_reg=SFP56_24_31_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000, PORT_NONE_BLOCK},
+    [32]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0001, PORT_NONE_BLOCK},
+    [33]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0010, PORT_NONE_BLOCK},
+    [34]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_0100, PORT_NONE_BLOCK},
+    [35]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0000_1000, PORT_NONE_BLOCK},
+    [36]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0001_0000, PORT_NONE_BLOCK},
+    [37]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0010_0000, PORT_NONE_BLOCK},
+    [38]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_0100_0000, PORT_NONE_BLOCK},
+    [39]= {.reg=SFP56_32_39_I2C_STUCK_REG  , .evt_reg=SFP56_32_39_I2C_STUCK_EVENT_REG   , .mask=MASK_1000_0000, PORT_NONE_BLOCK},
 };
 
 int port_chan_get_from_reg(u8 val, int index, int *chan, int *port)
@@ -194,7 +195,7 @@ int port_chan_get_from_reg(u8 val, int index, int *chan, int *port)
     *chan = -1;
     *port = -1;
 
-    return -EINVAL;
+    return EINVAL;
 }
 
 int mux_reg_get(struct i2c_adapter *adap, struct i2c_client *client)
@@ -281,21 +282,28 @@ static int _port_block_status_get(struct i2c_adapter *adap, struct i2c_client *c
         }
     } while (time_before(jiffies, stop_time));
 
-	return (ret < 0) ? 0 : (_mask_shift(i2c_data.byte, mask) == 0);
+    if(ret < 0) {
+        /*
+         *  When the return value is negative, it means the I2C bus is abnormal and we can't
+         *  retrieve the stuck status. We treat this as no block.
+         */
+        return PORT_NONE_BLOCK;
+    } else if(_mask_shift(i2c_data.byte, mask) == 0) {
+        return PORT_BLOCK;
+    } else {
+        return PORT_NONE_BLOCK;
+    }
 }
 
 static int mux_reg_write(struct i2c_adapter *adap, struct i2c_client *client, u8 val, u32 *try_times)
 {
     int ret = 0;
     union i2c_smbus_data i2c_data;
-	//struct i2c_mux_core *muxc = i2c_get_clientdata(client);
-    //struct cpld_data *data = i2c_mux_priv(muxc);
     int i2c_relay_reg = CPLD_I2C_RELAY_REG;
     unsigned long stop_time;
     u32 tries = 0;
 
     i2c_data.byte = val;
-    //i2c_relay_reg = CPLD_I2C_RELAY_REG;
 
 	/* Start a round of trying to claim the bus */
 	stop_time = jiffies + msecs_to_jiffies(CPLD_MUX_TIMEOUT);
@@ -374,8 +382,16 @@ int mux_select_chan(struct i2c_mux_core *muxc, u32 chan)
                     port, chan, set_val, try_times -1);
             }
 
-            if(_port_block_status_get(muxc->parent, client, port, 0)) {
-                pr_info("port(%d) addr(0x%02x) is disabled by CPLD/FPGA\n", port, client->addr);
+            if(_port_block_status_get(muxc->parent, client, port, 0) == PORT_BLOCK) {
+                if(ports_block_map[port].block_status != PORT_BLOCK) {
+                    ports_block_map[port].block_status = PORT_BLOCK;
+                    pr_warn("port(%d) is blocked by CPLD/FPGA\n", port);
+                }
+            } else {
+                if(ports_block_map[port].block_status != PORT_NONE_BLOCK) {
+                    ports_block_map[port].block_status = PORT_NONE_BLOCK;
+                    pr_warn("port(%d) is recovered by the CPLD/FPGA\n", port);
+                }
             }
         }
         data->last_chan = set_val;
@@ -404,7 +420,7 @@ int mux_deselect_mux(struct i2c_mux_core *muxc, u32 chan)
         /* Deselect active channel */
         if(data->index == fpga) {
             dev_err(dev, "Invalid device index\n");
-            return -EINVAL;
+            return EINVAL;
         } else {
             data->last_chan = CPLD_MUX_CHN_OFF;
         }

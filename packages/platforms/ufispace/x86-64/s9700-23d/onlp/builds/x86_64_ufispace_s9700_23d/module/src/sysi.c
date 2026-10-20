@@ -42,6 +42,8 @@
 #define CMD_BMC_VER_3 "echo $((`ipmitool mc info"IPMITOOL_REDIRECT_ERR" | grep 'Aux Firmware Rev Info' -A 2 | sed -n '2p'` + 0))"
 #define CMD_UCD_VER   "ipmitool raw 0x3c 0x08"
 
+#define GRUB_MACHINE_CFG_PATH "/mnt/onie-boot/onie/grub/grub-machine.cfg"
+
 /* This is definitions for x86-64-ufispace-s9700-23d */
 /* OID map*/
 /*
@@ -114,6 +116,27 @@ static int parse_ucd_out(char *ucd_out, char *ucd_data, int start, int len)
     return ONLP_STATUS_OK;
 }
 
+#define STRDUP_SIZE 512
+static char* ufi_fstrdup(const char* fmt, ...);
+static char* ufi_vfstrdup(const char* fmt, va_list vargs);
+
+static char* ufi_fstrdup(const char* fmt, ...)
+{
+    char* rv;
+    va_list vargs;
+    va_start(vargs, fmt);
+    rv = ufi_vfstrdup(fmt, vargs);
+    va_end(vargs);
+    return rv;
+}
+
+static char* ufi_vfstrdup(const char* fmt, va_list vargs)
+{
+    char b[STRDUP_SIZE];
+    AIM_VSNPRINTF(b, sizeof(b)-1, fmt, vargs);
+    return aim_strdup(b);
+}
+
 /* update sysi platform info */
 static int update_sysi_platform_info(onlp_platform_info_t* info)
 {
@@ -127,12 +150,13 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     char ucd_date[8];
     int ucd_len=0, ucd_date_len=6;
 
-    char mu_ver[128], mu_result[128];
+    char mu_ver[128], mu_result[128], onie_ver[128];
     char path_onie_folder[] = "/mnt/onie-boot/onie";
     char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
     char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
     char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
     char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
+    char cmd_onie_ver[] = "cat " GRUB_MACHINE_CFG_PATH " | grep -i 'onie_version=' | awk -F '=' '{ print $2}' | tr -d '\\r\\n'";
     char cmd_mu_result[256];
 
     memset(bios_out, 0, sizeof(bios_out));
@@ -144,6 +168,7 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
     memset(ucd_date, 0, sizeof(ucd_date));
     memset(mu_ver, 0, sizeof(mu_ver));
     memset(mu_result, 0, sizeof(mu_result));
+    memset(onie_ver, 0, sizeof(onie_ver));
     memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get CPU CPLD version
@@ -165,7 +190,7 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         cpld_ver_minor[i] = (((cpld_ver[i]) & 0x3F));
     }
 
-    info->cpld_versions = aim_fstrdup(
+    info->cpld_versions = ufi_fstrdup(
         "\n"
         "[CPU CPLD] %d.%02d\n"
         "[MB CPLD1] %d.%02d\n"
@@ -219,16 +244,23 @@ static int update_sysi_platform_info(onlp_platform_info_t* info)
         }
     }
 
-    info->other_versions = aim_fstrdup(
+    //Get ONIE Version
+    if(access(GRUB_MACHINE_CFG_PATH, F_OK) != -1 ) {
+        exec_cmd(cmd_onie_ver, onie_ver, sizeof(onie_ver));
+    }
+
+    info->other_versions = ufi_fstrdup(
             "\n"
             "[BIOS] %s\n"
             "[BMC] %d.%d.%d\n"
             "[MU] %s (%s)\n"
+            "[ONIE] %s\n"
             "[UCD] %s %s\n",
             bios_out,
             atoi(bmc_out1), atoi(bmc_out2), atoi(bmc_out3),
             strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
             strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA",
+            strnlen(onie_ver, sizeof(onie_ver)) != 0 ? onie_ver : "NA",
             ucd_ver, ucd_date);
 
     return ONLP_STATUS_OK;

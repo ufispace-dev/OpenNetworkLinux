@@ -36,6 +36,8 @@
 #define SYSFS_EEPROM    "eeprom"
 #define EEPROM_ADDR     (0x50)
 
+#define TX_DIS_INPUT_MAX      (0xff) /* for input value validation only */
+
 #define VALIDATE_PORT(p) { if ((p < SFP_START_NUM) || (p >= PORT_NUM)) return ONLP_STATUS_E_PARAM; }
 #define VALIDATE_SFP_PORT(p) { if (!IS_SFP(p)) return ONLP_STATUS_E_PARAM; }
 
@@ -433,6 +435,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_SFP(port)) {
                 *rv = 1;
             }
@@ -501,6 +504,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
             break;
         }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
         {
             //set gpio_num by port and control
             if (port>=4 && port<8) {
@@ -574,7 +578,22 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
             break;
         }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
         {
+            if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                    AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                    return ONLP_STATUS_E_PARAM;
+                } else {
+                    value = (uint8_t)(!!value);
+                }
+            } else if (control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                if (value != 0 && value != 1) {
+                    AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                    return ONLP_STATUS_E_PARAM;
+                }
+            }
+
             //set gpio_num by port and control
             if (port>=4 && port<8) {
                 gpio_num = 487 - port;

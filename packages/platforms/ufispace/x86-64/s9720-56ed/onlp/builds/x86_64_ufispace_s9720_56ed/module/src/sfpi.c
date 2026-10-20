@@ -1459,12 +1459,8 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int *rv)
             }
             break;
         case ONLP_SFP_CONTROL_TX_DISABLE:
-            if (IS_QSFPX(port)) {
-                *rv = 1;
-            }
-            if (IS_SFP(port)) {
-                *rv = 1;
-            }
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
+            *rv = 1;
             break;
         default:
             *rv = 0;
@@ -1505,9 +1501,20 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
+                if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                    if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    } 
+
+                } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                    if (value != 0 && value !=1) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    }
+                }
                 if (IS_QSFPX(port)) {
                     ONLP_TRY(dev_class = onlp_sfpi_dev_class_update(port));
-
                     if (dev_class == 1) { //SFF8636 module
                         ONLP_TRY(rc = ufi_sff8636_txdisable_status_set(port, value, control));
                     } else if (dev_class == 3) { //CMIS module
@@ -1516,6 +1523,9 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
                         AIM_LOG_ERROR("Port[%d] dev_class %d is not supported for tx disable control.\n", port, dev_class);
                         return ONLP_STATUS_E_UNSUPPORTED;
                     }
+                    return rc; 
+                } else if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                    value = (uint8_t)(!!value); 
                 }
                 break;
             }

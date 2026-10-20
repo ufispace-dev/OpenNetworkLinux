@@ -1189,6 +1189,21 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port)) {
+
+                    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        } else {
+                            value = (uint8_t)(!!value);
+                        }
+                    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                        if (value != 0 && value !=1) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        }
+                    }
+
                     //read reg_val
                     if (file_read_hex(&reg_val, SYS_FMT, cpld_bus, cpld_addr, SYSFS_SFP_CONFIG) < 0) {
                         check_and_do_i2c_mux_reset(port);
