@@ -5,7 +5,7 @@
 #######################################################################
 
 #Tech Support script version
-TS_VERSION="1.0.1"
+TS_VERSION="1.0.2"
 
 # TRUE=0, FALSE=1
 TRUE=0
@@ -456,8 +456,8 @@ function read_s3ip_sysfs_int {
     if _check_filepath "${sysfs}"; then
         local reg_value=$(eval "cat ${sysfs}")
         # check if reg_value is integer
-        if [[ "$reg_value" =~ ^-?[0-9]+$ ]]; then
-            echo $reg_value
+        if [[ "$reg_value" =~ ^-?[0-9]+$ ]] || [[ "$reg_value" =~ ^0[xX][0-9a-fA-F]+$ ]]; then
+            echo $((reg_value))
         else
             echo $default_value
         fi
@@ -2146,34 +2146,45 @@ function _trap_cleanup {
 
 #### platform specific
 function _plat_ts_version {
-    echo "1.0.0"
+    echo "1.0.1"
 }
 
 function _set_plat_vars {
     PLAT="S9520-28XC"
 
     _set_board_info
-    # CPU CPLD BIOS_BOOT_SEL: CPLD1 offset 0x5B Bit 0
-    # LPC Base is 0x700, so offset 0x5B is 0x75B
-    BIOS_BOOT_SEL_REG="0x75B,0"
+
+    #  BIOS_BOOT_SEL_REG (Offset 0x5B)
+    local boot_sel_reg=$((LPC_BASE + 0x5B))
+    BIOS_BOOT_SEL_REG="$(printf "0x%X,0" $boot_sel_reg)"
     BIOS_BOOT_SEL_REG_MASK=""
 
-    IOPORT_ADDRESS=(
-        "0x700-0x7FF"   # Main Board CPLD1
-        "0x600-0x6FF"
-        "0xE300-0xE3FF" # CPU EC
-    )
+    if (( MODEL_ID == 0xED )); then
+        IOPORT_ADDRESS=(
+            "0x700-0x7FF"   # Main Board CPLD1
+            "0xE300-0xE3FF" # CPU EC
+        )
+        SYS_EEPROM="${I801_BUS},,,,,0x56"
+    else
+        IOPORT_ADDRESS=(
+            "0xE00-0xEFF"   # Main Board CPLD1
+            "0x2300-0x23FF" # CPU EC
+        )
+        SYS_EEPROM="${I801_BUS},,,,,0x57"
+    fi
 
+    # CPLD1 LPC Version Registers (Offset 0x02: Rev, Offset 0x04: Build)
+    local cpld_rev_reg=$((LPC_BASE + 0x02))
+    local cpld_build_reg=$((LPC_BASE + 0x04))
 
-    # I2C Mapping for CPLD1 and CPLD2 (via PCA9546 Mux 0x75 Channel 0)
+    # --- I2C Topology & Device Definition ---
     CPLD_I2C_POSITION=(
         "${I801_BUS},,,0x75,0,cpld1,2,0x32"
         "${I801_BUS},,,0x75,0,cpld2,2,0x33"
     )
 
-    # CPLD1 LPC Version Registers (0x02: Rev, 0x04: Build)
     CPLD_DEV_LPC=(
-        "MB CPLD1,0x702,0x704"
+        "$(printf "MB CPLD1,0x%X,0x%X" $cpld_rev_reg $cpld_build_reg)"
     )
 
     I2C_DEV_INFO=(
@@ -2188,7 +2199,6 @@ function _set_plat_vars {
         "${I801_BUS},,,0x75,3,9546_CHILD-0x77,4,0x77"
     )
 
-    SYS_EEPROM="${I801_BUS},,,,,0x56"
     BMC_SUPPORT=1
 }
 
@@ -2197,8 +2207,8 @@ function _show_extra_info {
 }
 
 function _set_board_info {
-    local model_id_array=( $((2#11101101)) )
-    local model_name_array=("Q3N S9520-28XC")
+    local model_id_array=( $((2#11101101)) $((2#11101011)) ) # 0xED (237 - Denverton), 0xEB (235 - LCC)
+    local model_name_array=("Q3N S9520-28XC Denverton" "Q3N S9520-28XC LCC")
     local ret=""
     local found="0"
     local i=0
@@ -2206,26 +2216,38 @@ function _set_board_info {
     # Read CPLD1 0x00 SKU ID Register via LPC
     local model_id=$(_dd_read_byte 0x700)
     ret=$?
-    if [ $ret -eq 0 ]; then
-        MODEL_ID=$((model_id))
-        for (( i=0; i<${#model_id_array[@]}; i++ ))
-        do
-            if (( MODEL_ID == model_id_array[i] )); then
-                MODEL_NAME="${model_name_array[$i]}"
-                found="1"
-                break
-            fi
-        done
 
-        if [ "$found" = "0" ]; then
-            MODEL_NAME="S9520-28XC UNKNOWN"
+    if [ $ret -ne 0 ] || (( model_id == 0xFF )) || (( model_id != 0xED )); then
+        local lcc_id=$(_dd_read_byte 0xE00)
+        if (( lcc_id == 0xEB )); then
+            model_id=$lcc_id
+            LPC_BASE=0xE00
+        else
+            LPC_BASE=0x700
         fi
+    else
+        LPC_BASE=0x700
+    fi
+
+    MODEL_ID=$((model_id))
+    for (( i=0; i<${#model_id_array[@]}; i++ ))
+    do
+        if (( MODEL_ID == model_id_array[i] )); then
+            MODEL_NAME="${model_name_array[$i]}"
+            found="1"
+            break
+        fi
+    done
+
+    if [ "$found" = "0" ]; then
+        MODEL_NAME="S9520-28XC UNKNOWN"
     fi
 
     # Read CPLD1 0x01 HW & Build Revision Register via LPC
-    local board_rev_id=$(_dd_read_byte 0x701)
+    local board_rev_reg=$((LPC_BASE + 0x01))
+    local board_rev_id=$(_dd_read_byte $(printf "0x%X" $board_rev_reg))
     ret=$?
-    if [ $ret -eq 0 ]; then
+    if [ $ret -eq 0 ] && (( board_rev_id != 0xFF )); then
         board_rev_id=$((board_rev_id))
         # DEPH D[2]
         DEPH_ID=$(((board_rev_id & 2#00000100) >> 2))

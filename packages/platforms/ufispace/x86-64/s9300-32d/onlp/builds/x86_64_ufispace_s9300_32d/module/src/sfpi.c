@@ -1523,6 +1523,19 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
         case ONLP_SFP_CONTROL_TX_DISABLE:
         case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if(IS_SFP(local_id)) {
+                if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                    if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    } else {
+                        value = (uint8_t)(!!value);
+                    }
+                } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                    if (value != 0 && value !=1) {
+                        AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                        return ONLP_STATUS_E_PARAM;
+                    }
+                }
                 ONLP_TRY(set_sfpi_port_txdisable_status(local_id, value));
             } else if (IS_QSFPX(port)) {
                 int dev_class = 0;

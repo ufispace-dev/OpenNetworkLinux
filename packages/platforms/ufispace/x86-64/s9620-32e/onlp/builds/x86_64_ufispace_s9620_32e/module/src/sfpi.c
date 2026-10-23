@@ -636,6 +636,7 @@ static int xfr_ctrl_to_sysfs(port_node_t node, onlp_sfp_control_t control , char
                 break;
             }
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 *sysfs = node.txdis_sysfs;
                 break;
@@ -2285,6 +2286,20 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     if(op_type == OP_SYSFS) {
         //get sysfs
         ONLP_TRY(xfr_ctrl_to_sysfs(node, control, &sysfs));
+
+        if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+            if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                return ONLP_STATUS_E_PARAM;
+            } else {
+                value = (uint8_t)(!!value);
+            }
+        } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            if (value != 0 && value !=1) {
+                AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                return ONLP_STATUS_E_PARAM;
+            }
+        }
 
         //write sysfs
         if ((rc=onlp_file_write_int(value, sysfs)) < 0) {

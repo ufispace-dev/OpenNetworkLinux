@@ -35,6 +35,8 @@
 #define SYSFS_EEPROM          "eeprom"
 #define EEPROM_ADDR           (0x50)
 
+#define TX_DIS_INPUT_MAX      (0xff) /* for input value validation only */
+
 typedef enum port_type_e {
     TYPE_SFP = 0,
     TYPE_SFP_PLUS,
@@ -661,6 +663,7 @@ int onlp_sfpi_control_supported(int port, onlp_sfp_control_t control, int* rv)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             if (IS_SFP(port)) {
                 *rv = 1;
             }
@@ -690,8 +693,22 @@ int onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value)
     switch(control)
     {
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port)) {
+                    if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+                        if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        } else {
+                            value = (uint8_t)(!!value);
+                        }
+                    } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+                        if (value != 0 && value !=1) {
+                            AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                            return ONLP_STATUS_E_PARAM;
+                        }
+                    }
                     break;
                 } else {
                     return ONLP_STATUS_E_UNSUPPORTED;
@@ -736,6 +753,7 @@ int onlp_sfpi_control_get(int port, onlp_sfp_control_t control, int* value)
         case ONLP_SFP_CONTROL_RX_LOS:
         case ONLP_SFP_CONTROL_TX_FAULT:
         case ONLP_SFP_CONTROL_TX_DISABLE:
+        case ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL:
             {
                 if (IS_SFP(port)) {
                     break;

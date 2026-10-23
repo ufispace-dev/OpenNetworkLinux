@@ -29,6 +29,7 @@
 /* EEPROM */
 #define SYS_EEPROM_PATH         SYS_DEV "1-0056/eeprom"
 #define SYS_EEPROM_SIZE         512
+#define GRUB_MACHINE_CFG_PATH   "/mnt/onie-boot/onie/grub/grub-machine.cfg"
 
 /* This is definitions for x86-64-ufispace-s6301-56st */
 /* OID map*/
@@ -91,6 +92,28 @@ static onlp_oid_t __onlp_oid_info[] = {
     //ONLP_FAN_ID_CREATE(ONLP_PSU_1_FAN),
 };
 
+
+#define STRDUP_SIZE 512
+static char* ufi_fstrdup(const char* fmt, ...);
+static char* ufi_vfstrdup(const char* fmt, va_list vargs);
+
+static char* ufi_fstrdup(const char* fmt, ...)
+{
+    char* rv;
+    va_list vargs;
+    va_start(vargs, fmt);
+    rv = ufi_vfstrdup(fmt, vargs);
+    va_end(vargs);
+    return rv;
+}
+
+static char* ufi_vfstrdup(const char* fmt, va_list vargs)
+{
+    char b[STRDUP_SIZE];
+    AIM_VSNPRINTF(b, sizeof(b)-1, fmt, vargs);
+    return aim_strdup(b);
+}
+
 static int sysi_platform_info_get(onlp_platform_info_t* pi)
 {
     uint8_t mb_cpld_ver_h[16];
@@ -101,13 +124,14 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
     int data_len;
     int size;
 
-    char mu_ver[128], mu_result[128];
+    char mu_ver[128], mu_result[128], onie_ver[128];
     char path_onie_folder[] = "/mnt/onie-boot/onie";
     char path_onie_update_log[] = "/mnt/onie-boot/onie/update/update_details.log";
     char cmd_mount_mu_dir[] = "mkdir -p /mnt/onie-boot && mount LABEL=ONIE-BOOT /mnt/onie-boot/ 2> /dev/null";
     char cmd_mu_ver[] = "cat /mnt/onie-boot/onie/update/update_details.log | grep -i 'Updater version:' | tail -1 | awk -F ' ' '{ print $3}' | tr -d '\\r\\n'";
     char cmd_mu_result_template[] = "/mnt/onie-boot/onie/tools/bin/onie-fwpkg | grep '%s' | awk -F '|' '{ print $3 }' | tail -1 | xargs | tr -d '\\r\\n'";
     char cmd_mu_result[256];
+    char cmd_onie_ver[] = "cat " GRUB_MACHINE_CFG_PATH " | grep -i 'onie_version=' | awk -F '=' '{ print $2}' | tr -d '\\r\\n'";
 
     memset(mb_cpld_ver_h, 0, sizeof(mb_cpld_ver_h));
     memset(bios_ver_h, 0, sizeof(bios_ver_h));
@@ -116,6 +140,7 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
     memset(ucd_fw_ver_h, 0, sizeof(ucd_fw_ver_h));
     memset(mu_ver, 0, sizeof(mu_ver));
     memset(mu_result, 0, sizeof(mu_result));
+    memset(onie_ver, 0, sizeof(onie_ver));
     memset(cmd_mu_result, 0, sizeof(cmd_mu_result));
 
     //get MB CPLD version from CPLD sysfs
@@ -131,7 +156,7 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
     //get ucd firmware version
     ONLP_TRY(ucd_fw_ver_get(ucd_fw_ver_h, sizeof(ucd_fw_ver_h)));
 
-    pi->cpld_versions = aim_fstrdup(
+    pi->cpld_versions = ufi_fstrdup(
         "\n"
         "[MB CPLD] %s\n",
         mb_cpld_ver_h);
@@ -155,16 +180,23 @@ static int sysi_platform_info_get(onlp_platform_info_t* pi)
         }
     }
 
-    pi->other_versions = aim_fstrdup(
+    //Get ONIE Version
+    if(access(GRUB_MACHINE_CFG_PATH, F_OK) != -1 ) {
+        exec_cmd(cmd_onie_ver, onie_ver, sizeof(onie_ver));
+    }
+
+    pi->other_versions = ufi_fstrdup(
         "\n"
         "[BIOS] %s\n"
         "[MU] %s (%s)\n"
+        "[ONIE] %s\n"
         "[PSU0] %s\n"
         "[PSU1] %s\n"
         "[UCD] %s\n",
         bios_ver_h,
         strnlen(mu_ver, sizeof(mu_ver)) != 0 ? mu_ver : "NA",
         strnlen(mu_result, sizeof(mu_result)) != 0 ? mu_result: "NA",
+        strnlen(onie_ver, sizeof(onie_ver)) != 0 ? onie_ver : "NA",
         psu0_fw_ver_h, psu1_fw_ver_h, ucd_fw_ver_h);
 
     return ONLP_STATUS_OK;

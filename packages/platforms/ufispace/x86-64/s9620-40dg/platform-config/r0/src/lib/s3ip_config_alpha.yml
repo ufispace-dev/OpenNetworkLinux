@@ -1028,18 +1028,18 @@ ports:
           source: "eth_0_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_1"
-          alias: 1
+          dev_name: "port_eeprom_0"
+          alias: 0
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_1.bus"
+          params: "i2c_dev.port_eeprom_0.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_1"
+          dev_name: "port_eeprom_0"
           source: "dev_class"
       2:
         description:
@@ -1065,18 +1065,18 @@ ports:
           source: "eth_1_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_2"
-          alias: 2
+          dev_name: "port_eeprom_1"
+          alias: 1
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_2.bus"
+          params: "i2c_dev.port_eeprom_1.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_2"
+          dev_name: "port_eeprom_1"
           source: "dev_class"
       3:
         description:
@@ -1102,18 +1102,18 @@ ports:
           source: "eth_2_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_3"
-          alias: 3
+          dev_name: "port_eeprom_2"
+          alias: 2
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_3.bus"
+          params: "i2c_dev.port_eeprom_2.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_3"
+          dev_name: "port_eeprom_2"
           source: "dev_class"
       4:
         description:
@@ -1139,18 +1139,18 @@ ports:
           source: "eth_3_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_4"
-          alias: 4
+          dev_name: "port_eeprom_3"
+          alias: 3
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_4.bus"
+          params: "i2c_dev.port_eeprom_3.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_4"
+          dev_name: "port_eeprom_3"
           source: "dev_class"
       5:
         description:
@@ -1176,18 +1176,18 @@ ports:
           source: "eth_4_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_5"
-          alias: 5
+          dev_name: "port_eeprom_4"
+          alias: 4
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_5.bus"
+          params: "i2c_dev.port_eeprom_4.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_5"
+          dev_name: "port_eeprom_4"
           source: "dev_class"
       6:
         description:
@@ -1213,18 +1213,18 @@ ports:
           source: "eth_5_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_6"
-          alias: 6
+          dev_name: "port_eeprom_5"
+          alias: 5
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_6.bus"
+          params: "i2c_dev.port_eeprom_5.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_6"
+          dev_name: "port_eeprom_5"
           source: "dev_class"
       7:
         description:
@@ -1250,18 +1250,18 @@ ports:
           source: "eth_6_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_7"
-          alias: 7
+          dev_name: "port_eeprom_6"
+          alias: 6
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_7.bus"
+          params: "i2c_dev.port_eeprom_6.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_7"
+          dev_name: "port_eeprom_6"
           source: "dev_class"
       8:
         description:
@@ -1287,18 +1287,18 @@ ports:
           source: "eth_7_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_8"
-          alias: 8
+          dev_name: "port_eeprom_7"
+          alias: 7
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_8.bus"
+          params: "i2c_dev.port_eeprom_7.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_8"
+          dev_name: "port_eeprom_7"
           source: "dev_class"
       9:
         description:
@@ -1324,18 +1324,18 @@ ports:
           source: "eth_8_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_9"
-          alias: 9
+          dev_name: "port_eeprom_8"
+          alias: 8
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_9.bus"
+          params: "i2c_dev.port_eeprom_8.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_9"
+          dev_name: "port_eeprom_8"
           source: "dev_class"
       10:
         description:
@@ -1361,18 +1361,18 @@ ports:
           source: "eth_9_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_10"
-          alias: 10
+          dev_name: "port_eeprom_9"
+          alias: 9
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_10.bus"
+          params: "i2c_dev.port_eeprom_9.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_10"
+          dev_name: "port_eeprom_9"
           source: "dev_class"
       11:
         description:
@@ -1398,18 +1398,18 @@ ports:
           source: "eth_10_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_11"
-          alias: 11
+          dev_name: "port_eeprom_10"
+          alias: 10
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_11.bus"
+          params: "i2c_dev.port_eeprom_10.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_11"
+          dev_name: "port_eeprom_10"
           source: "dev_class"
       12:
         description:
@@ -1435,18 +1435,18 @@ ports:
           source: "eth_11_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_12"
-          alias: 12
+          dev_name: "port_eeprom_11"
+          alias: 11
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_12.bus"
+          params: "i2c_dev.port_eeprom_11.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_12"
+          dev_name: "port_eeprom_11"
           source: "dev_class"
       13:
         description:
@@ -1472,18 +1472,18 @@ ports:
           source: "eth_12_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_13"
-          alias: 13
+          dev_name: "port_eeprom_12"
+          alias: 12
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFPDD"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_13.bus"
+          params: "i2c_dev.port_eeprom_12.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_13"
+          dev_name: "port_eeprom_12"
           source: "dev_class"
       14:
         description:
@@ -1509,18 +1509,18 @@ ports:
           source: "eth_13_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_14"
-          alias: 14
+          dev_name: "port_eeprom_13"
+          alias: 13
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFPDD"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_14.bus"
+          params: "i2c_dev.port_eeprom_13.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_14"
+          dev_name: "port_eeprom_13"
           source: "dev_class"
       15:
         description:
@@ -1546,18 +1546,18 @@ ports:
           source: "eth_14_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_15"
-          alias: 15
+          dev_name: "port_eeprom_14"
+          alias: 14
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFPDD"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_15.bus"
+          params: "i2c_dev.port_eeprom_14.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_15"
+          dev_name: "port_eeprom_14"
           source: "dev_class"
       16:
         description:
@@ -1583,18 +1583,18 @@ ports:
           source: "eth_15_reset"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_16"
-          alias: 16
+          dev_name: "port_eeprom_15"
+          alias: 15
           driver: "optoe3"
         type:
           <<: *static_normal
           params: "QSFPDD"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_16.bus"
+          params: "i2c_dev.port_eeprom_15.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_16"
+          dev_name: "port_eeprom_15"
           source: "dev_class"
       17:
         description:
@@ -1623,18 +1623,18 @@ ports:
           source: "eth_16_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_17"
-          alias: 17
+          dev_name: "port_eeprom_16"
+          alias: 16
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_17.bus"
+          params: "i2c_dev.port_eeprom_16.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_17"
+          dev_name: "port_eeprom_16"
           source: "dev_class"
       18:
         description:
@@ -1663,18 +1663,18 @@ ports:
           source: "eth_17_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_18"
-          alias: 18
+          dev_name: "port_eeprom_17"
+          alias: 17
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_18.bus"
+          params: "i2c_dev.port_eeprom_17.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_18"
+          dev_name: "port_eeprom_17"
           source: "dev_class"
       19:
         description:
@@ -1703,18 +1703,18 @@ ports:
           source: "eth_18_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_19"
-          alias: 19
+          dev_name: "port_eeprom_18"
+          alias: 18
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_19.bus"
+          params: "i2c_dev.port_eeprom_18.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_19"
+          dev_name: "port_eeprom_18"
           source: "dev_class"
       20:
         description:
@@ -1743,18 +1743,18 @@ ports:
           source: "eth_19_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_20"
-          alias: 20
+          dev_name: "port_eeprom_19"
+          alias: 19
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_20.bus"
+          params: "i2c_dev.port_eeprom_19.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_20"
+          dev_name: "port_eeprom_19"
           source: "dev_class"
       21:
         description:
@@ -1783,18 +1783,18 @@ ports:
           source: "eth_20_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_21"
-          alias: 21
+          dev_name: "port_eeprom_20"
+          alias: 20
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_21.bus"
+          params: "i2c_dev.port_eeprom_20.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_21"
+          dev_name: "port_eeprom_20"
           source: "dev_class"
       22:
         description:
@@ -1823,18 +1823,18 @@ ports:
           source: "eth_21_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_22"
-          alias: 22
+          dev_name: "port_eeprom_21"
+          alias: 21
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_22.bus"
+          params: "i2c_dev.port_eeprom_21.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_22"
+          dev_name: "port_eeprom_21"
           source: "dev_class"
       23:
         description:
@@ -1863,18 +1863,18 @@ ports:
           source: "eth_22_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_23"
-          alias: 23
+          dev_name: "port_eeprom_22"
+          alias: 22
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_23.bus"
+          params: "i2c_dev.port_eeprom_22.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_23"
+          dev_name: "port_eeprom_22"
           source: "dev_class"
       24:
         description:
@@ -1903,18 +1903,18 @@ ports:
           source: "eth_23_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_24"
-          alias: 24
+          dev_name: "port_eeprom_23"
+          alias: 23
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_24.bus"
+          params: "i2c_dev.port_eeprom_23.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_24"
+          dev_name: "port_eeprom_23"
           source: "dev_class"
       25:
         description:
@@ -1943,18 +1943,18 @@ ports:
           source: "eth_24_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_25"
-          alias: 25
+          dev_name: "port_eeprom_24"
+          alias: 24
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_25.bus"
+          params: "i2c_dev.port_eeprom_24.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_25"
+          dev_name: "port_eeprom_24"
           source: "dev_class"
       26:
         description:
@@ -1983,18 +1983,18 @@ ports:
           source: "eth_25_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_26"
-          alias: 26
+          dev_name: "port_eeprom_25"
+          alias: 25
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_26.bus"
+          params: "i2c_dev.port_eeprom_25.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_26"
+          dev_name: "port_eeprom_25"
           source: "dev_class"
       27:
         description:
@@ -2023,18 +2023,18 @@ ports:
           source: "eth_26_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_27"
-          alias: 27
+          dev_name: "port_eeprom_26"
+          alias: 26
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_27.bus"
+          params: "i2c_dev.port_eeprom_26.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_27"
+          dev_name: "port_eeprom_26"
           source: "dev_class"
       28:
         description:
@@ -2063,18 +2063,18 @@ ports:
           source: "eth_27_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_28"
-          alias: 28
+          dev_name: "port_eeprom_27"
+          alias: 27
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_28.bus"
+          params: "i2c_dev.port_eeprom_27.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_28"
+          dev_name: "port_eeprom_27"
           source: "dev_class"
       29:
         description:
@@ -2103,18 +2103,18 @@ ports:
           source: "eth_28_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_29"
-          alias: 29
+          dev_name: "port_eeprom_28"
+          alias: 28
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_29.bus"
+          params: "i2c_dev.port_eeprom_28.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_29"
+          dev_name: "port_eeprom_28"
           source: "dev_class"
       30:
         description:
@@ -2143,18 +2143,18 @@ ports:
           source: "eth_29_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_30"
-          alias: 30
+          dev_name: "port_eeprom_29"
+          alias: 29
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_30.bus"
+          params: "i2c_dev.port_eeprom_29.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_30"
+          dev_name: "port_eeprom_29"
           source: "dev_class"
       31:
         description:
@@ -2183,18 +2183,18 @@ ports:
           source: "eth_30_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_31"
-          alias: 31
+          dev_name: "port_eeprom_30"
+          alias: 30
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_31.bus"
+          params: "i2c_dev.port_eeprom_30.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_31"
+          dev_name: "port_eeprom_30"
           source: "dev_class"
       32:
         description:
@@ -2223,18 +2223,18 @@ ports:
           source: "eth_31_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_32"
-          alias: 32
+          dev_name: "port_eeprom_31"
+          alias: 31
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_32.bus"
+          params: "i2c_dev.port_eeprom_31.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_32"
+          dev_name: "port_eeprom_31"
           source: "dev_class"
       33:
         description:
@@ -2263,18 +2263,18 @@ ports:
           source: "eth_32_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_33"
-          alias: 33
+          dev_name: "port_eeprom_32"
+          alias: 32
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_33.bus"
+          params: "i2c_dev.port_eeprom_32.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_33"
+          dev_name: "port_eeprom_32"
           source: "dev_class"
       34:
         description:
@@ -2303,18 +2303,18 @@ ports:
           source: "eth_33_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_34"
-          alias: 34
+          dev_name: "port_eeprom_33"
+          alias: 33
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_34.bus"
+          params: "i2c_dev.port_eeprom_33.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_34"
+          dev_name: "port_eeprom_33"
           source: "dev_class"
       35:
         description:
@@ -2343,18 +2343,18 @@ ports:
           source: "eth_34_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_35"
-          alias: 35
+          dev_name: "port_eeprom_34"
+          alias: 34
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_35.bus"
+          params: "i2c_dev.port_eeprom_34.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_35"
+          dev_name: "port_eeprom_34"
           source: "dev_class"
       36:
         description:
@@ -2383,18 +2383,18 @@ ports:
           source: "eth_35_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_36"
-          alias: 36
+          dev_name: "port_eeprom_35"
+          alias: 35
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_36.bus"
+          params: "i2c_dev.port_eeprom_35.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_36"
+          dev_name: "port_eeprom_35"
           source: "dev_class"
       37:
         description:
@@ -2423,18 +2423,18 @@ ports:
           source: "eth_36_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_37"
-          alias: 37
+          dev_name: "port_eeprom_36"
+          alias: 36
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_37.bus"
+          params: "i2c_dev.port_eeprom_36.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_37"
+          dev_name: "port_eeprom_36"
           source: "dev_class"
       38:
         description:
@@ -2463,18 +2463,18 @@ ports:
           source: "eth_37_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_38"
-          alias: 38
+          dev_name: "port_eeprom_37"
+          alias: 37
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_38.bus"
+          params: "i2c_dev.port_eeprom_37.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_38"
+          dev_name: "port_eeprom_37"
           source: "dev_class"
       39:
         description:
@@ -2503,18 +2503,18 @@ ports:
           source: "eth_38_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_39"
-          alias: 39
+          dev_name: "port_eeprom_38"
+          alias: 38
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_39.bus"
+          params: "i2c_dev.port_eeprom_38.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_39"
+          dev_name: "port_eeprom_38"
           source: "dev_class"
       40:
         description:
@@ -2543,18 +2543,18 @@ ports:
           source: "eth_39_rate_sel"
         eeprom:
           <<: *i2c_eeprom
-          dev_name: "port_eeprom_40"
-          alias: 40
+          dev_name: "port_eeprom_39"
+          alias: 39
           driver: "optoe2"
         type:
           <<: *static_normal
           params: "SFP"
         bus:
           <<: *static_to_attr
-          params: "i2c_dev.port_eeprom_40.bus"
+          params: "i2c_dev.port_eeprom_39.bus"
         dev_class:
           dev_type: "i2c_dev"
-          dev_name: "port_eeprom_40"
+          dev_name: "port_eeprom_39"
           source: "dev_class"
 
 # --- SYS LED Configuration ---
@@ -2962,124 +2962,124 @@ i2c_dev:
   syseeprom:
     addr: 0x57
     bus: 1
-  port_eeprom_1:
+  port_eeprom_0:
     bus: 14
     addr: 0x50
-  port_eeprom_2:
+  port_eeprom_1:
     bus: 15
     addr: 0x50
-  port_eeprom_3:
+  port_eeprom_2:
     bus: 16
     addr: 0x50
-  port_eeprom_4:
+  port_eeprom_3:
     bus: 17
     addr: 0x50
-  port_eeprom_5:
+  port_eeprom_4:
     bus: 18
     addr: 0x50
-  port_eeprom_6:
+  port_eeprom_5:
     bus: 19
     addr: 0x50
-  port_eeprom_7:
+  port_eeprom_6:
     bus: 22
     addr: 0x50
-  port_eeprom_8:
+  port_eeprom_7:
     bus: 23
     addr: 0x50
-  port_eeprom_9:
+  port_eeprom_8:
     bus: 24
     addr: 0x50
-  port_eeprom_10:
+  port_eeprom_9:
     bus: 25
     addr: 0x50
-  port_eeprom_11:
+  port_eeprom_10:
     bus: 26
     addr: 0x50
-  port_eeprom_12:
+  port_eeprom_11:
     bus: 27
     addr: 0x50
-  port_eeprom_13:
+  port_eeprom_12:
     bus: 30
     addr: 0x50
-  port_eeprom_14:
+  port_eeprom_13:
     bus: 31
     addr: 0x50
-  port_eeprom_15:
+  port_eeprom_14:
     bus: 32
     addr: 0x50
-  port_eeprom_16:
+  port_eeprom_15:
     bus: 33
     addr: 0x50
-  port_eeprom_17:
+  port_eeprom_16:
     bus: 38
     addr: 0x50
-  port_eeprom_18:
+  port_eeprom_17:
     bus: 39
     addr: 0x50
-  port_eeprom_19:
+  port_eeprom_18:
     bus: 40
     addr: 0x50
-  port_eeprom_20:
+  port_eeprom_19:
     bus: 41
     addr: 0x50
-  port_eeprom_21:
+  port_eeprom_20:
     bus: 42
     addr: 0x50
-  port_eeprom_22:
+  port_eeprom_21:
     bus: 43
     addr: 0x50
-  port_eeprom_23:
+  port_eeprom_22:
     bus: 44
     addr: 0x50
-  port_eeprom_24:
+  port_eeprom_23:
     bus: 45
     addr: 0x50
-  port_eeprom_25:
+  port_eeprom_24:
     bus: 46
     addr: 0x50
-  port_eeprom_26:
+  port_eeprom_25:
     bus: 47
     addr: 0x50
-  port_eeprom_27:
+  port_eeprom_26:
     bus: 48
     addr: 0x50
-  port_eeprom_28:
+  port_eeprom_27:
     bus: 49
     addr: 0x50
-  port_eeprom_29:
+  port_eeprom_28:
     bus: 50
     addr: 0x50
-  port_eeprom_30:
+  port_eeprom_29:
     bus: 51
     addr: 0x50
-  port_eeprom_31:
+  port_eeprom_30:
     bus: 52
     addr: 0x50
-  port_eeprom_32:
+  port_eeprom_31:
     bus: 53
     addr: 0x50
-  port_eeprom_33:
+  port_eeprom_32:
     bus: 54
     addr: 0x50
-  port_eeprom_34:
+  port_eeprom_33:
     bus: 55
     addr: 0x50
-  port_eeprom_35:
+  port_eeprom_34:
     bus: 56
     addr: 0x50
-  port_eeprom_36:
+  port_eeprom_35:
     bus: 57
     addr: 0x50
-  port_eeprom_37:
+  port_eeprom_36:
     bus: 58
     addr: 0x50
-  port_eeprom_38:
+  port_eeprom_37:
     bus: 59
     addr: 0x50
-  port_eeprom_39:
+  port_eeprom_38:
     bus: 60
     addr: 0x50
-  port_eeprom_40:
+  port_eeprom_39:
     bus: 61
     addr: 0x50
 

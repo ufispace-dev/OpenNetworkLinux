@@ -1253,10 +1253,6 @@ int __WEAK onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value
     logical_id = port - base;
     ONLP_TRY(_onlp_port_entry_get(logical_id, &entry));
 
-    if(value != 0 && value != 1) {
-        return ONLP_STATUS_E_PARAM;
-    }
-
     //check control is valid for this port
     switch(control)
     {
@@ -1316,6 +1312,23 @@ int __WEAK onlp_sfpi_control_set(int port, onlp_sfp_control_t control, int value
     }
 
     if(op_type == OP_SYSFS) {
+
+        if (control == ONLP_SFP_CONTROL_TX_DISABLE_CHANNEL) {
+            if (value < 0 || value > TX_DIS_INPUT_MAX) {
+                AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                return ONLP_STATUS_E_PARAM;
+            } else {
+                value = (uint8_t)(!!value);
+            }
+        } else if(control == ONLP_SFP_CONTROL_TX_DISABLE) {
+            if (value != 0 && value !=1) {
+                AIM_LOG_ERROR("[%s] unaccepted status, port=%d, status=%d\n", __FUNCTION__, port, value);
+                return ONLP_STATUS_E_PARAM;
+            }
+        } else {
+            value = (uint8_t)(!!value);
+        }
+
         //write reg_val
         if ((rv=onlp_file_write_int(value, sysfs)) < 0) {
             AIM_LOG_ERROR("Unable to write %s, error=%d, reg_val=%x", sysfs,  rv, value);
